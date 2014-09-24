@@ -224,7 +224,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           IMPLICIT NONE
           DEFINE_MK()
           CLASS(DTYPE(ppm_t_particles))                    :: this
-          REAL(MK), DIMENSION(:,:), POINTER, INTENT(  OUT) :: xp
+          REAL(MK), DIMENSION(:,:),          POINTER       :: xp
           INTEGER,                           INTENT(  OUT) :: info
           LOGICAL,                 OPTIONAL, INTENT(IN   ) :: with_ghosts
 
@@ -317,23 +317,23 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           end_subroutine()
       END SUBROUTINE DTYPE(set_xp)
 
-      SUBROUTINE DTYPE(part_prop_create)(this,info,field,part_prop,discr_data,&
-      &          dtype,name,lda,zero,with_ghosts)
+      SUBROUTINE DTYPE(part_prop_create)(this,info,field,part_prop, &
+      &          discr_data,dtype,name,lda,zero,with_ghosts)
           !!! Adds a property to an existing particle set
-          CLASS(DTYPE(ppm_t_particles))                                 :: this
-          INTEGER,                                        INTENT(  OUT) :: info
-          CLASS(ppm_t_field_),           OPTIONAL,        INTENT(IN   ) :: field
-          CLASS(DTYPE(ppm_t_part_prop)_),OPTIONAL,POINTER,INTENT(  OUT) :: part_prop
+          CLASS(DTYPE(ppm_t_particles))                           :: this
+          INTEGER,                                  INTENT(  OUT) :: info
+          CLASS(ppm_t_field_),            OPTIONAL, INTENT(IN   ) :: field
+          CLASS(DTYPE(ppm_t_part_prop)_), OPTIONAL, POINTER       :: part_prop
           !!! Pointer to the ppm_t_part_prop object for that property
-          CLASS(ppm_t_discr_data),OPTIONAL,POINTER,       INTENT(  OUT) :: discr_data
+          CLASS(ppm_t_discr_data),        OPTIONAL, POINTER       :: discr_data
           !!! Pointer to the ppm_t_discr_data object for that property
-          INTEGER,                       OPTIONAL,        INTENT(IN   ) :: dtype
-          CHARACTER(LEN=*),              OPTIONAL,        INTENT(IN   ) :: name
-          INTEGER,                       OPTIONAL,        INTENT(IN   ) :: lda
+          INTEGER,                        OPTIONAL, INTENT(IN   ) :: dtype
+          CHARACTER(LEN=*),               OPTIONAL, INTENT(IN   ) :: name
+          INTEGER,                        OPTIONAL, INTENT(IN   ) :: lda
           !!! name to this property
-          LOGICAL,                       OPTIONAL                       :: zero
+          LOGICAL,                        OPTIONAL, INTENT(IN   ) :: zero
           !!! if true, then initialise the data to zero
-          LOGICAL,                       OPTIONAL                       :: with_ghosts
+          LOGICAL,                        OPTIONAL, INTENT(IN   ) :: with_ghosts
           !!! if true, then allocate with Mpart instead of the default size of Npart
 
           CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
@@ -445,22 +445,25 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! Reallocate the property array to the correct size
           !!! (e.g. if the number of particles has changed or if the type
           !!! of the data changes)
-          CLASS(DTYPE(ppm_t_particles))         :: Pc
-          CLASS(DTYPE(ppm_t_part_prop)_)        :: prop
-          INTEGER,               INTENT(OUT)    :: info
-          LOGICAL, OPTIONAL                     :: with_ghosts
+          CLASS(DTYPE(ppm_t_particles))                 :: Pc
+          CLASS(DTYPE(ppm_t_part_prop)_), INTENT(INOUT) :: prop
+          INTEGER,                        INTENT(  OUT) :: info
+          LOGICAL, OPTIONAL,              INTENT(IN   ) :: with_ghosts
           !!! if true, then allocate with Mpart instead of the default size of Npart
-          INTEGER, OPTIONAL                     :: datatype
+          INTEGER, OPTIONAL,              INTENT(IN   ) :: datatype
           !!! deallocate the old data array and allocate a new one,
           !!! possibly of a different data type.
-          INTEGER, OPTIONAL                     :: lda
+          INTEGER, OPTIONAL,              INTENT(IN   ) :: lda
           !!! deallocate the old data array and allocate a new one,
           !!! possibly of a different dimension
 
-          CHARACTER(LEN=ppm_char)               :: name2
-          INTEGER                               :: lda2,vec_size,npart,i,dtype
-          LOGICAL, DIMENSION(ppm_param_length_pptflags):: flags
           CLASS(ppm_t_field_), POINTER :: field
+
+          INTEGER :: lda2,vec_size,npart,i,dtype
+
+          LOGICAL, DIMENSION(ppm_param_length_pptflags) :: flags
+
+          CHARACTER(LEN=ppm_char) :: name2
 
           start_subroutine("realloc_prop")
 
@@ -479,8 +482,8 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           ENDIF
           flags(ppm_ppt_partial) = .TRUE.
 
-          lda2=MERGE(lda,prop%lda,PRESENT(lda))
           dtype=MERGE(datatype,prop%data_type,PRESENT(datatype))
+          lda2=MERGE(lda,prop%lda,PRESENT(lda))
 
           IF (lda2.NE.prop%lda.OR.dtype.NE.prop%data_type) THEN
              CALL prop%destroy(info)
@@ -509,16 +512,16 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       &          name,skin,symmetry,cutoff,Nlist)
           !!! Create a data structure to store a neighbour list
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))                                    :: this
-          CLASS(DTYPE(ppm_t_particles)_), TARGET,            INTENT(IN   ) :: Part_src
+          CLASS(DTYPE(ppm_t_particles))                           :: this
+          CLASS(DTYPE(ppm_t_particles)_),           TARGET        :: Part_src
           !!! Particle set to which the neighbours belong (can be the same as this)
-          INTEGER,                                           INTENT(  OUT) :: info
-          CHARACTER(LEN=*),                        OPTIONAL, INTENT(IN   ) :: name
+          INTEGER,                                  INTENT(  OUT) :: info
+          CHARACTER(LEN=*),               OPTIONAL, INTENT(IN   ) :: name
           !!! name of this neighbour list
-          REAL(MK),                                OPTIONAL, INTENT(IN   ) :: skin
-          REAL(MK),                                OPTIONAL, INTENT(IN   ) :: cutoff
-          LOGICAL,                                 OPTIONAL, INTENT(IN   ) :: symmetry
-          CLASS(DTYPE(ppm_t_neighlist)_), POINTER, OPTIONAL, INTENT(  OUT) :: Nlist
+          REAL(MK),                       OPTIONAL, INTENT(IN   ) :: skin
+          REAL(MK),                       OPTIONAL, INTENT(IN   ) :: cutoff
+          LOGICAL,                        OPTIONAL, INTENT(IN   ) :: symmetry
+          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, POINTER       :: Nlist
           !!! returns a pointer to the newly created verlet list
 
           CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nl
@@ -573,10 +576,10 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
       SUBROUTINE DTYPE(part_neigh_destroy)(this,Nlist,info)
           !!! Destroy a property from an existing particle set
-          CLASS(DTYPE(ppm_t_particles))                          :: this
-          CLASS(DTYPE(ppm_t_neighlist)_), POINTER, INTENT(INOUT) :: Nlist
+          CLASS(DTYPE(ppm_t_particles))                 :: this
+          CLASS(DTYPE(ppm_t_neighlist)_), POINTER       :: Nlist
 
-          INTEGER,                                 INTENT(  OUT) :: info
+          INTEGER,                        INTENT(  OUT) :: info
 
           start_subroutine("part_neigh_destroy")
 
@@ -1211,38 +1214,37 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       !TODO
       !this implementation is totally wrong
       !as you remove particle ip the particles number will change
+      !also there might be several versions of one particle which
+      !will cause deletion of the wrong particles
       SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
           !!! remove some particles from a Particle set
           !!! WARNING: this implementation is NOT efficient
           !!! if the number of particles to delete is large.
-
-          !-------------------------------------------------------------------------
-          !  Includes
-          !-------------------------------------------------------------------------
-
           !-------------------------------------------------------------------------
           !  Modules
           !-------------------------------------------------------------------------
-
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Includes
+          !-------------------------------------------------------------------------
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))                          :: Pc
+          CLASS(DTYPE(ppm_t_particles))        :: Pc
           !!! Data structure containing the particles
-          INTEGER,DIMENSION(:),POINTER,           INTENT(IN   )  :: list_del_parts
+          INTEGER, DIMENSION(:), POINTER       :: list_del_parts
           !!! list of particles to be deleted
-          INTEGER,                                INTENT(IN   )  :: nb_del
+          INTEGER,               INTENT(IN   ) :: nb_del
           !!! number of particles to be deleted
-          INTEGER,                                INTENT(  OUT)  :: info
+          INTEGER,               INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
 
-          INTEGER                              :: i,ip,Npart,del_part,lda
-
-          CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: prop
+          INTEGER :: i,ip,Npart,del_part,lda
 
           start_subroutine("part_del_parts")
 
@@ -1288,45 +1290,45 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
                    IF (lda.GE.2) THEN
                       SELECT CASE (prop%data_type)
                       CASE (ppm_type_int)
-                           prop%data_2d_i(1:lda,ip) = &
-                           prop%data_2d_i(1:lda,Npart-i+1)
-                      CASE (ppm_type_longint)
-                           prop%data_2d_li(1:lda,ip) = &
-                           prop%data_2d_li(1:lda,Npart-i+1)
-                      CASE (ppm_type_real,ppm_type_real_single)
-                           prop%data_2d_r(1:lda,ip) = &
-                           prop%data_2d_r(1:lda,Npart-i+1)
-                      CASE (ppm_type_comp,ppm_type_comp_single)
-                           prop%data_2d_c(1:lda,ip) = &
-                           prop%data_2d_c(1:lda,Npart-i+1)
-                      CASE (ppm_type_logical )
-                           prop%data_2d_l(1:lda,ip) = &
-                           prop%data_2d_l(1:lda,Npart-i+1)
-                      END SELECT
+                         prop%data_2d_i(1:lda,ip) =prop%data_2d_i(1:lda,Npart-i+1)
 
+                      CASE (ppm_type_longint)
+                         prop%data_2d_li(1:lda,ip)=prop%data_2d_li(1:lda,Npart-i+1)
+
+                      CASE (ppm_type_real,ppm_type_real_single)
+                         prop%data_2d_r(1:lda,ip) =prop%data_2d_r(1:lda,Npart-i+1)
+
+                      CASE (ppm_type_comp,ppm_type_comp_single)
+                         prop%data_2d_c(1:lda,ip) =prop%data_2d_c(1:lda,Npart-i+1)
+
+                      CASE (ppm_type_logical )
+                         prop%data_2d_l(1:lda,ip) =prop%data_2d_l(1:lda,Npart-i+1)
+
+                      END SELECT
                    ELSE
                       SELECT CASE (prop%data_type)
                       CASE (ppm_type_int)
-                         prop%data_1d_i(ip) = &
-                         prop%data_1d_i(Npart-i+1)
+                         prop%data_1d_i(ip) =prop%data_1d_i(Npart-i+1)
+
                       CASE (ppm_type_longint)
-                         prop%data_1d_li(ip) = &
-                         prop%data_1d_li(Npart-i+1)
+                         prop%data_1d_li(ip)=prop%data_1d_li(Npart-i+1)
+
                       CASE (ppm_type_real,ppm_type_real_single)
-                         prop%data_1d_r(ip) = &
-                         prop%data_1d_r(Npart-i+1)
+                         prop%data_1d_r(ip) =prop%data_1d_r(Npart-i+1)
+
                       CASE (ppm_type_comp,ppm_type_comp_single)
-                         prop%data_1d_c(ip) = &
-                         prop%data_1d_c(Npart-i+1)
+                         prop%data_1d_c(ip) =prop%data_1d_c(Npart-i+1)
+
                       CASE (ppm_type_logical )
-                         prop%data_1d_l(ip) = &
-                         prop%data_1d_l(Npart-i+1)
+                         prop%data_1d_l(ip) =prop%data_1d_l(Npart-i+1)
+
                       END SELECT
                    ENDIF
                    prop => Pc%props%next()
                 ENDIF
              ENDDO !WHILE (ASSOCIATED(prop))
           ENDDO !i=1,nb_del
+
           !New number of particles, after deleting some
           Pc%Npart = Npart - del_part
 
@@ -1346,20 +1348,25 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Modules
           !-------------------------------------------------------------------------
           USE ppm_module_map
+          IMPLICIT NONE
+          DEFINE_MK()
 
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))                          :: Pc
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
           !!! Data structure containing the particles
-          INTEGER,                                INTENT(IN   )  :: prop_id
+          INTEGER,        INTENT(IN   ) :: prop_id
           !!! id of the property to be pushed
-          INTEGER,                                INTENT(  OUT)  :: info
+          INTEGER,        INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
-
-          INTEGER                              :: lda
+          !-------------------------------------------------------------------------
+          !  Local variables
+          !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
+
+          INTEGER :: lda
+
           !-------------------------------------------------------------------------
           !  Initialise
           !-------------------------------------------------------------------------
@@ -1369,6 +1376,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Call ppm_map_part_push
           !-----------------------------------------------------------------
           prop => Pc%props%vec(prop_id)%t
+
           lda = prop%lda
 
           IF (lda.GE.2) THEN
@@ -1424,22 +1432,26 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Modules
           !-------------------------------------------------------------------------
           USE ppm_module_map
+          IMPLICIT NONE
+          DEFINE_MK()
 
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))                          :: Pc
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
           !!! Data structure containing the particles
-          INTEGER,                                INTENT(IN   )  :: prop_id
+          INTEGER,       INTENT(IN   )  :: prop_id
           !!! id of the property to be pushed
-          INTEGER,                                INTENT(IN   )  :: Npart_new
+          INTEGER,       INTENT(IN   )  :: Npart_new
           !!! number of particles to pop from the buffer
-          INTEGER,                                INTENT(  OUT)  :: info
+          INTEGER,       INTENT(  OUT)  :: info
           !!! Returns status, 0 upon success.
-
-          INTEGER                                :: lda
+          !-------------------------------------------------------------------------
+          !  Local variables
+          !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
+
+          INTEGER :: lda
 
           start_subroutine("map_part_pop")
 
@@ -1493,31 +1505,31 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
 
       SUBROUTINE DTYPE(part_map)(Pc,info,global,topoid)
-
           !!!  Partial/Global mapping for particles
           !!!  Assumptions:
           !!! * All the particles have to be inside the domain
           !!!   (otherwise -> "unassigned particle error")
 
           USE ppm_module_map
+          IMPLICIT NONE
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
-
-          CLASS(DTYPE(ppm_t_particles))               :: Pc
+          CLASS(DTYPE(ppm_t_particles))    :: Pc
           !!! Data structure containing the particles
-          INTEGER,                      INTENT(  OUT) :: info
+          INTEGER,           INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
-          LOGICAL,            OPTIONAL, INTENT(IN   ) :: global
+          LOGICAL, OPTIONAL, INTENT(IN   ) :: global
           !!! does a global mapping. Default is false (i.e. partial mapping)
-          INTEGER,            OPTIONAL, INTENT(IN   ) :: topoid
+          INTEGER, OPTIONAL, INTENT(IN   ) :: topoid
           !!! topology id
           !-------------------------------------------------------------------------
           !  Local variables
@@ -1673,25 +1685,25 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           USE ppm_module_map
           IMPLICIT NONE
-
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))                          :: Pc
+          CLASS(DTYPE(ppm_t_particles))    :: Pc
 
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)      :: info
+          INTEGER,           INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
-          LOGICAL, OPTIONAL                                   :: global
+          LOGICAL, OPTIONAL, INTENT(IN   ) :: global
           !!! does a global mapping. Default is false (i.e. partial mapping)
-          INTEGER, OPTIONAL                                   :: topoid
+          INTEGER, OPTIONAL, INTENT(IN   ) :: topoid
           !!! topology id
           !-------------------------------------------------------------------------
           !  Local variables
@@ -1724,11 +1736,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
              partial = .TRUE.
           ENDIF
 
-          IF (partial) THEN
-             ltopoid = Pc%active_topoid
-          ELSE
-             ltopoid = topoid
-          ENDIF
+          ltopoid = MERGE(Pc%active_topoid,topoid,partial)
 
           !-----------------------------------------------------------------------
           !  Map the particles onto the topology
@@ -1764,27 +1772,29 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!   (otherwise -> "unassigned particle error")
 
           USE ppm_module_map
+          IMPLICIT NONE
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
 
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                       :: Pc
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles))                :: Pc
+
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)   :: info
+          INTEGER,                       INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_field_), OPTIONAL                       :: Field
+          CLASS(ppm_t_field_), OPTIONAL, INTENT(IN   ) :: Field
           !!! Push only this field. Default is to push all of them.
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_discr_data), POINTER :: prop => NULL()
+          CLASS(ppm_t_discr_data), POINTER :: prop
 
           start_subroutine("part_map_push")
 
@@ -1792,40 +1802,42 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Checks
           !-----------------------------------------------------------------
           IF (.NOT.ASSOCIATED(Pc%xp)) THEN
-              fail("Pc structure had not been defined. Call allocate first")
+             fail("Pc structure had not been defined. Call allocate first")
           ENDIF
           IF (.NOT.Pc%flags(ppm_part_areinside)) THEN
-              fail("some Pc may be outside the domain. Apply BC first")
+             fail("some Pc may be outside the domain. Apply BC first")
           ENDIF
 
-          check_true(<#(ppm_map_type_isactive(ppm_param_map_global) .OR. ppm_map_type_isactive(ppm_param_map_partial))#>,&
-              "Need to call map_positions before map_push")
+          check_true(<#(ppm_map_type_isactive(ppm_param_map_global).OR.ppm_map_type_isactive(ppm_param_map_partial))#>, &
+          & "Need to call map_positions before map_push")
 
           !-----------------------------------------------------------------------
           !  push properties into the send buffer
           !-----------------------------------------------------------------------
           IF (PRESENT(Field)) THEN
-              !Get discretization
-              !Points the iterator (props%iter_id) to the discretization
-              !of Field on the particle set Pc.
-              CALL Pc%get_discr(Field,prop,info)
-              or_fail("could not get discretization for this Field")
+             NULLIFY(prop)
+             !Get discretization
+             !Points the iterator (props%iter_id) to the discretization
+             !of Field on the particle set Pc.
+             CALL Pc%get_discr(Field,prop,info)
+             or_fail("could not get discretization for this Field")
 
-              IF (.NOT.prop%flags(ppm_ppt_map_parts)) THEN
-                  fail("Cannot map a property for which the flag ppm_ppt_map_parts is not true")
-              ENDIF
-              CALL Pc%map_part_push_legacy(Pc%props%iter_id,info)
-                  or_fail("map_part_push")
+             IF (.NOT.prop%flags(ppm_ppt_map_parts)) THEN
+                fail("Cannot map a property for which the flag ppm_ppt_map_parts is not true")
+             ENDIF
+
+             CALL Pc%map_part_push_legacy(Pc%props%iter_id,info)
+             or_fail("map_part_push")
           ELSE
-              !push all properties into the send buffer
-              prop => Pc%props%begin()
-              DO WHILE (ASSOCIATED(prop))
-                  IF (prop%flags(ppm_ppt_map_parts)) THEN
-                      CALL Pc%map_part_push_legacy(Pc%props%iter_id,info)
-                      or_fail("map_part_push")
-                  ENDIF
-                  prop => Pc%props%next()
-              ENDDO
+             !push all properties into the send buffer
+             prop => Pc%props%begin()
+             DO WHILE (ASSOCIATED(prop))
+                IF (prop%flags(ppm_ppt_map_parts)) THEN
+                   CALL Pc%map_part_push_legacy(Pc%props%iter_id,info)
+                   or_fail("map_part_push")
+                ENDIF
+                prop => Pc%props%next()
+             ENDDO
           ENDIF
 
           end_subroutine()
@@ -1839,17 +1851,19 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! * Particles positions need to have been mapped onto the topology
           !!!
           USE ppm_module_map
+          IMPLICIT NONE
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
 
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                       :: Pc
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
+
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)   :: info
+          INTEGER,        INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
@@ -1883,15 +1897,17 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! * Particles positions need to have been mapped onto the topology
           !!!
           USE ppm_module_map
+          IMPLICIT NONE
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
 
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles)) :: Pc
-          DEFINE_MK()
+
           !!! Data structure containing the particles
           INTEGER,        INTENT(  OUT) :: info
           !!! Return status, on success 0.
@@ -1928,24 +1944,25 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
 
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                          :: Pc
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles))                :: Pc
+
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)      :: info
+          INTEGER,                       INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_field_), OPTIONAL                       :: Field
+          CLASS(ppm_t_field_), OPTIONAL, INTENT(IN   ) :: Field
           !!! Pop only this field. Default is to pop all of them
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_discr_data), POINTER :: prop => NULL()
+          CLASS(ppm_t_discr_data), POINTER :: prop
 
           start_subroutine("part_map_pop")
 
@@ -1963,27 +1980,31 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Pop properties out of the buffer
           !-----------------------------------------------------------------------
           IF (PRESENT(Field)) THEN
-              !Get discretization
-              !Points the iterator (props%iter_id) to the discretization
-              !of Field on the particle set Pc.
-              CALL Pc%get_discr(Field,prop,info)
-              or_fail("could not get discretization for this Field")
-              IF (.NOT.prop%flags(ppm_ppt_map_parts)) THEN
-                 fail("Cannot map a property for which the flag ppm_ppt_map_parts is not true")
-              ENDIF
-              CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%NewNpart,info)
-              or_fail("map_part_pop")
-              prop%flags(ppm_ppt_partial) = .TRUE.
+             NULLIFY(prop)
+             !Get discretization
+             !Points the iterator (props%iter_id) to the discretization
+             !of Field on the particle set Pc.
+             CALL Pc%get_discr(Field,prop,info)
+             or_fail("could not get discretization for this Field")
+
+             IF (.NOT.prop%flags(ppm_ppt_map_parts)) THEN
+                fail("Cannot map a property for which the flag ppm_ppt_map_parts is not true")
+             ENDIF
+
+             CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%NewNpart,info)
+             or_fail("map_part_pop")
+
+             prop%flags(ppm_ppt_partial) = .TRUE.
           ELSE
-              prop => Pc%props%last()
-              DO WHILE (ASSOCIATED(prop))
-                  IF (prop%flags(ppm_ppt_map_parts)) THEN
-                      CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%NewNpart,info)
-                      or_fail("map_part_pop_legacy")
-                      prop%flags(ppm_ppt_partial) = .TRUE.
-                  ENDIF
-                  prop => Pc%props%prev()
-              ENDDO
+             prop => Pc%props%last()
+             DO WHILE (ASSOCIATED(prop))
+                IF (prop%flags(ppm_ppt_map_parts)) THEN
+                   CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%NewNpart,info)
+                   or_fail("map_part_pop_legacy")
+                   prop%flags(ppm_ppt_partial) = .TRUE.
+                ENDIF
+                prop => Pc%props%prev()
+             ENDDO
           ENDIF
 
           end_subroutine()
@@ -2005,7 +2026,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           CLASS(DTYPE(ppm_t_particles)) :: Pc
 
           !!! Data structure containing the particles
-          INTEGER,   INTENT(  OUT) :: info
+          INTEGER,        INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Local variables
@@ -2040,25 +2061,25 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !   are no longer up-to-date
           prop => Pc%props%begin()
           DO WHILE (ASSOCIATED(prop))
-              prop%flags(ppm_ppt_ghosts) = .FALSE.
-              prop => Pc%props%next()
+             prop%flags(ppm_ppt_ghosts) = .FALSE.
+             prop => Pc%props%next()
           ENDDO
 
           ! particles have been re-indexed and neighbour lists not updated
           nl => Pc%neighs%begin()
           DO WHILE (ASSOCIATED(nl))
-              nl%uptodate = .FALSE.
-              nl => Pc%neighs%next()
+             nl%uptodate = .FALSE.
+             nl => Pc%neighs%next()
           ENDDO
           Pc%flags(ppm_part_neighlists) = .FALSE.
 
           ! particles have been re-indexed and operators need be recomputed
           IF (ASSOCIATED(Pc%ops)) THEN
-              op => Pc%ops%begin()
-              DO WHILE (ASSOCIATED(op))
-                  op%flags(ppm_ops_iscomputed) = .FALSE.
-                  op => Pc%ops%next()
-              ENDDO
+             op => Pc%ops%begin()
+             DO WHILE (ASSOCIATED(op))
+                op%flags(ppm_ops_iscomputed) = .FALSE.
+                op => Pc%ops%next()
+             ENDDO
           ENDIF
 
           end_subroutine()
@@ -2076,24 +2097,26 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
 
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                 :: Pc
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles))      :: Pc
+
           !!! Data structure containing the particles
-          INTEGER,                        INTENT(  OUT) :: info
+          INTEGER,             INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
-          REAL(MK),             OPTIONAL, INTENT(IN   ) :: ghostsize
+          REAL(MK),  OPTIONAL, INTENT(IN   ) :: ghostsize
           !!! size of the ghost layers. Default is to use the particles cutoff
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
           CLASS(ppm_t_discr_data), POINTER :: prop
+
           TYPE(ppm_t_topo),        POINTER :: topo
 
           REAL(MK)         :: cutoff
@@ -2117,21 +2140,22 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Checks
           !-----------------------------------------------------------------
           !check that particles are allocated
-          check_associated(<#Pc%xp#>,&
-          "Particles structure had not been defined. Call allocate first")
+          check_associated(<#Pc%xp#>, &
+          & "Particles structure had not been defined. Call allocate first")
           !check that particles are mapped onto this topology
-          check_true(<#Pc%flags(ppm_part_partial)#>,&
-          "Do a partial/global mapping before doing a ghost mapping")
+          check_true(<#Pc%flags(ppm_part_partial)#>, &
+          & "Do a partial/global mapping before doing a ghost mapping")
           !check that particles are inside the domain
-          check_true(<#Pc%flags(ppm_part_areinside)#>,&
-          "some particles may be outside the domain. Apply BC first")
+          check_true(<#Pc%flags(ppm_part_areinside)#>, &
+          & "some particles may be outside the domain. Apply BC first")
 
           topoid=Pc%active_topoid
+
           topo => ppm_topo(topoid)%t
 
           cutoff = Pc%ghostlayer
           IF (PRESENT(ghostsize)) THEN
-             IF (ghostsize .LT. cutoff) THEN
+             IF (ghostsize.LT.cutoff) THEN
                 fail("using ghostsize < cutoff+skin. Increase ghostsize.")
              ELSE
                 cutoff = ghostsize
@@ -2208,6 +2232,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
              IF (.NOT.skip_send) THEN
                 CALL ppm_map_part_send(Pc%Npart,Pc%Mpart,info)
                 or_fail("ppm_map_part_send")
+
                 prop => Pc%props%last()
                 DO WHILE (ASSOCIATED(prop))
 
@@ -2216,6 +2241,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
                          IF (prop%flags(ppm_ppt_partial)) THEN
                             CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%Mpart,info)
                             or_fail("map_part_pop")
+
                             prop%flags(ppm_ppt_ghosts) = .TRUE.
                          ENDIF
                       ENDIF
@@ -2261,32 +2287,35 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! * Particles positions need to have been mapped onto the topology
           !!!
           USE ppm_module_map
+          IMPLICIT NONE
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
-
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                       :: Pc
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles))     :: Pc
+
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)   :: info
+          INTEGER,            INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
-          REAL(MK), OPTIONAL                                  :: ghostsize
+          REAL(MK), OPTIONAL, INTENT(IN   ) :: ghostsize
           !!! size of the ghost layers. Default is to use the particles cutoff
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          INTEGER                                   :: topoid
-          !!! index variable
-          REAL(MK)                                  :: cutoff
+          TYPE(ppm_t_topo), POINTER :: topo
+
+          REAL(MK)         :: cutoff
           !!! cutoff radius
-          TYPE(ppm_t_topo),POINTER                  :: topo
-          REAL(KIND(1.D0))                          :: t1,t2
+          REAL(KIND(1.D0)) :: t1,t2
+
+          INTEGER :: topoid
+          !!! index variable
 
           start_subroutine("part_map_ghost_get")
 
@@ -2337,8 +2366,8 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
                       t1 = MPI_WTIME(info)
 #endif
                       CALL ppm_map_part_ghost_get(topoid,Pc%xp,ppm_dim,&
-                          Pc%Npart,Pc%isymm,cutoff,info)
-                          or_fail("ppm_map_part_ghost_get failed")
+                      &    Pc%Npart,Pc%isymm,cutoff,info)
+                      or_fail("ppm_map_part_ghost_get failed")
 #ifdef __MPI
                       t2 = MPI_WTIME(info)
                       Pc%stats%t_ghost_get = Pc%stats%t_ghost_get + (t2-t1)
@@ -2368,35 +2397,39 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! * Particles positions need to have been mapped onto the topology
           !!!
           USE ppm_module_map
+          IMPLICIT NONE
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
-
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                       :: Pc
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles))                :: Pc
+
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)   :: info
+          INTEGER,                       INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_field_), OPTIONAL                       :: Field
+          CLASS(ppm_t_field_), OPTIONAL, INTENT(IN   ) :: Field
           !!! Push only this field. Default is to push all of them.
-          REAL(MK), OPTIONAL                                  :: ghostsize
+          REAL(MK),            OPTIONAL, INTENT(IN   ) :: ghostsize
           !!! size of the ghost layers. Default is to use the particles cutoff
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          INTEGER                                   :: topoid
-          !!! index variable
-          REAL(MK)                                  :: cutoff
+          CLASS(ppm_t_discr_data), POINTER :: prop
+
+          TYPE(ppm_t_topo), POINTER :: topo
+
+          REAL(MK)         :: cutoff
           !!! cutoff radius
-          TYPE(ppm_t_topo),POINTER                  :: topo
-          REAL(KIND(1.D0))                          :: t1,t2
-          CLASS(ppm_t_discr_data), POINTER          :: prop => NULL()
+          REAL(KIND(1.D0)) :: t1,t2
+
+          INTEGER :: topoid
+          !!! index variable
 
           start_subroutine("part_map_ghost_push")
 
@@ -2405,24 +2438,25 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-----------------------------------------------------------------
           !check that particles are allocated
           check_associated(<#Pc%xp#>,&
-              "Particles structure had not been defined. Call allocate first")
+          & "Particles structure had not been defined. Call allocate first")
           !check that particles are mapped onto this topology
           check_true(<#Pc%flags(ppm_part_partial)#>,&
-              "Do a partial/global mapping before doing a ghost mapping")
+          & "Do a partial/global mapping before doing a ghost mapping")
           !check that particles are inside the domain
           check_true(<#Pc%flags(ppm_part_areinside)#>,&
-              "some particles may be outside the domain. Apply BC first")
+          & "some particles may be outside the domain. Apply BC first")
 
           topoid = Pc%active_topoid
-          topo=>ppm_topo(topoid)%t
+
+          topo => ppm_topo(topoid)%t
 
           cutoff = Pc%ghostlayer
           IF (PRESENT(ghostsize)) THEN
-              IF (ghostsize .LT. cutoff) THEN
-                  fail("using ghostsize < cutoff+skin. Increase ghostsize.")
-              ELSE
-                  cutoff = ghostsize
-              ENDIF
+             IF (ghostsize .LT. cutoff) THEN
+                fail("using ghostsize < cutoff+skin. Increase ghostsize.")
+             ELSE
+                cutoff = ghostsize
+             ENDIF
           ENDIF
 
 #if   __KIND == __SINGLE_PRECISION
@@ -2439,64 +2473,64 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           ENDIF
 #endif
           IF (cutoff .GT. 0._MK) THEN
-              check_true(<#ppm_map_type_isactive(ppm_param_map_ghost_get)#>,&
-                      "Need to call ghost_get before ghost_push")
+             check_true(<#ppm_map_type_isactive(ppm_param_map_ghost_get)#>, &
+             & "Need to call ghost_get before ghost_push")
 
-              IF (PRESENT(Field)) THEN
-                  !Get discretization
-                  !Points the iterator (props%iter_id) to the discretization
-                  !of Field on the particle set Pc.
-                  CALL Pc%get_discr(Field,prop,info)
-                  or_fail("could not get discretization for this Field")
+             IF (PRESENT(Field)) THEN
+                NULLIFY(prop)
+                !Get discretization
+                !Points the iterator (props%iter_id) to the discretization
+                !of Field on the particle set Pc.
+                CALL Pc%get_discr(Field,prop,info)
+                or_fail("could not get discretization for this Field")
 
-                  IF (.NOT.prop%flags(ppm_ppt_map_ghosts)) THEN
-                      fail("Cannot map ghosts for a property for which the flag ppm_ppt_map_ghosts is not true")
-                  ENDIF
+                IF (.NOT.prop%flags(ppm_ppt_map_ghosts)) THEN
+                   fail("Cannot map ghosts for a property for which the flag ppm_ppt_map_ghosts is not true")
+                ENDIF
 
-                  Pc%stats%nb_ghost_push = Pc%stats%nb_ghost_push + 1
+                Pc%stats%nb_ghost_push = Pc%stats%nb_ghost_push + 1
 #ifdef __MPI
-                  t1 = MPI_WTIME(info)
+                t1 = MPI_WTIME(info)
 #endif
-                  CALL Pc%map_part_push_legacy(Pc%props%iter_id,info)
-                      or_fail("map_part_push")
+                CALL Pc%map_part_push_legacy(Pc%props%iter_id,info)
+                or_fail("map_part_push")
 #ifdef __MPI
-                  t2 = MPI_WTIME(info)
-                  Pc%stats%t_ghost_push = Pc%stats%t_ghost_push + (t2-t1)
+                t2 = MPI_WTIME(info)
+                Pc%stats%t_ghost_push = Pc%stats%t_ghost_push + (t2-t1)
 #endif
               ELSE
-                  !Update the ghost for the properties if
-                  ! 1) they have been mapped to this topology,
-                  ! 2) the ghosts have not yet been updated, and
-                  ! 3) the user wants them to be updated
-                  prop => Pc%props%begin()
-                  DO WHILE (ASSOCIATED(prop))
-
-                  IF (prop%flags(ppm_ppt_map_ghosts)) THEN
-                  IF (.NOT.prop%flags(ppm_ppt_ghosts)) THEN
-                      IF (prop%flags(ppm_ppt_partial)) THEN
-                          Pc%stats%nb_ghost_push = Pc%stats%nb_ghost_push + 1
+                !Update the ghost for the properties if
+                ! 1) they have been mapped to this topology,
+                ! 2) the ghosts have not yet been updated, and
+                ! 3) the user wants them to be updated
+                prop => Pc%props%begin()
+                DO WHILE (ASSOCIATED(prop))
+                   IF (prop%flags(ppm_ppt_map_ghosts)) THEN
+                      IF (.NOT.prop%flags(ppm_ppt_ghosts)) THEN
+                         IF (prop%flags(ppm_ppt_partial)) THEN
+                            Pc%stats%nb_ghost_push = Pc%stats%nb_ghost_push + 1
 #ifdef __MPI
-                          t1 = MPI_WTIME(info)
+                            t1 = MPI_WTIME(info)
 #endif
-                          CALL Pc%map_part_push_legacy(Pc%props%iter_id,info)
-                              or_fail("map_part_push")
+                            CALL Pc%map_part_push_legacy(Pc%props%iter_id,info)
+                            or_fail("map_part_push")
 #ifdef __MPI
-                          t2 = MPI_WTIME(info)
-                          Pc%stats%t_ghost_push = Pc%stats%t_ghost_push + (t2-t1)
+                            t2 = MPI_WTIME(info)
+                            Pc%stats%t_ghost_push = Pc%stats%t_ghost_push + (t2-t1)
 #endif
-                      ELSE
-                          stdout("pushing property ",<#Pc%props%iter_id#>,<#TRIM(prop%name)#>)
-                          fail("getting ghosts for a property thats not mapped")
-                      ENDIF
-                      ENDIF
-                    ENDIF
-                    prop => Pc%props%next()
-                  ENDDO
-              ENDIF
+                         ELSE
+                            stdout("pushing property ",<#Pc%props%iter_id#>,<#TRIM(prop%name)#>)
+                            fail("getting ghosts for a property thats not mapped")
+                         ENDIF !prop%flags(ppm_ppt_partial)
+                      ENDIF !.NOT.prop%flags(ppm_ppt_ghosts)
+                   ENDIF !prop%flags(ppm_ppt_map_ghosts)
+                   prop => Pc%props%next()
+                ENDDO ! ASSOCIATED(prop)
+             ENDIF !PRESENT(Field)
 
           ELSE ! if cutoff .le. 0
                   !stdout("cutoff = 0, nothing to do")
-          ENDIF
+          ENDIF !cutoff .GT. 0._MK
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_ghost_push)
@@ -2508,17 +2542,19 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! * Particles positions need to have been mapped onto the topology
           !!!
           USE ppm_module_map
+          IMPLICIT NONE
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
 
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                       :: Pc
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
+
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)   :: info
+          INTEGER,        INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
@@ -2534,11 +2570,11 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Checks
           !-----------------------------------------------------------------
           !check that particles are allocated
-          check_associated(<#Pc%xp#>,&
-          "Particles structure had not been defined. Call allocate first")
+          check_associated(<#Pc%xp#>, &
+          & "Particles structure had not been defined. Call allocate first")
           !check that particles are mapped onto this topology
-          check_true(<#Pc%flags(ppm_part_partial)#>,&
-          "Do a partial/global mapping before doing a ghost mapping")
+          check_true(<#Pc%flags(ppm_part_partial)#>, &
+          & "Do a partial/global mapping before doing a ghost mapping")
 
           !-----------------------------------------------------------------
           !  Send the buffer
@@ -2560,35 +2596,41 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! * Particles positions need to have been mapped onto the topology
           !!!
           USE ppm_module_map
+          IMPLICIT NONE
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
 
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                       :: Pc
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles))                :: Pc
+
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)   :: info
+          INTEGER,                       INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_field_), OPTIONAL                       :: Field
+          CLASS(ppm_t_field_), OPTIONAL, INTENT(IN   ) :: Field
           !!! Pop only this field. Default is to pop all of them
-          REAL(MK), OPTIONAL                                  :: ghostsize
+
+          REAL(MK),            OPTIONAL, INTENT(IN   ) :: ghostsize
           !!! size of the ghost layers. Default is to use the particles cutoff
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          INTEGER                                   :: topoid
-          !!! index variable
-          REAL(MK)                                  :: cutoff
+          CLASS(ppm_t_discr_data), POINTER :: prop
+
+          TYPE(ppm_t_topo), POINTER :: topo
+
+          REAL(MK)         :: cutoff
           !!! cutoff radius
-          TYPE(ppm_t_topo),POINTER                  :: topo
-          REAL(KIND(1.D0))                          :: t1,t2
-          CLASS(ppm_t_discr_data), POINTER          :: prop => NULL()
+          REAL(KIND(1.D0)) :: t1,t2
+
+          INTEGER :: topoid
+          !!! index variable
 
           start_subroutine("part_map_ghost_pop")
 
@@ -2596,83 +2638,85 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Checks
           !-----------------------------------------------------------------
           !check that particles are allocated
-          check_associated(<#Pc%xp#>,&
-              "Particles structure had not been defined. Call allocate first")
+          check_associated(<#Pc%xp#>, &
+          & "Particles structure had not been defined. Call allocate first")
           !check that particles are mapped onto this topology
-          check_true(<#Pc%flags(ppm_part_partial)#>,&
-              "Do a partial/global mapping before doing a ghost mapping")
+          check_true(<#Pc%flags(ppm_part_partial)#>, &
+          & "Do a partial/global mapping before doing a ghost mapping")
 
           topoid = Pc%active_topoid
+
           topo=>ppm_topo(topoid)%t
 
           cutoff = Pc%ghostlayer
           IF (PRESENT(ghostsize)) THEN
-              IF (ghostsize .LT. cutoff) THEN
-                  fail("using ghostsize < cutoff+skin. Increase ghostsize.")
-              ELSE
-                  cutoff = ghostsize
-              ENDIF
+             IF (ghostsize .LT. cutoff) THEN
+                fail("using ghostsize < cutoff+skin. Increase ghostsize.")
+             ELSE
+                cutoff = ghostsize
+             ENDIF
           ENDIF
 
 #if   __KIND == __SINGLE_PRECISION
           IF (cutoff .GT. topo%ghostsizes) THEN
-              stdout("cutoff for ghost mapping       = ",<#cutoff#>)
-              stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
-              fail("ghostsize of topology may be smaller than that of particles")
+             stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+             stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
+             fail("ghostsize of topology may be smaller than that of particles")
           ENDIF
 #elif   __KIND == __DOUBLE_PRECISION
           IF (cutoff .GT. topo%ghostsized) THEN
-              stdout("cutoff for ghost mapping       = ",<#cutoff#>)
-              stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
-              fail("ghostsize of topology may be smaller than that of particles")
+             stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+             stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
+             fail("ghostsize of topology may be smaller than that of particles")
           ENDIF
 #endif
           IF (cutoff .GT. 0._MK) THEN
-              IF (.NOT.Pc%flags(ppm_part_ghosts).OR. &
-                  .NOT.ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
-                  fail("Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
-              ENDIF
+             IF (.NOT.Pc%flags(ppm_part_ghosts).OR. &
+                .NOT.ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
+                fail("Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
+             ENDIF
 
-              IF (PRESENT(Field)) THEN
-                  !Get discretization
-                  !Points the iterator (props%iter_id) to the discretization
-                  !of Field on the particle set Pc.
-                  CALL Pc%get_discr(Field,prop,info)
-                  or_fail("could not get discretization for this Field")
-                  IF (.NOT.prop%flags(ppm_ppt_map_ghosts)) THEN
-                      fail("Cannot map ghosts for a property for which the flag ppm_ppt_map_ghosts is not true")
-                  ENDIF
+             IF (PRESENT(Field)) THEN
+                NULLIFY(prop)
+                !Get discretization
+                !Points the iterator (props%iter_id) to the discretization
+                !of Field on the particle set Pc.
+                CALL Pc%get_discr(Field,prop,info)
+                or_fail("could not get discretization for this Field")
 
-                  CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%Mpart,info)
-                  or_fail("map_part_pop")
-                  prop%flags(ppm_ppt_ghosts) = .TRUE.
-              ELSE
-                  prop => Pc%props%last()
-                  DO WHILE (ASSOCIATED(prop))
+                IF (.NOT.prop%flags(ppm_ppt_map_ghosts)) THEN
+                   fail("Cannot map ghosts for a property for which the flag ppm_ppt_map_ghosts is not true")
+                ENDIF
 
-                      IF (prop%flags(ppm_ppt_map_ghosts)) THEN
+                CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%Mpart,info)
+                or_fail("map_part_pop")
+
+                prop%flags(ppm_ppt_ghosts) = .TRUE.
+             ELSE
+                prop => Pc%props%last()
+                DO WHILE (ASSOCIATED(prop))
+                   IF (prop%flags(ppm_ppt_map_ghosts)) THEN
                       IF (.NOT.prop%flags(ppm_ppt_ghosts)) THEN
-                      IF (prop%flags(ppm_ppt_partial)) THEN
-                          CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%Mpart,info)
-                          or_fail("map_part_pop")
+                         IF (prop%flags(ppm_ppt_partial)) THEN
+                            CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%Mpart,info)
+                            or_fail("map_part_pop")
 
-                          prop%flags(ppm_ppt_ghosts) = .TRUE.
-                      ENDIF
-                      ENDIF
-                      ENDIF
-                      prop => Pc%props%prev()
-                  ENDDO
-              ENDIF
-
+                            prop%flags(ppm_ppt_ghosts) = .TRUE.
+                         ENDIF !prop%flags(ppm_ppt_partial)
+                      ENDIF !.NOT.prop%flags(ppm_ppt_ghosts)
+                   ENDIF !prop%flags(ppm_ppt_map_ghosts)
+                   prop => Pc%props%prev()
+                ENDDO !ASSOCIATED(prop)
+             ENDIF !PRESENT(Field)
           ELSE ! if cutoff .le. 0
-              ! Update states
-              prop => Pc%props%begin()
-              DO WHILE (ASSOCIATED(prop))
-                  IF (prop%flags(ppm_ppt_map_ghosts)) THEN
-                      prop%flags(ppm_ppt_ghosts) = .TRUE.
-                  ENDIF
-                  prop => Pc%props%next()
-              ENDDO
+             ! Update states
+             prop => Pc%props%begin()
+             DO WHILE (ASSOCIATED(prop))
+                IF (prop%flags(ppm_ppt_map_ghosts)) THEN
+                   prop%flags(ppm_ppt_ghosts) = .TRUE.
+                ENDIF
+                prop => Pc%props%next()
+             ENDDO
           ENDIF
 
           end_subroutine()
@@ -2682,32 +2726,35 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! Push ghost particles positions from the send buffer.
           !!!
           USE ppm_module_map
+          IMPLICIT NONE
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
-
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                       :: Pc
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles))     :: Pc
+
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)   :: info
+          INTEGER,            INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
-          REAL(MK), OPTIONAL                                  :: ghostsize
+          REAL(MK), OPTIONAL, INTENT(IN   ) :: ghostsize
           !!! size of the ghost layers. Default is to use the particles cutoff
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          INTEGER                                   :: topoid
-          !!! index variable
-          REAL(MK)                                  :: cutoff
+          TYPE(ppm_t_topo), POINTER :: topo
+
+          REAL(MK)         :: cutoff
           !!! cutoff radius
-          TYPE(ppm_t_topo),POINTER                  :: topo
-          REAL(KIND(1.D0))                          :: t1,t2
+          REAL(KIND(1.D0)) :: t1,t2
+
+          INTEGER :: topoid
+          !!! index variable
 
           start_subroutine("part_map_ghost_push_pos")
 
@@ -2715,51 +2762,50 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Checks
           !-----------------------------------------------------------------
           !check that particles are allocated
-          check_associated(<#Pc%xp#>,&
-              "Particles structure had not been defined. Call allocate first")
+          check_associated(<#Pc%xp#>, &
+          & "Particles structure had not been defined. Call allocate first")
           !check that particles are mapped onto this topology
-          check_true(<#Pc%flags(ppm_part_partial)#>,&
-              "Do a partial/global mapping before doing a ghost mapping")
+          check_true(<#Pc%flags(ppm_part_partial)#>, &
+          & "Do a partial/global mapping before doing a ghost mapping")
 
           topoid = Pc%active_topoid
           topo=>ppm_topo(topoid)%t
 
           cutoff = Pc%ghostlayer
           IF (PRESENT(ghostsize)) THEN
-              IF (ghostsize .LT. cutoff) THEN
-                  fail("using ghostsize < cutoff+skin. Increase ghostsize.")
-              ELSE
-                  cutoff = ghostsize
-              ENDIF
+             IF (ghostsize .LT. cutoff) THEN
+                fail("using ghostsize < cutoff+skin. Increase ghostsize.")
+             ELSE
+                cutoff = ghostsize
+             ENDIF
           ENDIF
 
 #if   __KIND == __SINGLE_PRECISION
           IF (cutoff .GT. topo%ghostsizes) THEN
-              stdout("cutoff for ghost mapping       = ",<#cutoff#>)
-              stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
-              fail("ghostsize of topology may be smaller than that of particles")
+             stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+             stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
+             fail("ghostsize of topology may be smaller than that of particles")
           ENDIF
 #elif   __KIND == __DOUBLE_PRECISION
           IF (cutoff .GT. topo%ghostsized) THEN
-              stdout("cutoff for ghost mapping       = ",<#cutoff#>)
-              stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
-              fail("ghostsize of topology may be smaller than that of particles")
+             stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+             stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
+             fail("ghostsize of topology may be smaller than that of particles")
           ENDIF
 #endif
           IF (cutoff .GT. 0._MK) THEN
-              check_true(<#Pc%flags(ppm_part_ghosts)#>,&
-                  "flags(ppm_part_ghosts) need to be set to .true.")
-              check_true(<#ppm_map_type_isactive(ppm_param_map_ghost_get)#>,&
-                  "Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
+             check_true(<#Pc%flags(ppm_part_ghosts)#>,&
+             & "flags(ppm_part_ghosts) need to be set to .true.")
+             check_true(<#ppm_map_type_isactive(ppm_param_map_ghost_get)#>, &
+             & "Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
 
-              CALL ppm_map_part_push(Pc%xp,ppm_dim,Pc%Npart,info,pushpp=.true.)
-                   or_fail("map_part_push")
+             CALL ppm_map_part_push(Pc%xp,ppm_dim,Pc%Npart,info,pushpp=.true.)
+             or_fail("map_part_push")
 
           ELSE ! if cutoff .le. 0
-                  !stdout("cutoff = 0, nothing to do")
-                  !stdout("setting all %has_ghost properties to true")
+             !stdout("cutoff = 0, nothing to do")
+             !stdout("setting all %has_ghost properties to true")
           ENDIF
-
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_ghost_push_pos)
@@ -2771,32 +2817,36 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!  ghost_get, ghost_push, send and ghost_pop call sequence.
           !!!
           USE ppm_module_map
+          IMPLICIT NONE
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
 
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                       :: Pc
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles))      :: Pc
+
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)   :: info
+          INTEGER,           INTENT(  OUT)   :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
-          REAL(MK), OPTIONAL                                  :: ghostsize
+          REAL(MK), OPTIONAL, INTENT(IN   ) :: ghostsize
           !!! size of the ghost layers. Default is to use the particles cutoff
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          INTEGER                                   :: topoid
+          TYPE(ppm_t_topo), POINTER :: topo
+
           !!! index variable
-          REAL(MK)                                  :: cutoff
+          REAL(MK)         :: cutoff
           !!! cutoff radius
-          TYPE(ppm_t_topo),POINTER                  :: topo
-          REAL(KIND(1.D0))                          :: t1,t2
+          REAL(KIND(1.D0)) :: t1,t2
+
+          INTEGER :: topoid
 
           start_subroutine("part_map_ghost_pop_pos")
 
@@ -2804,50 +2854,48 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Checks
           !-----------------------------------------------------------------
           !check that particles are allocated
-          check_associated(<#Pc%xp#>,&
-              "Particles structure had not been defined. Call allocate first")
+          check_associated(<#Pc%xp#>, &
+          & "Particles structure had not been defined. Call allocate first")
           !check that particles are mapped onto this topology
-          check_true(<#Pc%flags(ppm_part_partial)#>,&
-              "Do a partial/global mapping before doing a ghost mapping")
+          check_true(<#Pc%flags(ppm_part_partial)#>, &
+          & "Do a partial/global mapping before doing a ghost mapping")
 
           topoid = Pc%active_topoid
           topo => ppm_topo(topoid)%t
 
           cutoff = Pc%ghostlayer
           IF (PRESENT(ghostsize)) THEN
-              IF (ghostsize .LT. cutoff) THEN
-                  fail("using ghostsize < cutoff+skin. Increase ghostsize.")
-              ELSE
-                  cutoff = ghostsize
-              ENDIF
+             IF (ghostsize .LT. cutoff) THEN
+                fail("using ghostsize < cutoff+skin. Increase ghostsize.")
+             ELSE
+                cutoff = ghostsize
+             ENDIF
           ENDIF
 
 #if   __KIND == __SINGLE_PRECISION
           IF (cutoff .GT. topo%ghostsizes) THEN
-              stdout("cutoff for ghost mapping       = ",<#cutoff#>)
-              stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
-              fail("ghostsize of topology may be smaller than that of particles")
+             stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+             stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
+             fail("ghostsize of topology may be smaller than that of particles")
           ENDIF
 #elif   __KIND == __DOUBLE_PRECISION
           IF (cutoff .GT. topo%ghostsized) THEN
-              stdout("cutoff for ghost mapping       = ",<#cutoff#>)
-              stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
-              fail("ghostsize of topology may be smaller than that of particles")
+             stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+             stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
+             fail("ghostsize of topology may be smaller than that of particles")
           ENDIF
 #endif
           IF (cutoff .GT. 0._MK) THEN
-              check_true(<#Pc%flags(ppm_part_ghosts)#>,&
-                  "flags(ppm_part_ghosts) need to be set to .true.")
-              check_true(<#ppm_map_type_isactive(ppm_param_map_ghost_get)#>,&
-                  "Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
+             check_true(<#Pc%flags(ppm_part_ghosts)#>,&
+             & "flags(ppm_part_ghosts) need to be set to .true.")
+             check_true(<#ppm_map_type_isactive(ppm_param_map_ghost_get)#>,&
+             & "Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
 
-              CALL ppm_map_part_pop(Pc%xp,ppm_dim,Pc%Npart,&
-                  Pc%Mpart,info)
-                  or_fail("map_part_pop")
-
+             CALL ppm_map_part_pop(Pc%xp,ppm_dim,Pc%Npart,Pc%Mpart,info)
+             or_fail("map_part_pop")
           ELSE ! if cutoff .le. 0
-                  !stdout("cutoff = 0, nothing to do")
-                  !stdout("setting all %has_ghost properties to true")
+             !stdout("cutoff = 0, nothing to do")
+             !stdout("setting all %has_ghost properties to true")
           ENDIF
 
           ! Update states
@@ -2861,13 +2909,16 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!  Apply boundary conditions for particles positions
           !!!  Assumptions:
           !!! * Particles positions need to have been mapped onto the topology
+          IMPLICIT NONE
+          DEFINE_MK()
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))               :: Pc
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
           !!! Data structure containing the particles
-          INTEGER,                      INTENT(  OUT) :: info
+
+          INTEGER,        INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Local variables
@@ -2879,11 +2930,11 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           REAL(MK), DIMENSION(:,:), POINTER :: xp
           !!! pointer to positions
-          REAL(MK), DIMENSION(ppm_dim)      :: min_phys,max_phys
+          REAL(MK), DIMENSION(ppm_dim) :: min_phys,max_phys
           !!! computational domain corners
-          REAL(MK), DIMENSION(ppm_dim)      :: len_phys
+          REAL(MK), DIMENSION(ppm_dim) :: len_phys
           !!! length of the computational domain
-          REAL(MK)                          :: almostone
+          REAL(MK)                     :: almostone
 
           INTEGER, DIMENSION(:), POINTER :: list_del_parts => NULL()
           INTEGER                        :: di,ip
@@ -2903,7 +2954,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           topo     => ppm_topo(topoid)%t
           xp       => Pc%xp
           Npart    =Pc%Npart
-          almostone=1._MK - EPSILON(1._MK)
+          almostone=NEAREST(1._MK,-1._MK)
 
           !-----------------------------------------------------------------
           !  Move particles if needed
@@ -2948,6 +2999,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
              ldc(1) = del_part
              CALL ppm_alloc(list_del_parts,ldc,ppm_param_alloc_fit,info)
              or_fail_alloc("list_del_parts")
+
              del_part = 0
              DO di=1,ppm_dim
                 IF (topo%bcdef(di).EQ.ppm_param_bcdef_freespace) THEN
@@ -2959,8 +3011,10 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
                    ENDDO
                 ENDIF
              ENDDO
+
              CALL Pc%del_parts(list_del_parts,del_part,info)
              or_fail("Pc%del_parts: could not delete particles")
+
              CALL ppm_alloc(list_del_parts,ldc,ppm_param_dealloc,info)
              or_fail_dealloc("list_del_parts")
           ENDIF
@@ -3361,10 +3415,11 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! Returns a pointer to the ppm_t_discr_data object that is
           !!! the discretization of that Field on this Particle set.
           !!! Fails with an error if the Field is not discretized here.
-          CLASS(DTYPE(ppm_t_particles))                          :: this
-          CLASS(ppm_t_field_),TARGET,             INTENT(IN   )  :: Field
-          CLASS(ppm_t_discr_data),POINTER,        INTENT(  OUT)  :: prop
-          INTEGER,                                INTENT(  OUT)  :: info
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles))          :: this
+          CLASS(ppm_t_field_),     TARGET        :: Field
+          CLASS(ppm_t_discr_data), POINTER       :: prop
+          INTEGER,                 INTENT(  OUT) :: info
 
           start_subroutine("part_get_discr")
 
@@ -3386,10 +3441,12 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       SUBROUTINE DTYPE(part_prop_zero)(this,Field,info)
           !!! Reset values of a property to zero
           !!! (a bit unrolled)
+          IMPLICIT NONE
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))                          :: this
-          CLASS(ppm_t_field_),TARGET,             INTENT(IN   )  :: Field
-          INTEGER,                                INTENT(  OUT)  :: info
+
+          CLASS(DTYPE(ppm_t_particles))      :: this
+          CLASS(ppm_t_field_), TARGET        :: Field
+          INTEGER,             INTENT(  OUT) :: info
 
           INTEGER                        :: lda
 

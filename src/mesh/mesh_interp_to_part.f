@@ -51,7 +51,7 @@
       !-------------------------------------------------------------------------
       ! Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh),    INTENT(INOUT) :: this
+      CLASS(ppm_t_equi_mesh)                   :: this
       !!! Mesh on which the field is already discretized
       CLASS(ppm_t_particles_d_), INTENT(INOUT) :: Part
       !!! Particle set on which the field should be interpolated

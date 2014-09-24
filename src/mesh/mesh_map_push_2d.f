@@ -184,7 +184,8 @@
       !-------------------------------------------------------------------------
       IF (Ndata.EQ.0) THEN
          IF (ppm_debug.GT.1) THEN
-            fail('There is no data to be sent. Skipping push.',ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
+            fail('There is no data to be sent. Skipping push.', &
+            & ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
             info=0
          ENDIF
          GOTO 9999
@@ -198,8 +199,8 @@
       !-------------------------------------------------------------------------
       !  Allocate memory for the buffer dimension and type
       !-------------------------------------------------------------------------
-      iopt = ppm_param_alloc_grow_preserve
-      ldu(1)  = ppm_buffer_set
+      iopt  =ppm_param_alloc_grow_preserve
+      ldu(1)=ppm_buffer_set
       CALL ppm_alloc(ppm_buffer_dim,ldu,iopt,info)
       or_fail_alloc("ppm_buffer_dim")
 
@@ -331,44 +332,44 @@
                         fdata => p%subpatch_data%vec(p_idx)%t%data_3d_l
 #endif
 #endif
-                            !-----------------------------------------------------
-                            !  Mesh offset for this sub
-                            !-----------------------------------------------------
-                            !mofs(1) = this%istart(1,jsub)-1
-                            !mofs(2) = this%istart(2,jsub)-1
-                            mofs(1) = p%istart(1)-1
-                            mofs(2) = p%istart(2)-1
-                            !----------------------------------------------------
-                            !  Get boundaries of mesh block to be sent on local sub
-                            !  coordinates
-                            !----------------------------------------------------
-                            xlo = ppm_mesh_isendblkstart(1,j)-mofs(1)
-                            ylo = ppm_mesh_isendblkstart(2,j)-mofs(2)
-                            xhi = xlo+ppm_mesh_isendblksize(1,j)-1
-                            yhi = ylo+ppm_mesh_isendblksize(2,j)-1
+                        !-----------------------------------------------------
+                        !  Mesh offset for this sub
+                        !-----------------------------------------------------
+                        !mofs(1) = this%istart(1,jsub)-1
+                        !mofs(2) = this%istart(2,jsub)-1
+                        mofs(1) = p%istart(1)-1
+                        mofs(2) = p%istart(2)-1
+                        !----------------------------------------------------
+                        !  Get boundaries of mesh block to be sent on local sub
+                        !  coordinates
+                        !----------------------------------------------------
+                        xlo = ppm_mesh_isendblkstart(1,j)-mofs(1)
+                        ylo = ppm_mesh_isendblkstart(2,j)-mofs(2)
+                        xhi = xlo+ppm_mesh_isendblksize(1,j)-1
+                        yhi = ylo+ppm_mesh_isendblksize(2,j)-1
 
-                            IF (ppm_debug.GT.2) THEN
-                                stdout("isub = ",isub," jsub = ",jsub)
-                                stdout_f('(A,2I4)',"start: ",'ppm_mesh_isendblkstart(1:2,j)')
-                                stdout_f('(A,2I4)',"size: ",'ppm_mesh_isendblksize(1:2,j)')
-                                stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
-                                stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
-                                stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
-                                stdout_f('(A,I1)',"buffer dim: ",lda)
-                                stdout("p%lo_a",'p%lo_a')
-                                stdout("p%hi_a",'p%hi_a')
-                                stdout("p%istart",'p%istart')
-                                stdout("p%iend",'p%iend')
-                            ENDIF
+                        IF (ppm_debug.GT.2) THEN
+                           stdout("isub = ",isub," jsub = ",jsub)
+                           stdout_f('(A,2I4)',"start: ",'ppm_mesh_isendblkstart(1:2,j)')
+                           stdout_f('(A,2I4)',"size: ",'ppm_mesh_isendblksize(1:2,j)')
+                           stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
+                           stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                           stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                           stdout_f('(A,I1)',"buffer dim: ",lda)
+                           stdout("p%lo_a",'p%lo_a')
+                           stdout("p%hi_a",'p%hi_a')
+                           stdout("p%istart",'p%istart')
+                           stdout("p%iend",'p%iend')
+                        ENDIF
 
-                            check_true(<#(xlo.GE.p%lo_a(1))#>)
-                            check_true(<#(xhi.LE.p%hi_a(1))#>)
-                            check_true(<#(ylo.GE.p%lo_a(2))#>)
-                            check_true(<#(yhi.LE.p%hi_a(2))#>)
-                            check_associated(fdata)
+                        check_true(<#(xlo.GE.p%lo_a(1))#>)
+                        check_true(<#(xhi.LE.p%hi_a(1))#>)
+                        check_true(<#(ylo.GE.p%lo_a(2))#>)
+                        check_true(<#(yhi.LE.p%hi_a(2))#>)
+                        check_associated(fdata)
 
-                            EXIT patches
-                       ENDIF
+                        EXIT patches
+                     ENDIF !ALL(p%istart_p.EQ.patchid)
                   END SELECT
                ENDDO patches
                IF (.NOT. found_patch) THEN
@@ -1541,9 +1542,9 @@
                   ENDDO
                ENDDO
 #endif
-            ENDDO       ! ppm_psendbuffer
-         ENDDO          ! i=1,ppm_nsendlist
-      END SELECT  ! ppm_kind
+            ENDDO ! ppm_psendbuffer
+         ENDDO ! i=1,ppm_nsendlist
+      END SELECT ! ppm_kind
 
       !-------------------------------------------------------------------------
       !  Update the buffer data count

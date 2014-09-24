@@ -33,6 +33,8 @@
       SUBROUTINE ppm_util_qsort_d(inlist,outlist,info)
 #elif __KIND == __INTEGER
       SUBROUTINE ppm_util_qsort_i(inlist,outlist,info)
+#elif __KIND == __LONGINT
+      SUBROUTINE ppm_util_qsort_li(inlist,outlist,info)
 #endif
       !!! From a list of values generates a sort permutation list
       !!!
@@ -76,10 +78,12 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-#if   __KIND == __INTEGER
-      INTEGER,  DIMENSION(:), INTENT(IN   ) :: inlist
-#else
+#if   __KIND == __SINGLE_PRECISION || __KIND == __DOUBLE_PRECISION
       REAL(MK), DIMENSION(:), INTENT(IN   ) :: inlist
+#elif __KIND == __INTEGER
+      INTEGER,  DIMENSION(:), INTENT(IN   ) :: inlist
+#elif __KIND == __LONGINT
+      INTEGER(ppm_kind_int64), DIMENSION(:), INTENT(IN   ) :: inlist
 #endif
       !!! List to be sorted
       INTEGER,  DIMENSION(:), POINTER       :: outlist
@@ -90,13 +94,12 @@
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double) :: t0
-#if __KIND == __SINGLE_PRECISION || __KIND == __DOUBLE_PRECISION
+#if   __KIND == __SINGLE_PRECISION || __KIND == __DOUBLE_PRECISION
       REAL(MK)              :: datap
-#endif
-
-
-#if __KIND == __INTEGER
+#elif __KIND == __INTEGER
       INTEGER                            :: datap
+#elif __KIND == __LONGINT
+      INTEGER(ppm_kind_int64)            :: datap
 #endif
       INTEGER, DIMENSION(1)              :: ldl,ldu
       INTEGER                            :: iopt
@@ -132,9 +135,7 @@
       CALL ppm_alloc(outlist,ldl,ldu,iopt,info)
       or_fail_alloc('indices list OUTLIST',ppm_error=ppm_error_fatal)
 
-      DO i = inlistl,inlistu
-         outlist(i) = i
-      ENDDO
+      FORALL (i=inlistl:inlistu) outlist(i)=i
 
       !-------------------------------------------------------------------------
       ! Compute the log of the list length, it is in fact a bound for the length
@@ -202,15 +203,15 @@
       indexp=outlist(p)
       datap=inlist(indexp)
 
-      IF (inlist(outlist(l)) .GT. datap) THEN
+      IF (inlist(outlist(l)).GT.datap) THEN
          outlist(p)=outlist(l)
          outlist(l)=indexp
          indexp=outlist(p)
          datap=inlist(indexp)
       ENDIF
 
-      IF (datap .GT. inlist(outlist(r))) THEN
-         IF (inlist(outlist(l)) .GT. inlist(outlist(r))) THEN
+      IF (datap.GT.inlist(outlist(r))) THEN
+         IF (inlist(outlist(l)).GT.inlist(outlist(r))) THEN
             outlist(p)=outlist(l)
             outlist(l)=outlist(r)
          ELSE
@@ -310,7 +311,7 @@
       !-------------------------------------------------------------------------
       ! Q9: Straight Insertion sort
       DO i=inlistl+1,inlistu
-         IF (inlist(outlist(i-1)) .GT. inlist(outlist(i))) THEN
+         IF (inlist(outlist(i-1)).GT.inlist(outlist(i))) THEN
             indexp=outlist(i)
             datap=inlist(indexp)
             p=i-1
@@ -348,6 +349,8 @@
       END SUBROUTINE ppm_util_qsort_d
 #elif __KIND == __INTEGER
       END SUBROUTINE ppm_util_qsort_i
+#elif __KIND == __LONGINT
+      END SUBROUTINE ppm_util_qsort_li
 #endif
 
       !-------------------------------------------------------------------------
@@ -363,6 +366,8 @@
       SUBROUTINE ppm_util_qsort2_d(inlist,info)
 #elif __KIND == __INTEGER
       SUBROUTINE ppm_util_qsort2_i(inlist,info)
+#elif __KIND == __LONGINT
+      SUBROUTINE ppm_util_qsort2_li(inlist,info)
 #endif
       !!! From a list of values sorts them into ascending order.
       !!! [NOTE]
@@ -390,10 +395,12 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-#if   __KIND == __INTEGER
-      INTEGER,  DIMENSION(:), INTENT(INOUT) :: inlist
-#else
+#if   __KIND == __SINGLE_PRECISION || __KIND == __DOUBLE_PRECISION
       REAL(MK), DIMENSION(:), INTENT(INOUT) :: inlist
+#elif __KIND == __INTEGER
+      INTEGER,  DIMENSION(:), INTENT(INOUT) :: inlist
+#elif __KIND == __LONGINT
+      INTEGER(ppm_kind_int64), DIMENSION(:), INTENT(INOUT) :: inlist
 #endif
       !!! List to be sorted
       INTEGER,                INTENT(  OUT) :: info
@@ -402,12 +409,13 @@
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double) :: t0
-#if __KIND == __SINGLE_PRECISION || __KIND == __DOUBLE_PRECISION
+#if   __KIND == __SINGLE_PRECISION || __KIND == __DOUBLE_PRECISION
       REAL(MK)              :: datap
-#endif
+#elif __KIND == __INTEGER
 
-#if __KIND == __INTEGER
       INTEGER                            :: datap
+#elif __KIND == __LONGINT
+      INTEGER(ppm_kind_int64)            :: datap
 #endif
       INTEGER, DIMENSION(1)              :: ldl,ldu
       INTEGER                            :: iopt
@@ -501,7 +509,7 @@
       p=(l+r)/2
       datap=inlist(p)
 
-      IF (inlist(l) .GT. datap) THEN
+      IF (inlist(l).GT.datap) THEN
          inlist(p)=inlist(l)
          inlist(l)=datap
          datap=inlist(p)
@@ -630,5 +638,7 @@
       END SUBROUTINE ppm_util_qsort2_d
 #elif __KIND == __INTEGER
       END SUBROUTINE ppm_util_qsort2_i
+#elif __KIND == __LONGINT
+      END SUBROUTINE ppm_util_qsort2_li
 #endif
 

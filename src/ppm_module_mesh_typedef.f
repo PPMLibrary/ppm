@@ -61,6 +61,9 @@ minclude ppm_create_collection(mesh_discr_data,mesh_discr_data,vec=true,generate
           PROCEDURE :: subpatch_get_field_2d_i
           PROCEDURE :: subpatch_get_field_3d_i
           PROCEDURE :: subpatch_get_field_4d_i
+          PROCEDURE :: subpatch_get_field_2d_li
+          PROCEDURE :: subpatch_get_field_3d_li
+          PROCEDURE :: subpatch_get_field_4d_li
           PROCEDURE :: subpatch_get_field_2d_rs
           PROCEDURE :: subpatch_get_field_3d_rs
           PROCEDURE :: subpatch_get_field_4d_rs
@@ -187,6 +190,9 @@ minclude ppm_create_collection_procedures(equi_mesh,equi_mesh_)
 minclude ppm_get_field_template(2,i)
 minclude ppm_get_field_template(3,i)
 minclude ppm_get_field_template(4,i)
+minclude ppm_get_field_template(2,li)
+minclude ppm_get_field_template(3,li)
+minclude ppm_get_field_template(4,li)
 minclude ppm_get_field_template(2,rs)
 minclude ppm_get_field_template(3,rs)
 minclude ppm_get_field_template(4,rs)
@@ -210,37 +216,37 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_subpatch_data)                           :: this
-          CLASS(ppm_t_mesh_discr_data_),TARGET,  INTENT(IN   ) :: discr_data
+          CLASS(ppm_t_subpatch_data)                   :: this
+          CLASS(ppm_t_mesh_discr_data_), TARGET        :: discr_data
           !!! field that is discretized on this mesh patch
-          CLASS(ppm_t_subpatch_),                INTENT(IN   ) :: sp
+          CLASS(ppm_t_subpatch_),        INTENT(IN   ) :: sp
           !!! subpatch to which this subpatch_data belongs
-          INTEGER,                               INTENT(  OUT) :: info
+          INTEGER,                       INTENT(  OUT) :: info
 
-          INTEGER                                              :: ndim, datatype
-          INTEGER, DIMENSION(ppm_dim+1)                        :: hi,lo
+          INTEGER                       :: ndim, datatype
+          INTEGER, DIMENSION(ppm_dim+1) :: hi,lo
 
           start_subroutine("subpatch_data_create")
 
-          datatype =  discr_data%data_type
+          datatype = discr_data%data_type
           this%discr_data => discr_data
 
           ! Determine allocation size of the data array
-          IF (MINVAL(sp%nnodes(1:ppm_dim)) .LE. 0) THEN
-              or_fail("invalid size for patch data. This patch should be deleted")
+          IF (MINVAL(sp%nnodes(1:ppm_dim)).LE.0) THEN
+             or_fail("invalid size for patch data. This patch should be deleted")
           ENDIF
 
 
           ndim = ppm_dim
           IF (discr_data%lda.LT.2) THEN
-              lo(1:ppm_dim) = sp%lo_a(1:ppm_dim)
-              hi(1:ppm_dim) = sp%hi_a(1:ppm_dim)
+             lo(1:ppm_dim) = sp%lo_a(1:ppm_dim)
+             hi(1:ppm_dim) = sp%hi_a(1:ppm_dim)
           ELSE
-              ndim = ndim +1
-              lo(1) = 1
-              hi(1) = discr_data%lda
-              lo(2:ndim) = sp%lo_a(1:ppm_dim)
-              hi(2:ndim) = sp%hi_a(1:ppm_dim)
+             ndim = ndim +1
+             lo(1) = 1
+             hi(1) = discr_data%lda
+             lo(2:ndim) = sp%lo_a(1:ppm_dim)
+             hi(2:ndim) = sp%hi_a(1:ppm_dim)
           ENDIF
 
           SELECT CASE (ndim)
@@ -248,6 +254,8 @@ minclude ppm_get_field_template(4,l)
               SELECT CASE (datatype)
               CASE (ppm_type_int)
                   alloc_pointer_with_bounds2("this%data_2d_i",lo,hi)
+              CASE (ppm_type_longint)
+                  alloc_pointer_with_bounds2("this%data_2d_li",lo,hi)
               CASE (ppm_type_real_single)
                   alloc_pointer_with_bounds2("this%data_2d_rs",lo,hi)
               CASE (ppm_type_real)
@@ -269,6 +277,8 @@ minclude ppm_get_field_template(4,l)
               SELECT CASE (datatype)
               CASE (ppm_type_int)
                   alloc_pointer_with_bounds3("this%data_3d_i",lo,hi)
+              CASE (ppm_type_longint)
+                  alloc_pointer_with_bounds3("this%data_3d_li",lo,hi)
               CASE (ppm_type_real_single)
                   alloc_pointer_with_bounds3("this%data_3d_rs",lo,hi)
               CASE (ppm_type_real)
@@ -292,6 +302,8 @@ minclude ppm_get_field_template(4,l)
               SELECT CASE (datatype)
               CASE (ppm_type_int)
                   alloc_pointer_with_bounds4("this%data_4d_i",lo,hi)
+              CASE (ppm_type_longint)
+                  alloc_pointer_with_bounds4("this%data_4d_li",lo,hi)
               CASE (ppm_type_real_single)
                   alloc_pointer_with_bounds4("this%data_4d_rs",lo,hi)
               CASE (ppm_type_real)
@@ -336,6 +348,10 @@ minclude ppm_get_field_template(4,l)
           CALL ppm_alloc(this%data_2d_i,ldc,iopt,info)
           CALL ppm_alloc(this%data_3d_i,ldc,iopt,info)
           CALL ppm_alloc(this%data_4d_i,ldc,iopt,info)
+
+          CALL ppm_alloc(this%data_2d_li,ldc,iopt,info)
+          CALL ppm_alloc(this%data_3d_li,ldc,iopt,info)
+          CALL ppm_alloc(this%data_4d_li,ldc,iopt,info)
 
           CALL ppm_alloc(this%data_2d_l,ldc,iopt,info)
           CALL ppm_alloc(this%data_3d_l,ldc,iopt,info)
@@ -519,10 +535,10 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_subpatch),  INTENT(IN) :: p
-          INTEGER,                INTENT(IN) :: i
-          INTEGER,                INTENT(IN) :: j
-          REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
+          CLASS(ppm_t_subpatch),      INTENT(IN   ) :: p
+          INTEGER,                    INTENT(IN   ) :: i
+          INTEGER,                    INTENT(IN   ) :: j
+          REAL(ppm_kind_double), DIMENSION(ppm_dim) :: pos
 
           SELECT TYPE(mesh => p%mesh)
           TYPE IS (ppm_t_equi_mesh)
@@ -539,10 +555,10 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_subpatch),  INTENT(IN) :: p
-          INTEGER,                INTENT(IN) :: i
-          INTEGER,                INTENT(IN) :: j
-          INTEGER,                INTENT(IN) :: k
+          CLASS(ppm_t_subpatch),     INTENT(IN   ) :: p
+          INTEGER,                   INTENT(IN   ) :: i
+          INTEGER,                   INTENT(IN   ) :: j
+          INTEGER,                   INTENT(IN   ) :: k
           REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
 
           SELECT TYPE(mesh => p%mesh)
@@ -563,10 +579,10 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_A_subpatch)              :: this
-          INTEGER                              :: vecsize
-          INTEGER,               INTENT(  OUT) :: info
-          INTEGER,OPTIONAL,      INTENT(   IN) :: patchid
+          CLASS(ppm_t_A_subpatch)          :: this
+          INTEGER,           INTENT(   IN) :: vecsize
+          INTEGER,           INTENT(  OUT) :: info
+          INTEGER, OPTIONAL, INTENT(   IN) :: patchid
 
           start_subroutine("subpatch_A_create")
 
@@ -579,11 +595,7 @@ minclude ppm_get_field_template(4,l)
           or_fail_alloc("could not allocate this%subpatch")
 
           this%nsubpatch = 0
-          IF (PRESENT(patchid)) THEN
-             this%patchid = patchid
-          ELSE
-             this%patchid = 0
-          ENDIF
+          this%patchid = MERGE(patchid,0,PRESENT(patchid))
 
           end_subroutine()
       END SUBROUTINE subpatch_A_create
@@ -596,8 +608,8 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_A_subpatch)            :: this
-          INTEGER,               INTENT(OUT) :: info
+          CLASS(ppm_t_A_subpatch) :: this
+          INTEGER,  INTENT(  OUT) :: info
 
           start_subroutine("subpatch_A_destroy")
 
@@ -627,7 +639,7 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh),                        INTENT(INOUT) :: this
+          CLASS(ppm_t_equi_mesh)                                       :: this
           !!! cartesian mesh object
           INTEGER,                                       INTENT(IN   ) :: topoid
           !!! Topology ID for which mesh has been created
@@ -1042,7 +1054,7 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh),                 INTENT(INOUT) :: this
+          CLASS(ppm_t_equi_mesh)                                :: this
           CLASS(ppm_t_field_),                    INTENT(IN   ) :: field
           CLASS(ppm_t_mesh_discr_data_), POINTER, INTENT(  OUT) :: discr_data
           INTEGER,                                INTENT(  OUT) :: info
@@ -1100,9 +1112,9 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
-          CLASS(ppm_t_field_),    INTENT(IN   ) :: Field
-          INTEGER,                INTENT(  OUT) :: info
+          CLASS(ppm_t_equi_mesh)             :: this
+          CLASS(ppm_t_field_), INTENT(IN   ) :: Field
+          INTEGER,             INTENT(  OUT) :: info
 
           INTEGER :: lda
 
@@ -1198,7 +1210,7 @@ minclude ppm_get_field_template(4,l)
           !  Arguments
           !-------------------------------------------------------------------------
 
-          CLASS(ppm_t_equi_mesh),                     INTENT(INOUT) :: this
+          CLASS(ppm_t_equi_mesh)                                    :: this
           REAL(ppm_kind_double), DIMENSION(:),        INTENT(INOUT) :: patch
           !!! Positions of the corners of the patch
           !!! (x1,y1,z1,x2,y2,z2), where 1 is the lower-left-bottom corner
@@ -1549,7 +1561,7 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+          CLASS(ppm_t_equi_mesh)                :: this
           INTEGER,                INTENT(  OUT) :: info
           !!! Returns status, 0 upon success
           INTEGER, OPTIONAL,      INTENT(IN   ) :: patchid
@@ -1588,7 +1600,7 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh),      INTENT(IN   ) :: this
+          CLASS(ppm_t_equi_mesh)                     :: this
           !!! cartesian mesh object
           CLASS(ppm_t_subpatch_data_), POINTER       :: sp
           INTEGER,                     INTENT(  OUT) :: info
@@ -1614,7 +1626,7 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+          CLASS(ppm_t_equi_mesh)                :: this
           INTEGER,                INTENT(  OUT) :: info
           INTEGER, DIMENSION(:),  POINTER       :: fids
 
@@ -1662,10 +1674,10 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
-          CLASS(ppm_t_field_),    INTENT(IN   ) :: field
+          CLASS(ppm_t_equi_mesh)             :: this
+          CLASS(ppm_t_field_), INTENT(IN   ) :: field
           !!! this field is discretized on that mesh
-          INTEGER,                INTENT(OUT) :: info
+          INTEGER,             INTENT(OUT) :: info
 
           INTEGER :: p_idx
 
@@ -1756,11 +1768,11 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
-          CLASS(ppm_t_field_),    INTENT(INOUT) :: field
+          CLASS(ppm_t_equi_mesh)             :: this
+          CLASS(ppm_t_field_), INTENT(INOUT) :: field
           !!! this field is discretized on that mesh
-          INTEGER,                INTENT(  OUT) :: info
-          INTEGER,      OPTIONAL, INTENT(IN   ) :: poptype
+          INTEGER,             INTENT(  OUT) :: info
+          INTEGER,   OPTIONAL, INTENT(IN   ) :: poptype
 
           INTEGER :: p_idx
 
@@ -1913,9 +1925,9 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_mesh_discr_data), INTENT(INOUT) :: this
-          CLASS(ppm_t_field_),TARGET,   INTENT(IN   ) :: field
-          INTEGER,                      INTENT(  OUT) :: info
+          CLASS(ppm_t_mesh_discr_data)               :: this
+          CLASS(ppm_t_field_), TARGET, INTENT(IN   ) :: field
+          INTEGER,                     INTENT(  OUT) :: info
 
           start_subroutine("mesh_discr_data_create")
 
@@ -1936,8 +1948,9 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_mesh_discr_data), INTENT(INOUT) :: this
-          INTEGER,                      INTENT(  OUT) :: info
+          CLASS(ppm_t_mesh_discr_data) :: this
+          INTEGER,       INTENT(  OUT) :: info
+
           start_subroutine("mesh_discr_data_destroy")
 
           this%data_type = 0
@@ -2105,7 +2118,7 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_vc_equi_mesh), INTENT(INOUT) :: this
+          CLASS(ppm_vc_equi_mesh)                :: this
           CLASS(ppm_t_equi_mesh_), TARGET        :: element
           INTEGER,                 INTENT(  OUT) :: info
           INTEGER,OPTIONAL,        INTENT(  OUT) :: id
@@ -2145,7 +2158,7 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_vc_equi_mesh),         INTENT(INOUT) :: this
+          CLASS(ppm_vc_equi_mesh)                        :: this
           INTEGER,                         INTENT(  OUT) :: info
           CLASS(ppm_t_equi_mesh_),OPTIONAL,INTENT(INOUT) :: element
 

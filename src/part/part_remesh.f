@@ -27,7 +27,8 @@
       ! CH-8092 Zurich, Switzerland
       !------------------------------------------------------------------------!
 
-      SUBROUTINE DTYPE(part_remesh)(this,Mesh,kernel,info,p2m_bcdef,cutoff_val,cutoff_field)
+      SUBROUTINE DTYPE(part_remesh)(this,Mesh,kernel, &
+      &          info,p2m_bcdef,cutoff_val,cutoff_field)
       !!! This subroutine remesh the particle set.
       !!! If it has not been done already, it will call this%interp to
       !!!  carry out particle to mesh interpolation.
@@ -59,94 +60,103 @@
       !-------------------------------------------------------------------------!
       ! Arguments
       !-------------------------------------------------------------------------!
-      CLASS(DTYPE(ppm_t_particles))                   :: this
-      CLASS(ppm_t_equi_mesh_)                         :: Mesh
-      INTEGER                     ,     INTENT(IN   ) :: kernel
+      CLASS(DTYPE(ppm_t_particles))                  :: this
+
+      CLASS(ppm_t_equi_mesh_),         INTENT(INOUT) :: Mesh
+
+      INTEGER,                         INTENT(IN   ) :: kernel
       !!! Choice of the kernel used to compute the weights.
-      INTEGER                     ,     INTENT(  OUT) :: info
+      INTEGER,                         INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
-      INTEGER, DIMENSION(:  )     , POINTER, OPTIONAL :: p2m_bcdef
+      INTEGER, DIMENSION(:), OPTIONAL, POINTER       :: p2m_bcdef
      !!! Boundary conditions used for the interpolation routines, they may be
      !!! different than the boundary conditions set in the topology.
      !!! The values in this array can be one of:
      !!!
      !!! - ppm_param_bcdef_symmetry
      !!! - ppm_param_bcdef_antisymmetry
-      REAL(MK), DIMENSION(2),  OPTIONAL, INTENT(IN)   :: cutoff_val
+      REAL(MK), DIMENSION(2), OPTIONAL, INTENT(IN   ) :: cutoff_val
       !!! Lower (element 1) and upper (element 2) bound of particle
       !!! strengths. Only particles with strengths in this band
       !!! will be created.
-      CLASS(ppm_t_field_),    OPTIONAL, INTENT(IN)    :: cutoff_field
+      CLASS(ppm_t_field_),    OPTIONAL, INTENT(IN   ) :: cutoff_field
       !!! Field that the above cutoff values apply on (this is usually the field
       !!! that represents the strength of the particles)
-     !-------------------------------------------------------------------------!
-     ! Local variables
-     !-------------------------------------------------------------------------!
-      REAL(MK) , DIMENSION(:,:)     , POINTER  :: xp => NULL()
-      REAL(MK) , DIMENSION(:)       , POINTER  :: wp_s => NULL()
-      REAL(MK) , DIMENSION(:,:)     , POINTER  :: wp_v => NULL()
-      INTEGER                                  :: kernel_support
-      INTEGER,  DIMENSION(ppm_dim+2)           :: ldu
-      INTEGER                                  :: ip,ndim
-      INTEGER                                  :: nb_part
+      !-------------------------------------------------------------------------!
+      ! Local variables
+      !-------------------------------------------------------------------------!
+      CLASS(ppm_t_subpatch_), POINTER :: p
+
+      CLASS(ppm_t_main_abstr), POINTER :: abstr
+
+      CLASS(ppm_t_field_), POINTER :: field
+
+      CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
+
+      REAL(MK) , DIMENSION(:,:), POINTER :: xp
+      REAL(MK) , DIMENSION(:),   POINTER :: wp_s
+      REAL(MK) , DIMENSION(:,:), POINTER :: wp_v
+
+      INTEGER                        :: kernel_support
+      INTEGER,  DIMENSION(ppm_dim+2) :: ldu
+      INTEGER                        :: ip,ndim
+      INTEGER                        :: nb_part
       ! aliases
-      CLASS(ppm_t_subpatch_),POINTER           :: p
-      CLASS(ppm_t_main_abstr),POINTER          :: abstr
-      CLASS(ppm_t_field_),   POINTER           :: field
-      CLASS(DTYPE(ppm_t_part_prop)_),POINTER   :: prop
 
       start_subroutine("ppm_remesh")
 
-     !-------------------------------------------------------------------------!
-     !  This is a hack! Somehow having trouble with constructors in the
-     !  ppm_module_data_rmsh module
-     !-------------------------------------------------------------------------!
+      !-------------------------------------------------------------------------!
+      !  This is a hack! Somehow having trouble with constructors in the
+      !  ppm_module_data_rmsh module
+      !-------------------------------------------------------------------------!
       ppm_rmsh_kernelsize = (/1,2,2,4/)
 
       ndim = ppm_dim
 
-     !-------------------------------------------------------------------------!
-     !  Check arguments
-     !-------------------------------------------------------------------------!
-      IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+      !-------------------------------------------------------------------------!
+      !  Check arguments
+      !-------------------------------------------------------------------------!
+      IF (ppm_debug.GT.0) THEN
+         CALL check
+         IF (info.NE.0) GOTO 9999
       ENDIF
-      IF (    (PRESENT(cutoff_val) .AND. .NOT.PRESENT(cutoff_field)) &
-          .OR.(PRESENT(cutoff_field) .AND. .NOT.PRESENT(cutoff_val)) ) THEN
+      IF ((PRESENT(cutoff_val).AND..NOT.PRESENT(cutoff_field)) &
+      &  .OR. &
+      &   (PRESENT(cutoff_field).AND..NOT.PRESENT(cutoff_val))) THEN
           fail("Incompatible optional arguments: must provide cutoff_val AND cutoff_field, or neither")
       ENDIF
 
       !-------------------------------------------------------------------------!
       !  If there is nothing to do, do nothing
       !-------------------------------------------------------------------------!
-      IF(this%Npart.EQ.0) GOTO 9999
+      IF (this%Npart.EQ.0) GOTO 9999
 
 
       !-------------------------------------------------------------------------
       !  First, loop through all the fields that are discretized on the
       !  particle set and interpolate them on the mesh
       !-------------------------------------------------------------------------
-      IF (.NOT. ASSOCIATED(this%field_ptr)) THEN
+      IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
          stdout("No fields are currently discretized on this particle set,remeshing the postions only")
       ELSE
-        abstr => this%field_ptr%begin()
-        DO WHILE (ASSOCIATED(abstr))
+         abstr => this%field_ptr%begin()
+         DO WHILE (ASSOCIATED(abstr))
             SELECT TYPE(field => abstr)
             CLASS IS (ppm_t_field_)
-               CALL this%interp_to_mesh(Mesh,field,ppm_param_rmsh_kernel_mp4,info)
+               CALL this%interp_to_mesh(Mesh,field, &
+               &    ppm_param_rmsh_kernel_mp4,info)
                or_fail("interp_to_mesh")
             END SELECT
             abstr => this%field_ptr%next()
-        ENDDO
+         ENDDO
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Now remesh the positions
       !-------------------------------------------------------------------------
+      NULLIFY(xp)
       CALL this%get_xp(xp,info)
       or_fail("Get_xp failed")
-
 
       !-------------------------------------------------------------------------
       !  count number of particles that we will have on this proc after remesh
@@ -196,7 +206,6 @@
       or_fail_alloc("xp")
 
       this%Npart = nb_part
-
 
       !Reallocate property arrays if needed
       prop => this%props%begin()
@@ -273,72 +282,74 @@
       IF (ASSOCIATED(this%field_ptr)) THEN
         abstr => this%field_ptr%begin()
         DO WHILE (ASSOCIATED(abstr))
-          SELECT TYPE(field=>abstr)
-          CLASS IS (ppm_t_field_)
-             IF (field%lda.EQ.1) THEN
-                CALL this%get_field(field,wp_s,info)
-                or_fail("interp_to_mesh")
-             ELSE
-                CALL this%get_field(field,wp_v,info)
-                or_fail("interp_to_mesh")
-             ENDIF
+           SELECT TYPE(field=>abstr)
+           CLASS IS (ppm_t_field_)
+              IF (field%lda.EQ.1) THEN
+                 NULLIFY(wp_s)
+                 CALL this%get_field(field,wp_s,info)
+                 or_fail("interp_to_mesh")
+              ELSE
+                 NULLIFY(wp_v)
+                 CALL this%get_field(field,wp_v,info)
+                 or_fail("interp_to_mesh")
+              ENDIF
 
-             ip = 0
-             IF (field%lda.EQ.1) THEN
-                !Scalar field
-                IF (.NOT. PRESENT(cutoff_val)) THEN
-                   IF (ndim.EQ.2) THEN
-                      foreach n in equi_mesh(Mesh) with sca_fields(V=field) indices(i,j)
+              ip = 0
+              IF (field%lda.EQ.1) THEN
+                 !Scalar field
+                 IF (.NOT. PRESENT(cutoff_val)) THEN
+                    IF (ndim.EQ.2) THEN
+                       foreach n in equi_mesh(Mesh) with sca_fields(V=field) indices(i,j)
                           for real
                               ip = ip + 1
                               wp_s(ip) = V_n
-                      end foreach
-                   ELSE IF (ndim.EQ.3) THEN
-                      foreach n in equi_mesh(Mesh) with sca_fields(V=field) indices(i,j,k)
+                       end foreach
+                    ELSE IF (ndim.EQ.3) THEN
+                       foreach n in equi_mesh(Mesh) with sca_fields(V=field) indices(i,j,k)
                           for real
                               ip = ip + 1
                               wp_s(ip) = V_n
-                      end foreach
-                   ENDIF
-                ELSE
-                   IF (ndim.EQ.2 .and. cutoff_field%lda.eq.1) THEN
-                      foreach n in equi_mesh(Mesh) with sca_fields(V=field,cutoff_field) indices(i,j)
+                       end foreach
+                    ENDIF
+                 ELSE
+                    IF (ndim.EQ.2 .and. cutoff_field%lda.eq.1) THEN
+                       foreach n in equi_mesh(Mesh) with sca_fields(V=field,cutoff_field) indices(i,j)
                           for real
                                 if (cutoff_field_n .ge. cutoff_val(1) .and. &
                                     cutoff_field_n .le. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_s(ip) = V_n
                                 endif
-                          end foreach
-                   ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.eq.1) THEN
-                      foreach n in equi_mesh(Mesh) with sca_fields(V=field,cutoff_field) indices(i,j,k)
+                       end foreach
+                    ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.eq.1) THEN
+                       foreach n in equi_mesh(Mesh) with sca_fields(V=field,cutoff_field) indices(i,j,k)
                           for real
                                 if (cutoff_field_n .ge. cutoff_val(1) .and. &
                                     cutoff_field_n .le. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_s(ip) = V_n
                                 endif
-                          end foreach
-                   ELSE IF (ndim.EQ.2 .and. cutoff_field%lda.gt.1) THEN
-                      foreach n in equi_mesh(Mesh) with sca_fields(V=field) vec_fields(cutoff_field) indices(i,j)
+                       end foreach
+                    ELSE IF (ndim.EQ.2 .and. cutoff_field%lda.gt.1) THEN
+                       foreach n in equi_mesh(Mesh) with sca_fields(V=field) vec_fields(cutoff_field) indices(i,j)
                           for real
                                 if (norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .ge. cutoff_val(1) .and. &
                                     norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .le. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_s(ip) = V_n
                                 endif
-                          end foreach
-                   ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.gt.1) THEN
-                      foreach n in equi_mesh(Mesh) with sca_fields(V=field) vec_fields(cutoff_field) indices(i,j,k)
+                       end foreach
+                    ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.gt.1) THEN
+                       foreach n in equi_mesh(Mesh) with sca_fields(V=field) vec_fields(cutoff_field) indices(i,j,k)
                           for real
                                 if (norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .ge. cutoff_val(1) .and. &
                                     norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .le. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_s(ip) = V_n
                                 endif
-                          end foreach
-                   ENDIF
-                ENDIF
+                       end foreach
+                    ENDIF
+                 ENDIF
              ELSE !Vector field
                 IF (.NOT. PRESENT(cutoff_val)) THEN
                    IF (ndim.EQ.2) THEN
@@ -400,7 +411,7 @@
       ENDIF
 
       !Updating internal state variables
-      CALL this%set_xp(xp,info,read_only=.true.)
+      CALL this%set_xp(xp,info,read_only=.TRUE.)
       or_fail("Set_xp failed")
 
       end_subroutine()
@@ -416,8 +427,8 @@
                 ppm_err_ppm_noinit,exit_point=8888)
         END IF
         kernel_support = ppm_rmsh_kernelsize(kernel)*2
-        IF(.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
-     &               .OR.(kernel_support.EQ.6))) THEN
+        IF (.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
+        &   .OR.(kernel_support.EQ.6))) THEN
             fail("Wrong kernel support",ppm_err_argument,exit_point=8888)
         END IF
         IF (this%Npart .GT. 0) THEN
@@ -425,7 +436,7 @@
             fail("this%Npart is wrong. Corrupted data structure?",exit_point=8888)
            ENDIF
         ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 
       PURE FUNCTION norm(vec)
@@ -436,6 +447,5 @@
 !           norm = SQRT(SUM(ABS(vec)**2))
           norm = NORM2(vec)
       END FUNCTION
-
       END SUBROUTINE DTYPE(part_remesh)
 

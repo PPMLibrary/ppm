@@ -1,4 +1,4 @@
-      SUBROUTINE equi_mesh_map_ghost_init(this,info,ghostsize)
+      SUBROUTINE equi_mesh_map_ghost_init(this,info)
       !!! This routine sets up the lists needed for sending and receiving
       !!! ghost mesh points on a given topology/mesh combination.
       !!! These lists are stored for later use by ppm_map_field_ghost_get and
@@ -38,27 +38,22 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh)                         :: this
-      INTEGER,                         INTENT(  OUT) :: info
+      CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+      INTEGER,                INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
-      INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: ghostsize
-      !!! Size of the ghost layer in numbers of grid points in all space
-      !!! dimensions (1...ppm_dim).
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      INTEGER, DIMENSION(2)          :: ldu
-      INTEGER, DIMENSION(ppm_dim)    :: op
-      INTEGER, DIMENSION(ppm_dim)    :: ghostsize_
-      INTEGER, DIMENSION(ppm_dim,26) :: ond
-      INTEGER                        :: i,j,sendrank,recvrank,isub,jsub,k
-      INTEGER                        :: iopt,iset,ibuffer,pdim,isize,nnd
-      INTEGER                        :: nsendlist,nsend,tag1,lb,ub,nrecv
+      INTEGER, DIMENSION(2)               :: ldu
+      INTEGER, DIMENSION(ppm_dim)         :: op
+      INTEGER, DIMENSION(ppm_dim,26)      :: ond
+      INTEGER                             :: i,j,sendrank,recvrank,isub,jsub,k
+      INTEGER                             :: iopt,iset,ibuffer,pdim,isize,nnd
+      INTEGER                             :: nsendlist,nsend,tag1,lb,ub,nrecv
 #ifdef __MPI
-      INTEGER                        :: sendrequest1,sendrequest2
-      INTEGER                        :: recvrequest1,recvrequest2
+      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: commstat
 #endif
 
       LOGICAL :: lsouth,lnorth,least,lwest,ltop,lbottom
@@ -93,11 +88,6 @@
          ENDIF
       ENDIF
 
-      IF (PRESENT(ghostsize)) THEN
-         ghostsize_=MIN(ghostsize,this%ghostsize)
-      ELSE
-         ghostsize_=this%ghostsize
-      ENDIF
 
       !-------------------------------------------------------------------------
       !  Save the map type for the subsequent calls (used to check push/pop)
@@ -150,7 +140,7 @@
             ! source and destination meshes and topologies are identical
             CALL this%block_intersect(this,isub,jsub,ond(1:pdim,1), &
             &    nsendlist,isendfromsub,isendtosub,isendpatchid,    &
-            &    isendblkstart,isendblksize,ioffset,info,ghostsize=ghostsize_)
+            &    isendblkstart,isendblksize,ioffset,info)
             or_fail("block_intersect failed")
          ENDDO
 
@@ -327,14 +317,14 @@
             ! first with the original (non-shifted) image of itself
             CALL this%block_intersect(this,isub,isub,ond(1:pdim,k), &
             &    nsendlist,isendfromsub,isendtosub,isendpatchid,    &
-            &    isendblkstart,isendblksize,ioffset,info,ghostsize=ghostsize_)
+            &    isendblkstart,isendblksize,ioffset,info)
             or_fail("block_intersect failed")
             ! Then with all the neighbors
             DO j=1,topo%nneighsubs(i)
                jsub = topo%ineighsubs(j,i)
                CALL this%block_intersect(this,isub,jsub,ond(1:pdim,k), &
                &    nsendlist,isendfromsub,isendtosub,isendpatchid,    &
-               &    isendblkstart,isendblksize,ioffset,info,ghostsize=ghostsize_)
+               &    isendblkstart,isendblksize,ioffset,info)
                or_fail("block_intersect failed")
             ENDDO
          ENDDO
@@ -475,61 +465,9 @@
                ! How many blocks am I sending to that guy
                nsend = ub - lb
                tag1 = 100
-               CALL MPI_Isend(nsend,1,MPI_INTEGER,sendrank,tag1,ppm_comm,sendrequest1,info)
-               or_fail_MPI("MPI_Isend")
-
-               CALL MPI_Irecv(nrecv,1,MPI_INTEGER,recvrank,tag1,ppm_comm,recvrequest1,info)
-               or_fail_MPI("MPI_Irecv")
-
-               !--------------------------------------------------------------
-               !  Allocate memory for block data send buffers
-               !--------------------------------------------------------------
-               iopt   = ppm_param_alloc_grow
-               ldu(1) = nsend*(3*pdim+1)
-               CALL ppm_alloc(sendbuf,ldu,iopt,info)
-               or_fail_alloc("sendbuf")
-
-               !--------------------------------------------------------------
-               !  Pack and send all the ghost mesh block data
-               !--------------------------------------------------------------
-               ! Pack all the send data
-               iset = 0
-               DO j=lb,ub-1
-                  iset = iset + 1
-                  sendbuf(iset) = this%ghost_tosub(j)
-                  sendbuf(iset+1:iset+pdim) = this%ghost_patchid(1:pdim,j)
-
-                  iset = iset + pdim
-                  sendbuf(iset+1:iset+pdim) = this%ghost_blkstart(1:pdim,j) &
-                  &                         + mesh_ghost_offset(1:pdim,j)
-
-                  iset = iset + pdim
-                  sendbuf(iset+1:iset+pdim) = this%ghost_blksize(1:pdim,j)
-
-                  iset = iset + pdim
-               ENDDO
-
-               ! Send it to the destination processor and get my stuff
-               tag1 = 200
-               CALL MPI_Isend(sendbuf,iset,MPI_INTEGER,sendrank,tag1,ppm_comm,sendrequest2,info)
-               or_fail_MPI("MPI_Isend")
-
-               CALL MPI_Waitall(2,(/sendrequest1,recvrequest1/),MPI_STATUSES_IGNORE,info)
-               or_fail_MPI("MPI_Waitall")
-
-               !--------------------------------------------------------------
-               !  Allocate memory for block data send and recv buffers
-               !--------------------------------------------------------------
-               iopt   = ppm_param_alloc_grow
-               ldu(1) = nrecv*(3*pdim+1)
-               CALL ppm_alloc(recvbuf,ldu,iopt,info)
-               or_fail_alloc("recvbuf")
-
-               ! Send it to the destination processor and get my stuff
-               tag1 = 200
-               CALL MPI_Irecv(recvbuf,ldu(1),MPI_INTEGER,recvrank,tag1,ppm_comm,recvrequest2,info)
-               or_fail_MPI("MPI_Irecv")
-
+               CALL MPI_SendRecv(nsend,1,MPI_INTEGER,sendrank,tag1,nrecv,1,  &
+               &    MPI_INTEGER,recvrank,tag1,ppm_comm,commstat,info)
+               or_fail_MPI("MPI_SendRecv")
                ! How many blocks will I receive from the guy?
                this%ghost_nrecv            = this%ghost_nrecv      + nrecv
                this%ghost_recvblk(ibuffer) = this%ghost_recvblk(i) + nrecv
@@ -557,13 +495,46 @@
                   or_fail_alloc("this%recvghost_patchid")
                ENDIF
 
+               !--------------------------------------------------------------
+               !  Allocate memory for block data send and recv buffers
+               !--------------------------------------------------------------
+               iopt   = ppm_param_alloc_grow
+               ldu(1) = nsend*(3*pdim+1)
+               CALL ppm_alloc(sendbuf,ldu,iopt,info)
+               or_fail_alloc("sendbuf")
+
+               ldu(1) = nrecv*(3*pdim+1)
+               CALL ppm_alloc(recvbuf,ldu,iopt,info)
+               or_fail_alloc("recvbuf")
+
+               !--------------------------------------------------------------
+               !  Pack and send all the ghost mesh block data
+               !--------------------------------------------------------------
+               ! Pack all the send data
+               iset = 0
+               DO j=lb,ub-1
+                  iset = iset + 1
+                  sendbuf(iset) = this%ghost_tosub(j)
+                  sendbuf(iset+1:iset+pdim) = this%ghost_patchid(1:pdim,j)
+
+                  iset = iset + pdim
+                  sendbuf(iset+1:iset+pdim) = this%ghost_blkstart(1:pdim,j) &
+                  &                         + mesh_ghost_offset(1:pdim,j)
+
+                  iset = iset + pdim
+                  sendbuf(iset+1:iset+pdim) = this%ghost_blksize(1:pdim,j)
+
+                  iset = iset + pdim
+               ENDDO
+               ! Send it to the destination processor and get my stuff
+               tag1 = 200
+               CALL MPI_SendRecv(sendbuf,iset,MPI_INTEGER,sendrank,tag1, &
+               &    recvbuf,nrecv*(3*pdim+1),MPI_INTEGER,   &
+               &    recvrank,tag1,ppm_comm,commstat,info)
+               or_fail_MPI("MPI_SendRecv")
                ! Unpack the received data
                lb = this%ghost_recvblk(i)
                ub = this%ghost_recvblk(ibuffer)
-
-               CALL MPI_Waitall(2,(/sendrequest2,recvrequest2/),MPI_STATUSES_IGNORE,info)
-               or_fail_MPI("MPI_Waitall")
-
                iset = 0
                DO j=lb,ub-1
                   iset = iset + 1

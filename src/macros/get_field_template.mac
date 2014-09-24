@@ -20,6 +20,8 @@ include macro ppm_get_field_template(ndim_arg,el_type)
 %   kind = "ppm_kind_single"
 % elsif el_type.to_s == "cd"
 %   kind = "ppm_kind_double"
+% elsif el_type.to_s == "li"
+%   kind = "ppm_kind_int64"
 % end
 
 % if ndim == 2
@@ -29,6 +31,8 @@ include macro ppm_get_field_template(ndim_arg,el_type)
           COMPLEX(<%= kind %>), DIMENSION(:,:    ), POINTER       :: wp
 % elsif el_type.to_s == "i"
           INTEGER,                  DIMENSION(:,:    ), POINTER       :: wp
+% elsif el_type.to_s == "li"
+          INTEGER(<%= kind %>), DIMENSION(:,:    ), POINTER       :: wp
 % elsif el_type.to_s == "l"
           LOGICAL,                  DIMENSION(:,:    ), POINTER       :: wp
 % end
@@ -39,6 +43,8 @@ include macro ppm_get_field_template(ndim_arg,el_type)
           COMPLEX(<%= kind %>), DIMENSION(:,:,:  ), POINTER       :: wp
 % elsif el_type.to_s == "i"
           INTEGER,                  DIMENSION(:,:,:  ), POINTER       :: wp
+% elsif el_type.to_s == "li"
+          INTEGER(<%= kind %>), DIMENSION(:,:,:  ), POINTER       :: wp
 % elsif el_type.to_s == "l"
           LOGICAL,                  DIMENSION(:,:,:  ), POINTER       :: wp
 % end
@@ -49,6 +55,8 @@ include macro ppm_get_field_template(ndim_arg,el_type)
           COMPLEX(<%= kind %>), DIMENSION(:,:,:,:), POINTER       :: wp
 % elsif el_type.to_s == "i"
           INTEGER,                  DIMENSION(:,:,:,:), POINTER       :: wp
+% elsif el_type.to_s == "li"
+          INTEGER(<%= kind %>), DIMENSION(:,:,:,:), POINTER       :: wp
 % elsif el_type.to_s == "l"
           LOGICAL,                  DIMENSION(:,:,:,:), POINTER       :: wp
 % end
@@ -93,6 +101,9 @@ include macro ppm_get_field_interface_template(ndim_arg,el_type)
 % elsif el_type.to_s == "cd"
 %   kind = "ppm_kind_double"
       IMPORT <%= kind %>
+% elsif el_type.to_s == "li"
+%   kind = "ppm_kind_int64"
+      IMPORT <%= kind %>
 % end
           IMPLICIT NONE
           !-------------------------------------------------------------------------
@@ -107,6 +118,8 @@ include macro ppm_get_field_interface_template(ndim_arg,el_type)
           COMPLEX(<%= kind %>), DIMENSION(:,:    ), POINTER    :: wp
 % elsif el_type.to_s == "i"
           INTEGER,           DIMENSION(:,:    ), POINTER       :: wp
+% elsif el_type.to_s == "li"
+          INTEGER(<%= kind %>), DIMENSION(:,:    ), POINTER       :: wp
 % elsif el_type.to_s == "l"
           LOGICAL,           DIMENSION(:,:    ), POINTER       :: wp
 % end
@@ -117,6 +130,8 @@ include macro ppm_get_field_interface_template(ndim_arg,el_type)
           COMPLEX(<%= kind %>), DIMENSION(:,:,:  ), POINTER    :: wp
 % elsif el_type.to_s == "i"
           INTEGER,           DIMENSION(:,:,:  ), POINTER       :: wp
+% elsif el_type.to_s == "li"
+          INTEGER(<%= kind %>), DIMENSION(:,:,:  ), POINTER       :: wp
 % elsif el_type.to_s == "l"
           LOGICAL,           DIMENSION(:,:,:  ), POINTER       :: wp
 % end
@@ -127,6 +142,8 @@ include macro ppm_get_field_interface_template(ndim_arg,el_type)
           COMPLEX(<%= kind %>), DIMENSION(:,:,:,:), POINTER   :: wp
 % elsif el_type.to_s == "i"
           INTEGER,           DIMENSION(:,:,:,:), POINTER      :: wp
+% elsif el_type.to_s == "li"
+          INTEGER(<%= kind %>), DIMENSION(:,:,:,:), POINTER      :: wp
 % elsif el_type.to_s == "l"
           LOGICAL,           DIMENSION(:,:,:,:), POINTER      :: wp
 % end

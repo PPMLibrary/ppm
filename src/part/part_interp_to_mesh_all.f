@@ -27,7 +27,8 @@
       ! CH-8092 Zurich, Switzerland
       !------------------------------------------------------------------------!
 
-      SUBROUTINE DTYPE(part_interp_to_mesh_all)(this,Mesh,kernel,info,p2m_bcdef)
+      SUBROUTINE DTYPE(part_interp_to_mesh_all)(this, &
+      &          Mesh,kernel,info,p2m_bcdef)
       !!! This subroutine interpolate all the fields discretized on the particle set to
       !!! a mesh.  It calls this%interp to carry out particle to mesh interpolation.
       !!!
@@ -54,13 +55,13 @@
       !-------------------------------------------------------------------------!
       ! Arguments
       !-------------------------------------------------------------------------!
-      CLASS(DTYPE(ppm_t_particles))                   :: this
-      CLASS(ppm_t_equi_mesh_)                         :: Mesh
-      INTEGER                     ,     INTENT(IN   ) :: kernel
+      CLASS(DTYPE(ppm_t_particles))                  :: this
+      CLASS(ppm_t_equi_mesh_),         INTENT(INOUT) :: Mesh
+      INTEGER,                         INTENT(IN   ) :: kernel
       !!! Choice of the kernel used to compute the weights.
-      INTEGER                     ,     INTENT(  OUT) :: info
+      INTEGER,                         INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
-      INTEGER, DIMENSION(:  )     , POINTER, OPTIONAL :: p2m_bcdef
+      INTEGER, DIMENSION(:), OPTIONAL, POINTER       :: p2m_bcdef
      !!! Boundary conditions used for the interpolation routines, they may be
      !!! different than the boundary conditions set in the topology.
      !!! The values in this array can be one of:
@@ -118,7 +119,7 @@
             SELECT TYPE(field => abstr)
             CLASS IS (ppm_t_field_)
             CALL this%interp_to_mesh(Mesh,field,ppm_param_rmsh_kernel_mp4,info)
-                or_fail("interp_to_mesh")
+            or_fail("interp_to_mesh")
             END SELECT
             abstr => this%field_ptr%next()
         ENDDO

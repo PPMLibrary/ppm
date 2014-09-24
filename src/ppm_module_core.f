@@ -59,7 +59,8 @@
          &   ppm_t_neighlist_s,ppm_t_neighlist_d,particles_stats_s,particles_stats_d, &
          &   ppm_t_part_prop_s,ppm_t_part_prop_d
          USE ppm_module_field_typedef, ONLY : ppm_t_discr_info,ppm_t_field
-         USE ppm_module_operator_typedef, ONLY : ppm_t_operator
+         USE ppm_module_operator_typedef, ONLY : ppm_t_operator, &
+         &   ppm_c_operator,ppm_t_dcop_s,ppm_t_dcop_d
          USE ppm_module_interfaces, ONLY : ppm_t_main_abstr,ppm_t_discr_kind, &
          &   ppm_t_discr_data,ppm_t_operator_,ppm_t_operator_discr_,ppm_t_operator_discr, &
          &   ppm_t_discr_info_,ppm_t_field_,ppm_t_subpatch_,ppm_t_mesh_maplist, &
@@ -88,5 +89,6 @@
          &    reset, add_cmd, ctrl_file_name, break_help,             &
          &    find_arg, find_flag, arg_count,                         &
          &    enabling_flag, disabling_flag, exit_gracefully
+         USE ppm_module_options, ONLY : ppm_t_options_op
 
       END MODULE ppm_module_core

@@ -544,16 +544,13 @@
              !------------------------------------------------------------------
              DO j=1,nsendlist
                  IF (topo%sub2proc(isendtosub(j)) .EQ. sendrank) THEN
-                     mesh%ghost_blk(ibuffer) =    &
-     &                   mesh%ghost_blk(ibuffer)+1
+                     mesh%ghost_blk(ibuffer) = mesh%ghost_blk(ibuffer)+1
                      iset = mesh%ghost_blk(ibuffer) - 1
                      ! store this for the topology as it can be reused
                      mesh%ghost_fromsub(iset)=isendfromsub(j)
                      mesh%ghost_tosub(iset)  =isendtosub(j)
-                     mesh%ghost_blkstart(1:pdim,iset) = &
-     &                   isendblkstart(1:pdim,j)
-                     mesh%ghost_blksize(1:pdim,iset)  = &
-     &                   isendblksize(1:pdim,j)
+                     mesh%ghost_blkstart(1:pdim,iset)=isendblkstart(1:pdim,j)
+                     mesh%ghost_blksize(1:pdim,iset) =isendblksize(1:pdim,j)
                      ! also re-order the offsets as we need them for
                      ! computing the receive lists further down !!
                      mesh_ghost_offset(1:pdim,iset) = ioffset(1:pdim,j)
