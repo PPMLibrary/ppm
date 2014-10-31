@@ -40,6 +40,7 @@
          USE ppm_module_error
          USE ppm_module_map
          USE ppm_module_core_util
+         USE ppm_module_alloc
          USE ppm_module_loadbal, ONLY : ppm_loadbal_inquire,          &
          &   ppm_estimate_procspeed,ppm_get_cost,ppm_set_decomp_cost, &
          &   ppm_set_proc_speed
@@ -48,12 +49,12 @@
          &   ppm_io_inquire,ppm_io_read_ascii,ppm_io_read_binary,ppm_io_write_ascii, &
          &   ppm_io_write_binary,ppm_io_delete,ppm_io_set_unit,ppm_io_unused_unit
          USE ppm_module_neighlist, ONLY : ppm_clist_destroy,ppm_neighlist_MkNeighIdx, &
-         &   ppm_neighlist_clist,ppm_neighlist_vlist
+         &   ppm_neighlist_clist,ppm_neighlist_vlist,ppm_t_clist
          USE ppm_module_tree, ONLY : ppm_tree
          USE ppm_module_mesh
          USE ppm_module_io_vtk, ONLY : ppm_vtk_particles,ppm_vtk_mesh_2d, &
          &   ppm_vtk_mesh_3d
-         USE ppm_module_topo_typedef, ONLY : ppm_t_topo,ppm_topo,ppm_t_clist
+         USE ppm_module_topo_typedef, ONLY : ppm_t_topo,ppm_topo !,ppm_t_clist
          USE ppm_module_mesh_typedef, ONLY : ppm_t_subpatch,ppm_t_equi_mesh
          USE ppm_module_particles_typedef, ONLY : ppm_t_particles_s,ppm_t_particles_d, &
          &   ppm_t_neighlist_s,ppm_t_neighlist_d,particles_stats_s,particles_stats_d, &

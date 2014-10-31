@@ -227,7 +227,8 @@
 
       ! if there is still some data left in the buffer, warn the user
       IF (ppm_buffer_set.GT.0) THEN
-         fail('Buffer was not empty. Possible loss of data!',ppm_err_map_incomp,exit_point=no,ppm_error=ppm_error_warning)
+         fail('Buffer was not empty. Possible loss of data!', &
+         & ppm_err_map_incomp,exit_point=no,ppm_error=ppm_error_warning)
       ENDIF
 
       !----------------------------------------------------------------------

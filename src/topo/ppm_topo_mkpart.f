@@ -152,11 +152,11 @@
       !!! and are only available if ppm was compiled with METIS support.
 
 
-      REAL(MK), DIMENSION(:),             INTENT(IN   ) :: min_phys
+      REAL(MK), DIMENSION(:),             POINTER       :: min_phys
       !!! Minimum of physical extend of the computational domain
       !!!
       !!! first index is ppm_dim
-      REAL(MK), DIMENSION(:),             INTENT(IN   ) :: max_phys
+      REAL(MK), DIMENSION(:),             POINTER       :: max_phys
       !!! Maximum of physical extend of the computational domain
       !!!
       !!! first index is ppm_dim

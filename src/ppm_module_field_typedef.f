@@ -71,16 +71,21 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
       !CREATE
       SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
           !!! Constructor for fields
-          CLASS(ppm_t_field)                      :: this
-          INTEGER,                     INTENT(IN) :: lda
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_field)                             :: this
+
+          INTEGER,                         INTENT(IN   ) :: lda
           !!! number of components
-          INTEGER,                    INTENT(OUT) :: info
+          INTEGER,                         INTENT(  OUT) :: info
           !!!
-          INTEGER,OPTIONAL,            INTENT(IN) :: dtype
+          INTEGER,               OPTIONAL, INTENT(IN   ) :: dtype
           !!! data type (ppm_type_int, ppm_type_real, ppm_type_comp, ppm_type_logical)
-          CHARACTER(LEN=*),OPTIONAL,   INTENT(IN) :: name
+          CHARACTER(LEN=*),      OPTIONAL, INTENT(IN   ) :: name
           !!!
-          REAL(ppm_kind_double),EXTERNAL,POINTER,OPTIONAL,INTENT(IN) :: init_func
+          REAL(ppm_kind_double), OPTIONAL, POINTER, EXTERNAL :: init_func
           !!! support for initialisation function not finished (need to think
           !!! about data types...)
 
@@ -91,7 +96,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           this%ID = ppm_nb_fields
 
           check_true(<#lda.GT.0#>,&
-          "Trying to create field with zero components. LDA must be > 0")
+          & "Trying to create field with zero components. LDA must be > 0")
 
           this%lda = lda
           IF (PRESENT(name)) THEN
@@ -106,7 +111,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
              this%data_type = ppm_type_real
           ENDIF
           check_false(<#ASSOCIATED(this%discr_info)#>,&
-          "Seems like this field was already allocated - Call destroy() first?")
+          & "Seems like this field was already allocated - Call destroy() first?")
 
           ALLOCATE(ppm_c_discr_info::this%discr_info,STAT=info)
           or_fail_alloc("this%discr_info")
@@ -116,8 +121,13 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
       !DESTROY
       SUBROUTINE field_destroy(this,info)
           !!! Destructor for subdomain data data structure
-          CLASS(ppm_t_field)               :: this
-          INTEGER,           INTENT(  OUT) :: info
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_field)     :: this
+
+          INTEGER, INTENT(  OUT) :: info
 
           CLASS(ppm_t_discr_info_), POINTER :: tdi
 
@@ -131,30 +141,32 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !Destroy the bookkeeping entries in the fields that are
           !discretized on this mesh or particle
           !TODO !! yaser I think this is all
-          tdi => this%discr_info%begin()
-          DO WHILE (ASSOCIATED(tdi))
-             SELECT TYPE (dp => tdi%discr_ptr)
-             CLASS IS (ppm_t_equi_mesh_)
-                IF (this%is_discretized_on(dp)) THEN
-                   CALL dp%field_ptr%remove(info,this)
-                   or_fail("Failed to destroy the bookkeeping field entries in Mesh")
-                ENDIF
+          IF (ASSOCIATED(this%discr_info)) THEN
+             tdi => this%discr_info%begin()
+             DO WHILE (ASSOCIATED(tdi))
+                SELECT TYPE (dp => tdi%discr_ptr)
+                CLASS IS (ppm_t_equi_mesh_)
+                   IF (this%is_discretized_on(dp)) THEN
+                      CALL dp%field_ptr%remove(info,this)
+                      or_fail("Failed to destroy the bookkeeping field entries in Mesh")
+                   ENDIF
 
-             CLASS IS (ppm_t_particles_d_)
-                IF (this%is_discretized_on(dp)) THEN
-                   CALL dp%field_ptr%remove(info,this)
-                   or_fail("Failed to destroy the bookkeeping field entries in Particle")
-                ENDIF
+                CLASS IS (ppm_t_particles_d_)
+                   IF (this%is_discretized_on(dp)) THEN
+                      CALL dp%field_ptr%remove(info,this)
+                      or_fail("Failed to destroy the bookkeeping field entries in Particle")
+                   ENDIF
 
-             CLASS IS (ppm_t_particles_s_)
-                IF (this%is_discretized_on(dp)) THEN
-                   CALL dp%field_ptr%remove(info,this)
-                   or_fail("Failed to destroy the bookkeeping field entries in Particle")
-                ENDIF
+                CLASS IS (ppm_t_particles_s_)
+                   IF (this%is_discretized_on(dp)) THEN
+                      CALL dp%field_ptr%remove(info,this)
+                      or_fail("Failed to destroy the bookkeeping field entries in Particle")
+                   ENDIF
 
-             END SELECT
-             tdi => this%discr_info%next()
-          ENDDO
+                END SELECT
+                tdi => this%discr_info%next()
+             ENDDO
+          ENDIF
 
           destroy_collection_ptr(this%discr_info)
 
@@ -163,30 +175,39 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
       !CREATE
       !CREATE
       SUBROUTINE discr_info_create(this,discr,discr_data,lda,flags,info,p_idx)
-          CLASS(ppm_t_discr_info)                         :: this
-          CLASS(ppm_t_discr_kind), TARGET,  INTENT(IN   ) :: discr
-          CLASS(ppm_t_discr_data), TARGET,  INTENT(IN   ) :: discr_data
-          INTEGER,                          INTENT(IN   ) :: lda
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_discr_info)                                        :: this
+          CLASS(ppm_t_discr_kind),                         TARGET        :: discr
+          CLASS(ppm_t_discr_data),                         TARGET        :: discr_data
+          INTEGER,                                         INTENT(IN   ) :: lda
           !!! number of components
-          LOGICAL, DIMENSION(ppm_param_length_mdataflags) :: flags
-          INTEGER,                          INTENT(  OUT) :: info
-          INTEGER,OPTIONAL,                 INTENT(IN   ) :: p_idx
+          LOGICAL, DIMENSION(ppm_param_length_mdataflags), INTENT(IN   ) :: flags
+          INTEGER,                                         INTENT(  OUT) :: info
+          INTEGER, OPTIONAL,                               INTENT(IN   ) :: p_idx
 
           start_subroutine("discr_info_create")
 
-          this%discrID = discr%ID
+          this%discrID    = discr%ID
           this%discr_ptr  => discr
           this%discr_data => discr_data
-          this%lda    = lda
-          this%flags  = flags
-          IF (PRESENT(p_idx))  this%p_idx  = p_idx
+          this%lda        = lda
+          this%flags      = flags
+          IF (PRESENT(p_idx)) this%p_idx = p_idx
 
           end_subroutine()
       END SUBROUTINE discr_info_create
       !DESTROY
       SUBROUTINE discr_info_destroy(this,info)
-          CLASS(ppm_t_discr_info)               :: this
-          INTEGER,                INTENT(  OUT) :: info
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_discr_info) :: this
+
+          INTEGER,  INTENT(  OUT) :: info
 
           CLASS(ppm_t_subpatch_data_), POINTER :: subpdat
 
@@ -275,6 +296,10 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! patches. If no patches have been defined, it is assumed
           !!! that the user expects the field to be allocated on the whole domain.
           !!! A single patch is then defined, covering all the subdomains.
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_field),                 TARGET        :: this
           CLASS(ppm_t_discr_kind),            TARGET        :: discr
           !!! mesh or Particle set onto which this field is to be discretized
@@ -310,10 +335,10 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
           !Check whether this field has already been initialized
           check_true(<#this%ID.GT.0.AND.this%lda.GT.0#>,&
-          "Field needs to be initialized before calling discretized. Call ThisField%create() first")
+          & "Field needs to be initialized before calling discretized. Call ThisField%create() first")
 
           check_false(<#this%is_discretized_on(discr)#>,&
-          "Method to re-discretize a field on an existing discretization (overwriting, reallocation of data) is not yet implemented. TODO!")
+          & "Method to re-discretize a field on an existing discretization (overwriting, reallocation of data) is not yet implemented. TODO!")
 
           SELECT TYPE(discr)
           CLASS IS (ppm_t_equi_mesh_)
@@ -380,10 +405,14 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
       SUBROUTINE field_set_rel_discr(this,discr,discr_data,info,p_idx)
           !!! Create bookkeeping data structure to log the relationship between
           !!! the field and a particle set
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_field)                             :: this
-          CLASS(ppm_t_discr_kind)                        :: discr
+          CLASS(ppm_t_discr_kind),         TARGET        :: discr
           !!! mesh, or particle set, that this field is discretized on
-          CLASS(ppm_t_discr_data)                        :: discr_data
+          CLASS(ppm_t_discr_data),         TARGET        :: discr_data
           !!! data (or mesh or on particle set) for this discretization
 
           INTEGER,                         INTENT(  OUT) :: info
@@ -421,10 +450,14 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! Push field data into the buffers of a mesh for ghost mappings
           !!! The field must of course be stored on this mesh
           !!! (for now) we assume that mesh%map_ghost_get() has already been called
-          CLASS(ppm_t_field)                  :: this
-          CLASS(ppm_t_equi_mesh_)             :: mesh
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_field)                     :: this
+          CLASS(ppm_t_equi_mesh_), TARGET        :: mesh
           !!! mesh that this field is discretized on
-          INTEGER,                INTENT(OUT) :: info
+          INTEGER,                 INTENT(  OUT) :: info
 
           start_subroutine("field_map_ghost_push")
 
@@ -437,11 +470,15 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
       SUBROUTINE field_map_ghost_pop(this,mesh,info,poptype)
           !!! Pop field data from the buffers of a mesh for ghost mappings
           !!! The field must of course be stored on this mesh
-          CLASS(ppm_t_field)                    :: this
-          CLASS(ppm_t_equi_mesh_)               :: mesh
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_field)                     :: this
+          CLASS(ppm_t_equi_mesh_), TARGET        :: mesh
           !!! mesh that this field is discretized on
-          INTEGER,                INTENT(  OUT) :: info
-          INTEGER,      OPTIONAL, INTENT(IN   ) :: poptype
+          INTEGER,                 INTENT(  OUT) :: info
+          INTEGER,      OPTIONAL,  INTENT(IN   ) :: poptype
 
           start_subroutine("field_map_ghost_pop")
 
@@ -460,10 +497,14 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! Push field data into the buffers of a mesh for global mappings
           !!! The field must of course be stored on this mesh
           !!! (for now) we assume that mesh%map() has already been called
-          CLASS(ppm_t_field)                  :: this
-          CLASS(ppm_t_equi_mesh_)             :: mesh
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_field)                     :: this
+          CLASS(ppm_t_equi_mesh_), TARGET        :: mesh
           !!! mesh that this field is discretized on
-          INTEGER,                INTENT(OUT) :: info
+          INTEGER,                 INTENT(  OUT) :: info
 
           start_subroutine("field_map_push")
 
@@ -476,13 +517,16 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
       SUBROUTINE field_map_pop(this,mesh,info)
           !!! Pop field data from the buffers of a mesh for global mappings
           !!! The field must of course be stored on this mesh
-          CLASS(ppm_t_field)                  :: this
-          CLASS(ppm_t_equi_mesh_)             :: mesh
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_field)                     :: this
+          CLASS(ppm_t_equi_mesh_), TARGET        :: mesh
           !!! mesh that this field is discretized on
-          INTEGER,                INTENT(OUT) :: info
+          INTEGER,                 INTENT(  OUT) :: info
 
           start_subroutine("field_map_pop")
-
 
           CALL mesh%map_pop(this,info)
           or_fail("mesh%map_pop")
@@ -495,10 +539,14 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! on which the field is discretized.
           !!! TODO: Optionally, can retrieve discretizations at different time points
           !!! (like n-1, n-2, etc...).
-          CLASS(ppm_t_field)                           :: this
-          CLASS(ppm_t_discr_kind), TARGET, INTENT(IN ) :: discr_kind
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_field)                     :: this
+          CLASS(ppm_t_discr_kind), TARGET        :: discr_kind
           !!! discretization
-          INTEGER,               OPTIONAL, INTENT(IN ) :: tstep
+          INTEGER,       OPTIONAL, INTENT(IN   ) :: tstep
           !!! TODO
           !!! If the current time step is n, discretizations at previous times
           !!! can be accessed using the tstep argument
@@ -536,12 +584,16 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! on which the field is discretized.
           !!! TODO: Optionally, can retrieve discretizations at different time points
           !!! (like n-1, n-2, etc...).
-          CLASS(ppm_t_field)                               :: this
-          CLASS(ppm_t_discr_kind), TARGET,   INTENT(IN   ) :: discr_kind
-          CLASS(ppm_t_discr_data), POINTER,  INTENT(  OUT) :: discr_data
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_field)                     :: this
+          CLASS(ppm_t_discr_kind), TARGET        :: discr_kind
+          CLASS(ppm_t_discr_data), POINTER       :: discr_data
           !!! discretization
-          INTEGER,                           INTENT(  OUT) :: info
-          INTEGER,                 OPTIONAL, INTENT(IN   ) :: tstep
+          INTEGER,                 INTENT(  OUT) :: info
+          INTEGER,       OPTIONAL, INTENT(IN   ) :: tstep
           !!! If the current time step is n, discretizations at previous times
           !!! can be accessed using the tstep argument
           !!!     (tstep =  0, default) => step n
@@ -566,8 +618,8 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
               dinfo => this%discr_info%next()
           ENDDO loop
 
-          check_associated(discr_data,&
-          "Field seems to not be distretized on this particle set")
+          check_associated(discr_data, &
+          & "Field seems to not be distretized on this particle set")
 
           end_subroutine()
       END SUBROUTINE field_get_discr
@@ -577,11 +629,17 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! discretization kind (mesh or particles)
           !!! TODO: Optionally, check for discretizations at different time points
           !!! (like n-1, n-2, etc...).
-          CLASS(ppm_t_field)                                         :: this
-          CLASS(ppm_t_discr_kind),    TARGET,          INTENT(IN   ) :: discr_kind
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_field)                                :: this
+
+          CLASS(ppm_t_discr_kind),            TARGET        :: discr_kind
           !!! discretization
-          CLASS(ppm_t_discr_info_), OPTIONAL, POINTER, INTENT(  OUT) :: discr_info
-          INTEGER,                  OPTIONAL,          INTENT(IN   ) :: tstep
+          CLASS(ppm_t_discr_info_), OPTIONAL, POINTER       :: discr_info
+
+          INTEGER,                  OPTIONAL, INTENT(IN   ) :: tstep
           !!! If the current time step is n, discretizations at previous times
           !!! can be accessed using the tstep argument
           !!!     (tstep =  0, default) => step n
@@ -593,26 +651,28 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! The data management and book-keeping between the data of different
           !!! time steps are done by the time integrator.
           !!! TODO
-          LOGICAL                                                    :: res
+          LOGICAL                                           :: res
 
           CLASS(ppm_t_discr_info_), POINTER :: dinfo
 
           start_function("field_is_discretized_on")
 
-          dinfo => this%discr_info%begin()
-          DO WHILE(ASSOCIATED(dinfo))
-             IF (ASSOCIATED(dinfo%discr_ptr,discr_kind)) THEN
-                res = .TRUE.
-                IF (PRESENT(discr_info)) THEN
-                   discr_info => dinfo
+          IF (ASSOCIATED(this%discr_info)) THEN
+             dinfo => this%discr_info%begin()
+             DO WHILE(ASSOCIATED(dinfo))
+                IF (ASSOCIATED(dinfo%discr_ptr,discr_kind)) THEN
+                   res = .TRUE.
+                   IF (PRESENT(discr_info)) THEN
+                      discr_info => dinfo
 
-                   check_associated(discr_info, &
-                   & "Field seems to not be distretized on this set")
+                      check_associated(discr_info, &
+                      & "Field seems to not be distretized on this set")
+                   ENDIF
+                   RETURN
                 ENDIF
-                RETURN
-             ENDIF
-             dinfo => this%discr_info%next()
-          ENDDO
+                dinfo => this%discr_info%next()
+             ENDDO
+          ENDIF
 
           res = .FALSE.
           RETURN

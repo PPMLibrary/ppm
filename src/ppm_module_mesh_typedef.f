@@ -770,7 +770,8 @@ minclude ppm_get_field_template(4,l)
                       this%h(k)=this%h(k)+EPSILON(this%h(k))
                    ENDDO
                 ENDDO
-                check_true(<#ALL(topo%min_physs(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physs(1:ppm_dim))#>,"round-off problem in mesh creation")
+                check_true(<#ALL(topo%min_physs(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physs(1:ppm_dim))#>, &
+                & "round-off problem in mesh creation")
              ELSE
                 this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) &
                 &                 - topo%min_physd(1:ppm_dim)) &
@@ -781,7 +782,8 @@ minclude ppm_get_field_template(4,l)
                       this%h(k)=this%h(k)+EPSILON(this%h(k))
                    ENDDO
                 ENDDO
-                check_true(<#ALL(topo%min_physd(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>,"round-off problem in mesh creation")
+                check_true(<#ALL(topo%min_physd(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>, &
+                & "round-off problem in mesh creation")
              ENDIF
           ENDIF
 
@@ -890,7 +892,7 @@ minclude ppm_get_field_template(4,l)
                 !Check that this subdomain is large enough and thus
                 !compatible with this mesh and its resolution h.
                 check_true(<#ALL((topo%max_subs(1:ppm_dim,i)-topo%min_subs(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepss))#>,&
-                "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
+                & "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
                 !stdout("#isub = ",i," AFTER CHOP")
                 !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
                 !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')

@@ -421,14 +421,18 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
       SUBROUTINE DTYPE(part_prop_destroy)(this,prop,info)
           !!! Destroy a property from an existing particle set
-          CLASS(DTYPE(ppm_t_particles))         :: this
-          CLASS(ppm_t_discr_data),INTENT(INOUT) :: prop
-          INTEGER,               INTENT(OUT)    :: info
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_particles))          :: this
+          CLASS(ppm_t_discr_data), INTENT(INOUT) :: prop
+          INTEGER,                 INTENT(  OUT) :: info
 
           start_subroutine("part_prop_destroy")
 
           check_associated(<#this%props#>,&
-          "Particle set does not contain any discretized data")
+          & "Particle set does not contain any discretized data")
 
           SELECT TYPE(prop)
           CLASS IS (DTYPE(ppm_t_part_prop))
@@ -445,6 +449,10 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! Reallocate the property array to the correct size
           !!! (e.g. if the number of particles has changed or if the type
           !!! of the data changes)
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles))                 :: Pc
           CLASS(DTYPE(ppm_t_part_prop)_), INTENT(INOUT) :: prop
           INTEGER,                        INTENT(  OUT) :: info
@@ -551,11 +559,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           Nl%skin  =MERGE(skin,0.0_MK,PRESENT(skin))
 
           IF (PRESENT(symmetry)) THEN
-             IF (symmetry) THEN
-                Nl%isymm = 1
-             ELSE
-                Nl%isymm = 0
-             ENDIF
+             Nl%isymm = MERGE(1,0,symmetry)
           ELSE
              Nl%isymm = 0
           ENDIF
@@ -1088,9 +1092,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Arguments
           !-------------------------------------------------------------------------
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))               :: Pc
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
           !!! Data structure containing the Pc
-          INTEGER,                      INTENT(  OUT) :: info
+          INTEGER,        INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
 
           CLASS(ppm_t_main_abstr),  POINTER :: field
@@ -1350,7 +1354,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           USE ppm_module_map
           IMPLICIT NONE
           DEFINE_MK()
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1433,8 +1436,10 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-------------------------------------------------------------------------
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
           DEFINE_MK()
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1512,11 +1517,13 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
           DEFINE_MK()
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1685,11 +1692,13 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
           DEFINE_MK()
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1764,7 +1773,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       END SUBROUTINE DTYPE(part_map_positions)
 
 
-
       SUBROUTINE DTYPE(part_map_push)(Pc,info,Field)
           !!! Push particles properties into the send buffer after a partial mapping
           !!!  Assumptions:
@@ -1773,11 +1781,13 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
           DEFINE_MK()
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1852,11 +1862,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
-          DEFINE_MK()
 
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1865,13 +1878,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! Data structure containing the particles
           INTEGER,        INTENT(  OUT) :: info
           !!! Return status, on success 0.
-          !-------------------------------------------------------------------------
-          !  Optional Arguments
-          !-------------------------------------------------------------------------
-          !-------------------------------------------------------------------------
-          !  Local variables
-          !-------------------------------------------------------------------------
-          REAL(KIND(1.D0)) :: t1,t2
 
           start_subroutine("part_map_send")
 
@@ -1880,7 +1886,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-----------------------------------------------------------------
           !check that particles are allocated
           check_associated(<#Pc%xp#>,&
-          "Particles structure had not been defined. Call allocate first")
+          & "Particles structure had not been defined. Call allocate first")
 
           !-----------------------------------------------------------------
           !  Send the buffer
@@ -1898,11 +1904,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
-          DEFINE_MK()
 
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1911,13 +1920,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! Data structure containing the particles
           INTEGER,        INTENT(  OUT) :: info
           !!! Return status, on success 0.
-          !-------------------------------------------------------------------------
-          !  Optional Arguments
-          !-------------------------------------------------------------------------
-          !-------------------------------------------------------------------------
-          !  Local variables
-          !-------------------------------------------------------------------------
-          REAL(KIND(1.D0)) :: t1,t2
 
           start_subroutine("part_map_isend")
 
@@ -1926,7 +1928,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-----------------------------------------------------------------
           !check that particles are allocated
           check_associated(<#Pc%xp#>,&
-          "Particles structure had not been defined. Call allocate first")
+          & "Particles structure had not been defined. Call allocate first")
 
           !-----------------------------------------------------------------
           !  Send the buffer
@@ -1941,11 +1943,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       SUBROUTINE DTYPE(part_map_pop)(Pc,info,Field)
 
           USE ppm_module_map
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
           DEFINE_MK()
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2015,7 +2020,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           USE ppm_module_map
           IMPLICIT NONE
-
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
@@ -2094,11 +2101,13 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
           DEFINE_MK()
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2288,6 +2297,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
@@ -2324,13 +2336,13 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-----------------------------------------------------------------
           !check that particles are allocated
           check_associated(<#Pc%xp#>,&
-          "Particles structure had not been defined. Call allocate first")
+          & "Particles structure had not been defined. Call allocate first")
           !check that particles are mapped onto this topology
           check_true(<#Pc%flags(ppm_part_partial)#>,&
-          "Partial/global mapping required before doing a ghost mapping")
+          & "Partial/global mapping required before doing a ghost mapping")
           !check that particles are inside the domain
           check_true(<#Pc%flags(ppm_part_areinside)#>,&
-          "Some particles may be outside the domain. Apply BC first")
+          & "Some particles may be outside the domain. Apply BC first")
 
           topoid = Pc%active_topoid
           topo=>ppm_topo(topoid)%t
@@ -2398,6 +2410,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
@@ -2543,11 +2558,13 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
           DEFINE_MK()
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2597,11 +2614,13 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
           DEFINE_MK()
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2727,6 +2746,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
@@ -2818,11 +2840,13 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!
           USE ppm_module_map
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
           DEFINE_MK()
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2911,7 +2935,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! * Particles positions need to have been mapped onto the topology
           IMPLICIT NONE
           DEFINE_MK()
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -3044,10 +3067,11 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       SUBROUTINE DTYPE(part_move)(Pc,disp,info)
           !!!  Move all particles according to some displacement field
           !!!  The size of disp must match the size of xp
-          !-------------------------------------------------------------------------
-          !  Arguments
-          !-------------------------------------------------------------------------
+          IMPLICIT NONE
           DEFINE_MK()
+          !-------------------------------------------------------------------------
+          ! Arguments
+          !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles))                    :: Pc
           !!! Data structure containing the particles
           REAL(MK), DIMENSION(:,:), POINTER, INTENT(IN   ) :: disp
@@ -3114,16 +3138,17 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! If the ghostlayer sizes are increased from their previous values,
           !!! the ghosts are flagged as "not up-to-date" and will have to be
           !!! recomputed before they are used again.
+          IMPLICIT NONE
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))            :: Pc
-          REAL(MK),                 INTENT(IN   )  :: cutoff
+          CLASS(DTYPE(ppm_t_particles))                           :: Pc
+          REAL(MK),                                 INTENT(IN   ) :: cutoff
           !!! cutoff radius
-          INTEGER,                  INTENT(   OUT) :: info
+          INTEGER,                                  INTENT(  OUT) :: info
           !!! return status. On success, 0
-          CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,INTENT(INOUT) :: NList
+          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, INTENT(INOUT) :: NList
           !!! Neighbor list for which this cutoff radius
           !!! applies. By default, this is the "standard" Verlet list, with neighbours
           !!! sought within the particle set itself.
@@ -3178,16 +3203,19 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       SUBROUTINE DTYPE(part_comp_global_index)(Pc,info)
           !!! Compute a global index for particles
           !!! (Uses MPI communications)
+          IMPLICIT NONE
           !-------------------------------------------------------------------------
-          ! Arguments
+          !  Include
           !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
-
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))            :: Pc
-          INTEGER,                  INTENT(   OUT) :: info
+          !-------------------------------------------------------------------------
+          ! Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
+          INTEGER,       INTENT(   OUT) :: info
           !!! return status. On success, 0
 
           !-------------------------------------------------------------------------
@@ -3235,6 +3263,10 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
       SUBROUTINE DTYPE(part_map_create)(Pc,id,source_topoid,target_topoid,info)
           !!! Adds a property to an existing particle set
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles))         :: Pc
           INTEGER,                INTENT(  OUT) :: id
           INTEGER,                INTENT(IN   ) :: source_topoid
@@ -3308,15 +3340,19 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
       SUBROUTINE DTYPE(part_map_destroy)(Pc,id,info)
           !!! Destroy a mapping from an existing particle set
-          CLASS(DTYPE(ppm_t_particles))         :: Pc
-          INTEGER,                INTENT(INOUT) :: id
-          INTEGER,               INTENT(OUT)    :: info
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
+          INTEGER,        INTENT(INOUT) :: id
+          INTEGER,        INTENT(  OUT) :: info
 
           start_subroutine("part_map_destroy")
 
           ASSOCIATE (cont => Pc%maps)
               IF (id .LE. 0 .OR. id .GT. cont%vec_size) THEN
-                  fail("mapping id larger than size of mappings array")
+                 fail("mapping id larger than size of mappings array")
               ENDIF
 
               CALL cont%vec(id)%t%destroy(info)
@@ -3357,9 +3393,13 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       !destroy the link in particle data
       !DESTROY ENTRY
       SUBROUTINE DTYPE(neigh_destroy)(neigh,info)
-          CLASS(DTYPE(ppm_t_neighlist))               :: neigh
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_neighlist)) :: neigh
 
-          INTEGER,                     INTENT(  OUT)  :: info
+          INTEGER,       INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
 
           INTEGER :: ldu(2)
@@ -3390,21 +3430,27 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! If the Field argument is not present, then the function
           !!! returns whether the particles themselves have their
           !!! ghosts up-to-date.
-          CLASS(DTYPE(ppm_t_particles))                  :: this
-          CLASS(ppm_t_field_),OPTIONAL                   :: Field
-          LOGICAL                                        :: res
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_particles)) :: this
+          CLASS(ppm_t_field_), OPTIONAL :: Field
+          LOGICAL                       :: res
 
           !Local variables
-          CLASS(ppm_t_discr_data), POINTER :: prop => NULL()
+          CLASS(ppm_t_discr_data), POINTER :: prop
 
           start_function("has_ghosts")
 
           IF (PRESENT(Field)) THEN
-              CALL this%get_discr(Field,prop,info)
-              or_fail("this field is not discretized on this particle set")
-              res = prop%flags(ppm_ppt_ghosts)
+             NULLIFY(prop)
+             CALL this%get_discr(Field,prop,info)
+             or_fail("this field is not discretized on this particle set")
+
+             res = prop%flags(ppm_ppt_ghosts)
           ELSE
-              res = this%flags(ppm_part_ghosts)
+             res = this%flags(ppm_part_ghosts)
           ENDIF
 
           end_function()
@@ -3416,6 +3462,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! the discretization of that Field on this Particle set.
           !!! Fails with an error if the Field is not discretized here.
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles))          :: this
           CLASS(ppm_t_field_),     TARGET        :: Field
           CLASS(ppm_t_discr_data), POINTER       :: prop
@@ -3443,12 +3492,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! (a bit unrolled)
           IMPLICIT NONE
           DEFINE_MK()
-
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles))      :: this
           CLASS(ppm_t_field_), TARGET        :: Field
           INTEGER,             INTENT(  OUT) :: info
 
-          INTEGER                        :: lda
+          INTEGER :: lda
 
           start_subroutine("part_prop_zero")
 
@@ -3493,4 +3544,3 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           end_subroutine()
       END SUBROUTINE
-

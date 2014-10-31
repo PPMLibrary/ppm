@@ -86,17 +86,22 @@ minclude ppm_create_collection_procedures(operator,operator_)
       !CREATE
       SUBROUTINE operator_create(this,nterms,coeffs,degree,info,name)
           !!! Create a description for a differential operator
-          CLASS(ppm_t_operator)                 :: this
-          INTEGER,                INTENT(IN   ) :: nterms
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_operator)                              :: this
+
+          INTEGER,                             INTENT(IN   ) :: nterms
           !!! Number of terms in the linear combination
-          REAL(ppm_kind_double),DIMENSION(:),INTENT(IN):: coeffs
+          REAL(ppm_kind_double), DIMENSION(:), INTENT(IN   ) :: coeffs
           !!! Multiplicative coefficients of each term in the linear combination of
           !!! differential operators
-          INTEGER,DIMENSION(:),   INTENT(IN   ) :: degree
+          INTEGER,               DIMENSION(:), INTENT(IN   ) :: degree
           !!! Degree of differentiation of each term
-          INTEGER,                INTENT(OUT)   :: info
+          INTEGER,                             INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
-          CHARACTER(LEN=*),OPTIONAL,INTENT(IN)  :: name
+          CHARACTER(LEN=*),      OPTIONAL,     INTENT(IN   )  :: name
           !!! name for this operator
 
           start_subroutine("operator_create")
@@ -135,8 +140,13 @@ minclude ppm_create_collection_procedures(operator,operator_)
       END SUBROUTINE
       !DESTROY
       SUBROUTINE operator_destroy(this,info)
-          CLASS(ppm_t_operator)               :: this
-          INTEGER,              INTENT(  OUT) :: info
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_operator)  :: this
+
+          INTEGER, INTENT(  OUT) :: info
           !!! return 0 on success
 
           start_subroutine("operator_destroy")
@@ -149,15 +159,19 @@ minclude ppm_create_collection_procedures(operator,operator_)
           end_subroutine()
       END SUBROUTINE
       !COMPUTE
-      SUBROUTINE operator_discretize_on(this,Discr_to,op_discr,opts,info, &
-      &          Discr_src,nn_sq)
-          CLASS(ppm_t_operator)                      :: this
-          CLASS(ppm_t_discr_kind),TARGET,INTENT(IN)  :: Discr_to
+      SUBROUTINE operator_discretize_on(this, &
+      &          Discr_to,op_discr,opts,info,Discr_src,nn_sq)
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_operator)                            :: this
+          CLASS(ppm_t_discr_kind),           TARGET        :: Discr_to
           !!! Discretization on which the operator is applied (where the results are
           !!! stored)
-          CLASS(ppm_t_operator_discr),POINTER        :: op_discr
+          CLASS(ppm_t_operator_discr),       POINTER       :: op_discr
           !!! Resulting discretized operator (on which %compute() is then called)
-          CLASS(ppm_t_options)                       :: opts
+          CLASS(ppm_t_options),              INTENT(INOUT) :: opts
           !!! Arguments for the discretized operator
           !!!    - method (ppm_param_op_fd, ppm_param_op_pse, ppm_param_op_dcpse)
           !!!    - with_ghosts (true if this operator is also applied to
@@ -166,12 +180,12 @@ minclude ppm_create_collection_procedures(operator,operator_)
           !!!    - interp (if the operator is an interpolant, default is false)
           !!!    - order  (order of approximation, default is 2)
           !!!    - c      (ratio h/epsilon in the DC operators, default is 0.5)
-          INTEGER,                       INTENT(OUT) :: info
+          INTEGER,                           INTENT(  OUT) :: info
           !!! return 0 on success
-          CLASS(ppm_t_discr_kind),OPTIONAL,TARGET, INTENT(IN):: Discr_src
+          CLASS(ppm_t_discr_kind), OPTIONAL, TARGET       :: Discr_src
           !!! Discretization where the data comes from (source). By default, this
           !!! is the same as Discr_to
-          CLASS(ppm_t_discr_data),OPTIONAL,        INTENT(IN):: nn_sq
+          CLASS(ppm_t_discr_data), OPTIONAL, INTENT(IN   ):: nn_sq
           !!! Particle property where is stored the nearest-neighbour distance
           !!! (squared) of the source data point (only makes sense for interpolating
           !!! operators)
