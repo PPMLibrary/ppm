@@ -250,8 +250,8 @@ real(mk),dimension(ndim)         :: offset
         end foreach
         Assert_Equal(nb_errors,0)
 
-!        CALL Mesh1%print_vtk("Mesh1",info)
-!        Assert_Equal(info,0)
+        !CALL Mesh1%print_vtk("Mesh1",info,Field=Field2)
+        !Assert_Equal(info,0)
 
         sca_ghostsize = REAL(MAXVAL(ighostsize),MK)/MAXVAL(Nm)
         topoid2 = 0
@@ -297,8 +297,11 @@ real(mk),dimension(ndim)         :: offset
         call Field1%destroy(info)
         Assert_Equal(info,0)
 
-        !Do a ghost mapping
-        call Mesh2%map_ghost_get(info)
+        ighostsize=1
+        !for vtk output one layer of ghost will suffice
+
+        !Do a ghost mapping for vtk output
+        call Mesh2%map_ghost_get(info,ghostsize=ighostsize)
         Assert_Equal(info,0)
 
         call Field2%map_ghost_push(Mesh2,info)
