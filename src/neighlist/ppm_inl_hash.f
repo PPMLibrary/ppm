@@ -61,7 +61,11 @@
 
       CALL substart(caller,t0,info)
 
-      table%nrow = 2**(CEILING(LOG(REAL(nelement))/LOG(2.0)))
+      IF (nelement.LE.0) THEN
+         table%nrow = 1
+      ELSE
+         table%nrow = 2**(CEILING(LOG(REAL(nelement))/LOG(2.0)))
+      ENDIF
 
       lda(1) = table%nrow
       iopt   = ppm_param_alloc_fit
