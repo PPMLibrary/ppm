@@ -220,13 +220,12 @@
         !!! initialized. This will be done if necessary.
         !!! The dimension of Field_to needs to conform the output of the
         !!! operator (vector or scalar, type, etc...).
+        USE ppm_module_mpi
         IMPLICIT NONE
         !-------------------------------------------------------------------------
         !  Include
         !-------------------------------------------------------------------------
-#ifdef __MPI
-        INCLUDE "mpif.h"
-#endif
+
         DEFINE_MK()
         !-------------------------------------------------------------------------
         !  Arguments

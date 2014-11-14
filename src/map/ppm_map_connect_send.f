@@ -43,6 +43,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
+      USE ppm_module_mpi
       USE ppm_module_util_invert_list
       IMPLICIT NONE
 
@@ -50,9 +51,6 @@
       !  Includes
       !-------------------------------------------------------------------------
 
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------

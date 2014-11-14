@@ -42,16 +42,13 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       USE ppm_module_error
       USE ppm_module_substart
       USE ppm_module_substop
+      USE ppm_module_mpi
+      IMPLICIT NONE
 
-      implicit none
+      INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
-
-      INTEGER, PARAMETER :: MK = ppm_kind_double
 
       ! arguments
       INTEGER,            INTENT(IN)    :: topoid

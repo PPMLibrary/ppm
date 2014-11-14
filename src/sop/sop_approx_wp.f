@@ -25,12 +25,9 @@
       &          Npart,Mpart,nvlist_cross,vlist_cross,info)
 #endif
 
+        USE ppm_module_mpi
         USE ppm_module_map_part
         IMPLICIT NONE
-
-#ifdef __MPI
-        INCLUDE 'mpif.h'
-#endif
 
         DEFINE_MK()
         ! arguments

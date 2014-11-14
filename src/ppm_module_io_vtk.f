@@ -41,19 +41,15 @@
          USE ppm_module_error,     ONLY: ppm_error, ppm_err_argument
          USE ppm_module_substart,  ONLY: substart
          USE ppm_module_substop,   ONLY: substop
+         USE ppm_module_mpi
          USE ppm_module_interfaces
          USE ppm_module_topo_typedef
          IMPLICIT NONE
 
-         PUBLIC :: ppm_vtk_particles,ppm_vtk_mesh_2d,ppm_vtk_mesh_3d
          PRIVATE
          !----------------------------------------------------------------------
          !  Includes
          !----------------------------------------------------------------------
-
-#ifdef __MPI
-         INCLUDE 'mpif.h'
-#endif
          !----------------------------------------------------------------------
          !  New Interface
          !----------------------------------------------------------------------
@@ -73,6 +69,11 @@
          CHARACTER(LEN=ppm_char) :: vtk_type
          CHARACTER(LEN=ppm_char) :: vtk_section
          INTEGER                 :: current_section
+
+
+         PUBLIC :: ppm_vtk_particles
+         PUBLIC :: ppm_vtk_mesh_2d
+         PUBLIC :: ppm_vtk_mesh_3d
 
       CONTAINS
 

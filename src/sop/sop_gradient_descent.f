@@ -15,16 +15,13 @@
           !!!
           !!!---------------------------------------------------------------------!
 
+          USE ppm_module_mpi
           USE ppm_module_inl_xset_vlist
           USE ppm_module_io_vtk
 #ifdef __USE_LBFGS
           USE ppm_module_lbfgs
 #endif
-
           IMPLICIT NONE
-#ifdef __MPI
-          INCLUDE 'mpif.h'
-#endif
 
           DEFINE_MK()
           ! arguments
@@ -1145,13 +1142,10 @@
               wp_fun,D_fun,wp_grad_fun,level_fun,level_grad_fun,&
               threshold,need_deriv,nb_fun,stats)
 
+          USE ppm_module_mpi
           USE ppm_module_inl_xset_vlist
           USE ppm_module_sop_typedef
-
           IMPLICIT NONE
-#ifdef __MPI
-          INCLUDE 'mpif.h'
-#endif
 
           DEFINE_MK()
           ! arguments

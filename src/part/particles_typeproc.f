@@ -604,6 +604,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!  Assumptions:
           !!! * Particles positions need to have been mapped onto the topology
           !!! * Ghost positions have been computed
+          USE ppm_module_mpi
           USE ppm_module_neighlist
 #ifdef __WITH_CNL
           USE ppm_module_cnl
@@ -613,13 +614,11 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           USE ppm_module_inl_k_vlist
           USE ppm_module_kdtree
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Includes
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1515,15 +1514,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! * All the particles have to be inside the domain
           !!!   (otherwise -> "unassigned particle error")
 
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1690,15 +1688,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! * All the particles have to be inside the domain
           !!!   (otherwise -> "unassigned particle error")
 
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1779,15 +1776,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! * All the particles have to be inside the domain
           !!!   (otherwise -> "unassigned particle error")
 
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1860,16 +1856,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!  Assumptions:
           !!! * Particles positions need to have been mapped onto the topology
           !!!
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1942,15 +1936,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
       SUBROUTINE DTYPE(part_map_pop)(Pc,info,Field)
 
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2018,15 +2011,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
       SUBROUTINE DTYPE(part_map_pop_positions)(Pc,info)
 
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2099,15 +2091,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!  Assumptions:
           !!! * Particles positions need to have been mapped onto the topology
           !!!
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2285,25 +2276,19 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       END SUBROUTINE DTYPE(part_map_ghosts)
 
       SUBROUTINE DTYPE(part_map_ghost_get)(Pc,info,ghostsize)
-          !!! Push ghost particles properties into the send buffer.
-          !!! If ghost positions are not up-to-date, they are re-computed
-          !!! with a call to ghost_get. Otherwise ghost_get is skipped.
-          !!! If the Field argument is present, only the discretization of that
-          !!! Field on this particle set is pushed. Otherwise, all the properties
-          !!! (that are not already up-to-date) are pushed, except those that
-          !!! have the ppm_ppt_map_ghosts flag set to false.
-          !!!  Assumptions:
-          !!! * Particles positions need to have been mapped onto the topology
-          !!!
+          !!! This routine maps/adds the ghost particles on the current topology.
+          !!! This routine is similar to the partial mapping routine
+          !!! (`ppm_map_part_partial`) in the sense that the ghost particles are
+          !!! assumed to be located on neighbouring processors only, and thus only
+          !!! require a nearest neighbour communication.
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2397,6 +2382,111 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_ghost_get)
 
+      SUBROUTINE DTYPE(part_map_ghost_put)(Pc,info,ghostsize)
+          !!! Put back ghost particle values/properties to the
+          !!! corresponding real particles. This is very useful in the case of
+          !!! symmetric interactions as there the ghost particles are also updated.
+          USE ppm_module_mpi
+          USE ppm_module_map
+          IMPLICIT NONE
+
+          DEFINE_MK()
+          !-------------------------------------------------------------------------
+          ! Include
+          !-------------------------------------------------------------------------
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_particles))     :: Pc
+
+          !!! Data structure containing the particles
+          INTEGER,            INTENT(  OUT) :: info
+          !!! Return status, on success 0.
+          !-------------------------------------------------------------------------
+          !  Optional Arguments
+          !-------------------------------------------------------------------------
+          REAL(MK), OPTIONAL, INTENT(IN   ) :: ghostsize
+          !!! size of the ghost layers. Default is to use the particles cutoff
+          !-------------------------------------------------------------------------
+          !  Local variables
+          !-------------------------------------------------------------------------
+          TYPE(ppm_t_topo), POINTER :: topo
+
+          REAL(MK)         :: cutoff
+          !!! cutoff radius
+          REAL(KIND(1.D0)) :: t1,t2
+
+          INTEGER :: topoid
+          !!! index variable
+
+          start_subroutine("part_map_ghost_put")
+
+          !-----------------------------------------------------------------
+          !  Checks
+          !-----------------------------------------------------------------
+          !check that particles are allocated
+          check_associated(<#Pc%xp#>,&
+          & "Particles structure had not been defined. Call allocate first")
+          !check that particles are mapped onto this topology
+          check_true(<#Pc%flags(ppm_part_partial)#>,&
+          & "Partial/global mapping required before doing a ghost mapping")
+          !check that particles are inside the domain
+          check_true(<#Pc%flags(ppm_part_areinside)#>,&
+          & "Some particles may be outside the domain. Apply BC first")
+
+          topoid = Pc%active_topoid
+          topo=>ppm_topo(topoid)%t
+
+          cutoff = Pc%ghostlayer
+          IF (PRESENT(ghostsize)) THEN
+              IF (ghostsize .LT. cutoff) THEN
+                  fail("using ghostsize < cutoff+skin. Increase ghostsize.")
+              ELSE
+                  cutoff = ghostsize
+              ENDIF
+          ENDIF
+
+#if   __KIND == __SINGLE_PRECISION
+          IF (cutoff .GT. topo%ghostsizes) THEN
+              stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+              stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
+              fail("ghostsize of topology may be smaller than that of particles")
+          ENDIF
+#elif   __KIND == __DOUBLE_PRECISION
+          IF (cutoff .GT. topo%ghostsized) THEN
+              stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+              stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
+              fail("ghostsize of topology may be smaller than that of particles")
+          ENDIF
+#endif
+          IF (cutoff .GT. 0._MK) THEN
+              IF (Pc%flags(ppm_part_ghosts)) THEN
+                  IF (ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
+
+                      Pc%stats%nb_ghost_get = Pc%stats%nb_ghost_get + 1
+#ifdef __MPI
+                      t1 = MPI_WTIME(info)
+#endif
+                      CALL ppm_map_part_ghost_get(topoid,Pc%xp,ppm_dim,&
+                      &    Pc%Npart,Pc%isymm,cutoff,info)
+                      or_fail("ppm_map_part_ghost_get failed")
+#ifdef __MPI
+                      t2 = MPI_WTIME(info)
+                      Pc%stats%t_ghost_get = Pc%stats%t_ghost_get + (t2-t1)
+#endif
+                  ELSE
+                          !stdout("skipping ghost-get")
+                  ENDIF
+              ELSE
+                  !skipping ghost get
+              ENDIF
+          ELSE ! if cutoff .le. 0
+              !stdout("cutoff = 0, nothing to do")
+          ENDIF
+
+          end_subroutine()
+      END SUBROUTINE DTYPE(part_map_ghost_put)
+
       SUBROUTINE DTYPE(part_map_ghost_push)(Pc,info,Field,ghostsize)
           !!! Push ghost particles properties into the send buffer.
           !!! If ghost positions are not up-to-date, they are re-computed
@@ -2408,15 +2498,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!  Assumptions:
           !!! * Particles positions need to have been mapped onto the topology
           !!!
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2612,15 +2701,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!  Assumptions:
           !!! * Particles positions need to have been mapped onto the topology
           !!!
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2744,15 +2832,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       SUBROUTINE DTYPE(part_map_ghost_push_pos)(Pc,info,ghostsize)
           !!! Push ghost particles positions from the send buffer.
           !!!
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -2838,15 +2925,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! * Needs to be called at the end of the
           !!!  ghost_get, ghost_push, send and ghost_pop call sequence.
           !!!
+          USE ppm_module_mpi
           USE ppm_module_map
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -3203,14 +3289,13 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       SUBROUTINE DTYPE(part_comp_global_index)(Pc,info)
           !!! Compute a global index for particles
           !!! (Uses MPI communications)
+          USE ppm_module_mpi
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Include
           !-------------------------------------------------------------------------
-#ifdef __MPI
-          INCLUDE "mpif.h"
-#endif
-          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Arguments
           !-------------------------------------------------------------------------

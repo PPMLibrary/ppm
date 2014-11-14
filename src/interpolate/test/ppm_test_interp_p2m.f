@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Test Case   :                   ppm_test_interp_p2m
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -36,13 +36,10 @@ program ppm_test_interp_p2m
     use ppm_module_init
     use ppm_module_finalize
     use ppm_module_map
-
+    USE ppm_module_mpi
     implicit none
 
 #include "../../ppm_define.h"
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
 
     integer, parameter              :: debug = 0
     integer, parameter              :: MK = ppm_kind_double
