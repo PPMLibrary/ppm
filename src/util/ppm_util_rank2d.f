@@ -60,6 +60,7 @@
       USE ppm_module_alloc
       USE ppm_module_write
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -103,6 +104,7 @@
       REAL(MK) :: mean
       ! timer
       REAL(MK) :: t0
+
       ! local info level
       INTEGER                            :: info2
       ! counters
@@ -120,7 +122,7 @@
       INTEGER                            :: iopt
 
       CHARACTER(LEN=ppm_char) :: msg
-      CHARACTER(LEN=ppm_char) :: caller = 'ppm_util_rank2d'
+      CHARACTER(LEN=ppm_char) :: caller = 'ppm_util_rank'
 
       !-------------------------------------------------------------------------
       !  Externals
@@ -137,8 +139,8 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -189,7 +191,7 @@
       !-------------------------------------------------------------------------
       !  Check extent of particles
       !-------------------------------------------------------------------------
-      IF (info2 .EQ. 1) THEN
+      IF (info2.EQ.1) THEN
          !----------------------------------------------------------------------
          !  Count the number of particle outside the mesh. This vectorizes.
          !----------------------------------------------------------------------
@@ -209,20 +211,17 @@
          !  normally, not all the particles of a CPU reside on a single sub
          !  and cell lists are built per sub.
          !----------------------------------------------------------------------
-         IF (icount .GT. 0) THEN
+         IF (icount.GT.0) THEN
             WRITE(msg,'(I8,A)')icount,' particles'
-            info = ppm_error_warning
-            CALL ppm_error(ppm_err_part_range,caller,msg,  &
-            &    __LINE__,info)
+            fail(msg,ppm_err_part_range,exit_point=no,ppm_error=ppm_error_warning)
          ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Find the location of the particles in the boxes. This vectorizes.
       !-------------------------------------------------------------------------
-      icount = 0
-      info   = 0
-      icorr = 0
+      icount=0
+      icorr =0
       DO ipart=1,Np
          !----------------------------------------------------------------------
          !  This has to be a FLOOR and not an INT. The latter would give
@@ -242,22 +241,22 @@
 
          ! if particle is outside the physical domain but index belongs to a
          ! real cell -> move particle to ghost cell
-         if (xp(1,ipart) .GE. xmax(1) .AND. i .LT. nm(1)+ngl(1)) THEN
+         IF (xp(1,ipart) .GE. xmax(1) .AND. i .LT. nm(1)+ngl(1)) THEN
             i = nm(1) + ngl(1)
             icorr = icorr + 1
          ENDIF
-         if (xp(2,ipart) .GE. xmax(2) .AND. j .LT. nm(2)+ngl(2)) THEN
+         IF (xp(2,ipart) .GE. xmax(2) .AND. j .LT. nm(2)+ngl(2)) THEN
             j = nm(2) + ngl(2)
             icorr = icorr + 1
          ENDIF
 
          ! if particle is inside the physical domain but index belongs to a
          ! ghost cell -> move particle in real cell
-         if (xp(1,ipart) .LT. xmax(1) .AND. i .GE. nm(1)+ngl(1)) THEN
+         IF (xp(1,ipart) .LT. xmax(1) .AND. i .GE. nm(1)+ngl(1)) THEN
             i = nm(1) + ngl(1) - 1
             icorr = icorr + 1
          ENDIF
-         if (xp(2,ipart) .LT. xmax(2) .AND. j .GE. nm(2)+ngl(2)) THEN
+         IF (xp(2,ipart) .LT. xmax(2) .AND. j .GE. nm(2)+ngl(2)) THEN
             j = nm(2) + ngl(2) - 1
             icorr = icorr + 1
          ENDIF
@@ -265,23 +264,20 @@
          ! ignore particles outside the mesh (numbering is from 0...nmtot(:)-1
          ! since we are using FLOOR !!!
          IF ((i .GE. 0 .AND. i .LT. nmtot(1)) .AND.  &
-     &       (j .GE. 0 .AND. j .LT. nmtot(2))) THEN
+         &   (j .GE. 0 .AND. j .LT. nmtot(2))) THEN
             icount       = icount + 1
             ibox         = i + 1 + j*nmtot(1)
             pbox(ipart)  = ibox
          ELSE
             ! particle is in no box
             pbox(ipart) = -1
-            info        = info + 1
          ENDIF
       ENDDO
 
 
       IF (icorr.GT.0) THEN
          WRITE(msg,'(I8,A)')icorr,' particle indices corrected'
-         info = ppm_error_notice
-         CALL ppm_error(ppm_err_index_corr,caller,msg,  &
-         &    __LINE__,info)
+         fail(msg,ppm_err_index_corr,exit_point=no,ppm_error=ppm_error_notice)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -332,8 +328,7 @@
       !-------------------------------------------------------------------------
       IF (info2.EQ.1) THEN
          mean = REAL(icount,MK)/REAL(nbox,MK)
-         WRITE(msg,'(A,F8.2)') 'Mean number of particles per cell: ',mean
-         CALL ppm_write(ppm_rank,caller,msg,j)
+         stdout_f('(A,F8.2)',"Mean number of particles per cell: ",mean)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -372,7 +367,7 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS

@@ -70,20 +70,8 @@
       !!! versions are explicitly unrolled over the kernel, the 2D versions
       !!! are not.
       !-------------------------------------------------------------------------
-      !  INCLUDES
-      !-------------------------------------------------------------------------
-
-      !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_error
-      USE ppm_module_alloc
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_data
-      USE ppm_module_data_rmsh
-      USE ppm_module_data_mesh
-      USE ppm_module_write
       USE ppm_module_map
       USE ppm_module_check_id
       IMPLICIT NONE
@@ -93,6 +81,9 @@
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
+      !-------------------------------------------------------------------------
+      !  INCLUDES
+      !-------------------------------------------------------------------------
       !--------------------------------------------------------------------------
       ! Arguments
       !--------------------------------------------------------------------------
@@ -146,10 +137,10 @@
       INTEGER                                :: kernel_support
       INTEGER,  DIMENSION(ppm_dim+2)         :: ldu,ldl
       INTEGER,  DIMENSION(ppm_dim)           :: Nc
-      INTEGER                                :: i,j,k,ii,jj,kk,iidec,maptype
+      INTEGER                                :: i,j,k,ii,jj
       INTEGER                                :: jjdec,nb_sub,npart,ipart
-      INTEGER                                :: kkdec,ip1,nlist1
-      INTEGER                                :: ip2,ip3,iface
+      INTEGER                                :: ip1,nlist1
+      INTEGER                                :: ip2,ip3
       INTEGER                                :: isub,ifrom,ito,ip,dim,iopt,isubl
       INTEGER                                :: max_partnumber,idom,nlist2,idoml
       INTEGER, DIMENSION(ppm_dim)            :: Nm

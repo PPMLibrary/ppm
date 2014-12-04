@@ -39,39 +39,40 @@
 
       MODULE ppm_module_map_part
       !!! This module provides the basic mapping routines for particles, namely
-      !!! the push, sned and pop routine.
+      !!! the push, send and pop routine.
       !!!
       !!! The module also holds the needed work arrays for these routines.
 
          USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
          USE ppm_module_topo_typedef
-         USE ppm_module_map_part_util
-         USE ppm_module_map_part_ghost
-         USE ppm_module_map_part_global
-         USE ppm_module_map_part_partial
+         USE ppm_module_map_part_util, ONLY : ppm_map_part_eqdistrib,    &
+         &   ppm_map_part_cancel,ppm_map_part_get_sub,ppm_map_part_load, &
+         &   ppm_map_part_ring_shift,ppm_map_part_store
+         USE ppm_module_map_part_ghost, ONLY : ppm_map_part_ghost_get, &
+         &   ppm_map_part_ghost_pop,ppm_map_part_ghost_put
+         USE ppm_module_map_part_global,ONLY : ppm_map_part_global, &
+         &   ppm_map_part_remap
+         USE ppm_module_map_part_partial, ONLY : ppm_map_part_partial
          IMPLICIT NONE
 
-         PRIVATE :: ppm_kind_single,ppm_kind_double
+         PRIVATE
 
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
-         REAL(ppm_kind_single), DIMENSION(:), POINTER :: sends => NULL()
-         REAL(ppm_kind_single), DIMENSION(:), POINTER :: recvs => NULL()
-         REAL(ppm_kind_double), DIMENSION(:), POINTER :: sendd => NULL()
-         REAL(ppm_kind_double), DIMENSION(:), POINTER :: recvd => NULL()
+         REAL(ppm_kind_single), DIMENSION(:),   POINTER :: sends => NULL()
+         REAL(ppm_kind_single), DIMENSION(:),   POINTER :: recvs => NULL()
+         REAL(ppm_kind_double), DIMENSION(:),   POINTER :: sendd => NULL()
+         REAL(ppm_kind_double), DIMENSION(:),   POINTER :: recvd => NULL()
 
-         INTEGER, DIMENSION(:),               POINTER :: nsend => NULL()
-         INTEGER, DIMENSION(:),               POINTER :: nrecv => NULL()
-         INTEGER, DIMENSION(:),               POINTER :: psend => NULL()
-         INTEGER, DIMENSION(:),               POINTER :: precv => NULL()
-         INTEGER, DIMENSION(:,:),             POINTER :: pp    => NULL()
-         INTEGER, DIMENSION(:,:),             POINTER :: qq    => NULL()
-         INTEGER                                      :: old_nsendlist = 0
-         INTEGER                                      :: old_buffer_set = 0
-
-         PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,pp,qq
-         PRIVATE :: old_nsendlist,old_buffer_set
+         INTEGER,               DIMENSION(:),   POINTER :: nsend => NULL()
+         INTEGER,               DIMENSION(:),   POINTER :: nrecv => NULL()
+         INTEGER,               DIMENSION(:),   POINTER :: psend => NULL()
+         INTEGER,               DIMENSION(:),   POINTER :: precv => NULL()
+         INTEGER,               DIMENSION(:,:), POINTER :: pp    => NULL()
+         INTEGER,               DIMENSION(:,:), POINTER :: qq    => NULL()
+         INTEGER                                        :: old_nsendlist = 0
+         INTEGER                                        :: old_buffer_set = 0
 
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_pop
@@ -125,6 +126,34 @@
             MODULE PROCEDURE ppm_map_part_isend
          END INTERFACE
 
+         PUBLIC :: ppm_map_part_pop
+         PUBLIC :: ppm_map_part_push
+         PUBLIC :: ppm_map_part_send
+         PUBLIC :: ppm_map_part_isend
+         !----------------------------------------------------------------------
+         ! PUBLIC var from ppm_module_map_part_util
+         !----------------------------------------------------------------------
+         PUBLIC :: ppm_map_part_eqdistrib
+         PUBLIC :: ppm_map_part_cancel
+         PUBLIC :: ppm_map_part_get_sub
+         PUBLIC :: ppm_map_part_load
+         PUBLIC :: ppm_map_part_ring_shift
+         PUBLIC :: ppm_map_part_store
+         !----------------------------------------------------------------------
+         ! PUBLIC var from ppm_module_map_part_ghost
+         !----------------------------------------------------------------------
+         PUBLIC :: ppm_map_part_ghost_get
+         PUBLIC :: ppm_map_part_ghost_pop
+         PUBLIC :: ppm_map_part_ghost_put
+         !----------------------------------------------------------------------
+         ! PUBLIC var from ppm_module_map_part_global
+         !----------------------------------------------------------------------
+         PUBLIC :: ppm_map_part_global
+         PUBLIC :: ppm_map_part_remap
+         !----------------------------------------------------------------------
+         ! PUBLIC var from ppm_module_map_part_partial
+         !----------------------------------------------------------------------
+         PUBLIC :: ppm_map_part_partial
          !----------------------------------------------------------------------
          !  include the source
          !----------------------------------------------------------------------

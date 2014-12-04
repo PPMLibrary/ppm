@@ -132,5 +132,4 @@ logical                         :: ok
 
     end test
 
-
 end test_suite

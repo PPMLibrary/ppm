@@ -37,10 +37,19 @@
       MODULE ppm_module_interp_m2p
       !!! Contains the mesh to particle interpolation routines. Currently we
       !!! support 2nd order B-spline and MP4 interpolation schemes.
-        USE ppm_module_topo_typedef
-        USE ppm_module_interfaces
+        !-------------------------------------------------------------------------
+        !  Modules
+        !-------------------------------------------------------------------------
+        USE ppm_module_data
+        USE ppm_module_error
+        USE ppm_module_alloc
+        USE ppm_module_substart
+        USE ppm_module_substop
+        USE ppm_module_interfaces, ONLY : ppm_t_equi_mesh_,ppm_t_field_, &
+        &   ppm_t_subpatch_
         IMPLICIT NONE
 
+        PRIVATE
         !-----------------------------------------------------------------------
         !  Interface
         !-----------------------------------------------------------------------
@@ -66,6 +75,9 @@
             MODULE PROCEDURE m2p_interp_mp4_sv_3d
             MODULE PROCEDURE m2p_interp_mp4_dv_3d
         END INTERFACE
+
+        PUBLIC :: m2p_interp_bsp2
+        PUBLIC :: m2p_interp_mp4
 
       CONTAINS
 

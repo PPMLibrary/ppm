@@ -1,6 +1,6 @@
 
 module Funit
-  
+
   ##
   # Fortran assertion macro definitions
 
@@ -60,7 +60,7 @@ module Funit
       syntax_error("invalid body for #@type",@suite_name) unless $&
       write_assert
     end
-    
+
     def assert_array_equal(line)
       line.match(/\(\s*(\w+)\s*,\s*(\w+|\(\/.*\/\))\s*\)/)
       @line = line
@@ -105,36 +105,36 @@ module Funit
       end
       result
     end
-    
+
     ##
     # Translate the assertion to Fortran.
-    
+
     def write_assert
       <<-OUTPUT
-  ! #@type assertion
-  numAsserts = numAsserts + 1
-  if (noAssertFailed) then
-    write(log,'(A)', advance='no') "trying assert #{@line.gsub(/"/, "'")}"
-    if (#@condition) then
-      write(log,*) " failed!"
-      write(*,'(A,I0,A)', advance='no') "[", funit_rank, "] "
-      write(*,'(A)', advance='no') "*#@type failed* in test #@test_name &
-                 [#{@suite_name}.fun:#{@line_number.to_s}] "
-      write(*,*) #@message
-      write(log,*) " *#@type failed* in test #@test_name &
-              &[#{@suite_name}.fun:#{@line_number.to_s}]"
-      write(log,*) "  ", #@message
-      write(log,*) ""
-      noAssertFailed = .false.
-      numFailures    = numFailures + 1
+      ! #@type assertion
+      numAsserts = numAsserts + 1
+      IF (noAssertFailed) THEN
+         WRITE(log,'(A)', ADVANCE='NO') "trying assert #{@line.gsub(/"/, "'")}"
+         IF (#@condition) THEN
+            WRITE(log,*) " failed!"
+            WRITE(*,'(A,I0,A)', ADVANCE='NO') "[", funit_rank, "] "
+            WRITE(*,'(A)', ADVANCE='NO') "*#@type failed* in test #@test_name &
+            [#{@suite_name}.fun:#{@line_number.to_s}] "
+            WRITE(*,*) #@message
+            WRITE(log,*) " *#@type failed* in test #@test_name &
+            &[#{@suite_name}.fun:#{@line_number.to_s}]"
+            WRITE(log,*) "  ", #@message
+            WRITE(log,*) ""
+            noAssertFailed = .FALSE.
+            numFailures    = numFailures + 1
 #ifdef __MPI
-      call MPI_Abort(funit_comm, funit_info)
+            CALL MPI_Abort(funit_comm, funit_info)
 #endif
-    else
-      write(log,*) " success!"
-      numAssertsTested = numAssertsTested + 1
-    endif
-  endif
+         ELSE
+            WRITE(log,*) " success!"
+            numAssertsTested = numAssertsTested + 1
+         ENDIF
+      ENDIF
       OUTPUT
     end
 

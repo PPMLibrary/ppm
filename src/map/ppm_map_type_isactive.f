@@ -44,9 +44,9 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: map_type
+      INTEGER, INTENT(IN   ) :: map_type
       !!! A map type as defined in ppm_param.h
-      LOGICAL                                 :: is_active
+      LOGICAL                :: is_active
       !!! TRUE if the internal state variable is set to this type
       !-------------------------------------------------------------------------
       !  Local variables

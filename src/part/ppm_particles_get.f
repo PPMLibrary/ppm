@@ -107,12 +107,10 @@
                    IF (skip.OR.discr_data%flags(ppm_ppt_ghosts)) THEN
                       np = this%Mpart
                    ELSE
-                      WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ", &
-                      & TRIM(ADJUSTL(discr_data%name)),                     &
-                      & ") with ghosts when ghosts are not up-to-date. ",   &
-                      & "Returning NULL pointer"
+                      stdout("ERROR: tried to get DATANAME (name = ", &
+                      & 'TRIM(ADJUSTL(discr_data%name))',             &
+                      & ") with ghosts when ghosts are not up-to-date. Returning NULL pointer")
 
-                      CALL ppm_write(ppm_rank,caller,cbuf,info)
                       fail("ghosts are not up-to-date")
                    ENDIF
                 ENDIF
@@ -125,13 +123,11 @@
                 wp => discr_data%WRAP(DATANAME)(:,1:np)
 #endif
              ELSE
-                WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ', &
-                & TRIM(ADJUSTL(discr_data%name)),                      &
-                & ') when mapping is not up-to-date. ',                &
-                & 'Returning NULL pointer',                            &
-                & 'Run with traceback option to debug'
+                stdout("ERROR: tried to get DATANAME (name = ", &
+                & 'TRIM(ADJUSTL(discr_data%name))',             &
+                & ") when mapping is not up-to-date.",          &
+                & "Returning NULL pointer Run with traceback option to debug")
 
-                CALL ppm_write(ppm_rank,cbuf,caller,info)
                 fail("unmapped particles")
              ENDIF
 
@@ -248,15 +244,14 @@
                     IF (skip.OR.prop%flags(ppm_ppt_ghosts)) THEN
                        np = this%Mpart
                     ELSE
-                       WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ", &
-                       & TRIM(ADJUSTL(prop%name)),                           &
-                       & ") with ghosts when ghosts are not up-to-date. ",   &
-                       & "Returning NULL pointer"
+                       stdout("ERROR: tried to get DATANAME (name = ",     &
+                       & 'TRIM(ADJUSTL(prop%name))',                       &
+                       & ") with ghosts when ghosts are not up-to-date. ", &
+                       & "Returning NULL pointer")
 
-                       CALL ppm_write(ppm_rank,caller,cbuf,info)
                        fail("ghosts are not up-to-date")
-                      ENDIF
-                  ENDIF
+                    ENDIF
+                 ENDIF
               ENDIF
 
               IF (skip.OR.prop%flags(ppm_ppt_partial)) THEN
@@ -266,14 +261,13 @@
                  wp => prop%WRAP(DATANAME)(:,1:np)
 #endif
               ELSE
-                  WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ', &
-                  & TRIM(ADJUSTL(prop%name)),                            &
-                  & ') when mapping is not up-to-date. ',                &
-                  & 'Returning NULL pointer',                            &
-                  & 'Run with traceback option to debug'
+                 stdout("ERROR: tried to get DATANAME (name = ", &
+                 & 'TRIM(ADJUSTL(prop%name))',                   &
+                 & ") when mapping is not up-to-date. ",         &
+                 & "Returning NULL pointer",                     &
+                 & "Run with traceback option to debug")
 
-                  CALL ppm_write(ppm_rank,cbuf,caller,info)
-                  fail("unmapped particles")
+                 fail("unmapped particles")
               ENDIF
               !Assume that the ghost values are now incorrect, unless explicitely
               !told otherwise

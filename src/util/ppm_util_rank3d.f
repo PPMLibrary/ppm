@@ -124,7 +124,7 @@
       INTEGER, DIMENSION(:), ALLOCATABLE :: npbx
 
       CHARACTER(LEN=ppm_char) :: msg
-      CHARACTER(LEN=ppm_char) :: caller = 'ppm_util_rank3d'
+      CHARACTER(LEN=ppm_char) :: caller = 'ppm_util_rank'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -140,8 +140,8 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -218,9 +218,7 @@
          !----------------------------------------------------------------------
          IF (icount .GT. 0) THEN
             WRITE(msg,'(I8,A)') icount,' particles'
-            info = ppm_error_warning
-            CALL ppm_error(ppm_err_part_range,caller,msg,   &
-            &     __LINE__,info)
+            fail(msg,ppm_err_part_range,exit_point=no,ppm_error=ppm_error_warning)
          ENDIF
       ENDIF
 
@@ -228,7 +226,6 @@
       !  Find the location of the particles in the boxes. This vectorizes.
       !-------------------------------------------------------------------------
       icount = 0
-      info   = 0
       icorr  = 0
       n2     = nmtot(1) * nmtot(2)
       DO ipart=1,Np
@@ -282,23 +279,20 @@
          ! ignore particles outside the mesh (numbering is from 0...n-1
          ! since we are using INT !!!
          IF ((i .GE. 0 .AND. i .LT. nmtot(1)) .AND.  &
-     &       (j .GE. 0 .AND. j .LT. nmtot(2)) .AND.  &
-     &       (k .GE. 0 .AND. k .LT. nmtot(3))) THEN
+         &   (j .GE. 0 .AND. j .LT. nmtot(2)) .AND.  &
+         &   (k .GE. 0 .AND. k .LT. nmtot(3))) THEN
             icount      = icount + 1
             ibox        = i + 1 + j*nmtot(1) + k*n2
             pbox(ipart) = ibox
          ELSE
             ! particle is in no box
             pbox(ipart) = -1
-            info        = info + 1
          ENDIF
       ENDDO
 
       IF (icorr.GT.0) THEN
          WRITE(msg,'(I8,A)')icorr,' particle indices corrected'
-         info = ppm_error_notice
-         CALL ppm_error(ppm_err_index_corr,caller,msg,  &
-         &     __LINE__,info)
+         fail(msg,ppm_err_index_corr,exit_point=no,ppm_error=ppm_error_notice)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -350,8 +344,7 @@
       !-------------------------------------------------------------------------
       IF (info2.EQ.1) THEN
          mean = REAL(icount,MK)/REAL(nbox,MK)
-         WRITE(msg,'(A,F8.2)') 'Mean number of particles per cell: ',mean
-         CALL ppm_write(ppm_rank,caller,msg,j)
+         stdout_f('(A,F8.2)',"Mean number of particles per cell: ",mean)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -390,7 +383,7 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS

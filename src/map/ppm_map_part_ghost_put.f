@@ -79,11 +79,12 @@
       USE ppm_module_check_id
       USE ppm_module_util_commopt
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  This routine is ALL integer, except the timing variable t0
       !  We pick double as the precision - no real reason for that
       !-------------------------------------------------------------------------
-      INTEGER, PARAMETER      :: MK = ppm_kind_double
+      INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -94,13 +95,17 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(2)     :: ldu
       TYPE(ppm_t_topo), POINTER :: topo
-      INTEGER                   :: i,j,k
-      INTEGER                   :: iopt
-      CHARACTER(ppm_char)       :: mesg
-      LOGICAL                   :: valid
-      REAL(MK)                  :: t0
+
+      REAL(MK) :: t0
+
+      INTEGER, DIMENSION(2) :: ldu
+      INTEGER               :: i,j,k
+      INTEGER               :: iopt
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_map_part_ghost_put'
+
+      LOGICAL :: valid
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -108,46 +113,41 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_part_ghost_put',t0,info)
-
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+      IF (ppm_debug.GT.0) THEN
+         CALL check
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
       topo => ppm_topo(topoid)%t
 
       ! if there is still some data left in the buffer, warn the user
-      IF (ppm_buffer_set .GT. 0) THEN
-        info = ppm_error_warning
-        CALL ppm_error(ppm_err_map_incomp,'ppm_map_part_ghost_put',  &
-     &       'Buffer was not empty. Possible loss of data!',__LINE__,info)
+      IF (ppm_buffer_set.GT.0) THEN
+         fail('Buffer was not empty. Possible loss of data!', &
+         & ppm_err_map_incomp,exit_point=no,ppm_error=ppm_error_warning)
       ENDIF
 
       !----------------------------------------------------------------------
       !  first check if the optimal communication protocol is known
       !----------------------------------------------------------------------
       IF (.NOT.topo%isoptimized) THEN
-        !-------------------------------------------------------------------
-        !  if not: determine it before calling map_part_ghost_put
-        !-------------------------------------------------------------------
-        CALL ppm_util_commopt(topoid,info)
-        IF (ppm_debug .GT. 1) THEN
+         !-------------------------------------------------------------------
+         !  if not: determine it before calling map_part_ghost_put
+         !-------------------------------------------------------------------
+         CALL ppm_util_commopt(topoid,info)
+         IF (ppm_debug .GT. 1) THEN
             DO i=1,topo%nneighproc
-                WRITE(mesg,'(A,I4)') 'have neighbor: ', topo%ineighproc(i)
-                CALL ppm_write(ppm_rank,'ppm_map_part_ghost_put',mesg,info)
+               stdout_f('(A,I4)',"have neighbor: ",'topo%ineighproc(i)')
             ENDDO
             DO i=1,topo%ncommseq
-                WRITE(mesg,'(A,I4)') 'communicate: ', topo%icommseq(i)
-                CALL ppm_write(ppm_rank,'ppm_map_part_ghost_put',mesg,info)
+               stdout_f('(A,I4)',"communicate: ",'topo%icommseq(i)')
             ENDDO
-        ENDIF
+         ENDIF
       ENDIF
-
 
       !-------------------------------------------------------------------------
       !  Save the map type for the subsequent calls
@@ -164,22 +164,17 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  The 2nd leading dimension is plus one to catch all ghosts -)
-      !-------------------------------------------------------------------------
-      ldu(1)  = j + 2
-      ldu(2)  = topo%ncommseq + 1
-
-      !-------------------------------------------------------------------------
       !  Allocate the array
       !-------------------------------------------------------------------------
       iopt = ppm_param_alloc_grow
+      ldu(1)=j + 2
+      !-------------------------------------------------------------------------
+      !  The 2nd leading dimension is plus one to catch all ghosts -)
+      !-------------------------------------------------------------------------
+      ldu(2)=topo%ncommseq + 1
       CALL ppm_alloc(ppm_ghosthack,ldu,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_put', &
-     &        'allocation of ppm_ghosthack failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('allocation of ppm_ghosthack failed',ppm_error=ppm_error_fatal)
+
       !-------------------------------------------------------------------------
       !  now store the data in ppm_ghosthack()
       !-------------------------------------------------------------------------
@@ -224,8 +219,11 @@
       DO k=1,ppm_nsendlist
          i = MAX(i,ppm_ghosthack(2,k+1))
       ENDDO
+
       ldu(1) = i
       CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
+      or_fail_alloc("allocation of ppm_buffer2part failed")
+
       DO k=1,ppm_nsendlist
          !----------------------------------------------------------------------
          !  ppm_psendbuffer(k) stores the pointer to the first particle received
@@ -270,32 +268,24 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_map_part_ghost_put',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_map_part_ghost_put',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          IF (topoid .EQ. ppm_param_topo_undefined) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_no_topo,'ppm_map_part_ghost_put',  &
-     &            'This routine needs a topology defined topo',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          IF (topoid .NE. ppm_param_topo_undefined) THEN
+            fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
+         ENDIF
+         IF (topoid .EQ. ppm_param_topo_undefined) THEN
+            fail('This routine needs a topology defined topo',ppm_err_no_topo,exit_point=8888)
+         ENDIF
+         IF (topoid .NE. ppm_param_topo_undefined) THEN
             CALL ppm_check_topoid(topoid,valid,info)
+            or_fail('ppm_check_topoid',exit_point=8888)
             IF (.NOT. valid) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_put',  &
-     &               'topoid out of range',__LINE__,info)
-                GOTO 8888
+               fail('topoid out of range',exit_point=8888)
             ENDIF
         ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
       END SUBROUTINE ppm_map_part_ghost_put

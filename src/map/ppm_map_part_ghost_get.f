@@ -96,7 +96,6 @@
       !!! loop from nghost+1,nghostplus.
       !!! ==============================================================
 
-
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
@@ -110,6 +109,7 @@
       USE ppm_module_util_commopt
       USE ppm_module_topo_typedef
       IMPLICIT NONE
+
 #if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #else
@@ -118,22 +118,22 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: topoid
+      INTEGER,                  INTENT(IN   ) :: topoid
       !!! ID of current topology
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! The position of the particles
-      REAL(MK)                , INTENT(IN   ) :: ghostsize
-      !!! The size of the ghost layer
-      INTEGER                 , INTENT(IN   ) :: lda
+      INTEGER,                  INTENT(IN   ) :: lda
       !!! Leading dimension of xp
-      INTEGER                 , INTENT(IN   ) :: Npart
+      INTEGER,                  INTENT(IN   ) :: Npart
       !!! The number of particles (on the local processor)
-      INTEGER                 , INTENT(IN   ) :: isymm
+      INTEGER,                  INTENT(IN   ) :: isymm
       !!! Indicator for the use of symmetry
       !!!
       !!! * isymm > 0 use symmetry
       !!! * isymm = 0 do not use symmetry
-      INTEGER                 , INTENT(  OUT) :: info
+      REAL(MK),                 INTENT(IN   ) :: ghostsize
+      !!! The size of the ghost layer
+      INTEGER,                  INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
       !  Local variables
@@ -149,8 +149,8 @@
       REAL(MK)                          :: xmaxf,ymaxf,zmaxf ! full domain
       REAL(MK)                          :: xmini,ymini,zmini ! inner domain
       REAL(MK)                          :: xmaxi,ymaxi,zmaxi ! inner domain
-      REAL(MK), DIMENSION(ppm_dim)      :: min_phys
-      REAL(MK), DIMENSION(ppm_dim)      :: max_phys
+      REAL(MK), DIMENSION(:),   POINTER :: min_phys
+      REAL(MK), DIMENSION(:),   POINTER :: max_phys
       REAL(MK), DIMENSION(ppm_dim)      :: len_phys
       REAL(MK)                          :: t0
       REAL(MK)                          :: eps
@@ -163,11 +163,10 @@
       INTEGER                       :: nbc,npbc,nsbc
       INTEGER, DIMENSION(2*ppm_dim) :: ibc
 
+      CHARACTER(ppm_char) :: caller='ppm_map_part_ghost_get'
+
       LOGICAL, DIMENSION(2*ppm_dim) :: lextra
       LOGICAL                       :: valid
-
-      CHARACTER(ppm_char) :: mesg
-      CHARACTER(ppm_char) :: caller='ppm_map_part_ghost_get'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -201,27 +200,27 @@
       ibc(:) = 0
       lextra(:) = .FALSE.
       DO i=1,2*ppm_dim
-          SELECT CASE (topo%bcdef(i))
-          CASE (ppm_param_bcdef_periodic)
-              npbc = npbc + 1
-              ibc(i) = ppm_param_bcdef_periodic
-          CASE (ppm_param_bcdef_symmetry)
-              nsbc = nsbc + 1
-              lextra(i) = .TRUE.
-              ibc(i) = ppm_param_bcdef_symmetry
-          CASE (ppm_param_bcdef_antisymmetry)
-              nsbc = nsbc + 1
-              lextra(i) = .TRUE.
-              ibc(i) = ppm_param_bcdef_symmetry
-          CASE (ppm_param_bcdef_neumann)
-              nsbc = nsbc + 1
-              lextra(i) = .TRUE.
-              ibc(i) = ppm_param_bcdef_symmetry
-          CASE (ppm_param_bcdef_dirichlet)
-              nsbc = nsbc + 1
-              lextra(i) = .TRUE.
-              ibc(i) = ppm_param_bcdef_symmetry
-          END SELECT
+         SELECT CASE (topo%bcdef(i))
+         CASE (ppm_param_bcdef_periodic)
+            npbc = npbc + 1
+            ibc(i) = ppm_param_bcdef_periodic
+         CASE (ppm_param_bcdef_symmetry)
+            nsbc = nsbc + 1
+            lextra(i) = .TRUE.
+            ibc(i) = ppm_param_bcdef_symmetry
+         CASE (ppm_param_bcdef_antisymmetry)
+            nsbc = nsbc + 1
+            lextra(i) = .TRUE.
+            ibc(i) = ppm_param_bcdef_symmetry
+         CASE (ppm_param_bcdef_neumann)
+            nsbc = nsbc + 1
+            lextra(i) = .TRUE.
+            ibc(i) = ppm_param_bcdef_symmetry
+         CASE (ppm_param_bcdef_dirichlet)
+            nsbc = nsbc + 1
+            lextra(i) = .TRUE.
+            ibc(i) = ppm_param_bcdef_symmetry
+         END SELECT
       ENDDO
       nbc = npbc + nsbc
 
@@ -241,12 +240,10 @@
          CALL ppm_util_commopt(topoid,info)
          IF (ppm_debug .GT. 1) THEN
             DO i=1,topo%nneighproc
-               WRITE(mesg,'(A,I4)') 'have neighbor: ', topo%ineighproc(i)
-               CALL ppm_write(ppm_rank,caller,mesg,info)
+               stdout_f('(A,I4)',"have neighbor: ",'topo%ineighproc(i)')
             ENDDO
             DO i=1,topo%ncommseq
-               WRITE(mesg,'(A,I4)') 'communicate: ', topo%icommseq(i)
-               CALL ppm_write(ppm_rank,caller,mesg,info)
+               stdout_f('(A,I4)',"communicate: ",'topo%icommseq(i)')
             ENDDO
          ENDIF
       ENDIF
@@ -269,13 +266,14 @@
       !  Compute the size of the computational box on this topology
       !-------------------------------------------------------------------------
 #if __KIND == __DOUBLE_PRECISION
-      min_phys(:) = topo%min_physd(:)
-      max_phys(:) = topo%max_physd(:)
+      min_phys => topo%min_physd(:)
+      max_phys => topo%max_physd(:)
 #else
-      min_phys(:) = topo%min_physs(:)
-      max_phys(:) = topo%max_physs(:)
+      min_phys => topo%min_physs(:)
+      max_phys => topo%max_physs(:)
 #endif
-      len_phys(:) = max_phys(:) - min_phys(:)
+
+      len_phys(1:ppm_dim) = max_phys(1:ppm_dim) - min_phys(1:ppm_dim)
 
       !-------------------------------------------------------------------------
       !  Save the map type for the subsequent calls
@@ -364,6 +362,7 @@
 
          yminf = topo%min_subs(2,isub)
          ymaxf = topo%max_subs(2,isub)
+
          IF (ppm_dim.EQ.3) THEN
             zminf = topo%min_subs(3,isub)
             zmaxf = topo%max_subs(3,isub)
@@ -382,24 +381,24 @@
             !-------------------------------------------------------------------
             xmini = xminf + ghostsize
             IF ((ABS(xmaxf - max_phys(1)).LT. eps).AND.lextra(2)) THEN
-                xmaxi = xmaxf - ghostsize
+               xmaxi = xmaxf - ghostsize
             ELSE
-                xmaxi = xmaxf
+               xmaxi = xmaxf
             ENDIF
 
             ymini = yminf + ghostsize
             IF ((ABS(ymaxf - max_phys(2)).LT. eps).AND.lextra(4)) THEN
-                ymaxi = ymaxf - ghostsize
+               ymaxi = ymaxf - ghostsize
             ELSE
-                ymaxi = ymaxf
+               ymaxi = ymaxf
             ENDIF
 
             IF (ppm_dim.EQ.3) THEN
                zmini = zminf + ghostsize
                IF ((ABS(zmaxf - max_phys(3)).LT. eps).AND.lextra(6)) THEN
-                   zmaxi = zmaxf - ghostsize
+                  zmaxi = zmaxf - ghostsize
                ELSE
-                   zmaxi = zmaxf
+                  zmaxi = zmaxf
                ENDIF
             ENDIF
          ELSE
@@ -772,15 +771,15 @@
                ! extra ghostlayer for handling the boundary conditions
                !----------------------------------------------------------------
                IF (ABS(xmini - min_phys(1)).LT. eps .AND. lextra(1)) THEN
-                   xmini = xmini - ghostsize
+                  xmini = xmini - ghostsize
                ENDIF
                IF (ABS(ymini - min_phys(2)).LT. eps .AND. lextra(3)) THEN
-                   ymini = ymini - ghostsize
+                  ymini = ymini - ghostsize
                ENDIF
                IF (ppm_dim.EQ.3) THEN
-                   IF (ABS(zmini - min_phys(3)).LT. eps .AND. lextra(5)) THEN
-                       zmini = zmini - ghostsize
-                   ENDIF
+                  IF (ABS(zmini - min_phys(3)).LT. eps .AND. lextra(5)) THEN
+                     zmini = zmini - ghostsize
+                  ENDIF
                ENDIF
             ELSE
                !----------------------------------------------------------------

@@ -222,9 +222,8 @@
          !  from. srlist2(ipos) is the number of particles to send to or
          !  receive from the processor in srlist1(ipos).
          !----------------------------------------------------------------------
-         IF (((max_exc - 1) .EQ. ppm_rank) .OR. &
-        &    ((min_exc - 1) .EQ. ppm_rank)) THEN
-           IF ((max_exc - 1) .EQ. ppm_rank) THEN
+         IF (((max_exc - 1).EQ.ppm_rank).OR.((min_exc - 1).EQ.ppm_rank)) THEN
+           IF ((max_exc - 1).EQ.ppm_rank) THEN
               srlist1(ipos + 1) = min_exc - 1
            ELSE
               srlist1(ipos + 1) = max_exc - 1

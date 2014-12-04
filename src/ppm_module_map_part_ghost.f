@@ -91,9 +91,9 @@
             MODULE PROCEDURE ppm_map_part_ghost_put
          END INTERFACE
 
-         PUBLIC :: ppm_map_part_ghost_get, &
-         &         ppm_map_part_ghost_pop, &
-         &         ppm_map_part_ghost_put
+         PUBLIC :: ppm_map_part_ghost_get
+         PUBLIC :: ppm_map_part_ghost_pop
+         PUBLIC :: ppm_map_part_ghost_put
 
          !----------------------------------------------------------------------
          !  include the source

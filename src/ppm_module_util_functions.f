@@ -39,57 +39,55 @@
       !!! This module provides various utility functions
 
       USE ppm_module_data
-
       IMPLICIT NONE
 
       CONTAINS
 
       FUNCTION color_print(text,color)
-          !!! Return a string that will appear in color if printed out to the terminal
+        !!! Return a string that will appear in color if printed out to the terminal
 
-          IMPLICIT NONE
+        IMPLICIT NONE
 
-          CHARACTER(LEN=*), INTENT(IN   ) :: text
+        CHARACTER(LEN=*), INTENT(IN   ) :: text
 
-          INTEGER,          INTENT(IN   ) :: color
+        INTEGER,          INTENT(IN   ) :: color
 
-          CHARACTER(LEN=ppm_char)         :: color_print
+        CHARACTER(LEN=ppm_char)         :: color_print
 
-          CHARACTER(LEN=10) :: mycolor
+        CHARACTER(LEN=10) :: mycolor
 
-          write(mycolor,'(A,I0,A)') '[',color,'m'
-          color_print = ACHAR(27)//TRIM(mycolor)//TRIM(ADJUSTL(text))//ACHAR(27)//'[0m'
-          RETURN
-
+        WRITE(mycolor,'(A,I0,A)') '[',color,'m'
+        color_print = ACHAR(27)//TRIM(mycolor)//TRIM(ADJUSTL(text))//ACHAR(27)//'[0m'
+        RETURN
       END FUNCTION
 
       INTEGER FUNCTION factorial_m(multi_ind,ndim)
-          IMPLICIT NONE
+        IMPLICIT NONE
 
-          INTEGER,                  INTENT(IN   ) :: ndim
-          INTEGER, DIMENSION(ndim), INTENT(IN   ) :: multi_ind
+        INTEGER, DIMENSION(ndim), INTENT(IN   ) :: multi_ind
+        INTEGER,                  INTENT(IN   ) :: ndim
 
-          INTEGER :: i
+        INTEGER :: i
 
-          factorial_m = 1
-          DO i=1,ndim
-             factorial_m = factorial_m * factorial(multi_ind(i))
-          ENDDO
-          RETURN
+        factorial_m = 1
+        DO i=1,ndim
+           factorial_m = factorial_m * factorial(multi_ind(i))
+        ENDDO
+        RETURN
       END FUNCTION factorial_m
 
       INTEGER FUNCTION factorial(n)
-          IMPLICIT NONE
+        IMPLICIT NONE
 
-          INTEGER, INTENT(IN   ) :: n
+        INTEGER, INTENT(IN   ) :: n
 
-          INTEGER :: i
+        INTEGER :: i
 
-          factorial = 1
-          DO i=1,n
-             factorial = i*factorial
-          ENDDO
-          RETURN
+        factorial = 1
+        DO i=1,n
+           factorial = i*factorial
+        ENDDO
+        RETURN
       END FUNCTION factorial
 
       INTEGER FUNCTION binomial(n,k)

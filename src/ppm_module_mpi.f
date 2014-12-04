@@ -49,8 +49,8 @@
           INTEGER, PARAMETER :: MPI_INTEGER          = 1
           INTEGER, PARAMETER :: MPI_REAL             = 1
           INTEGER, PARAMETER :: MPI_REAL8            = 1
-          INTEGER, PARAMETER :: MPI_DOUBLE_PRECISION = 1
           INTEGER, PARAMETER :: MPI_REAL16           = 1
+          INTEGER, PARAMETER :: MPI_DOUBLE_PRECISION = 1
           ! OPERANDS
           INTEGER, PARAMETER :: MPI_LAND = 1
           INTEGER, PARAMETER :: MPI_MAX  = 1

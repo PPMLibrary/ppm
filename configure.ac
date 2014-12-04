@@ -28,12 +28,12 @@ AC_SUBST(CPPFLAGS,[""])
 
 
 # if MPI is enabled try grabbing those compiler wrappers first
-use_mpi=no 
+use_mpi=no
 AC_ARG_ENABLE([mpi],
   [AS_HELP_STRING([--enable-mpi[[=impl.]]],
   [use MPI (default is no), If the MPI implementation of your choice provides
-   compile wrappers that are in PATH, I can set them myself,  
-   choose: guess (I will choose the first implementation I can find), openmpi, 
+   compile wrappers that are in PATH, I can set them myself,
+   choose: guess (I will choose the first implementation I can find), openmpi,
    lammpi, mpich, mpich2, intelmpi_gnu (Intel's MPI with GNU
    Compilers), intelmpi_intel (Intel's MPI with Intel Compilers), sun (Sun MPI), ibm
    (IBM AIX POE). Else, set this flag with no value and set CC, CXX and FC to
@@ -65,24 +65,24 @@ AC_SUBST([ax_cv_f90_modflag])
 # Check for Fortran2003 support
 AC_MSG_CHECKING([whether your compiler properly supports Fortran 2003])
 AC_LANG([Fortran])
-use_f03=no 
+use_f03=no
 AC_RUN_IFELSE([
       program procedure_test
         type container
            integer,         pointer         :: var
            procedure(func), pointer, nopass :: f
         end type container
-      
+
         abstract interface
            logical function func(var)
              integer, pointer :: var
            end function func
         end interface
-      
+
         type(container)            :: c
         integer                    :: var
         procedure(func)            :: test
-      
+
         call add(var, test)
         if (c%f(c%var)) stop 0
         stop 1
@@ -95,7 +95,7 @@ AC_RUN_IFELSE([
           c%f   => f
         end subroutine add
       end program procedure_test
-      
+
       logical function test(var)
         integer, pointer :: var
         test = .true.
@@ -124,6 +124,9 @@ if test "x${use_mpi}" = xyes; then
 #    AC_CHECK_LIB([],[MPI_Init],[
 #                  echo "#define __MPI" >> ./src/ppm_define.h],
 #                  [AC_MSG_ERROR([Cannot build PPM with MPI support like this])])
+
+
+
 fi
 AC_LANG([C])
 
@@ -150,11 +153,11 @@ AC_MSG_CHECKING([your Fortran compiler vendor])
 vendor=none
 for vendorkp in gnu:gfortran intel:Intel sun:Sun portland:Portland; do
     str=`echo $vendorkp | cut -d: -f2`
-    if `$FC -V 2>&1 | grep -q $str`; then 
+    if `$FC -V 2>&1 | grep -q $str`; then
         vendor=`echo $vendorkp | cut -d: -f1`;
         AC_MSG_RESULT([$vendor])
         break;
-    fi; 
+    fi;
 done
 if test "x${vendor}" = xnone; then
     AC_MSG_RESULT([unknown])
@@ -226,7 +229,7 @@ AC_ARG_ENABLE([no-microinstr],[AS_HELP_STRING([--enable-no-microinstr],
   [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__NOMICROINSTRUCTIONS"])]
 #  [echo "#define __NOMICROINSTRUCTIONS" >> ./src/ppm_define.h]
 )
-    
+
 if test "x${vendor}" = xgnu; then
         AC_SUBST(FCFLAGS,["$FCFLAGS -ffree-line-length-none"])
 fi
@@ -270,7 +273,7 @@ if test "$srcdir" = "."; then
     srcdir=src
 fi
 
-  
+
 # Generate Makefiles
 AC_CONFIG_FILES([Makefile settings])
 AC_OUTPUT

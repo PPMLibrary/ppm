@@ -37,11 +37,20 @@
       MODULE ppm_module_interp_p2m
       !!! Contains the particle to mesh interpolation routines. Currently we
       !!! support 2nd order B-spline and MP4 interpolation schemes.
-        USE ppm_module_topo_typedef
-        USE ppm_module_interfaces
-
+        !-------------------------------------------------------------------------
+        !  Modules
+        !-------------------------------------------------------------------------
+        USE ppm_module_data
+        USE ppm_module_error
+        USE ppm_module_alloc
+        USE ppm_module_substart
+        USE ppm_module_substop
+        USE ppm_module_interfaces, ONLY : ppm_t_equi_mesh_, &
+        &   ppm_t_field_,ppm_t_subpatch_
+        USE ppm_module_mesh_typedef, ONLY : ppm_t_equi_mesh
         IMPLICIT NONE
 
+        PRIVATE
         !-----------------------------------------------------------------------
         !  Interface
         !-----------------------------------------------------------------------
@@ -102,8 +111,10 @@
             MODULE PROCEDURE p2m_interp_bc_dv_3d
         END INTERFACE
 
-      CONTAINS
+        PUBLIC :: p2m_interp_mp4
+        PUBLIC :: p2m_interp_bc
 
+      CONTAINS
 
 #define __KIND  __SINGLE_PRECISION
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -189,10 +200,6 @@
 #undef  __KIND
 #undef  DTYPE
 #undef  DEFINE_MK
-
-
-
-
 
 #undef __SINGLE_PRECISION
 #undef __DOUBLE_PRECISION

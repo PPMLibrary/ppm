@@ -61,7 +61,7 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      LOGICAL                , INTENT(IN   ) :: lsymm
+      LOGICAL,                 INTENT(IN   ) :: lsymm
       !!! T for using symmetry, F for full list
       INTEGER, DIMENSION(:,:), POINTER       :: ind
       !!! First interaction partner (box which *interacts*).
@@ -73,9 +73,9 @@
       !!!
       !!! 1st index: 1...3 (x,y,[z]) index shift.                              +
       !!! 2nd index: interaction number 1...nnd.
-      INTEGER                , INTENT(  OUT) :: nnd
+      INTEGER,                 INTENT(  OUT) :: nnd
       !!! Number of box-box interactions to be performed.
-      INTEGER                , INTENT(  OUT) :: info
+      INTEGER,                 INTENT(  OUT) :: info
       !!! Returns status, 0 on success
       !-------------------------------------------------------------------------
       !  Local variables

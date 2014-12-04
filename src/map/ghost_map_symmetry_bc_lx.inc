@@ -22,7 +22,7 @@
          ! symmetry ghosts in the x-direction.
          !----------------------------------------------------------
 
-         k  = nghostplus
+         k = nghostplus
 
          !----------------------------------------------------------
          ! those at the west boundary.
@@ -34,35 +34,35 @@
 
          SELECT CASE (ppm_dim)
          CASE (2)
-           DO i = 1, nghostplus
-             IF ( xt(1,i).GT.xminf.AND.xt(1,i).LE.xmini) THEN
-               k         = k + 1
-               ighost(k) = ighost(i)
-               xt(1,k)   = 2.0_MK*xminf - xt(1,i)
-               xt(2,k)   = xt(2,i)
-               xt_offset(1,k) = 2.0_MK*xminf !-2.0_MK*(xt(1,i)-xminf)
-               xt_offset(2,k) = xt_offset(2,i)
-               xt_off_fac(1,k) = -1.0_MK
-               xt_off_fac(2,k) = xt_off_fac(2,i)
-             END IF
-           END DO
+            DO i = 1, nghostplus
+              IF ( xt(1,i).GT.xminf.AND.xt(1,i).LE.xmini) THEN
+                 k         = k + 1
+                 ighost(k) = ighost(i)
+                 xt(1,k)   = 2.0_MK*xminf - xt(1,i)
+                 xt(2,k)   = xt(2,i)
+                 xt_offset(1,k) = 2.0_MK*xminf !-2.0_MK*(xt(1,i)-xminf)
+                 xt_offset(2,k) = xt_offset(2,i)
+                 xt_off_fac(1,k) = -1.0_MK
+                 xt_off_fac(2,k) = xt_off_fac(2,i)
+              ENDIF
+            ENDDO
          CASE (3)
-           DO i = 1, nghostplus
-             IF ( xt(1,i).GT.xminf.AND.xt(1,i).LE.xmini) THEN
-               k         = k + 1
-               ighost(k) = ighost(i)
-               xt(1,k)   = 2.0_MK*xminf - xt(1,i)
-               xt(2,k)   = xt(2,i)
-               xt(3,k)   = xt(3,i)
-               xt_offset(1,k) = 2.0_MK*xminf !-2.0_MK*(xt(1,i)-xminf)
-               xt_offset(2,k) = xt_offset(2,i)
-               xt_offset(3,k) = xt_offset(3,i)
-               xt_off_fac(1,k) = -1.0_MK
-               xt_off_fac(2,k) = xt_off_fac(2,i)
-               xt_off_fac(3,k) = xt_off_fac(3,i)
-             END IF
-           END DO
-        END SELECT
+            DO i = 1, nghostplus
+               IF ( xt(1,i).GT.xminf.AND.xt(1,i).LE.xmini) THEN
+                  k         = k + 1
+                  ighost(k) = ighost(i)
+                  xt(1,k)   = 2.0_MK*xminf - xt(1,i)
+                  xt(2,k)   = xt(2,i)
+                  xt(3,k)   = xt(3,i)
+                  xt_offset(1,k) = 2.0_MK*xminf !-2.0_MK*(xt(1,i)-xminf)
+                  xt_offset(2,k) = xt_offset(2,i)
+                  xt_offset(3,k) = xt_offset(3,i)
+                  xt_off_fac(1,k) = -1.0_MK
+                  xt_off_fac(2,k) = xt_off_fac(2,i)
+                  xt_off_fac(3,k) = xt_off_fac(3,i)
+               ENDIF
+            ENDDO
+         END SELECT
          !----------------------------------------------------------
          ! update the ghost counter.
          !-----------------------------------------------------------

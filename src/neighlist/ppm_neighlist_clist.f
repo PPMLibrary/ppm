@@ -79,6 +79,7 @@
       USE ppm_module_util_rank
       USE ppm_module_check_id
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -87,22 +88,22 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:),          POINTER :: xp
+      REAL(MK), DIMENSION(:,:),        POINTER       :: xp
       !!! Particle co-ordinates
-      INTEGER                 , INTENT(IN   )    :: np
+      INTEGER,                         INTENT(IN   ) :: np
       !!! Number of particles
-      INTEGER                 , INTENT(IN   )    :: topoid
+      INTEGER,                         INTENT(IN   ) :: topoid
       !!! ID of current topology
-      REAL(MK), DIMENSION(:)  , INTENT(IN   )    :: cutoff
+      REAL(MK), DIMENSION(:),          INTENT(IN   ) :: cutoff
       !!! Cutoff in all (2,3) space directions. Actual cell size may differ,
       !!! due to round-off, but it always >= cutoff.
-      LOGICAL                 , INTENT(IN   )    :: lsymm
+      LOGICAL,                         INTENT(IN   ) :: lsymm
       !!! Use symmetry?
-      TYPE(ppm_t_clist), DIMENSION(:), POINTER   :: clist
+      TYPE(ppm_t_clist), DIMENSION(:), POINTER       :: clist
       !!! Cell list data structure
-      INTEGER                 , INTENT(  OUT)    :: info
+      INTEGER,                         INTENT(  OUT) :: info
       !!! Returns 0 upon success
-      INTEGER, DIMENSION(:)   , OPTIONAL         :: pidx
+      INTEGER, DIMENSION(:), OPTIONAL                :: pidx
       !!! Indices of those particles that are
       !!! to be ranked. By default, all particles are ranked. If given,
       !!! particle indices in cell list are relative to `xp(:,pidx(:))` and not

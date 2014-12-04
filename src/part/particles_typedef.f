@@ -34,7 +34,6 @@ minclude ppm_create_collection(DTYPE(neighlist),DTYPE(neighlist),generate="exten
       TYPE,EXTENDS(DTYPE(particles_stats)_) :: DTYPE(particles_stats)
       END TYPE
 
-
       TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
           !!! Data structure for a particle set
       CONTAINS
@@ -48,9 +47,16 @@ minclude ppm_create_collection(DTYPE(neighlist),DTYPE(neighlist),generate="exten
           PROCEDURE :: realloc_prop             => DTYPE(part_prop_realloc)
           PROCEDURE :: get_discr                => DTYPE(part_get_discr)
           PROCEDURE :: zero                     => DTYPE(part_prop_zero)
+          PROCEDURE :: comp_global_index        => DTYPE(part_comp_global_index)
+
+          PROCEDURE :: get_xp                   => DTYPE(get_xp)
+          PROCEDURE :: set_xp                   => DTYPE(set_xp)
+          PROCEDURE :: move                     => DTYPE(part_move)
+          PROCEDURE :: apply_bc                 => DTYPE(part_apply_bc)
+          PROCEDURE :: print_info               => DTYPE(part_print_info)
+          PROCEDURE :: set_cutoff               => DTYPE(part_set_cutoff)
 
           PROCEDURE :: create_neighlist         => DTYPE(part_neigh_create)
-          PROCEDURE :: set_cutoff               => DTYPE(part_set_cutoff)
           PROCEDURE :: destroy_neighlist        => DTYPE(part_neigh_destroy)
           PROCEDURE :: comp_neighlist           => DTYPE(part_neighlist)
           PROCEDURE :: get_nvlist               => DTYPE(get_nvlist)
@@ -67,17 +73,28 @@ minclude ppm_create_collection(DTYPE(neighlist),DTYPE(neighlist),generate="exten
 !           PROCEDURE :: apply_op                 => DTYPE(part_op_apply)
 !           PROCEDURE :: updated_positions        => DTYPE(part_updated_positions)
 
+          PROCEDURE :: interp_to_mesh           => DTYPE(part_p2m)
+          PROCEDURE :: interp_to_mesh_all       => DTYPE(part_interp_to_mesh_all)
+          PROCEDURE :: remesh                   => DTYPE(part_remesh)
+          PROCEDURE :: recreate_from_mesh       => DTYPE(particles_from_mesh)
+
+          PROCEDURE :: create_map               => DTYPE(part_map_create)
+          PROCEDURE :: destroy_map              => DTYPE(part_map_destroy)
+
           PROCEDURE :: map_part_push_legacy     => DTYPE(part_prop_push)
           PROCEDURE :: map_part_pop_legacy      => DTYPE(part_prop_pop)
+          PROCEDURE :: map_part_ghost_pop_legacy => DTYPE(part_prop_ghost_pop)
 
           PROCEDURE :: map_ghost_get            => DTYPE(part_map_ghost_get)
           PROCEDURE :: map_ghost_put            => DTYPE(part_map_ghost_put)
           PROCEDURE :: map_ghost_push           => DTYPE(part_map_ghost_push)
           PROCEDURE :: map_ghost_send           => DTYPE(part_map_ghost_send)
+          PROCEDURE :: map_ghost_isend          => DTYPE(part_map_ghost_isend)
           PROCEDURE :: map_ghost_pop            => DTYPE(part_map_ghost_pop)
-          PROCEDURE :: map_ghost_pop_positions  => DTYPE(part_map_ghost_pop_pos)
           PROCEDURE :: map_ghost_push_positions => DTYPE(part_map_ghost_push_pos)
+          PROCEDURE :: map_ghost_pop_positions  => DTYPE(part_map_ghost_pop_pos)
           PROCEDURE :: map_ghosts               => DTYPE(part_map_ghosts)
+
           PROCEDURE :: map                      => DTYPE(part_map)
           PROCEDURE :: map_positions            => DTYPE(part_map_positions)
           PROCEDURE :: map_push                 => DTYPE(part_map_push)
@@ -86,23 +103,8 @@ minclude ppm_create_collection(DTYPE(neighlist),DTYPE(neighlist),generate="exten
           PROCEDURE :: map_pop                  => DTYPE(part_map_pop)
           PROCEDURE :: map_pop_positions        => DTYPE(part_map_pop_positions)
 
-          PROCEDURE :: move                     => DTYPE(part_move)
-          PROCEDURE :: apply_bc                 => DTYPE(part_apply_bc)
-
-          PROCEDURE :: interp_to_mesh           => DTYPE(part_p2m)
-          PROCEDURE :: interp_to_mesh_all       => DTYPE(part_interp_to_mesh_all)
-          PROCEDURE :: remesh                   => DTYPE(part_remesh)
-          PROCEDURE :: recreate_from_mesh       => DTYPE(particles_from_mesh)
-
-          PROCEDURE :: print_info               => DTYPE(part_print_info)
-
-          PROCEDURE :: comp_global_index        => DTYPE(part_comp_global_index)
-
-          PROCEDURE :: get_xp                   => DTYPE(get_xp)
-          PROCEDURE :: set_xp                   => DTYPE(set_xp)
-
-          PROCEDURE :: create_map               => DTYPE(part_map_create)
-          PROCEDURE :: destroy_map              => DTYPE(part_map_destroy)
+          PROCEDURE :: map_store                => DTYPE(part_map_store)
+          PROCEDURE :: map_load                 => DTYPE(part_map_load)
 
           PROCEDURE :: DTYPE(data_1d_i_get_prop)
           PROCEDURE :: DTYPE(data_2d_i_get_prop)
