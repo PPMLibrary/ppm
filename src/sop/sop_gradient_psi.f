@@ -8,11 +8,8 @@
           USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
           USE ppm_module_particles
           USE ppm_module_map_part
-
+          USE ppm_module_mpi
           IMPLICIT NONE
-#ifdef __MPI
-          INCLUDE 'mpif.h'
-#endif
 
           DEFINE_MK()
           ! arguments

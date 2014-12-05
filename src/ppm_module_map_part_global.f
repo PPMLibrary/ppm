@@ -65,8 +65,8 @@
             MODULE PROCEDURE ppm_map_part_remap_s
          END INTERFACE
 
-         PUBLIC :: ppm_map_part_global, &
-         &         ppm_map_part_remap
+         PUBLIC :: ppm_map_part_global
+         PUBLIC :: ppm_map_part_remap
 
          !----------------------------------------------------------------------
          !  include the source

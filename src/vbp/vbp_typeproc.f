@@ -345,6 +345,7 @@
         !!!  Assumptions:
         !!! * Particles positions need to have been mapped onto the topology
         !!! * Ghost positions have been computed
+        USE ppm_module_mpi
         USE ppm_module_neighlist
 #ifdef __WITH_CNL
         USE ppm_module_cnl
@@ -354,13 +355,11 @@
         USE ppm_module_inl_k_vlist
         USE ppm_module_kdtree
         IMPLICIT NONE
+
+        DEFINE_MK()
         !-------------------------------------------------------------------------
         !  Includes
         !-------------------------------------------------------------------------
-#ifdef __MPI
-        INCLUDE "mpif.h"
-#endif
-        DEFINE_MK()
         !-------------------------------------------------------------------------
         !  Arguments
         !-------------------------------------------------------------------------

@@ -199,7 +199,7 @@ minclude ppm_create_collection(operator_,operator_,generate="abstract")
           !!!    ppm_ops_iscomputed
           !!!          true if the operator has been computed and is uptodate
           !!!    ppm_ops_vector
-          !!!          true if each term represents a component (ie the result
+          !!!          true if each term represents a component (i.e. the result
           !!!          of the operator should be a vector field, like for gradients)
           !!!          false if the components are added up (like for the divergence)
 
@@ -878,43 +878,47 @@ minclude ppm_create_collection_procedures(part_prop_d_,part_prop_d_,vec=true)
       !CREATE (DUMMY ROUTINE)
       SUBROUTINE operator_discr_create(this,Op,Part_src,Part_to,info,&
       &          with_ghosts,vector,interp,order,order_v,prop)
-          CLASS(ppm_t_operator_discr)                               :: this
-          CLASS(ppm_t_operator_),            TARGET,  INTENT(IN   ) :: Op
-          CLASS(ppm_t_discr_kind),           TARGET,  INTENT(IN   ) :: Part_src
-          CLASS(ppm_t_discr_kind),           TARGET,  INTENT(IN   ) :: Part_to
-          INTEGER,                                    INTENT(  OUT) :: info
-          LOGICAL,                 OPTIONAL,          INTENT(IN   ) :: with_ghosts
-          LOGICAL,                 OPTIONAL,          INTENT(IN   ) :: vector
-          LOGICAL,                 OPTIONAL,          INTENT(IN   ) :: interp
-          INTEGER,                 OPTIONAL,          INTENT(IN   ) :: order
-          INTEGER, DIMENSION(:),   OPTIONAL, POINTER, INTENT(IN   ) :: order_v
-          CLASS(ppm_t_discr_data), OPTIONAL, TARGET                 :: prop
+          IMPLICIT NONE
+          CLASS(ppm_t_operator_discr)                      :: this
+          CLASS(ppm_t_operator_),            TARGET        :: Op
+          CLASS(ppm_t_discr_kind),           TARGET        :: Part_src
+          CLASS(ppm_t_discr_kind),           TARGET        :: Part_to
+          INTEGER,                           INTENT(  OUT) :: info
+          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: with_ghosts
+          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: vector
+          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: interp
+          INTEGER,                 OPTIONAL, INTENT(IN   ) :: order
+          INTEGER,   DIMENSION(:), OPTIONAL, POINTER       :: order_v
+          CLASS(ppm_t_discr_data), OPTIONAL, TARGET        :: prop
           start_subroutine("operator_discr_create")
           fail("this dummy routine should not be called")
           end_subroutine()
       END SUBROUTINE operator_discr_create
       !DESTROY (DUMMY ROUTINE)
       SUBROUTINE operator_discr_destroy(this,info)
-          CLASS(ppm_t_operator_discr)               :: this
-          INTEGER,                    INTENT(  OUT) :: info
+          IMPLICIT NONE
+          CLASS(ppm_t_operator_discr) :: this
+          INTEGER,      INTENT(  OUT) :: info
           start_subroutine("operator_discr_destroy")
           fail("this dummy routine should not be called")
           end_subroutine()
       END SUBROUTINE operator_discr_destroy
       !COMPUTE (DUMMY ROUTINE)
       SUBROUTINE operator_discr_compute(this,Field_src,Field_to,info)
-          CLASS(ppm_t_operator_discr)                    :: this
-          CLASS(ppm_t_main_abstr), TARGET, INTENT(IN   ) :: Field_src
-          CLASS(ppm_t_main_abstr), TARGET, INTENT(INOUT) :: Field_to
-          INTEGER,                         INTENT(  OUT) :: info
+          IMPLICIT NONE
+          CLASS(ppm_t_operator_discr)            :: this
+          CLASS(ppm_t_main_abstr), TARGET        :: Field_src
+          CLASS(ppm_t_main_abstr), TARGET        :: Field_to
+          INTEGER,                 INTENT(  OUT) :: info
           start_subroutine("operator_discr_compute")
           fail("this dummy routine should not be called")
           end_subroutine()
       END SUBROUTINE operator_discr_compute
 
       FUNCTION discr_data_has_ghosts(this) RESULT(res)
-          CLASS (ppm_t_discr_data)  :: this
-          LOGICAL                   :: res
+          IMPLICIT NONE
+          CLASS (ppm_t_discr_data) :: this
+          LOGICAL                  :: res
           res = this%flags(ppm_ppt_ghosts)
       END FUNCTION discr_data_has_ghosts
 

@@ -73,6 +73,7 @@
       USE ppm_module_write
       USE ppm_module_check_id
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -127,8 +128,9 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_clist), DIMENSION(:),POINTER :: cl
-      TYPE(ppm_t_topo),               POINTER :: topo
+      TYPE(ppm_t_clist), DIMENSION(:), POINTER :: cl
+
+      TYPE(ppm_t_topo), POINTER :: topo
 
       ! timer
       REAL(MK)               :: t0
@@ -234,6 +236,7 @@
          ENDIF
          or_fail('Building cell lists failed.')
       ENDIF
+
       !-------------------------------------------------------------------------
       !  Generate cell neighbor lists
       !-------------------------------------------------------------------------
@@ -249,12 +252,13 @@
       CALL ppm_alloc(nvlist,lda,iopt,info)
       or_fail_alloc('Verlet list sizes NVLIST')
 
+      nvlist(1:npdx) = 0
+
       !-------------------------------------------------------------------------
       !  Only build and store the lists if needed
       !-------------------------------------------------------------------------
       SELECT CASE (lst)
       CASE (.False.)
-         nvlist = 0
          !-------------------------------------------------------------------------
          !  Determine size of Verlet lists
          !-------------------------------------------------------------------------
@@ -427,7 +431,7 @@
          ! radius equlas to cutoff radius
          IF (ppm_dim.EQ.3) THEN
             maxvlen = INT(4.18*maxvlen)
-         Else If (ppm_dim.EQ.2) THEN
+         ELSE IF (ppm_dim.EQ.2) THEN
             maxvlen = INT(3.14*maxvlen)
          ENDIF
 
@@ -440,7 +444,6 @@
          CALL ppm_alloc(vlist,lda,iopt,info)
          or_fail_alloc('Verlet list VLIST')
 
-         nvlist = 0
          !---------------------------------------------------------------------
          !  BUILD VERLET LISTS
          !---------------------------------------------------------------------
@@ -459,6 +462,7 @@
                n2 = 0
                nz = lb(3)+2
             ENDIF
+
             ! loop over all REAL cells (the -2 at the end does this)
             DO k=lb(3),nz-2
                DO j=lb(2),cl(idom)%nm(2)-2
@@ -608,7 +612,7 @@
          !---------------------------------------------------------------------
          ii=npdx
          DO ipart=npdx,1,-1
-            IF (nvlist(ipart) .GT. 0) THEN
+            IF (nvlist(ipart).GT.0) THEN
                ii = ipart
                EXIT
             ENDIF
@@ -623,13 +627,10 @@
          ENDIF
 
          iopt = ppm_param_alloc_fit_preserve
-         lda(2) = ii
-         CALL ppm_alloc(nvlist,lda(2:2),iopt,info)
-         or_fail_alloc('Verlet list sizes NVLIST')
-
          lda(1) = maxvlen
+         lda(2) = ii
          CALL ppm_alloc(vlist,lda,iopt,info)
-         or_fail_alloc('Verlet list sizes NVLIST')
+         or_fail_alloc('Verlet list VLIST')
 
       END SELECT ! lstore
 

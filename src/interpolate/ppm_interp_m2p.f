@@ -74,21 +74,8 @@
       !!! [WARNING]
       !!! This routine assumes that `up` is already allocated.
       !-------------------------------------------------------------------------
-      !  INCLUDES
-      !-------------------------------------------------------------------------
-
-      !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_error
-      USE ppm_module_alloc
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_data
-      USE ppm_module_data_rmsh
-      USE ppm_module_data_mesh
-      USE ppm_module_write
-      USE ppm_module_check_id
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION
@@ -96,6 +83,9 @@
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
+      !-------------------------------------------------------------------------
+      !  INCLUDES
+      !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
       ! Arguments
       !-------------------------------------------------------------------------

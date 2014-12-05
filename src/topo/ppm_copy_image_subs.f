@@ -32,7 +32,7 @@
      &   min_sub,max_sub,nsubs,subid,nsubsplus,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE copy_imgsubs_d(min_phys,max_phys,bcdef, &
-     &   min_sub,max_sub,nsubs,subid,nsubsplus,info)
+      &          min_sub,max_sub,nsubs,subid,nsubsplus,info)
 #endif
       !!! This routine copies the sub domains to ghost sub domains
       !!! in the case of periodic boundary condition and stores
@@ -52,6 +52,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
+      USE ppm_module_mpi
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -61,9 +62,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------

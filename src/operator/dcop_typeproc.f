@@ -1,50 +1,54 @@
-      SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
-      &          vector,interp,order,order_v,prop)
+      SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info, &
+      &          with_ghosts,vector,interp,order,order_v,prop)
       !!! Create a discretized differential operator (For DC-PSE)
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_dcop))                      :: this
-          CLASS(ppm_t_operator_),TARGET,  INTENT(IN   ) :: Op
+          CLASS(DTYPE(ppm_t_dcop))                                       :: this
+          CLASS(ppm_t_operator_),                          TARGET        :: Op
           !!! Generic differential operator that this is a discretization of.
-          CLASS(ppm_t_discr_kind),TARGET, INTENT(IN   ) :: Part_src
+          CLASS(ppm_t_discr_kind),                         TARGET        :: Part_src
           !!! Particle set that this operator takes data from.
-          CLASS(ppm_t_discr_kind),TARGET, INTENT(IN   ) :: Part_to
+          CLASS(ppm_t_discr_kind),                         TARGET        :: Part_to
           !!! Particle set that this operator returns data on.
-          INTEGER,                        INTENT(  OUT) :: info
+          INTEGER,                                         INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
-          LOGICAL,OPTIONAL,               INTENT(IN   ) :: with_ghosts
+          LOGICAL,                 OPTIONAL,               INTENT(IN   ) :: with_ghosts
           !!! True if the operator should be computed for ghost particles too.
           !!! Note that the resulting values will be wrong for the ghost particles
           !!! that have some neighbours outside the ghost layers. Default is false.
-          LOGICAL,OPTIONAL,               INTENT(IN   ) :: vector
+          LOGICAL,                 OPTIONAL,               INTENT(IN   ) :: vector
           !!! True if the operator is a vector field. Default is false.
-          LOGICAL,OPTIONAL,               INTENT(IN   ) :: interp
+          LOGICAL,                 OPTIONAL,               INTENT(IN   ) :: interp
           !!! True if the operator interpolates data from one set of particles to
           !!! another. Default is false.
           !!! WARNING: on output of this routine, one has to update the ghost
           !!! values for the Part_src particle set (because it will have a
           !!! new property that stores nearest-neighbour distances, the ghost
           !!! values of which will be needed)
-          INTEGER             ,OPTIONAL,  INTENT(IN   ) :: order
+          INTEGER,                 OPTIONAL,               INTENT(IN   ) :: order
           !!! Order of approximation for all terms of the differential operator
-          INTEGER,DIMENSION(:),OPTIONAL,POINTER,INTENT(IN   ) :: order_v
+          INTEGER,                 OPTIONAL, DIMENSION(:), POINTER       :: order_v
           !!! Order of approximation for each term of the differential operator
-          CLASS(ppm_t_discr_data),OPTIONAL,TARGET       :: prop
+          CLASS(ppm_t_discr_data), OPTIONAL,               TARGET        :: prop
 
-          INTEGER,      DIMENSION(:),   POINTER      :: nvlist
-          INTEGER,      DIMENSION(:,:), POINTER      :: vlist
-          REAL(MK),     DIMENSION(:),   POINTER      :: nn2
-          REAL(MK),     DIMENSION(:,:), POINTER      :: xp => NULL()
-          INTEGER   :: ip,iq,ineigh
-          REAL(MK)  :: dist2
+
+
+          REAL(MK), DIMENSION(:),   POINTER :: nn2
+          REAL(MK), DIMENSION(:,:), POINTER :: xp => NULL()
+          REAL(MK)                          :: dist2
+
+          INTEGER, DIMENSION(:),   POINTER :: nvlist
+          INTEGER, DIMENSION(:,:), POINTER :: vlist
+          INTEGER                          :: ip,iq,ineigh
+
           !nearest-neighbor distance, for interpolating operators. Either they
           !were computed already, or this has to be done now.
 
           start_subroutine("op_create")
 
-          this%flags = .FALSE.
-          IF (PRESENT(with_ghosts)) this%flags(ppm_ops_inc_ghosts) = with_ghosts
-          IF (PRESENT(interp))      this%flags(ppm_ops_interp) = interp
-          IF (PRESENT(vector))      this%flags(ppm_ops_vector) = vector
+          this%flags(ppm_ops_iscomputed)=.FALSE.
+          this%flags(ppm_ops_inc_ghosts)=MERGE(with_ghosts,.FALSE.,PRESENT(with_ghosts))
+          this%flags(ppm_ops_interp)    =MERGE(interp,     .FALSE.,PRESENT(interp))
+          this%flags(ppm_ops_vector)    =MERGE(vector,     .FALSE.,PRESENT(vector))
 
           ldc(1)=Op%nterms
           CALL ppm_alloc(this%order,ldc,ppm_param_alloc_fit,info)
@@ -107,7 +111,7 @@
                    CALL Part_src%set_xp(xp,info,read_only=.TRUE.)
 
                 CLASS DEFAULT
-                   fail("does not work for this type of discretisation")
+                   fail("does not work for this type of discretization")
 
                 END SELECT
              ELSE
@@ -128,8 +132,13 @@
       !DESTROY ENTRY
       SUBROUTINE DTYPE(dcop_destroy)(this,info)
           !!! Destroy the discretized differential operator
-          CLASS(DTYPE(ppm_t_dcop))              :: this
-          INTEGER,                INTENT(  OUT) :: info
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_dcop)) :: this
+
+          INTEGER,   INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
 
           start_subroutine("op_destroy")
@@ -142,12 +151,14 @@
              CLASS IS (DTYPE(ppm_t_particles)_)
                 CALL Part_src%props%remove(info,this%nn_sq)
                 or_fail("failed to remove property")
+
                 this%nn_sq => NULL()
 
              END SELECT
           ENDIF
 
           this%flags     = .FALSE.
+
           this%discr_src => NULL()
           this%discr_to  => NULL()
           this%op_ptr    => NULL()
@@ -162,21 +173,26 @@
           !!! Compute the weights for a DC-PSE operator
           !!! (this is an expensive step and has to
           !!! be re-done everytime the particles move)
+          IMPLICIT NONE
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_dcop))                  :: this
-          INTEGER,                   INTENT(  OUT)  :: info
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_dcop)) :: this
+
+          INTEGER,   INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
           !---------------------------------------------------------
           ! Optional arguments
           !---------------------------------------------------------
-          REAL(MK),                  OPTIONAL, INTENT(IN   )   :: c
+          REAL(MK), OPTIONAL, INTENT(IN   ) :: c
           !!! ratio h/epsilon
-          REAL(MK),                  OPTIONAL, INTENT(  OUT)   :: min_sv
+          REAL(MK), OPTIONAL, INTENT(  OUT) :: min_sv
           !!! if present, compute the singular value decomposition of the
           !!! vandermonde matrix for each operator and return the smallest one
           start_subroutine("op_comp_weights")
 
-          IF (ppm_dim .EQ. 2) THEN
+          IF (ppm_dim.EQ.2) THEN
              CALL this%comp_weights_2d(info,c,min_sv)
           ELSE
              CALL this%comp_weights_3d(info,c,min_sv)
@@ -204,17 +220,23 @@
         !!! initialized. This will be done if necessary.
         !!! The dimension of Field_to needs to conform the output of the
         !!! operator (vector or scalar, type, etc...).
-#ifdef __MPI
-        INCLUDE "mpif.h"
-#endif
+        USE ppm_module_mpi
+        IMPLICIT NONE
+        !-------------------------------------------------------------------------
+        !  Include
+        !-------------------------------------------------------------------------
+
         DEFINE_MK()
-        CLASS(DTYPE(ppm_t_dcop))                   :: this
+        !-------------------------------------------------------------------------
+        !  Arguments
+        !-------------------------------------------------------------------------
+        CLASS(DTYPE(ppm_t_dcop))               :: this
         !!! Discretized DC-PSE operator, with pre-computed weights
-        CLASS(ppm_t_main_abstr),TARGET,INTENT(IN)      :: Field_src
+        CLASS(ppm_t_main_abstr), TARGET        :: Field_src
         !!! Input field (or particle property)
-        CLASS(ppm_t_main_abstr),TARGET,INTENT(INOUT)   :: Field_to
+        CLASS(ppm_t_main_abstr), TARGET        :: Field_to
         !!! Output field (or particle property)
-        INTEGER,                       INTENT(OUT) :: info
+        INTEGER,                 INTENT(  OUT) :: info
         !!! Return status, on success 0.
 
         !-------------------------------------------------------------------------
@@ -240,13 +262,13 @@
         INTEGER                          :: ip,iq,jdim
         INTEGER                          :: ineigh,lda,np_target
 
-        LOGICAL                                    :: vector_operator
+        LOGICAL :: vector_operator
         !true if operator returns a vector field
-        LOGICAL                                    :: vector_output
-        LOGICAL                                    :: vector_input
-        LOGICAL                                    :: with_ghosts
+        LOGICAL :: vector_output
+        LOGICAL :: vector_input
+        LOGICAL :: with_ghosts
 
-        CHARACTER(LEN=ppm_char)                    :: fname
+        CHARACTER(LEN=ppm_char) :: fname
 
         start_subroutine("dcop_compute")
 
@@ -257,7 +279,7 @@
         ! Check arguments
         !-------------------------------------------------------------------------
         check_true(<#this%flags(ppm_ops_iscomputed)#>,&
-        &   "Operator is not correctly discretized. Maybe the particles have moved?")
+        & "Operator is not correctly discretized. Maybe the particles have moved?")
         check_associated(<#this%discr_src#>)
         check_associated(<#this%discr_to#>)
 
@@ -281,8 +303,8 @@
 
               END SELECT
 
-              vector_operator = this%flags(ppm_ops_vector)
-              vector_input = (data_src%lda .NE. 1)
+              vector_operator=this%flags(ppm_ops_vector)
+              vector_input   =data_src%lda.NE.1
 
               ! Check that the destination field has been defined
               ! if not, create new one with default dimensions.
@@ -290,8 +312,10 @@
               CLASS IS (ppm_t_field_)
                  IF (Field_to%lda.LE.0) THEN
                     check_false(<#ASSOCIATED(Field_to%discr_info)#>,&
-                    "Destination field seems to be corrupted - Try Field%destroy()?")
+                    & "Destination field seems to be corrupted - Try Field%destroy()?")
+
                     write(fname,'(A,A)') "Output_from_",TRIM(ADJUSTL(this%op_ptr%name))
+
                     IF (vector_operator) THEN
                        CALL Field_to%create(this%op_ptr%nterms,info,name=fname)
                     ELSE
@@ -355,8 +379,8 @@
                  CALL Field_to%get_discr(this%discr_to,data_to,info)
                  or_fail("Field_to%get_to failed")
 
-                 IF (.NOT. data_to%flags(ppm_ppt_partial) .OR. &
-                 &  with_ghosts .AND. .NOT. data_to%flags(ppm_ppt_ghosts)) THEN
+                 IF (.NOT.data_to%flags(ppm_ppt_partial).OR. &
+                 &  with_ghosts.AND..NOT.data_to%flags(ppm_ppt_ghosts)) THEN
                     CALL Field_to%discretize_on(Part_to,info,with_ghosts=with_ghosts)
                     or_fail("Failed to reinitialize destination field discretization")
 

@@ -183,7 +183,8 @@
       !-------------------------------------------------------------------------
       IF (Ndata.EQ.0) THEN
          IF (ppm_debug.GT.1) THEN
-            fail('There is no data to be sent. Skipping push.',ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
+            fail('There is no data to be sent. Skipping push.', &
+            & ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
             info=0
          ENDIF
          GOTO 9999

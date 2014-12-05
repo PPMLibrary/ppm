@@ -47,8 +47,8 @@
       !!! change the order of the IF statements (see code comments) and make
       !!! sure the compiler is not doing something wrong as well! Originally
       !!! when particles would be close/at the boundary, the routine would
-      !!! fail to map all particles, but succed if called a 2nd time. The
-      !!! changed in the order of the IF statements removed this double calling
+      !!! fail to map all particles, but succeed if called a 2nd time. The
+      !!! changes in the order of the IF statements removed this double calling
       !!! sequence.
 
       !-------------------------------------------------------------------------
@@ -60,19 +60,16 @@
       USE ppm_module_data
       USE ppm_module_check_id
       USE ppm_module_topo_typedef
-
       IMPLICIT NONE
-      !-------------------------------------------------------------------------
-      !  Includes
-      !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
+      !-------------------------------------------------------------------------
+      !  Includes
+      !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -89,8 +86,9 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      REAL(MK), DIMENSION(ppm_dim) :: len_phys,max_phys,min_phys
-      REAL(MK)                     :: t0
+      REAL(MK), DIMENSION(ppm_dim)    :: len_phys
+      REAL(MK), DIMENSION(:), POINTER :: max_phys,min_phys
+      REAL(MK)                        :: t0
 
       INTEGER :: i
 
@@ -116,18 +114,19 @@
       ENDIF
 
       topo => ppm_topo(topoid)%t
+
       !-------------------------------------------------------------------------
       !  compute the size of the computational domain
       !-------------------------------------------------------------------------
 #if __KIND == __DOUBLE_PRECISION
-      len_phys(1:ppm_dim)=topo%max_physd(1:ppm_dim)-topo%min_physd(1:ppm_dim)
-      max_phys(1:ppm_dim)=topo%max_physd(1:ppm_dim)
-      min_phys(1:ppm_dim)=topo%min_physd(1:ppm_dim)
+      max_phys => topo%max_physd(1:ppm_dim)
+      min_phys => topo%min_physd(1:ppm_dim)
 #else
-      len_phys(1:ppm_dim)=topo%max_physs(1:ppm_dim)-topo%min_physs(1:ppm_dim)
-      max_phys(1:ppm_dim)=topo%max_physs(1:ppm_dim)
-      min_phys(1:ppm_dim)=topo%min_physs(1:ppm_dim)
+      max_phys => topo%max_physs(1:ppm_dim)
+      min_phys => topo%min_physs(1:ppm_dim)
 #endif
+
+      len_phys(1:ppm_dim)=max_phys(1:ppm_dim)-min_phys(1:ppm_dim)
 
       !-------------------------------------------------------------------------
       !  wrap the particles on this topology - do that by allowing particles to

@@ -99,6 +99,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
+      USE ppm_module_mpi
       USE ppm_module_write
       USE ppm_module_tree_alloc
       USE ppm_module_tree_divcheck
@@ -110,6 +111,7 @@
       USE ppm_module_util_rank
       USE ppm_module_decomp
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -118,9 +120,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------

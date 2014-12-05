@@ -39,6 +39,7 @@
       USE ppm_module_data, ONLY : ppm_kind_double, ppm_kind_single
       IMPLICIT NONE
 
+      PRIVATE
       !----------------------------------------------------------------------
       ! Data types
       !----------------------------------------------------------------------
@@ -191,18 +192,9 @@
       !!! store the new topology, if it is > size(ppm_topo) then the ppm_topo
       !!! array must be extended
 
-      !----------------------------------------------------------------------
-      ! Pointer to cell list (needed to make lists of cell lists)
-      !----------------------------------------------------------------------
-      TYPE ppm_t_clist
-          !!! Cell list data structure
-          INTEGER, DIMENSION(:), POINTER :: nm  => NULL()
-          !!! Number of cells in x,y,(z) direction (including the ghosts
-          !!! cells) in each subdomain.
-          INTEGER, DIMENSION(:), POINTER :: lpdx => NULL()
-          !!! particle index list
-          INTEGER, DIMENSION(:), POINTER :: lhbx => NULL()
-          !!! first particle in each cell
-      END TYPE
+      PUBLIC :: ppm_t_topo
+      PUBLIC :: ppm_t_ptr_topo
+      PUBLIC :: ppm_topo
+      PUBLIC :: ppm_next_avail_topo
 
       END MODULE ppm_module_topo_typedef

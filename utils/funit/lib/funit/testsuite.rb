@@ -1,7 +1,7 @@
 require 'funit'
 
 module Funit
-  
+
   include Assertions # FIXME
 
   ##
@@ -12,7 +12,7 @@ module Funit
     KEYWORDS = Regexp.union(/^\s*(end\s+)?(setup|teardown|test|init|finalize)/i,
                             Assertions::ASSERTION_PATTERN)
     COMMENT_LINE = /^\s*!/
-    
+
     include Funit #FIXME
 
     def initialize( suite_name, suite_content, trailing_code, wrap_with_module )
@@ -144,13 +144,13 @@ end module #{@suite_name}_mod
         @init.push line
       end
     end
-    
+
     def add_to_finalize funit_contents
       while (line = funit_contents.shift) && line !~ /end\s+finalize/i
         @finalize.push line
       end
     end
-    
+
     def add_to_setup funit_contents
       while (line = funit_contents.shift) && line !~ /end\s+setup/i
         @setup.push line
@@ -182,7 +182,7 @@ end module #{@suite_name}_mod
       puts " subroutine #{test_name}\n\n"
 
       num_of_asserts = 0
-  
+
       while (line = funit_contents.shift) && line !~ /(end\s+test|contains)/i
         case line
         when COMMENT_LINE
@@ -214,7 +214,7 @@ end module #{@suite_name}_mod
       puts "\n subroutine funit_init"
       puts @init
       puts " end subroutine funit_init\n\n"
-      
+
       puts "\n subroutine funit_setup"
       puts @setup
       puts "  noAssertFailed = .true."
@@ -223,7 +223,7 @@ end module #{@suite_name}_mod
       puts "\n subroutine funit_teardown"
       puts @teardown
       puts " end subroutine funit_teardown\n\n"
-      
+
       puts "\n subroutine funit_finalize"
       puts @finalize
       puts " end subroutine funit_finalize\n\n"
@@ -279,31 +279,31 @@ end module #{@suite_name}_mod
               end
             end
             final_list.each do |arl|
-              puts "\n  write(log,*) 'setting up...'"
-              puts "  call funit_setup"
-              puts "  write(log,*) 'Entering #{test_name}, arglist #{arl}'\n"
+              puts "\n  WRITE(log,*) 'setting up...'"
+              puts "  CALL funit_setup"
+              puts "  WRITE(log,*) 'Entering #{test_name}, arglist #{arl}'\n"
               arl.each do |var,val|
                 puts "  #{var} = #{val}"
               end
-              puts "  call #{test_name}"
-              puts "  write(log,*) 'Leaving #{test_name}, arglist #{arl}'\n"
-              puts "  call funit_teardown"
-              puts "  write(log,*) 'cleaned up...'"
+              puts "  CALL #{test_name}"
+              puts "  WRITE(log,*) 'Leaving #{test_name}, arglist #{arl}'\n"
+              puts "  CALL funit_teardown"
+              puts "  WRITE(log,*) 'cleaned up...'"
             end
           end
         else
-          puts "\n  write(log,*) 'setting up...'"
-          puts "  call funit_setup"
-          puts "  write(log,*) 'Entering #{test_name}...'\n"
-          puts "  call #{test_name}"
-          puts "  write(log,*) 'Leaving #{test_name}...'\n"
-          puts "  call funit_teardown"
-          puts "  write(log,*) 'cleaned up...'"
+          puts "\n  WRITE(log,*) 'setting up...'"
+          puts "  CALL funit_setup"
+          puts "  WRITE(log,*) 'Entering #{test_name}...'\n"
+          puts "  CALL #{test_name}"
+          puts "  WRITE(log,*) 'Leaving #{test_name}...'\n"
+          puts "  CALL funit_teardown"
+          puts "  WRITE(log,*) 'cleaned up...'"
         end
       end
 
       puts <<-LASTONE
-  
+
   call funit_finalize
 
   nTests          = numTests

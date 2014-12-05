@@ -22,9 +22,10 @@
       ! and the GNU Lesser General Public License along with PPM. If not,
       ! see <http://www.gnu.org/licenses/>.
       !
-      ! Parallel Particle Mesh Library (PPM)
-      ! ETH Zurich
-      ! CH-8092 Zurich, Switzerland
+      !-------------------------------------------------------------------------
+      !  MOSAIC Group
+      !  Max Planck Institute of Molecular Cell Biology and Genetics
+      !  Pfotenhauerstr. 108, 01307 Dresden, Germany
       !-------------------------------------------------------------------------
 
       SUBROUTINE ppm_map_part_isend(Npart,Mpart,info)
@@ -48,13 +49,11 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
+      USE ppm_module_mpi
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------

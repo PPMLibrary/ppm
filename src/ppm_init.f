@@ -46,15 +46,13 @@
       USE ppm_module_write
       USE ppm_module_log
       USE ppm_module_alloc, ONLY: ppm_alloc
+      USE ppm_module_mpi
       USE ppm_module_print_defines
       USE ppm_module_io, ONLY: ppm_io_set_unit
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------

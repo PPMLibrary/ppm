@@ -7,29 +7,29 @@ module Funit
     !
     ! <%= File.basename $0 %> generated this file on <%= Time.now %>.
 
-    program TestRunner
+    PROGRAM TestRunner
 
       <% test_suites.each do |test_suite| -%>
-      use <%= File.basename(test_suite) %>_fun
+      USE <%= File.basename(test_suite) %>_fun
       <% end -%>
-      
-      implicit none
+
+      IMPLICIT NONE
 
       <% if use_mpi -%>
       INCLUDE 'mpif.h'
       <% end -%>
 
-      integer, dimension(<%=test_suites.size%>) :: numTests, numAsserts, numAssertsTested, numFailures
-      character(len=100)                        :: log_file_name
-      integer                                   :: log = 20
-      integer                                   :: comm
-      integer                                   :: rank
-      integer                                   :: size
-      integer                                   :: i
+      INTEGER, DIMENSION(<%=test_suites.size%>) :: numTests, numAsserts, numAssertsTested, numFailures
+      CHARACTER(LEN=100)                        :: log_file_name
+      INTEGER                                   :: log = 20
+      INTEGER                                   :: comm
+      INTEGER                                   :: rank
+      INTEGER                                   :: size
+      INTEGER                                   :: i
 
       <% if use_mpi -%>
-      integer :: mpiinfo
-      call mpi_init(mpiinfo)
+      INTEGER :: mpiinfo
+      CALL MPI_Init(mpiinfo)
       <% end -%>
 
       rank = 0
@@ -37,92 +37,92 @@ module Funit
       comm = 0
 
       <% if use_mpi -%>
-      call mpi_comm_rank(MPI_COMM_WORLD, rank, mpiinfo)
-      call mpi_comm_size(MPI_COMM_WORLD, size, mpiinfo)
-      comm = MPI_COMM_WORLD
+      CALL MPI_Comm_rank(MPI_COMM_WORLD, rank, mpiinfo)
+      CALL MPI_Comm_size(MPI_COMM_WORLD, size, mpiinfo)
+      COMM = MPI_COMM_WORLD
       <% end -%>
 
-      write(log_file_name,'(A,I0,A)') 'test_runner.', rank, '.log'
+      WRITE(log_file_name,'(A,I0,A)') 'test_runner.', rank, '.log'
       OPEN(log, FILE=log_file_name, ACTION='WRITE')
-      write(log,*) "Starting new test run..."
+      WRITE(log,*) "Starting new test run..."
 
       <% test_suites.each_with_index do |test_suite,i| -%>
-      if (rank .eq. 0) then
-         write(*,*)
-         write(*,*) "<%= File.basename(test_suite) %> test suite:"
-      end if
-      write(log,*)
-      write(log,*) "<%= File.basename(test_suite) %> test suite:"
+      IF (rank .EQ. 0) THEN
+         WRITE(*,*)
+         WRITE(*,*) "<%= File.basename(test_suite) %> test suite:"
+      END IF
+      WRITE(log,*)
+      WRITE(log,*) "<%= File.basename(test_suite) %> test suite:"
 
-      call test_<%= File.basename(test_suite) %> &
+      CALL test_<%= File.basename(test_suite) %> &
         ( numTests(<%= i+1 %>), numAsserts(<%= i+1 %>), numAssertsTested(<%= i+1 %>), &
           numFailures(<%= i+1 %>), log, rank, comm)
 
-      write(*,1) rank, numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
+      WRITE(*,1) rank, numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
          numTests(<%= i+1 %>)-numFailures(<%= i+1 %>), numTests(<%= i+1 %>)
-      write(log,1) rank, numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
+      WRITE(log,1) rank, numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
         numTests(<%= i+1 %>)-numFailures(<%= i+1 %>), numTests(<%= i+1 %>)
 
       <%= i+1 %> format('[',i0,'] Passed ',i0,' of ',i0,' possible asserts comprising ',i0,' of ',i0,' tests.')
 
       <% if use_mpi -%>
-      call mpi_barrier(MPI_COMM_WORLD, mpiinfo)
+      CALL MPI_Barrier(MPI_COMM_WORLD, mpiinfo)
       <% end -%>
 
       <% end -%>
 
       <% if use_mpi -%>
-      call mpi_finalize(mpiinfo)
+      CALL MPI_Finalize(mpiinfo)
       <% end -%>
 
-      if (rank .eq. 0) then
-         write(*,*)
-         write(*,'(a/)') "==================================[ SUMMARY ]==================================="
-      end if
-      write(log,*)
-      write(log,'(a/)') "==================================[ SUMMARY ]==================================="
+      IF (rank .EQ. 0) THEN
+         WRITE(*,*)
+         WRITE(*,'(a/)') "==================================[ SUMMARY ]==================================="
+      END IF
+      WRITE(log,*)
+      WRITE(log,'(a/)') "==================================[ SUMMARY ]==================================="
       <% max_length = test_suites.empty? ? 0 : test_suites.max.length -%>
       <% test_suites.each_with_index do |test_suite,i| -%>
 
-      if (rank .eq. 0) then
-        do i=1,<%= OUTPUT_INDENT %>
-          write(*,'(A)',advance='no') " "
-        end do
-        write(*,'(A)',advance='no') "<%= File.basename(test_suite) %>"
-        do i=1,<%= OUTPUT_WIDTH - 2 * OUTPUT_INDENT - File.basename(test_suite).length - 7 %>
-          write(*,'(A)',advance='no') " "
-        end do
-      end if
+      IF (rank .EQ. 0) THEN
+        DO i=1,<%= OUTPUT_INDENT %>
+          WRITE(*,'(A)',advance='no') " "
+        END DO
+        WRITE(*,'(A)',advance='no') "<%= File.basename(test_suite) %>"
+        DO i=1,<%= OUTPUT_WIDTH - 2 * OUTPUT_INDENT - File.basename(test_suite).length - 7 %>
+          WRITE(*,'(A)',advance='no') " "
+        END DO
+      END IF
 
-      do i=1,<%= OUTPUT_INDENT %>
-        write(log,'(A)',advance='no') " "
-      end do
-      write(log,'(A)',advance='no') "<%= File.basename(test_suite) %>"
-      do i=1,<%= OUTPUT_WIDTH - 2 * OUTPUT_INDENT - File.basename(test_suite).length - 7 %>
-        write(log,'(A)',advance='no') " "
-      end do
+      DO i=1,<%= OUTPUT_INDENT %>
+        WRITE(log,'(A)',advance='no') " "
+      END DO
+      WRITE(log,'(A)',advance='no') "<%= File.basename(test_suite) %>"
+      DO i=1,<%= OUTPUT_WIDTH - 2 * OUTPUT_INDENT - File.basename(test_suite).length - 7 %>
+        WRITE(log,'(A)',advance='no') " "
+      END DO
 
-      if ( numFailures(<%= i+1 %>) == 0 ) then
-         if (rank .eq. 0) then
-            write(*,*) " passed"
-         end if
-         write(log,*) " passed"
-      else
-         if (rank .eq. 0) then
-            write(*,*) " failed <<<<<<"
-         end if
-         write(log,*) " failed <<<<<<"
-      end if
+      IF ( numFailures(<%= i+1 %>) == 0 ) THEN
+         IF (rank .EQ. 0) THEN
+            WRITE(*,*) " passed"
+         END IF
+         WRITE(log,*) " passed"
+      ELSE
+         IF (rank .EQ. 0) THEN
+            WRITE(*,*) " failed <<<<<<"
+         END IF
+         WRITE(log,*) " failed <<<<<<"
+      END IF
       <% end -%>
- 
-      if (rank .eq. 0) then
-         write(*,*)
-      end if
-      write(log,*)
 
-      if ( sum(numFailures) /= 0 ) stop 1
+      if (rank .eq. 0) THEN
+         WRITE(*,*)
+      END IF
+      WRITE(log,*)
 
-    end program TestRunner
+      IF ( sum(numFailures) /= 0 ) STOP 1
+
+    END PROGRAM TestRunner
     }.gsub(/^    /,''), nil, '-' ) # turn off newlines for <% -%>
 
   MAKEFILE = ERB.new( %q{
@@ -163,7 +163,7 @@ module Funit
     end
 
     module_names.each do |mod|
-      unless funit_exists?(mod) 
+      unless funit_exists?(mod)
         error_message = <<-FUNIT_DOES_NOT_EXIST
  Error: could not find test suite #{mod}.fun
  Test suites available in this directory:

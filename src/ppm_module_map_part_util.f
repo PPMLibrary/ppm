@@ -104,12 +104,12 @@
             MODULE PROCEDURE ppm_map_part_store
          END INTERFACE
 
-         PUBLIC :: ppm_map_part_eqdistrib,  &
-         &         ppm_map_part_cancel,     &
-         &         ppm_map_part_get_sub,    &
-         &         ppm_map_part_load,       &
-         &         ppm_map_part_ring_shift, &
-         &         ppm_map_part_store
+         PUBLIC :: ppm_map_part_eqdistrib
+         PUBLIC :: ppm_map_part_cancel
+         PUBLIC :: ppm_map_part_get_sub
+         PUBLIC :: ppm_map_part_load
+         PUBLIC :: ppm_map_part_ring_shift
+         PUBLIC :: ppm_map_part_store
 
          !----------------------------------------------------------------------
          !  include the source

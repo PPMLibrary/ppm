@@ -58,11 +58,6 @@
 #endif
       !!! Apply boundary conditions in Particle to mesh interpolation
       !!!
-      USE ppm_module_error
-      USE ppm_module_alloc
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_map
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single

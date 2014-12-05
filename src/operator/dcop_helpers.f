@@ -38,24 +38,26 @@
 
           DEFINE_MK()
           ! arguments
-          REAL(MK), DIMENSION (:,:), POINTER,INTENT(IN   ) :: A
-          REAL(MK), DIMENSION (:)  , POINTER,INTENT(INOUT) :: x_or_b
-          INTEGER,                           INTENT(  OUT) :: info
+          REAL(MK), DIMENSION (:,:), POINTER       :: A
+          REAL(MK), DIMENSION (:)  , POINTER       :: x_or_b
+
+          INTEGER,                   INTENT(  OUT) :: info
 
           ! local variables
-          INTEGER , DIMENSION (:)  , POINTER   :: indx=>NULL(),valid=>NULL()
-          INTEGER , DIMENSION (:)  , POINTER   :: indxnew=>NULL(),roworder=>NULL()
-          REAL(MK), DIMENSION (:)  , POINTER   :: bnew=>NULL(),exact_b=>NULL()
-          REAL(MK), DIMENSION (:)  , POINTER   :: real_b=>NULL()
-          REAL(MK), DIMENSION (:,:), POINTER   :: Anew=>NULL(),Acopy=>NULL()
-          REAL(MK)                             :: tolerance_lse = 1e-1
-
-          INTEGER                              :: n,nnew
-          INTEGER                              :: i,j,inew,jnew,itemp
-          LOGICAL                              :: check = .TRUE.
-          CHARACTER(LEN = 256),PARAMETER       :: caller = 'solveLSE'
-          CHARACTER(LEN = 256)                 :: cbuf
+          INTEGER , DIMENSION (:)  , POINTER   :: indx => NULL(),valid => NULL()
+          INTEGER , DIMENSION (:)  , POINTER   :: indxnew => NULL(),roworder => NULL()
+          REAL(MK), DIMENSION (:)  , POINTER   :: bnew => NULL(),exact_b => NULL()
+          REAL(MK), DIMENSION (:)  , POINTER   :: real_b => NULL()
+          REAL(MK), DIMENSION (:,:), POINTER   :: Anew => NULL(),Acopy => NULL()
+          REAL(MK)                             :: tolerance_lse = 1e-1_MK
           REAL(MK)                             :: closetozero
+
+          INTEGER :: n,nnew
+          INTEGER :: i,j,inew,jnew,itemp
+
+          LOGICAL :: check = .TRUE.
+
+          start_subroutine("solveLSE")
 
           !=======================================================================!
           ! init
@@ -65,42 +67,22 @@
           closetozero = 100._MK*(EPSILON(closetozero))
 
           ALLOCATE(indx(n),STAT=info)
-          IF (info .NE. 0) THEN
-              WRITE(*,*)caller,': allocation failed.'
-              info = -1
-              GOTO 9999
-          ENDIF
+          or_fail_alloc("index : allocation failed.")
 
           ALLOCATE(valid(n),STAT=info)
-          IF (info .NE. 0) THEN
-              WRITE(*,*)caller,': allocation failed.'
-              info = -1
-              GOTO 9999
-          ENDIF
+          or_fail_alloc("valid : allocation failed.")
 
-          ALLOCATE(Acopy(n,n),STAT=info)
-          IF (info .NE. 0) THEN
-              WRITE(*,*)caller,': allocation failed.'
-              info = -1
-              GOTO 9999
-          ENDIF
-          Acopy = A
+          ALLOCATE(Acopy(n,n),SOURCE=A,STAT=info)
+          or_fail_alloc("Acopy : allocation failed.")
 
           IF (check) THEN
-              ALLOCATE(exact_b(n),STAT=info)
-              IF (info .NE. 0) THEN
-                  WRITE(*,*)caller,': allocation failed.'
-                  info = -1
-                  GOTO 9999
-              ENDIF
-              exact_b = x_or_b
+             ALLOCATE(exact_b(n),STAT=info)
+             or_fail_alloc("exact_b : allocation failed.")
 
-              ALLOCATE(real_b(n),STAT=info)
-              IF (info .NE. 0) THEN
-                  WRITE(*,*)caller,': allocation failed.'
-                  info = -1
-                  GOTO 9999
-              ENDIF
+             exact_b = x_or_b
+
+             ALLOCATE(real_b(n),STAT=info)
+             or_fail_alloc("real_b : allocation failed.")
           ENDIF
 
           !=======================================================================!
@@ -116,11 +98,10 @@
 #endif
           ! if info = i > 0, then U_ii = 0 and the matrix is singular
           ! this case will be dealt with below when checking for singularities
-          IF (info .LT. 0) THEN
-              WRITE(cbuf,'(A,I2)') ' getrf failed with info = ', info
-              CALL ppm_write(ppm_rank,caller,cbuf,info)
-              info = -1
-              GOTO 9999
+          IF (info.LT.0) THEN
+             stdout_f('(A,I2)'," getrf failed with info = ", info)
+             info = -1
+             GOTO 9999
           ENDIF
 
           !=======================================================================!
@@ -138,203 +119,158 @@
 
           ! if necessary, remove redundant equations/coefficients
           IF (nnew .NE. n) THEN
+             ALLOCATE(roworder(n),STAT=info)
+             or_fail_alloc("roworder: allocation failed.")
 
-              ALLOCATE(roworder(n),STAT=info)
-              IF (info .NE. 0) THEN
-                  WRITE(*,*)caller,': allocation failed.'
-                  info = -1
-                  GOTO 9999
-              ENDIF
+             DO i= 1,n
+                roworder(i) = i
+             ENDDO
+             DO i= 1,n
+                itemp = roworder(i)
+                roworder(i) = roworder(indx(i))
+                roworder(indx(i)) = itemp
+             ENDDO
 
-              DO i= 1,n
-                  roworder(i) = i
-              ENDDO
-              DO i= 1,n
-                  itemp = roworder(i)
-                  roworder(i) = roworder(indx(i))
-                  roworder(indx(i)) = itemp
-              ENDDO
+             !====================================================================!
+             ! create new LSE
 
-              !====================================================================!
-              ! create new LSE
+             ! allocation
+             ALLOCATE(bnew(nnew),STAT=info)
+             or_fail_alloc("bnew: allocation failed.")
 
-              ! allocation
-              ALLOCATE(bnew(nnew),STAT=info)
-              IF (info .NE. 0) THEN
-                  WRITE(*,*)caller,': allocation failed.'
-                  info = -1
-                  GOTO 9999
-              ENDIF
-              ALLOCATE(indxnew(nnew),STAT=info)
-              IF (info .NE. 0) THEN
-                  WRITE(*,*)caller,': allocation failed.'
-                  info = -1
-                  GOTO 9999
-              ENDIF
-              ALLOCATE(Anew(nnew,nnew),STAT=info)
-              IF (info .NE. 0) THEN
-                  WRITE(*,*)caller,': allocation failed.'
-                  info = -1
-                  GOTO 9999
-              ENDIF
+             ALLOCATE(indxnew(nnew),STAT=info)
+             or_fail_alloc("indxnew: allocation failed.")
 
-              ! delete singular rows/columns in A
-              ! delete corresponding entries in b
-              inew = 0
-              DO i = 1,n
+             ALLOCATE(Anew(nnew,nnew),STAT=info)
+             or_fail_alloc("Anew: allocation failed.")
 
-                  IF (valid(i) .EQ. 1) THEN
+             ! delete singular rows/columns in A
+             ! delete corresponding entries in b
+             inew = 0
+             DO i = 1,n
+                IF (valid(i) .EQ. 1) THEN
+                   inew = inew + 1
+                   bnew(inew) = x_or_b(roworder(i))
+                   jnew = 0
+                   DO j = 1,n
+                      IF (valid(j) .EQ. 1) THEN
+                         jnew = jnew + 1
+                         Anew(inew,jnew) = A(roworder(i),roworder(j))
+                      ENDIF
+                   ENDDO
+                ENDIF
+             ENDDO
 
-                      inew = inew + 1
-                      bnew(inew) = x_or_b(roworder(i))
-
-                      jnew = 0
-                      DO  j = 1,n
-                          IF (valid(j) .EQ. 1) THEN
-
-                              jnew = jnew + 1
-                              Anew(inew,jnew) = A(roworder(i),roworder(j))
-
-                          ENDIF
-                      ENDDO
-
-                  ENDIF
-
-              ENDDO
-
-              !====================================================================!
-              ! solve new LSE
+            !====================================================================!
+            ! solve new LSE
 #ifdef __MKL
-              CALL getrf(Anew,indxnew,info)
+            CALL getrf(Anew,indxnew,info)
 #else
 #if   __KIND == __SINGLE_PRECISION
-              CALL sgetrf(nnew,nnew,Anew,nnew,indxnew,info)
+            CALL sgetrf(nnew,nnew,Anew,nnew,indxnew,info)
 #elif __KIND == __DOUBLE_PRECISION
-              CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
+            CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
 #endif
 #endif
-              IF (info .NE. 0) THEN
-                  !get the value of info
-                  WRITE(cbuf,'(A,I2)') ' getrf new failed with info = ', info
-
-                  IF (info.GT.0) THEN
-                      OPEN(81,FILE='DumpA.dat',FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
-                      DO i=1,n
-                          WRITE(81,'(10E20.12)') A(i,:)
-                      ENDDO
-                      CLOSE(81)
-                  ENDIF
-
-                  !print the error message
-                  CALL ppm_write(ppm_rank,caller,cbuf,info)
-
-                  info = -1
-                  GOTO 9999
-              ENDIF
-
-#ifdef __MKL
-              CALL getrs(Anew,indxnew,bnew,'N',info)
-#else
-#if   __KIND == __SINGLE_PRECISION
-              CALL sgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
-#elif __KIND == __DOUBLE_PRECISION
-              CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
-#endif
-#endif
-              IF (info .NE. 0) THEN
-                  WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
-                  CALL ppm_write(ppm_rank,caller,cbuf,info)
-                  info = -1
-                  GOTO 9999
-              ENDIF
-
-              !====================================================================!
-              ! sort solution (coefficients) into old places, remaining places are
-              ! set to zero
-              jnew = 0
-              DO j = 1,n
-                  x_or_b(j) = 0._MK
-              ENDDO
-              DO j = 1,n
-
-                  IF (valid(j) .EQ. 1) THEN
-                      jnew = jnew + 1
-                      x_or_b(roworder(j)) = bnew(jnew)
-                  ENDIF
-
-              ENDDO
-
-              DEALLOCATE(roworder)
-              DEALLOCATE(indxnew)
-              DEALLOCATE(bnew)
-              DEALLOCATE(Anew)
-
-          ELSE ! no singularities
-
-              !====================================================================!
-              ! solve originial LSE
-#ifdef __MKL
-              CALL getrs(Acopy,indx,x_or_b,'N',info)
-#else
-#if   __KIND == __SINGLE_PRECISION
-              CALL sgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
-#elif __KIND == __DOUBLE_PRECISION
-              CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
-#endif
-#endif
-              IF (info .NE. 0) THEN
-                  WRITE(*,*)caller,': getrs failed'
-                  info = -1
-                  GOTO 9999
-              ENDIF
-
-          ENDIF
-
-          !=======================================================================!
-          ! check if equations were solved right (if you trust in LAPACK and this
-          ! code PUT THIS IN IF BRANCH FOR THE REDUCED SYSTEM)
-          IF (check) THEN
-#ifdef __MKL
-              CALL gemv(A,x_or_b,real_b,1._MK,0._MK)
-#else
-#if   __KIND == __SINGLE_PRECISION
-              CALL sgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
-                  SIZE(A,1),x_or_b,1,0._MK,real_b,1)
-#elif __KIND == __DOUBLE_PRECISION
-              CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
-                  SIZE(A,1),x_or_b,1,0._MK,real_b,1)
-#endif
-#endif
-              IF (SUM(ABS(real_b - exact_b)) .GT. tolerance_LSE) THEN
-                  WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
-                  CALL ppm_write(ppm_rank,caller,&
-                      'Error in moment conditions too large.',info)
-                  WRITE(cbuf,'(A,E12.3)')'The l1-norm of the error is ',&
-                      SUM(ABS(real_b - exact_b))
-                  CALL ppm_write(ppm_rank,caller,cbuf,info)
+            IF (info .NE. 0) THEN
+               !get the value of info
+               stdout_f('(A,I2)'," getrf new failed with info = ", info)
+               IF (info.GT.0) THEN
+                  OPEN(81,FILE='DumpA.dat',FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
                   DO i=1,n
-                      DO j=1,n
-                          WRITE(9001,'(1(E30.22))') A(i,j)
-                      ENDDO
+                     WRITE(81,'(10E20.12)') A(i,:)
                   ENDDO
-                  CALL ppm_write(ppm_rank,caller,&
-                      'moment matrix written in file fort.9001',info)
-                  info = -1
-                  GOTO 9999
-              ENDIF
-          ENDIF
+                  CLOSE(81)
+               ENDIF
+               info = -1
+               GOTO 9999
+            ENDIF
 
-          !=======================================================================!
-          ! dealloc
-          DEALLOCATE(valid)
-          DEALLOCATE(indx)
-          DEALLOCATE(Acopy)
-          IF (check) THEN
-              DEALLOCATE(exact_b)
-              DEALLOCATE(real_b)
-          ENDIF
+#ifdef __MKL
+            CALL getrs(Anew,indxnew,bnew,'N',info)
+#else
+#if   __KIND == __SINGLE_PRECISION
+            CALL sgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
+#elif __KIND == __DOUBLE_PRECISION
+            CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
+#endif
+#endif
+            IF (info .NE. 0) THEN
+               stdout_f('(A,I2)'," getrs new failed with info = ", info)
+            ENDIF
 
-          9999 CONTINUE ! jump here upon error
+            !====================================================================!
+            ! sort solution (coefficients) into old places, remaining places are
+            ! set to zero
+            jnew = 0
+            DO j = 1,n
+               x_or_b(j) = 0._MK
+            ENDDO
+            DO j = 1,n
+               IF (valid(j) .EQ. 1) THEN
+                  jnew = jnew + 1
+                  x_or_b(roworder(j)) = bnew(jnew)
+               ENDIF
+            ENDDO
+            DEALLOCATE(roworder,indxnew,bnew,Anew,STAT=info)
+            or_fail_dealloc("roworder,indxnew,bnew,Anew")
+         ELSE ! no singularities
+
+            !====================================================================!
+            ! solve originial LSE
+#ifdef __MKL
+            CALL getrs(Acopy,indx,x_or_b,'N',info)
+#else
+#if   __KIND == __SINGLE_PRECISION
+            CALL sgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
+#elif __KIND == __DOUBLE_PRECISION
+            CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
+#endif
+#endif
+            or_fail(": getrs failed")
+         ENDIF
+
+         !=======================================================================!
+         ! check if equations were solved right (if you trust in LAPACK and this
+         ! code PUT THIS IN IF BRANCH FOR THE REDUCED SYSTEM)
+         IF (check) THEN
+#ifdef __MKL
+            CALL gemv(A,x_or_b,real_b,1._MK,0._MK)
+#else
+#if   __KIND == __SINGLE_PRECISION
+            CALL sgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
+            &    SIZE(A,1),x_or_b,1,0._MK,real_b,1)
+#elif __KIND == __DOUBLE_PRECISION
+            CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
+            &    SIZE(A,1),x_or_b,1,0._MK,real_b,1)
+#endif
+#endif
+            IF (SUM(ABS(real_b - exact_b)) .GT. tolerance_LSE) THEN
+               stdout("WARNING from ", 'TRIM(caller)',": no solution!")
+               stdout("Error in moment conditions too large.")
+               stdout_f('(A,E12.3)',"The l1-norm of the error is ",'SUM(ABS(real_b - exact_b))')
+               DO i=1,n
+                  DO j=1,n
+                    WRITE(9001,'(1(E30.22))') A(i,j)
+                  ENDDO
+               ENDDO
+               stdout("moment matrix written in file fort.9001")
+               info = -1
+               GOTO 9999
+            ENDIF
+         ENDIF
+
+         !=======================================================================!
+         ! dealloc
+         DEALLOCATE(valid,indx,Acopy,STAT=info)
+         or_fail_dealloc("valid,indx,Acopy")
+         IF (check) THEN
+            DEALLOCATE(exact_b,real_b,STAT=info)
+            or_fail_dealloc("exact_b,real_b")
+         ENDIF
+
+         end_subroutine()
+         ! jump here upon error
 
       END SUBROUTINE DTYPE(solveLSE)
 
@@ -370,9 +306,13 @@
           INTEGER                              :: n,nnew
           INTEGER                              :: i,j,inew,jnew,itemp
           LOGICAL                              :: check = .TRUE.
-          CHARACTER(LEN = 256),PARAMETER       :: caller = 'solveLSE_2'
-          CHARACTER(LEN = 256)                 :: cbuf
+
           REAL(MK)                             :: closetozero
+
+          CHARACTER(LEN=ppm_char) :: cbuf
+
+
+          start_subroutine("solveLSE_2")
 
           !=======================================================================!
           ! init
@@ -672,8 +612,7 @@
                   WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
                   CALL ppm_write(ppm_rank,caller,&
                       'Error in moment conditions 1 too large.',info)
-                  WRITE(cbuf,'(A,E12.3)')'The l1-norm of the error is ',&
-                      SUM(ABS(real_b - exact_b))
+                  WRITE(cbuf,'(A,E12.3)')'The l1-norm of the error is ',SUM(ABS(real_b - exact_b))
                   CALL ppm_write(ppm_rank,caller,cbuf,info)
                   DO i=1,n
                       DO j=1,n
@@ -719,7 +658,8 @@
               DEALLOCATE(real_b)
           ENDIF
 
-          9999 CONTINUE ! jump here upon error
+          end_subroutine()
+          ! jump here upon error
 
       END SUBROUTINE DTYPE(solveLSE_2)
 
@@ -741,33 +681,38 @@
           IMPLICIT NONE
           DEFINE_MK()
           ! arguments
-          REAL(MK), DIMENSION (:,:), POINTER,INTENT(IN   )  :: A
-          REAL(MK), DIMENSION (:,:), POINTER,INTENT(INOUT)  :: x_or_b
-          INTEGER, INTENT(IN)                               :: n_eq
-          INTEGER, INTENT(OUT)                              :: info
+          REAL(MK), DIMENSION (:,:), POINTER       :: A
+          REAL(MK), DIMENSION (:,:), POINTER       :: x_or_b
+          INTEGER,                   INTENT(IN   ) :: n_eq
+          INTEGER,                   INTENT(  OUT) :: info
 
           ! local variables
-          INTEGER , DIMENSION (:)  , POINTER   :: indx=>NULL(),valid=>NULL()
-          INTEGER , DIMENSION (:)  , POINTER   :: indxnew=>NULL(),roworder=>NULL()
-          REAL(MK), DIMENSION (:)  , POINTER   :: real_b=>NULL()
-          REAL(MK), DIMENSION (:,:), POINTER   :: bnew_n=>NULL(),exact_b_n=>NULL()
-          REAL(MK), DIMENSION (:,:), POINTER   :: Anew=>NULL(),Acopy=>NULL()
-          REAL(MK)                             :: tolerance_lse = 1e-1
-          INTEGER                              :: n,nnew
-          INTEGER                              :: i,j,k,inew,jnew,itemp
-          LOGICAL                              :: check = .TRUE.
-          CHARACTER(LEN = 256)                 :: cbuf
-          REAL(MK)                             :: closetozero
+
+          REAL(MK), DIMENSION (:)  , POINTER :: real_b => NULL()
+          REAL(MK), DIMENSION (:,:), POINTER :: bnew_n => NULL()
+          REAL(MK), DIMENSION (:,:), POINTER :: exact_b_n => NULL()
+          REAL(MK), DIMENSION (:,:), POINTER :: Anew => NULL()
+          REAL(MK), DIMENSION (:,:), POINTER :: Acopy => NULL()
+          REAL(MK)                           :: tolerance_lse = 1E-1_MK
+          REAL(MK)                           :: closetozero
+
+          INTEGER, DIMENSION (:), POINTER :: indx => NULL()
+          INTEGER, DIMENSION (:), POINTER :: valid => NULL()
+          INTEGER, DIMENSION (:), POINTER :: indxnew => NULL()
+          INTEGER, DIMENSION (:), POINTER :: roworder => NULL()
+          INTEGER                         :: n,nnew
+          INTEGER                         :: i,j,k,inew,jnew,itemp
+
+          LOGICAL :: check = .TRUE.
 
           start_subroutine("solveLSE_n")
-
 
           n = SIZE(A,1)
           !closetozero = SQRT(EPSILON(closetozero))
           closetozero = 100._MK*(EPSILON(closetozero))
 
           ALLOCATE(indx(n),valid(n),Acopy(n,n),STAT=info)
-              or_fail_alloc("local variables")
+          or_fail_alloc("local variables")
 
           Acopy = A
 
@@ -792,11 +737,10 @@
 #endif
           ! if info = i > 0, then U_ii = 0 and the matrix is singular
           ! this case will be dealt with below when checking for singularities
-          IF (info .LT. 0) THEN
-              WRITE(cbuf,'(A,I2)') ' getrf failed with info = ', info
-              CALL ppm_write(ppm_rank,caller,cbuf,info)
-              info = -1
-              GOTO 9999
+          IF (info.LT.0) THEN
+             stdout_f('(A,I2)'," getrf failed with info = ",info)
+             info = -1
+             GOTO 9999
           ENDIF
 
           !=======================================================================!
@@ -805,200 +749,192 @@
           ! mark redundant eqs/coefficients
           valid = 1
           DO j=1,n
-              IF (ABS(Acopy(j,j)) .LT. closetozero) THEN
-                  valid(j) = 0
-              ENDIF
+             IF (ABS(Acopy(j,j)) .LT. closetozero) THEN
+                valid(j) = 0
+             ENDIF
           ENDDO
 
           nnew = SUM(valid) ! size of reduced system
 
           ! if necessary, remove redundant equations/coefficients
           IF (nnew .NE. n) THEN
+             ALLOCATE(roworder(n),STAT=info)
+             or_fail_alloc("roworder")
 
-              ALLOCATE(roworder(n),STAT=info)
-              or_fail_alloc("roworder")
+             DO i= 1,n
+                roworder(i) = i
+             ENDDO
 
-              DO i= 1,n
-                 roworder(i) = i
-              ENDDO
-              DO i= 1,n
-                 itemp = roworder(i)
-                 roworder(i) = roworder(indx(i))
-                 roworder(indx(i)) = itemp
-              ENDDO
+             DO i= 1,n
+                itemp = roworder(i)
+                roworder(i) = roworder(indx(i))
+                roworder(indx(i)) = itemp
+             ENDDO
 
-              !====================================================================!
-              ! create new LSE
+             !====================================================================!
+             ! create new LSE
 
-              ! allocation
-              ALLOCATE(bnew_n(nnew,n_eq),indxnew(nnew),Anew(nnew,nnew),STAT=info)
-              or_fail_alloc("bnew_n,indexnew,Anew")
+             ! allocation
+             ALLOCATE(bnew_n(nnew,n_eq),indxnew(nnew),Anew(nnew,nnew),STAT=info)
+             or_fail_alloc("bnew_n,indexnew,Anew")
 
-              ! delete singular rows/columns in A
-              ! delete corresponding entries in b
-              inew = 0
-              DO i = 1,n
+             ! delete singular rows/columns in A
+             ! delete corresponding entries in b
+             inew = 0
+             DO i = 1,n
+                IF (valid(i) .EQ. 1) THEN
+                   inew = inew + 1
+                   bnew_n(inew,1:n_eq)   = x_or_b(roworder(i),1:n_eq)
+                   jnew = 0
 
-                  IF (valid(i) .EQ. 1) THEN
-
-                      inew = inew + 1
-                      bnew_n(inew,1:n_eq)   = x_or_b(roworder(i),1:n_eq)
-
-                      jnew = 0
-                      DO  j = 1,n
-                          IF (valid(j) .EQ. 1) THEN
-
-                              jnew = jnew + 1
-                              Anew(inew,jnew) = A(roworder(i),roworder(j))
-
-                          ENDIF
-                      ENDDO
-
-                  ENDIF
-
-              ENDDO
-
-              !====================================================================!
-              ! solve new LSE
+                   DO j = 1,n
+                      IF (valid(j) .EQ. 1) THEN
+                         jnew = jnew + 1
+                         Anew(inew,jnew) = A(roworder(i),roworder(j))
+                      ENDIF
+                  ENDDO
+               ENDIF
+            ENDDO
+            !====================================================================!
+            ! solve new LSE
 #ifdef __MKL
-              CALL getrf(Anew,indxnew,info)
+            CALL getrf(Anew,indxnew,info)
 #else
 #if   __KIND == __SINGLE_PRECISION
-              CALL sgetrf(nnew,nnew,Anew,nnew,indxnew,info)
+            CALL sgetrf(nnew,nnew,Anew,nnew,indxnew,info)
 #elif __KIND == __DOUBLE_PRECISION
-              CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
+            CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
 #endif
 #endif
-              IF (info .NE. 0) THEN
-                  !get the value of info
-                  WRITE(cbuf,'(A,I2)') ' getrf new failed with info = ', info
+            IF (info .NE. 0) THEN
+               !get the value of info
+               WRITE(cbuf,'(A,I2)') ' getrf new failed with info = ', info
 
-                  IF (info.GT.0) THEN
-                      OPEN(81,FILE='DumpA.dat',FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
-                      DO i=1,n
-                          WRITE(81,'(10E20.12)') A(i,:)
-                      ENDDO
-                      CLOSE(81)
-                  ENDIF
+               IF (info.GT.0) THEN
+                  OPEN(81,FILE='DumpA.dat',FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
+                  DO i=1,n
+                     WRITE(81,'(10E20.12)') A(i,:)
+                  ENDDO
+                  CLOSE(81)
+               ENDIF
+               !print the error message
 
-                  !print the error message
+               CALL ppm_write(ppm_rank,caller,cbuf,info)
+               info = -1
+               GOTO 9999
+            ENDIF
+
+            DO k=1,n_eq
+#ifdef __MKL
+               CALL getrs(Anew,indxnew,bnew_n(:,k),'N',info)
+#else
+#if   __KIND == __SINGLE_PRECISION
+               CALL sgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_n(:,k),nnew,info)
+#elif __KIND == __DOUBLE_PRECISION
+               CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_n(:,k),nnew,info)
+#endif
+#endif
+               IF (info .NE. 0) THEN
+                  WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
                   CALL ppm_write(ppm_rank,caller,cbuf,info)
                   info = -1
                   GOTO 9999
-              ENDIF
+               ENDIF
+            ENDDO
 
-              DO k=1,n_eq
-#ifdef __MKL
-                  CALL getrs(Anew,indxnew,bnew_n(:,k),'N',info)
-#else
-#if   __KIND == __SINGLE_PRECISION
-                  CALL sgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_n(:,k),nnew,info)
-#elif __KIND == __DOUBLE_PRECISION
-                  CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_n(:,k),nnew,info)
-#endif
-#endif
-                  IF (info .NE. 0) THEN
-                      WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
-                      CALL ppm_write(ppm_rank,caller,cbuf,info)
-                      info = -1
-                      GOTO 9999
-                  ENDIF
-              ENDDO
+            !====================================================================!
+            ! sort solution (coefficients) into old places, remaining places are
+            ! set to zero
+            jnew = 0
+            DO j = 1,n
+               x_or_b(j,1:n_eq) = 0._MK
+            ENDDO
 
-              !====================================================================!
-              ! sort solution (coefficients) into old places, remaining places are
-              ! set to zero
-              jnew = 0
-              DO j = 1,n
-                  x_or_b(j,1:n_eq) = 0._MK
-              ENDDO
-              DO j = 1,n
+            DO j = 1,n
+               IF (valid(j) .EQ. 1) THEN
+                  jnew = jnew + 1
+                  DO k=1,n_eq
+                     x_or_b(roworder(j),k) = bnew_n(jnew,k)
+                  ENDDO
+               ENDIF
+            ENDDO
 
-                  IF (valid(j) .EQ. 1) THEN
-                      jnew = jnew + 1
-                      DO k=1,n_eq
-                          x_or_b(roworder(j),k) = bnew_n(jnew,k)
-                      ENDDO
-                  ENDIF
-
-              ENDDO
-
-              DEALLOCATE(roworder,indxnew,bnew_n,Anew,STAT=info)
-              or_fail_dealloc("local variables")
+            DEALLOCATE(roworder,indxnew,bnew_n,Anew,STAT=info)
+            or_fail_dealloc("local variables")
 
           ELSE ! no singularities
 
-              !====================================================================!
-              ! solve originial LSE
-              DO k=1,n_eq
+             !====================================================================!
+             ! solve originial LSE
+             DO k=1,n_eq
 #ifdef __MKL
-                  CALL getrs(Acopy,indx,x_or_b(:,k),'N',info)
+                CALL getrs(Acopy,indx,x_or_b(:,k),'N',info)
 #else
 #if   __KIND == __SINGLE_PRECISION
-                  CALL sgetrs('N',n,1,Acopy,n,indx,x_or_b(:,k),n,info)
+                CALL sgetrs('N',n,1,Acopy,n,indx,x_or_b(:,k),n,info)
 #elif __KIND == __DOUBLE_PRECISION
-                  CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b(:,k),n,info)
+                CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b(:,k),n,info)
 #endif
 #endif
-                  IF (info .NE. 0) THEN
-                      WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
-                      CALL ppm_write(ppm_rank,caller,cbuf,info)
-                      info = -1
-                      GOTO 9999
-                  ENDIF
-              ENDDO
-
+                IF (info .NE. 0) THEN
+                   WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
+                   CALL ppm_write(ppm_rank,caller,cbuf,info)
+                   info = -1
+                   GOTO 9999
+                ENDIF
+             ENDDO
           ENDIF
 
           !=======================================================================!
           ! check if equations were solved right (if you trust in LAPACK and this
           ! code PUT THIS IN IF BRANCH FOR THE REDUCED SYSTEM)
           IF (check) THEN
-              DO k=1,n_eq
+             DO k=1,n_eq
 #ifdef __MKL
-                  CALL gemv(A,x_or_b(:,k),real_b,1._MK,0._MK)
+                CALL gemv(A,x_or_b(:,k),real_b,1._MK,0._MK)
 #else
 #if   __KIND == __SINGLE_PRECISION
-                  CALL sgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
-                      SIZE(A,1),x_or_b(:,k),1,0._MK,real_b,1)
+                CALL sgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
+                &    SIZE(A,1),x_or_b(:,k),1,0._MK,real_b,1)
 #elif __KIND == __DOUBLE_PRECISION
-                  CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
-                      SIZE(A,1),x_or_b(:,k),1,0._MK,real_b,1)
+                CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
+                &    SIZE(A,1),x_or_b(:,k),1,0._MK,real_b,1)
 #endif
 #endif
 
-                  IF (SUM(ABS(real_b - exact_b_n(:,k))) .GT. tolerance_LSE) THEN
-                      WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
-                      CALL ppm_write(ppm_rank,caller,&
-                          'Error in moment conditions 1 too large.',info)
-                      WRITE(cbuf,'(A,E12.3,A,I0)')'The l1-norm of the error is ',&
-                          SUM(ABS(real_b - exact_b_n(:,k))),' for k=',k
-                      CALL ppm_write(ppm_rank,caller,cbuf,info)
-                      DO i=1,n
-                          WRITE(9004,'(1(E30.22))') x_or_b(i,k)
-                          WRITE(9005,'(1(E30.22))') real_b(i)
+                IF (SUM(ABS(real_b - exact_b_n(:,k))) .GT. tolerance_LSE) THEN
+                   WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
+                   CALL ppm_write(ppm_rank,caller,&
+                   &    'Error in moment conditions 1 too large.',info)
+                   WRITE(cbuf,'(A,E12.3,A,I0)')'The l1-norm of the error is ',&
+                   & SUM(ABS(real_b - exact_b_n(:,k))),' for k=',k
+                   CALL ppm_write(ppm_rank,caller,cbuf,info)
+                   DO i=1,n
+                      WRITE(9004,'(1(E30.22))') x_or_b(i,k)
+                      WRITE(9005,'(1(E30.22))') real_b(i)
+                   ENDDO
+                   DO i=1,n
+                      DO j=1,n
+                         WRITE(9001,'(1(E30.22))') A(i,j)
                       ENDDO
-                      DO i=1,n
-                          DO j=1,n
-                              WRITE(9001,'(1(E30.22))') A(i,j)
-                          ENDDO
-                      ENDDO
-                      CALL ppm_write(ppm_rank,caller,&
-                          'moment matrix written in file fort.9001',info)
-                      CALL ppm_write(ppm_rank,caller,&
-                          'x_or_b written in file fort.9004',info)
-                      CALL ppm_write(ppm_rank,caller,&
-                          'real_b written in file fort.9005',info)
-                      info = -1
-                      GOTO 9999
-                  ENDIF
-              ENDDO
+                   ENDDO
+                   CALL ppm_write(ppm_rank,caller,&
+                   &   'moment matrix written in file fort.9001',info)
+                   CALL ppm_write(ppm_rank,caller,&
+                   &   'x_or_b written in file fort.9004',info)
+                   CALL ppm_write(ppm_rank,caller,&
+                   &   'real_b written in file fort.9005',info)
+                   info = -1
+                   GOTO 9999
+                ENDIF
+             ENDDO
           ENDIF
 
           !=======================================================================!
           ! dealloc
           DEALLOCATE(valid,indx,Acopy,STAT=info)
           or_fail_dealloc("local variables")
+
           IF (check) THEN
              DEALLOCATE(exact_b_n,STAT=info)
              or_fail_dealloc("exact_b_n")
@@ -1017,36 +953,37 @@
           USE mkl95_lapack
           USE mkl95_blas
 #endif
-
           IMPLICIT NONE
 
           DEFINE_MK()
           ! arguments
-          REAL(MK),DIMENSION(:,:),          INTENT(IN   ) :: Z
-          INTEGER,                          INTENT(IN   ) :: n
-          INTEGER,                          INTENT(IN   ) :: m
-          INTEGER,                          INTENT(  OUT) :: info
+          REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: Z
+          INTEGER,                  INTENT(IN   ) :: n
+          INTEGER,                  INTENT(IN   ) :: m
+          INTEGER,                  INTENT(  OUT) :: info
 
           ! optional argument
-          REAL(MK),OPTIONAL,                INTENT(  OUT) :: min_sv
+          REAL(MK), OPTIONAL,       INTENT(  OUT) :: min_sv
+
           ! local variables
-          INTEGER                              :: j
-          CHARACTER(LEN = ppm_char)            :: cbuf
-          CHARACTER(LEN = ppm_char)            :: caller = 'ppm_matrix_svd'
-          REAL(KIND(1.D0))                     :: t0
+          REAL(MK), DIMENSION (:),   POINTER :: offdiag => NULL()
+          REAL(MK), DIMENSION (:),   POINTER :: diag => NULL()
+          REAL(MK), DIMENSION (:),   POINTER :: work => NULL()
+          REAL(MK), DIMENSION (:,:), POINTER :: tauq => NULL()
+          REAL(MK), DIMENSION (:,:), POINTER :: taup => NULL()
+          REAL(MK), PARAMETER                :: ppm_tolerance_svd = 1E-10_MK
+          REAL(KIND(1.D0))                   :: t0
 
-          REAL(MK), DIMENSION (:),   POINTER   :: offdiag=>NULL(), diag=>NULL()
-          INTEGER                              :: lwork,mm,nnn
-          REAL(MK), DIMENSION (:),   POINTER   :: work=>NULL()
-          REAL(MK), DIMENSION (:,:), POINTER   :: tauq=>NULL(),taup=>NULL()
-          REAL(MK), PARAMETER                  :: ppm_tolerance_svd = 1E-10
+          INTEGER :: j
+          INTEGER :: lwork,mm,nnn
 
+          start_subroutine("ppm_matrix_svd")
 
           mm = m
           nnn = n
           lwork= -1
-          ALLOCATE(offdiag(nnn-1),diag(nnn),taup(mm,nnn),tauq(mm,nnn),&
-              work(1),STAT=info)
+          ALLOCATE (offdiag(nnn-1),diag(nnn),taup(mm,nnn),tauq(mm,nnn),&
+          &        work(1),STAT=info)
           or_fail_alloc("local variables")
 
           !get the size for lwork
@@ -1091,16 +1028,15 @@
           !! Raise an error if the singular value is below a threshold
           !!----------------------------------------------------------------------
 
-          IF (MINVAL(diag) .LT. ppm_tolerance_svd) THEN
-              WRITE(cbuf,'(A,E20.6)')'singular value. Min = ', MINVAL(diag)
-              CALL ppm_write(ppm_rank,caller,cbuf, info)
-              info = -1
-              GOTO 9999
+          IF (MINVAL(diag).LT.ppm_tolerance_svd) THEN
+             stdout_f('(A,E20.6)',"singular value. Min = ", 'MINVAL(diag)')
+             info = -1
+             GOTO 9999
           ENDIF
           IF (PRESENT(min_sv)) min_sv=MINVAL(diag)
 
-          9999 CONTINUE ! jump here upon error
-
+          end_subroutine()
+          ! jump here upon error
 
       END SUBROUTINE DTYPE(ppm_matrix_svd)
 

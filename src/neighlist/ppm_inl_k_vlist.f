@@ -1,7 +1,7 @@
       !-------------------------------------------------------------------------
       !  Subroutines :               ppm_inl_k_vlist
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
+      ! Copyright (c) 2014 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !

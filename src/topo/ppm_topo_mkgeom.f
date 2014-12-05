@@ -110,11 +110,11 @@
       !!! [NOTE]
       !!! The latter uses the external library METIS and is only
       !!! available if ppm was compiled with METIS support.
-      REAL(MK), DIMENSION(:  ),           INTENT(IN   ) :: min_phys
+      REAL(MK), DIMENSION(:  ),           POINTER       :: min_phys
       !!! Minimum of physical extend of the computational domain (double)
       !!!
       !!! first index is ppm_dim
-      REAL(MK), DIMENSION(:  ),           INTENT(IN   ) :: max_phys
+      REAL(MK), DIMENSION(:  ),           POINTER       :: max_phys
       !!! Maximum of physical extend of the computational domain (double)
       !!!
       !!! first index is ppm_dim
@@ -182,7 +182,7 @@
       INTEGER, DIMENSION(:  ), POINTER :: sub2proc => NULL()
 
       CHARACTER(LEN=ppm_char) :: msg
-      CHARACTER(LEN=ppm_char) :: caller='ppm_topo_mkgeom'
+      CHARACTER(LEN=ppm_char) :: caller="ppm_topo_mkgeom"
 
       LOGICAL, DIMENSION(ppm_dim) :: fixed
 
@@ -246,7 +246,7 @@
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype, &
          &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,  &
          &    min_box, max_box,nbox,nchld,info)
-         or_fail('Bisection decomposition failed')
+         or_fail("Bisection decomposition failed")
 
          ! convert tree to subs
          CALL ppm_topo_box2subs(min_box,max_box,nchld, &
@@ -259,7 +259,7 @@
       &     ppm_param_decomp_ypencil, &
       &     ppm_param_decomp_zpencil)
          IF (decomp.EQ.ppm_param_decomp_zpencil.AND.ppm_dim.LT.3) THEN
-            fail('Cannot make z pencils in 2D!')
+            fail("Cannot make z pencils in 2D!")
          ENDIF
          !-------------------------------------------------------------------
          !  pencil quadrisection using the general ppm_tree
@@ -282,7 +282,7 @@
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,   &
          &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
          &       min_box,max_box,nbox,nchld,info)
-         or_fail('Pencil decomposition failed')
+         or_fail("Pencil decomposition failed")
 
          ! convert tree to subs
          CALL ppm_topo_box2subs(min_box,max_box,nchld, &
@@ -296,10 +296,10 @@
       &     ppm_param_decomp_xz_slab, &
       &     ppm_param_decomp_yz_slab)
          IF (decomp.EQ.ppm_param_decomp_xz_slab.AND.ppm_dim.LT.3) THEN
-            fail('Cannot make x-z slabs in 2D!')
+            fail("Cannot make x-z slabs in 2D!")
          ENDIF
          IF (decomp.EQ.ppm_param_decomp_yz_slab.AND.ppm_dim.LT.3) THEN
-            fail('Cannot make y-z slabs in 2D!')
+            fail("Cannot make y-z slabs in 2D!")
          ENDIF
          !-------------------------------------------------------------------
          !  slab bisection using the general ppm_tree
@@ -330,7 +330,7 @@
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype, &
          &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,  &
          &    min_box,max_box,nbox,nchld,info)
-         or_fail('Slab decomposition failed')
+         or_fail("Slab decomposition failed")
 
          ! convert tree to subs
          CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
@@ -360,7 +360,7 @@
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,   &
          &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
          &       min_box,max_box,nbox,nchld,info)
-         or_fail('Cuboid decomposition failed')
+         or_fail("Cuboid decomposition failed")
 
          ! convert tree to subs
          CALL ppm_topo_box2subs(min_box,max_box,nchld, &
@@ -377,7 +377,7 @@
       !  Unknown decomposition type
       !-------------------------------------------------------------------------
       CASE DEFAULT
-         WRITE(msg,'(A,I5)') 'Unknown decomposition type: ',decomp
+         WRITE(msg,'(A,I5)') "Unknown decomposition type: ",decomp
          fail(msg)
 
       END SELECT
@@ -387,7 +387,7 @@
       !-------------------------------------------------------------------------
       CALL ppm_find_neigh(min_phys,max_phys,bcdef, &
       &    min_sub,max_sub,nsubs,nneigh,ineigh,gsvec,info)
-      or_fail('Finding neighbors failed')
+      or_fail("Finding neighbors failed")
 
       !-------------------------------------------------------------------------
       !  Find the cost of each subdomain
@@ -395,7 +395,7 @@
       IF (decomp .NE. ppm_param_decomp_user_defined) THEN
           CALL ppm_topo_cost(xpdummy,0,min_sub,max_sub, &
           &    nsubs,nnodes,cost,info)
-          or_fail('Computing costs failed')
+          or_fail("Computing costs failed")
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -408,7 +408,7 @@
          !-------------------------------------------------------------------
          CALL ppm_topo_subs2proc(cost,nneigh,ineigh, &
          &    nsubs,sub2proc,isublist,nsublist,info)
-         or_fail('Assigning subs to processors failed')
+         or_fail("Assigning subs to processors failed")
 
       CASE (ppm_param_assign_nodal_cut,  &
       &     ppm_param_assign_nodal_comm, &
@@ -419,7 +419,7 @@
          !-------------------------------------------------------------------
          CALL ppm_topo_metis_s2p(min_sub,max_sub,nneigh,ineigh, &
          &    cost,nsubs,assig,sub2proc,isublist,nsublist,info)
-         or_fail('Assigning subs to processors using METIS failed')
+         or_fail("Assigning subs to processors using METIS failed")
 
       CASE (ppm_param_assign_user_defined)
          !-------------------------------------------------------------------
@@ -428,7 +428,7 @@
          iopt = ppm_param_alloc_fit
          ldc(1) = nsubs
          CALL ppm_alloc(isublist,ldc,iopt,info)
-         or_fail_alloc('list of local subs ISUBLIST')
+         or_fail_alloc("list of local subs ISUBLIST")
 
          isublist = ppm_param_undefined
          nsublist = 0
@@ -443,7 +443,7 @@
          !-------------------------------------------------------------------
          !  unknown assignment scheme
          !-------------------------------------------------------------------
-         WRITE(msg,'(A,I5)') 'Unknown assignment scheme: ',assig
+         WRITE(msg,'(A,I5)') "Unknown assignment scheme: ",assig
          fail(msg)
 
       END SELECT
@@ -454,7 +454,7 @@
       !-------------------------------------------------------------------------
       CALL ppm_define_subs_bc(min_phys,max_phys,bcdef, &
       &    min_sub,max_sub,nsubs,subs_bc,info)
-      or_fail('finding and defining the BC of the subs failed ')
+      or_fail("finding and defining the BC of the subs failed ")
 
       !-------------------------------------------------------------------------
       !  Store the topology internally
@@ -462,7 +462,7 @@
       CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub, &
       &    max_sub,subs_bc,sub2proc,nsubs,bcdef,ghostsize,  &
       &    isublist,nsublist,nneigh,ineigh,info)
-      or_fail('Storing topology failed')
+      or_fail("Storing topology failed")
 
       !-------------------------------------------------------------------------
       !  Dump out disgnostic files
@@ -499,13 +499,13 @@
       iopt = ppm_param_dealloc
       IF (decomp.NE.ppm_param_decomp_user_defined) THEN
          CALL ppm_alloc(nchld,ldc,iopt,info)
-         or_fail_dealloc('nchld')
+         or_fail_dealloc("nchld")
 
          CALL ppm_alloc(min_box,ldc,iopt,info)
-         or_fail_dealloc('min_box')
+         or_fail_dealloc("min_box")
 
          CALL ppm_alloc(max_box,ldc,iopt,info)
-         or_fail_dealloc('max_box')
+         or_fail_dealloc("max_box")
       END IF
       IF (PRESENT(user_minsub)) THEN
          IF (ASSOCIATED(min_sub,user_minsub)) THEN
@@ -562,39 +562,39 @@
       CONTAINS
       SUBROUTINE check
          IF (.NOT. ppm_initialized) THEN
-            fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
+            fail("Please call ppm_init first!",ppm_err_ppm_noinit,exit_point=8888)
          ENDIF
          IF (ghostsize .LT. 0.0_MK) THEN
-            fail('ghostsize must be >= 0.0',exit_point=8888)
+            fail("ghostsize must be >= 0.0",exit_point=8888)
             info = ppm_error_error
          ENDIF
          DO i=1,ppm_dim
             IF (max_phys(i).LE.min_phys(i)) THEN
-               fail('max_phys must be > min_phys',exit_point=8888)
+               fail("max_phys must be > min_phys",exit_point=8888)
             ENDIF
          ENDDO
          IF (assig .EQ. ppm_param_assign_user_defined) THEN
             IF (decomp .NE. ppm_param_decomp_user_defined) THEN
-               fail('decomp type is set to user_defined for this assignment',exit_point=8888)
+               fail("decomp type is set to user_defined for this assignment",exit_point=8888)
             ENDIF
             IF (user_nsubs .LE. 0) THEN
-               fail('no subs defined in user_defined assignment',exit_point=8888)
+               fail("no subs defined in user_defined assignment",exit_point=8888)
             ENDIF
             IF (.NOT.ASSOCIATED(sub2proc)) THEN
-               fail('sub2proc must be allocated for user defined assignment',exit_point=8888)
+               fail("sub2proc must be allocated for user defined assignment",exit_point=8888)
             ENDIF
             DO i=1,user_nsubs
                IF ((sub2proc(i).LT.0).OR.(sub2proc(i).GE.ppm_nproc)) THEN
-                  fail('invalid processor specified in sub2proc',exit_point=8888)
+                  fail("invalid processor specified in sub2proc",exit_point=8888)
                ENDIF
             ENDDO
          ENDIF
          IF (decomp .EQ. ppm_param_decomp_user_defined) THEN
             IF ((.NOT.ASSOCIATED(min_sub)).OR.(.NOT.ASSOCIATED(max_sub))) THEN
-               fail('min_sub/max_sub must be allocated for user def. decomp',exit_point=8888)
+               fail("min_sub/max_sub must be allocated for user def. decomp",exit_point=8888)
             ENDIF
             IF (user_nsubs .LE. 0) THEN
-               fail('no subs defined in user_defined decomposition',exit_point=8888)
+               fail("no subs defined in user_defined decomposition",exit_point=8888)
             ENDIF
             !-------------------------------------------------------------------
             !  Check that the user-defined subs add up to the whole
@@ -617,7 +617,7 @@
                !----------------------------------------------------------------
                !  Mismatch!
                !----------------------------------------------------------------
-               fail('faulty subdomains defined',exit_point=8888)
+               fail("faulty subdomains defined",exit_point=8888)
             ENDIF
          ENDIF
          !----------------------------------------------------------------------

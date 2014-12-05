@@ -41,9 +41,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       INTEGER, PARAMETER :: MK  = ppm_kind_double
       INTEGER, PARAMETER :: MKS = ppm_kind_single
 

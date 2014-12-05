@@ -29,8 +29,8 @@
 
 
       MODULE ppm_module_util_netstat
-      !!! This module provides the routines
-      !!! that solve cubic equations with real roots.
+      !!! This module provides the routine to measure the total latency and
+      !!! mean bandwidth using the current communication schedule
 
          IMPLICIT NONE
 

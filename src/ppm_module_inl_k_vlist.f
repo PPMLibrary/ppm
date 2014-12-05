@@ -23,8 +23,6 @@
       ! see <http://www.gnu.org/licenses/>.
       !
       !-------------------------------------------------------------------------
-      ! Parallel Particle Mesh Library (PPM)
-      !-------------------------------------------------------------------------
       !  MOSAIC Group
       !  Max Planck Institute of Molecular Cell Biology and Genetics
       !  Pfotenhauerstr. 108, 01307 Dresden, Germany

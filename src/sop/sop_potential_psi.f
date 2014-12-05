@@ -7,13 +7,10 @@
 
       SUBROUTINE DTYPE(sop_potential_psi)(Particles,Psi_global,Psi_max,opts,info)
 
+          USE ppm_module_mpi
           USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
           USE ppm_module_io_vtk
-
           IMPLICIT NONE
-#ifdef __MPI
-          INCLUDE 'mpif.h'
-#endif
 
           DEFINE_MK()
           ! arguments
@@ -175,10 +172,9 @@
           ! write tabulated values of the interaction potential into a file
           ! using parameters from the opts argument
 
+          USE ppm_module_mpi
           IMPLICIT NONE
-#ifdef __MPI
-          INCLUDE 'mpif.h'
-#endif
+
           DEFINE_MK()
           TYPE(DTYPE(sop_t_opts)), POINTER,    INTENT(IN   )   :: opts
           CHARACTER(LEN=*),                    INTENT(IN   )   :: filename

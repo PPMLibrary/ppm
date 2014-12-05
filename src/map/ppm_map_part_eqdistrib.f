@@ -51,20 +51,17 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
+      USE ppm_module_mpi
       IMPLICIT NONE
+
 #if    __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #else
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
-
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
-
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -225,9 +222,8 @@
          !  from. srlist2(ipos) is the number of particles to send to or
          !  receive from the processor in srlist1(ipos).
          !----------------------------------------------------------------------
-         IF (((max_exc - 1) .EQ. ppm_rank) .OR. &
-        &    ((min_exc - 1) .EQ. ppm_rank)) THEN
-           IF ((max_exc - 1) .EQ. ppm_rank) THEN
+         IF (((max_exc - 1).EQ.ppm_rank).OR.((min_exc - 1).EQ.ppm_rank)) THEN
+           IF ((max_exc - 1).EQ.ppm_rank) THEN
               srlist1(ipos + 1) = min_exc - 1
            ELSE
               srlist1(ipos + 1) = max_exc - 1

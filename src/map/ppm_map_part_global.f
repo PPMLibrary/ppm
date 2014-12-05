@@ -55,6 +55,7 @@
       USE ppm_module_check_id
       USE ppm_module_map_part_util
       IMPLICIT NONE
+
 #if    __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #else
@@ -95,7 +96,6 @@
       INTEGER               :: sendrank,recvrank
       INTEGER               :: iopt,iset,ibuffer
 
-      CHARACTER(ppm_char) :: mesg
       CHARACTER(ppm_char) :: caller='ppm_map_part_global'
 
       LOGICAL :: valid
@@ -118,7 +118,8 @@
 
       ! if there is still some data left in the buffer, warn the user
       IF (ppm_buffer_set .GT. 0) THEN
-         fail('Buffer was not empty. Possible loss of data!',ppm_err_map_incomp,exit_point=no,ppm_error=ppm_error_warning)
+         fail('Buffer was not empty. Possible loss of data!', &
+         & ppm_err_map_incomp,exit_point=no,ppm_error=ppm_error_warning)
       ENDIF
 
       !-------------------------------------------------------------------------

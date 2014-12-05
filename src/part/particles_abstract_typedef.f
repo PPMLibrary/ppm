@@ -78,9 +78,9 @@ minclude ppm_create_collection(DTYPE(part_prop)_,DTYPE(part_prop)_,generate="con
           !!! skin layer around the particles
           INTEGER                          :: isymm
           !!! using symmetry
-          INTEGER, DIMENSION(:  ), POINTER :: nvlist=> NULL()
+          INTEGER, DIMENSION(:  ), POINTER :: nvlist => NULL()
           !!! Number of neighbors of each particles
-          INTEGER, DIMENSION(:,:), POINTER :: vlist=> NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: vlist  => NULL()
           !!! Neighbor lists
           LOGICAL                          :: uptodate = .FALSE.
           !!! true if the neighbor lists have been computed
@@ -121,7 +121,12 @@ minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abs
           INTEGER  :: nb_ghost_get = 0
           !!! number of partial mappings
           INTEGER  :: nb_ghost_push = 0
-          !!! number of partial mappings
+          !!! number of pushing data
+          INTEGER  :: nb_ghost_pop = 0
+          !!! number of popping data
+          INTEGER  :: nb_ghost_send = 0
+          !!! number of popping data
+
           REAL(MK) :: t_nl = 0._MK
           !!! time spent for neighbour lists constructions
           REAL(MK) :: t_inl = 0._MK
@@ -145,7 +150,11 @@ minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abs
           REAL(MK) :: t_ghost_get = 0._MK
           !!! time spent for partial mappings
           REAL(MK) :: t_ghost_push = 0._MK
-          !!! time spent for partial mappings
+          !!! time spent for pushing data
+          REAL(MK) :: t_ghost_pop = 0._MK
+          !!! time spent for popping data
+          REAL(MK) :: t_ghost_send = 0._MK
+          !!! time spent for sending data
 
           INTEGER  :: nb_ls = 0
           REAL(MK) :: t_ls = 0._MK
@@ -254,9 +263,22 @@ minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abs
           PROCEDURE(DTYPE(part_prop_realloc)_),      DEFERRED :: realloc_prop
           PROCEDURE(DTYPE(part_get_discr)_),         DEFERRED :: get_discr
           PROCEDURE(DTYPE(part_prop_zero)_),         DEFERRED :: zero
+          PROCEDURE(DTYPE(part_comp_global_index)_), DEFERRED :: comp_global_index
+          !!! Compute a global index on particles
+          !!! (each particle thus receive a unique ID)
+
+          PROCEDURE(DTYPE(get_xp)_),                 DEFERRED :: get_xp
+          PROCEDURE(DTYPE(set_xp)_),                 DEFERRED :: set_xp
+          !!!
+          PROCEDURE(DTYPE(part_move)_),              DEFERRED :: move
+          !!! Move particles by a given displacement field
+          PROCEDURE(DTYPE(part_apply_bc)_),          DEFERRED :: apply_bc
+          !!! Apply boundary conditions to the positions
+          PROCEDURE(DTYPE(part_print_info)_),        DEFERRED :: print_info
+          !!! Print some information about the particle set to standard output
+          PROCEDURE(DTYPE(part_set_cutoff)_),        DEFERRED :: set_cutoff
 
           PROCEDURE(DTYPE(part_neigh_create)_),      DEFERRED :: create_neighlist
-          PROCEDURE(DTYPE(part_set_cutoff)_),        DEFERRED :: set_cutoff
           PROCEDURE(DTYPE(part_neigh_destroy)_),     DEFERRED :: destroy_neighlist
           PROCEDURE(DTYPE(part_neighlist)_),         DEFERRED :: comp_neighlist
           PROCEDURE(DTYPE(get_nvlist)_),             DEFERRED :: get_nvlist
@@ -265,8 +287,42 @@ minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abs
           PROCEDURE(DTYPE(has_neighlist)_),          DEFERRED :: has_neighlist
           PROCEDURE(DTYPE(has_ghosts)_),             DEFERRED :: has_ghosts
 
+          PROCEDURE(DTYPE(part_p2m)_),               DEFERRED :: interp_to_mesh
+          !!! Interpolate quantity from particles to a mesh
+          PROCEDURE(DTYPE(part_interp_to_mesh_all)_),DEFERRED :: interp_to_mesh_all
+          !!! Interpolate all discretized fields from particles to a mesh
+          PROCEDURE(DTYPE(part_remesh)_),            DEFERRED :: remesh
+          !!! Remesh particles onto a given mesh
+          !!! (NOT completed, but basic features are there)
+          PROCEDURE(DTYPE(particles_from_mesh)_),    DEFERRED :: recreate_from_mesh
+          !!! Re-initialize positions and property values
+          !!! from mesh nodes and mesh values.
+
+          PROCEDURE(DTYPE(part_map_create)_),        DEFERRED :: create_map
+          PROCEDURE(DTYPE(part_map_destroy)_),       DEFERRED :: destroy_map
+
           PROCEDURE(DTYPE(part_prop_push)_),         DEFERRED :: map_part_push_legacy
           PROCEDURE(DTYPE(part_prop_pop)_),          DEFERRED :: map_part_pop_legacy
+          PROCEDURE(DTYPE(part_prop_ghost_pop)_),    DEFERRED :: map_part_ghost_pop_legacy
+          PROCEDURE(DTYPE(part_map_ghost_get)_),     DEFERRED :: map_ghost_get
+          !!! Compute new ghost mappings and push new positions into buffer
+          PROCEDURE(DTYPE(part_map_ghost_put)_),     DEFERRED :: map_ghost_put
+          !!! Puts back ghost particle values/properties to the corresponding real particles.
+          PROCEDURE(DTYPE(part_map_ghost_push)_),    DEFERRED :: map_ghost_push
+          !!! Push property onto the buffer
+          PROCEDURE(DTYPE(part_map_ghost_send)_),    DEFERRED :: map_ghost_send
+          !!! Perform communication rounds to send the buffer between processors
+          PROCEDURE(DTYPE(part_map_ghost_isend)_),   DEFERRED :: map_ghost_isend
+          !!! Perform nonblocking communication rounds to send the buffer between processors
+          PROCEDURE(DTYPE(part_map_ghost_pop)_),     DEFERRED :: map_ghost_pop
+          !!! Pop property fromm the buffer
+          PROCEDURE(DTYPE(part_map_ghost_push_pos)_),DEFERRED :: map_ghost_push_positions
+          !!! Push new ghost positions to the buffer
+          PROCEDURE(DTYPE(part_map_ghost_pop_pos)_), DEFERRED :: map_ghost_pop_positions
+          !!! Pop new ghost positions from the buffer
+          PROCEDURE(DTYPE(part_map_ghosts)_),        DEFERRED :: map_ghosts
+          !!!perform the whole push-send-pop sequence for ghost mappings
+
           PROCEDURE(DTYPE(part_map)_),               DEFERRED :: map
           !!!perform the whole push-send-pop sequence for partial/global mappings
           PROCEDURE(DTYPE(part_map_positions)_),     DEFERRED :: map_positions
@@ -281,42 +337,11 @@ minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abs
           !!! Pop property fromm the buffer
           PROCEDURE(DTYPE(part_map_pop_positions)_), DEFERRED :: map_pop_positions
           !!! Pop new particle positions from the buffer
-          PROCEDURE(DTYPE(part_map_ghosts)_),        DEFERRED :: map_ghosts
-          !!!perform the whole push-send-pop sequence for ghost mappings
-          PROCEDURE(DTYPE(part_map_ghost_get)_),     DEFERRED :: map_ghost_get
-          !!! Compute new ghost mappings and push new positions into buffer
-          PROCEDURE(DTYPE(part_map_ghost_push)_),    DEFERRED :: map_ghost_push
-          !!! Push property onto the buffer
-          PROCEDURE(DTYPE(part_map_ghost_send)_),    DEFERRED :: map_ghost_send
-          !!! Perform communication rounds to send the buffer between processors
-          PROCEDURE(DTYPE(part_map_ghost_pop)_),     DEFERRED :: map_ghost_pop
-          !!! Pop property fromm the buffer
-          PROCEDURE(DTYPE(part_map_ghost_pop_pos)_), DEFERRED :: map_ghost_pop_positions
-          !!! Pop new ghost positions from the buffer
-          PROCEDURE(DTYPE(part_move)_),              DEFERRED :: move
-          !!! Move particles by a given displacement field
-          PROCEDURE(DTYPE(part_apply_bc)_),          DEFERRED :: apply_bc
-          !!! Apply boundary conditions to the positions
-          PROCEDURE(DTYPE(part_p2m)_),               DEFERRED :: interp_to_mesh
-          !!! Interpolate quantity from particles to a mesh
-          PROCEDURE(DTYPE(part_interp_to_mesh_all)_),DEFERRED :: interp_to_mesh_all
-          !!! Interpolate all discretized fields from particles to a mesh
-          PROCEDURE(DTYPE(part_remesh)_),            DEFERRED :: remesh
-          !!! Remesh particles onto a given mesh
-          !!! (NOT completed, but basic features are there)
-          PROCEDURE(DTYPE(particles_from_mesh)_),    DEFERRED :: recreate_from_mesh
-          !!! Re-initialize positions and property values
-          !!! from mesh nodes and mesh values.
-          PROCEDURE(DTYPE(part_print_info)_),        DEFERRED :: print_info
-          !!! Print some information about the particle set to standard output
-          PROCEDURE(DTYPE(part_comp_global_index)_), DEFERRED :: comp_global_index
-          !!! Compute a global index on particles
-          !!! (each particle thus receive a unique ID)
-          PROCEDURE(DTYPE(get_xp)_),                 DEFERRED :: get_xp
-          PROCEDURE(DTYPE(set_xp)_),                 DEFERRED :: set_xp
-          !!!
-          PROCEDURE(DTYPE(part_map_create)_),        DEFERRED :: create_map
-          PROCEDURE(DTYPE(part_map_destroy)_),       DEFERRED :: destroy_map
+
+          PROCEDURE(DTYPE(part_map_store)_),         DEFERRED :: map_store
+          !!! Stores the state of the current/active particle mapping.
+          PROCEDURE(DTYPE(part_map_load)_),          DEFERRED :: map_load
+          !!! Loads the internally stored particle mapping.
 
           PROCEDURE(DTYPE(data_1d_i_get_prop)_),     DEFERRED :: DTYPE(data_1d_i_get_prop)
           PROCEDURE(DTYPE(data_2d_i_get_prop)_),     DEFERRED :: DTYPE(data_2d_i_get_prop)

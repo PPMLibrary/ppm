@@ -48,13 +48,11 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
+      USE ppm_module_mpi
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -77,7 +75,7 @@
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
 #endif
-      CHARACTER(ppm_char) :: mesg
+
       CHARACTER(ppm_char) :: caller='ppm_map_part_send'
 
       !-------------------------------------------------------------------------
@@ -97,8 +95,9 @@
       ENDIF
 
       ! skip if the buffer is empty
-      IF (ppm_buffer_set .LT. 1) THEN
-         fail('Buffer is empty: skipping send!',ppm_err_buffer_empt,ppm_error=ppm_error_notice)
+      IF (ppm_buffer_set.LT.1) THEN
+         fail('Buffer is empty: skipping send!', &
+         & ppm_err_buffer_empt,ppm_error=ppm_error_notice)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -189,12 +188,11 @@
          ! The following IF is needed in order to skip "dummy"
          ! communication rounds where the current processor has to wait
          ! (only needed in the partial mapping).
-         IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
+         IF (ppm_isendlist(k).GE.0.AND.ppm_irecvlist(k).GE.0) THEN
              tag1 = 100
              IF (ppm_debug .GT. 1) THEN
-                WRITE(mesg,'(A,I5,2(A,I9))') 'sending to ',   &
-                & ppm_isendlist(k),', nsend=',nsend(k),', psend=',psend(k)
-                CALL ppm_write(ppm_rank,caller,mesg,info)
+                stdout_f('(A,I5,2(A,I9))',"sending to ",'ppm_isendlist(k)', &
+                & ", nsend=",'nsend(k)',", psend=",'psend(k)')
              ENDIF
              CALL MPI_SendRecv(psend(k),1,MPI_INTEGER,ppm_isendlist(k),tag1, &
              &    precv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1,ppm_comm,status,info)
@@ -203,9 +201,8 @@
              nrecv(k) = sbdim*precv(k)
 
              IF (ppm_debug .GT. 1) THEN
-                WRITE(mesg,'(A,I5,2(A,I9))') 'received from ',   &
-                & ppm_irecvlist(k),', nrecv=',nrecv(k),', precv=',precv(k)
-                CALL ppm_write(ppm_rank,caller,mesg,info)
+                stdout_f('(A,I5,2(A,I9))',"received from ",'ppm_irecvlist(k)', &
+                & ", nrecv=",'nrecv(k)',", precv=",'precv(k)')
              ENDIF
          ELSE
              ! skip this round, i.e. neither send nor receive any
@@ -237,15 +234,12 @@
       DO k=2,ppm_nsendlist
          Mpart           = Mpart           + precv(k)
       ENDDO
-      IF (ppm_debug .GT. 1) THEN
-          WRITE(mesg,'(2(A,I9))') 'mrecv=',mrecv,', msend=',msend
-          CALL ppm_write(ppm_rank,caller,mesg,info)
-          WRITE(mesg,'(A,I9)') 'ppm_nrecvbuffer=',ppm_nrecvbuffer
-          CALL ppm_write(ppm_rank,caller,mesg,info)
-          WRITE(mesg,'(A,I9)') 'Mpart=',Mpart
-          CALL ppm_write(ppm_rank,caller,mesg,info)
-      ENDIF
 
+      IF (ppm_debug .GT. 1) THEN
+          stdout_f('(2(A,I9))',"mrecv=",mrecv,", msend=",msend)
+          stdout_f('(A,I9)',"ppm_nrecvbuffer=",ppm_nrecvbuffer)
+          stdout_f('(A,I9)',"Mpart=",Mpart)
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Allocate the memory for the copy of the particle buffer
@@ -258,7 +252,8 @@
       CASE DEFAULT
          CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
       END SELECT
-      or_fail_alloc('global receive buffer PPM_RECVBUFFER',ppm_error=ppm_error_fatal)
+      or_fail_alloc('global receive buffer PPM_RECVBUFFER', &
+      & ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the smaller send and receive buffer
@@ -268,33 +263,32 @@
       ! (as initialized above) and the alloc would throw a FATAL. This was
       ! Bug ID 000012.
       IF (ppm_nsendlist .GT. 1) THEN
-          iopt   = ppm_param_alloc_grow
-          ldu(1) = MAX(mrecv,1)
-          SELECT CASE (ppm_kind)
-          CASE (ppm_kind_double)
-             CALL ppm_alloc(recvd,ldu,iopt,info)
-             or_fail_alloc('local receive buffer RECV',ppm_error=ppm_error_fatal)
+         iopt   = ppm_param_alloc_grow
+         ldu(1) = MAX(mrecv,1)
+         SELECT CASE (ppm_kind)
+         CASE (ppm_kind_double)
+            CALL ppm_alloc(recvd,ldu,iopt,info)
+            or_fail_alloc('local receive buffer RECV',ppm_error=ppm_error_fatal)
 
-             ldu(1) = MAX(msend,1)
-             CALL ppm_alloc(sendd,ldu,iopt,info)
+            ldu(1) = MAX(msend,1)
+            CALL ppm_alloc(sendd,ldu,iopt,info)
 
-          CASE DEFAULT
-             CALL ppm_alloc(recvs,ldu,iopt,info)
-             or_fail_alloc('local receive buffer RECV',ppm_error=ppm_error_fatal)
+         CASE DEFAULT
+            CALL ppm_alloc(recvs,ldu,iopt,info)
+            or_fail_alloc('local receive buffer RECV',ppm_error=ppm_error_fatal)
 
-             ldu(1) = MAX(msend,1)
-             CALL ppm_alloc(sends,ldu,iopt,info)
+            ldu(1) = MAX(msend,1)
+            CALL ppm_alloc(sends,ldu,iopt,info)
 
-          END SELECT
-          or_fail_alloc('local send buffer SEND',ppm_error=ppm_error_fatal)
+         END SELECT
+         or_fail_alloc('local send buffer SEND',ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Debugging print of the number of sets in the buffer
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
-          WRITE(mesg,'(A,I9)') 'ppm_buffer_set=',ppm_buffer_set
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         stdout_f('(A,I9)',"ppm_buffer_set=",ppm_buffer_set)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -317,8 +311,7 @@
          DO j=2,ppm_nsendlist
             qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
             IF (ppm_debug .GT. 1) THEN
-                WRITE(mesg,'(A,I9)') 'qq(j,k)=',qq(j,k)
-                CALL ppm_write(ppm_rank,caller,mesg,info)
+               stdout_f('(A,I9)',"qq(j,k)=",'qq(j,k)')
             ENDIF
          ENDDO
       ENDDO
@@ -344,10 +337,8 @@
          DO j=2,ppm_nsendlist
             pp(j,k) = pp(j-1,k) + precv(j-1)*bdim
             IF (ppm_debug .GT. 1) THEN
-                WRITE(mesg,'(A,I9)') 'pp(j,k)=',pp(j,k)
-                CALL ppm_write(ppm_rank,caller,mesg,info)
-                WRITE(mesg,'(A,I9,A,I4)') 'precv(j-1)=',precv(j-1),', bdim=',bdim
-                CALL ppm_write(ppm_rank,caller,mesg,info)
+               stdout_f('(A,I9)',"pp(j,k)=",'pp(j,k)')
+               stdout_f('(A,I9,A,I4)',"precv(j-1)=",'precv(j-1)',", bdim=",bdim)
             ENDIF
          ENDDO
       ENDDO
@@ -414,9 +405,9 @@
             IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
                 tag1 = 300
                 CALL MPI_SendRecv( &
-     &             sendd,nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, &
-     &             recvd,nrecv(k),ppm_mpi_kind,ppm_irecvlist(k),tag1, &
-     &             ppm_comm,status,info)
+                &    sendd,nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, &
+                &    recvd,nrecv(k),ppm_mpi_kind,ppm_irecvlist(k),tag1, &
+                &    ppm_comm,status,info)
             ENDIF
 #else
             recvd = sendd
@@ -464,10 +455,10 @@
             ! (only needed in the partial mapping).
             IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
                 tag1 = 400
-                CALL MPI_SendRecv(                                    &
-     &             sends,nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, &
-     &             recvs,nrecv(k),ppm_mpi_kind,ppm_irecvlist(k),tag1, &
-     &             ppm_comm,status,info)
+                CALL MPI_SendRecv(                                      &
+                &    sends,nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, &
+                &    recvs,nrecv(k),ppm_mpi_kind,ppm_irecvlist(k),tag1, &
+                &    ppm_comm,status,info)
             ENDIF
 #else
             recvs = sends
@@ -496,8 +487,9 @@
          ldu(1) = ppm_nsendlist + 1
          iopt   = ppm_param_alloc_grow
          CALL ppm_alloc(ppm_precvbuffer,ldu,iopt,info)
-         or_fail_alloc('global recv buffer pointer PPM_PRECVBUFFER',ppm_error=ppm_error_fatal)
-!print*,'in ppm_map_part_send'
+         or_fail_alloc('global recv buffer pointer PPM_PRECVBUFFER', &
+         & ppm_error=ppm_error_fatal)
+
          ppm_precvbuffer(1) = Npart + 1
          DO k=1,ppm_nsendlist
             ppm_precvbuffer(k+1) = ppm_precvbuffer(k) + precv(k)

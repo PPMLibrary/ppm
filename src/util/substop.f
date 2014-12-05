@@ -42,17 +42,15 @@
       USE ppm_module_write
       USE ppm_module_util_time
       IMPLICIT NONE
-      !-------------------------------------------------------------------------
-      !  Includes
-      !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
+      !-------------------------------------------------------------------------
+      !  Includes
+      !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -65,8 +63,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                :: t1
-      CHARACTER(LEN=ppm_char) :: cbuf
+      REAL(MK) :: t1
 
       !-------------------------------------------------------------------------
       !  Externals
@@ -78,13 +75,11 @@
       IF     (ppm_debug.GT.1) THEN
          CALL ppm_util_time(t1)
 
-         WRITE(cbuf,'(A,I2,A,E12.4)') 'leaving with info=',info,'. took: ',t1-t0
-         CALL ppm_write(ppm_rank,caller,cbuf,info)
-      ELSEIF (ppm_debug.GT.0) THEN
+         stdout_f('(A,I2,A,E12.4)',"leaving with info=",info,". took: ",'t1-t0')
+      ELSE IF (ppm_debug.GT.0) THEN
          CALL ppm_util_time(t1)
 
-         WRITE(cbuf,'(A,E12.4)') 'took: ',t1-t0
-         CALL ppm_write(ppm_rank,caller,cbuf,info)
+         stdout_f('(A,E12.4)',"took: ",'t1-t0')
       ENDIF
 
       !-------------------------------------------------------------------------

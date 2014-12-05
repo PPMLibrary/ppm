@@ -105,30 +105,28 @@
         USE ppm_module_substop
         USE ppm_module_write
         USE ppm_module_error
+        USE ppm_module_mpi
         IMPLICIT NONE
 
         !------------------------------------------------------------------------
         !  Interface
         !------------------------------------------------------------------------
-        PUBLIC :: arg, arg_group, parse_args, disable_help, disable_ctrl, &
-             &    set_ctrl_name,                                          &
+        PUBLIC :: arg,arg_group,parse_args
+        PUBLIC :: disable_help,disable_ctrl,set_ctrl_name
 #ifdef __F2003
-             &    INTEGER_func, LONGINT_func, SINGLE_func, DOUBLE_func,   &
-             &    LOGICAL_func, STRING_func, COMPLEX_func, DCOMPLEX_func, &
-             &    INTEGER_ARRAY_func, LONGINT_ARRAY_func,                 &
-             &    SINGLE_ARRAY_func, DOUBLE_ARRAY_func,                   &
-             &    LOGICAL_ARRAY_func, STRING_ARRAY_func,                  &
-             &    COMPLEX_ARRAY_func, DCOMPLEX_ARRAY_func,                &
+        PUBLIC :: INTEGER_func, LONGINT_func, SINGLE_func, DOUBLE_func
+        PUBLIC :: LOGICAL_func, STRING_func, COMPLEX_func, DCOMPLEX_func
+        PUBLIC :: INTEGER_ARRAY_func, LONGINT_ARRAY_func
+        PUBLIC :: SINGLE_ARRAY_func, DOUBLE_ARRAY_func
+        PUBLIC :: LOGICAL_ARRAY_func, STRING_ARRAY_func
+        PUBLIC :: COMPLEX_ARRAY_func, DCOMPLEX_ARRAY_func
 #endif
-             &    reset, add_cmd, ctrl_file_name, break_help,             &
-             &    find_arg, find_flag, arg_count,                         &
-             &    enabling_flag, disabling_flag, exit_gracefully
+        PUBLIC :: reset, add_cmd, ctrl_file_name, break_help
+        PUBLIC :: find_arg, find_flag, arg_count
+        PUBLIC :: enabling_flag, disabling_flag, exit_gracefully
 
         PRIVATE
 
-#ifdef __MPI
-        INCLUDE 'mpif.h'
-#endif
         !------------------------------------------------------------------------
         !  Types
         !------------------------------------------------------------------------
@@ -457,7 +455,8 @@
              !  Parse rest of the command line
              !-------------------------------------------------------------------
              CALL parse_cmd_line(info)
-             or_fail('Parsing command line args failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
+             or_fail('Parsing command line args failed!', &
+             & ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
 
              !-------------------------------------------------------------------
              !  Parse Control file
@@ -465,26 +464,30 @@
              IF (ctrl_enabled) THEN
                 CALL find_arg(1, ok, ctrl_file_name)
                 CALL parse_ctrl_file(info)
-                or_fail('Parsing control file failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
+                or_fail('Parsing control file failed!', &
+             & ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
              END IF
 #ifdef __F2003
              !-------------------------------------------------------------------
              !  Call default funcs
              !-------------------------------------------------------------------
              CALL call_default_funcs(info)
-             or_fail('Calling default functions failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
+             or_fail('Calling default functions failed!', &
+             & ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
 #endif
              !-------------------------------------------------------------------
              !  Check minmax
              !-------------------------------------------------------------------
              CALL check_minmax(info)
-             or_fail('Min/max check failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
+             or_fail('Min/max check failed!', &
+             & ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
 #ifdef __F2003
              !-------------------------------------------------------------------
              !  Run validators
              !-------------------------------------------------------------------
              CALL call_validator_funcs(info)
-             or_fail('Calling validator functions failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
+             or_fail('Calling validator functions failed!', &
+             & ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
 #endif
              !-------------------------------------------------------------------
              !  Print Control file

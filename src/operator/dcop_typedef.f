@@ -1,7 +1,7 @@
       TYPE,EXTENDS(ppm_t_operator_discr) :: DTYPE(ppm_t_dcop)
           !!! Data structure containing all diff operators for a particle set
           !!!
-          REAL(MK),DIMENSION(:,:),        POINTER :: ker => NULL()
+          REAL(MK), DIMENSION(:,:),       POINTER :: ker => NULL()
           !!! where the operators are stored
           !!! small matrices that describe what each operator does
           CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: nn_sq => NULL()

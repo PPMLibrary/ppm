@@ -56,27 +56,20 @@
 #endif
 #endif
 #endif
-     !!! Particle to mesh interpolation following the M-prime-4 scheme.
-     !!!
-     !!! The interpolation scheme is only implemented for 2D and 3D spaces. To
-     !!! increase performance the inner loops over the number of properties to
-     !!! be interpolated are unrolled for 2,3,4 and 5-vectors.
-     !!!
-     !!! [NOTE]
-     !!! This routine only performs the actual interpolation. It should not be
-     !!! called directly by the user but instead the `ppm_interp_m2p`
-     !!! routine should be used with the kernel argument set to
-     !!! `ppm_param_rmsh_kernel_mp4`.
-
-
-
-      USE ppm_module_error
-      USE ppm_module_alloc
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_map
-
-
+      !!! Particle to mesh interpolation following the M-prime-4 scheme.
+      !!!
+      !!! The interpolation scheme is only implemented for 2D and 3D spaces. To
+      !!! increase performance the inner loops over the number of properties to
+      !!! be interpolated are unrolled for 2,3,4 and 5-vectors.
+      !!!
+      !!! [NOTE]
+      !!! This routine only performs the actual interpolation. It should not be
+      !!! called directly by the user but instead the `ppm_interp_m2p`
+      !!! routine should be used with the kernel argument set to
+      !!! `ppm_param_rmsh_kernel_mp4`.
+      !-------------------------------------------------------------------------
+      !  Modules
+      !-------------------------------------------------------------------------
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single

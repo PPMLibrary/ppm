@@ -1,5 +1,5 @@
 module Fortran
-  
+
   ##
   # This version of Fortran library
 
@@ -9,17 +9,17 @@ module Fortran
   # Find Fortran dependencies
 
   class Dependencies
- 
+
     OPTIONS = { :search_paths => [ '.', '../lib' ],
                 :ignore_files => %r{ },
                 :ignore_modules => %r{ },
                 :ignore_symlinks => true }
-    
+
     USE_MODULE_REGEX = /^\s*use\s+(\w+)/i
     MODULE_DEF_REGEX = /^\s*module\s+(\w+)/i
- 
+
     FILE_EXTENSION = /\.f$/i
-  
+
     attr_reader :file_dependencies, :source_files
 
     def initialize( config=OPTIONS )
@@ -37,7 +37,7 @@ module Fortran
     end
 
     def modules_defined_in( file )
-      modules = IO.readlines( file ).map do |line| 
+      modules = IO.readlines( file ).map do |line|
         $1.downcase if line.match MODULE_DEF_REGEX
       end.uniq.compact
     end
@@ -72,7 +72,7 @@ module Fortran
         output += "\tln -sf "+real_source+" .\n"
       end
       output += source.gsub(FILE_EXTENSION, ".o").gsub(%r|^.*/|,'' ) +
-                ": " + source.gsub(%r|^.*/|,"" ) 
+                ": " + source.gsub(%r|^.*/|,"" )
       modules_used_in( source ).each do |use|
         unless @hash[use]
           unless use.match @config[:ignore_modules]
@@ -103,7 +103,7 @@ module Fortran
       modules_head_uses = modules_used_in( head_f90 )
       required_f90s = modules_head_uses.map{ |mod| @hash[mod] }.compact
       required_f90s.delete_if{ |f| f == head_f90 }
-      
+
       @file_dependencies[head_f90] = required_f90s
       required_f90s.each do |required_f90|
         next if @parsed.include?(required_f90)

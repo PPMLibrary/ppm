@@ -37,10 +37,28 @@
       !!! This module provides neighbor
       !!! search routines (cell lists, Verlet lists).
 
-         USE ppm_module_topo_typedef, ONLY : ppm_t_topo,ppm_topo,ppm_t_clist
+         USE ppm_module_topo_typedef, ONLY : ppm_t_topo,ppm_topo
          IMPLICIT NONE
 
-         TYPE(ppm_t_clist), DIMENSION(:), POINTER, PRIVATE :: ppm_clist => NULL()
+         !----------------------------------------------------------------------
+         ! Pointer to cell list (needed to make lists of cell lists)
+         !----------------------------------------------------------------------
+         TYPE ppm_t_clist
+            !!! Cell list data structure
+            INTEGER, DIMENSION(:), POINTER :: nm   => NULL()
+            !!! Number of cells in x,y,(z) direction (including the ghosts
+            !!! cells) in each subdomain.
+            INTEGER, DIMENSION(:), POINTER :: lpdx => NULL()
+            !!! particle index list
+            INTEGER, DIMENSION(:), POINTER :: lhbx => NULL()
+            !!! first particle in each cell
+         END TYPE
+
+         PUBLIC :: ppm_t_clist
+
+         TYPE(ppm_t_clist), DIMENSION(:), POINTER :: ppm_clist => NULL()
+
+         PRIVATE :: ppm_clist
 
          !----------------------------------------------------------------------
          !  Define interface to ppm_clist_destroy

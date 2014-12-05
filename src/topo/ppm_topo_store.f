@@ -57,37 +57,36 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
+      USE ppm_module_mpi
       USE ppm_module_topo_alloc
       USE ppm_module_topo_typedef
       IMPLICIT NONE
-      !-------------------------------------------------------------------------
-      !  Includes
-      !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
+      !  Includes
+      !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
       INTEGER,                  INTENT(INOUT) :: topoid
       !!! Topology ID. If 0, then create a new topology structure and return
       !!! ID. Else reallocate the topology with ID == topoid
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: min_phys
+      REAL(MK), DIMENSION(:  ), POINTER       :: min_phys
       !!! Min. extent of the comput. domain
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: max_phys
+      REAL(MK), DIMENSION(:  ), POINTER       :: max_phys
       !!! Max. extent of the comput. domain
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: min_sub
+      REAL(MK), DIMENSION(:,:), POINTER       :: min_sub
       !!! Min. extent of the subdomains
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: max_sub
+      REAL(MK), DIMENSION(:,:), POINTER       :: max_sub
       !!! Max. extent of the subdomains
       INTEGER,  DIMENSION(:,:), POINTER       :: subs_bc
       !!! Boundary conditions for subs on ALL processors
-      INTEGER,  DIMENSION(  :), INTENT(IN   ) :: sub2proc
+      INTEGER,  DIMENSION(  :), POINTER       :: sub2proc
       !!! Assignment of subs to procs
       INTEGER,                  INTENT(IN   ) :: nsubs
       !!! Total number of subs on all procs
@@ -95,13 +94,13 @@
       !!! Boundary conditions on the computational box
       REAL(MK),                 INTENT(IN   ) :: ghostsize
       !!! Size of the ghostlayers
-      INTEGER,  DIMENSION(  :), INTENT(IN   ) :: isublist
+      INTEGER,  DIMENSION(  :), POINTER       :: isublist
       !!! List of subs handled by this processor
       INTEGER                 , INTENT(IN   ) :: nsublist
       !!! Number of subs on current processor
-      INTEGER,  DIMENSION(:  ), INTENT(IN   ) :: nneigh
+      INTEGER,  DIMENSION(:  ), POINTER       :: nneigh
       !!! Number of neighbors of each sub
-      INTEGER,  DIMENSION(:,:), INTENT(IN   ) :: ineigh
+      INTEGER,  DIMENSION(:,:), POINTER       :: ineigh
       !!! Neighbors of each sub.
       !!!
       !!! 1st index: 1...nneigh (neighbor index of sub)                        +
@@ -119,7 +118,8 @@
       INTEGER               :: i,j,k,kk
       INTEGER               :: iopt,isize,iproc,isin
       INTEGER               :: maxneigh,minbound
-      INTEGER               :: nsubmax,nsublistmax
+
+      CHARACTER(LEN=ppm_char) :: caller="ppm_topo_store"
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -127,14 +127,14 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_topo_store',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -151,11 +151,9 @@
       !-------------------------------------------------------------------------
       CALL ppm_topo_alloc(topoid,nsubs,nsublist,maxneigh,MK,info)
       IF (info .NE. ppm_param_success) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_store', &
-          &    'Could not allocate memory for Topology',__LINE__,info)
-          GOTO 9999
+         fail("Could not allocate memory for Topology",ppm_err_alloc,ppm_error=ppm_error_fatal)
       ENDIF
+
       topo => ppm_topo(topoid)%t
 
       !-------------------------------------------------------------------------
@@ -170,6 +168,7 @@
          topo%min_physs(k) = min_phys(k)
          topo%max_physs(k) = max_phys(k)
       ENDDO
+
       topo%ghostsizes = ghostsize
 #else
       !-------------------------------------------------------------------------
@@ -179,6 +178,7 @@
          topo%min_physd(k) = min_phys(k)
          topo%max_physd(k) = max_phys(k)
       ENDDO
+
       topo%ghostsized = ghostsize
 #endif
 
@@ -190,7 +190,6 @@
       DO i=1,nsubs
          topo%sub2proc(i) = sub2proc(i)
       ENDDO
-
       !-------------------------------------------------------------------------
       !  initialize optmization status flags
       !-------------------------------------------------------------------------
@@ -247,21 +246,12 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  The MAX of nsublist and 1 is needed to avoid allocation failures
-      !  if a processor has 0 subs. Same for nsubs if there are no subs at
-      !  all.
-      !-------------------------------------------------------------------------
-      nsubmax = MAX(nsubs,1)
-      nsublistmax = MAX(nsublist,1)
-
-
-      !-------------------------------------------------------------------------
       !  store the data by looping over the subs handled by the current
       !  processor: isublist(1:nsublist)
       !-------------------------------------------------------------------------
       IF (nsublist.LT.1) THEN
-          ! dummy entry if we have no subs at all
-          topo%nneighsubs(1) = ppm_param_undefined
+         ! dummy entry if we have no subs at all
+         topo%nneighsubs(1) = ppm_param_undefined
       ENDIF
       DO i=1,nsublist
          j = nneigh(isublist(i))
@@ -283,7 +273,7 @@
       !-------------------------------------------------------------------------
       !  And store it BC
       !-------------------------------------------------------------------------
-      IF (nsubs .LT. 1) THEN
+      IF (nsubs.LT.1) THEN
          ! dummy entries if we have no subs at all
          topo%subs_bc(1,1) = ppm_param_undefined
          topo%subs_bc(2,1) = ppm_param_undefined
@@ -293,17 +283,18 @@
             topo%subs_bc(5,1) = ppm_param_undefined
             topo%subs_bc(6,1) = ppm_param_undefined
          ENDIF
+      ELSE
+         DO i=1,nsubs
+            topo%subs_bc(1,i) = subs_bc(1,i)
+            topo%subs_bc(2,i) = subs_bc(2,i)
+            topo%subs_bc(3,i) = subs_bc(3,i)
+            topo%subs_bc(4,i) = subs_bc(4,i)
+            IF (ppm_dim.EQ.3) THEN
+               topo%subs_bc(5,i) = subs_bc(5,i)
+               topo%subs_bc(6,i) = subs_bc(6,i)
+            ENDIF
+         ENDDO
       ENDIF
-      DO i=1,nsubs
-         topo%subs_bc(1,i) = subs_bc(1,i)
-         topo%subs_bc(2,i) = subs_bc(2,i)
-         topo%subs_bc(3,i) = subs_bc(3,i)
-         topo%subs_bc(4,i) = subs_bc(4,i)
-         IF (ppm_dim.EQ.3) THEN
-            topo%subs_bc(5,i) = subs_bc(5,i)
-            topo%subs_bc(6,i) = subs_bc(6,i)
-         ENDIF
-      ENDDO
 
       !-------------------------------------------------------------------------
       !  store number of subdomains handled by
@@ -311,12 +302,13 @@
       !-------------------------------------------------------------------------
       topo%nsublist = nsublist
 
-      IF (nsublist .LT. 1) THEN
+      IF (nsublist.LT.1) THEN
          topo%isublist(1) = ppm_param_undefined
+      ELSE
+         DO i=1,nsublist
+            topo%isublist(i) = isublist(i)
+         ENDDO
       ENDIF
-      DO i=1,nsublist
-         topo%isublist(i) = isublist(i)
-      ENDDO
 
       !-------------------------------------------------------------------------
       !  Determine and store the neighbors of this processor
@@ -326,92 +318,68 @@
       isize = SIZE(topo%ineighproc,1)
 
       DO k=1,topo%nsublist
-          i = topo%isublist(k)
-          DO j=1,nneigh(i)
-              iproc = topo%sub2proc(ineigh(j,i))
-              ! if it is not myself
-              IF (iproc .NE. ppm_rank) THEN
-                  isin = 0
-                  DO kk=1,topo%nneighproc
-                      IF (topo%ineighproc(kk) .EQ. iproc) isin = 1
-                  END DO
-                  ! if not already in list
-                  IF (isin .EQ. 0) THEN
-                      topo%nneighproc = topo%nneighproc + 1
-                      IF (topo%nneighproc .GT. isize) THEN
-                          ! kindly ask for more memory
-                          isize = isize + 1
-                          ldc(1) = isize
-                          iopt = ppm_param_alloc_grow_preserve
-                          CALL ppm_alloc(topo%ineighproc,ldc,iopt,info)
-                          IF (info .NE. 0) THEN
-                              info = ppm_error_fatal
-                              CALL ppm_error(ppm_err_alloc,'ppm_topo_store',&
-     &                            'sub neighbor list PPM_INEIGHLIST',  &
-     &                            __LINE__,info)
-                              GOTO 9999
-                          ENDIF
-                      END IF
-                      ! add iproc to the list of neighbors
-                      topo%ineighproc(topo%nneighproc) = iproc
-                  END IF
-              END IF
-          END DO
-      END DO
+         i = topo%isublist(k)
+         DO j=1,nneigh(i)
+            iproc = topo%sub2proc(ineigh(j,i))
+            ! if it is not myself
+            IF (iproc.NE.ppm_rank) THEN
+               isin = 0
+               DO kk=1,topo%nneighproc
+                  IF (topo%ineighproc(kk).EQ.iproc) isin = 1
+               ENDDO
+               ! if not already in list
+               IF (isin.EQ.0) THEN
+                  topo%nneighproc = topo%nneighproc + 1
+                  IF (topo%nneighproc.GT.isize) THEN
+                     ! kindly ask for more memory
+                     isize = isize + 1
+                     ldc(1) = isize
+                     iopt = ppm_param_alloc_grow_preserve
+                     CALL ppm_alloc(topo%ineighproc,ldc,iopt,info)
+                     or_fail_alloc("sub neighbor list PPM_INEIGHLIST",ppm_error=ppm_error_fatal)
+                  ENDIF
+                  ! add iproc to the list of neighbors
+                  topo%ineighproc(topo%nneighproc) = iproc
+               ENDIF
+            ENDIF
+         ENDDO
+      ENDDO
 
       topo%isdefined = .TRUE.
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_topo_store',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF ((topoid .LT. 0) .OR. (topoid .GT. SIZE(ppm_topo))) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
-     &             'topoid must be >= 0 and <= SIZE(ppm_topo)',__LINE__,info)
-              GOTO 8888
+             fail("topoid must be >= 0 and <= SIZE(ppm_topo)",exit_point=8888)
           ENDIF
           IF (nsubs .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_topo_store',  &
-     &            'nsubs must be >0',__LINE__,info)
-              GOTO 8888
+             fail("nsubs must be >0",exit_point=8888)
           ENDIF
           IF (nsublist .LT. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_topo_store',  &
-     &            'nsublist must be >0',__LINE__,info)
-              GOTO 8888
+             fail("nsublist must be >0",exit_point=8888)
           ENDIF
           IF (nsubs .LT. nsublist) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_topo_store',  &
-     &            'total number of subs is smaller than local one',__LINE__,info)
-              GOTO 8888
+             fail("total number of subs is smaller than local one",exit_point=8888)
           ENDIF
           DO i=1,nsubs
-              DO j=1,ppm_dim
-                  IF (max_sub(j,i) .LE. min_sub(j,i)) THEN
-                      info = ppm_error_error
-                      CALL ppm_error(ppm_err_argument,'ppm_topo_store',  &
-     &                    'min_sub must be < max_sub',__LINE__,info)
-                      GOTO 8888
-                  ENDIF
-              ENDDO
+             DO j=1,ppm_dim
+                IF (max_sub(j,i).LE.min_sub(j,i)) THEN
+                   fail("min_sub must be < max_sub",exit_point=8888)
+                ENDIF
+             ENDDO
           ENDDO
           DO i=1,nsubs
-              IF(sub2proc(i) .LT. 0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_topo_store',  &
-     &                'found sub not assigned to any processor',__LINE__,info)
-                  GOTO 8888
-              ENDIF
+             IF (sub2proc(i).LT.0) THEN
+                fail("found sub not assigned to any processor",exit_point=8888)
+             ENDIF
           ENDDO
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_topo_store_s

@@ -75,18 +75,19 @@
       !!! DIM is the dimension of the pdata array and not the space
       !!! dimension ppm_dim!
       !-------------------------------------------------------------------------
-      !  Includes
-      !-------------------------------------------------------------------------
-
-      !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
       IMPLICIT NONE
+
       DEFINE_MK()
+      !-------------------------------------------------------------------------
+      !  Includes
+      !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
       CLASS(DTYPE(ppm_t_particles))        :: Pc
+
       INTEGER                              :: mapID
 #if   __DIM == 1
 #if   __KIND == __INTEGER
@@ -121,6 +122,11 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
+      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map
+
+      REAL(MK), DIMENSION(:), POINTER :: ppm_recvbuffer
+      REAL(MK)                        :: t0
+
       INTEGER, DIMENSION(2) :: ldu
       INTEGER               :: k,ipart,bdim,ibuffer,btype
       INTEGER               :: iopt,edim,istart
@@ -130,11 +136,6 @@
 #endif
       CHARACTER(ppm_char)   :: mesg
       CHARACTER(ppm_char)   :: caller = 'map_part_pop'
-      REAL(MK)              :: t0
-
-      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map
-
-      REAL(MK), DIMENSION(:), POINTER :: ppm_recvbuffer
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -170,8 +171,7 @@
       !  Check that the required dimension fits the dimension of the buffer
       !-------------------------------------------------------------------------
       bdim = map%ppm_buffer_dim(map%ppm_buffer_set)
-#if   __KIND == __SINGLE_PRECISION_COMPLEX | \
-      __KIND == __DOUBLE_PRECISION_COMPLEX
+#if   __KIND == __SINGLE_PRECISION_COMPLEX || __KIND == __DOUBLE_PRECISION_COMPLEX
       ! for complex, the effective dimension is half the data dimension
       edim = bdim/2
 #else

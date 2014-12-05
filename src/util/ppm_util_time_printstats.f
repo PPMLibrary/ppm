@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                     ppm_util_printstats
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -34,21 +34,20 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_write
+      USE ppm_module_mpi
       USE ppm_module_typedef
       IMPLICIT NONE
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
+
       INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       LOGICAL                , INTENT(IN   ), OPTIONAL :: verbose
       !!! not implemented yet
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3)    :: ldu
       INTEGER                  :: i,isize
@@ -59,7 +58,7 @@
       !!! Current CPU clock time
       CHARACTER(LEN=ppm_char)  :: cbuf,mesg
       CHARACTER(LEN=ppm_char)  :: caller = 'ppm_util_printstats'
-      
+
       info = 0
       !-------------------------------------------------------------------------
       !  Call ppm_util_time

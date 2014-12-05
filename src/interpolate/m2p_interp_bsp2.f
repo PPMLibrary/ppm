@@ -67,9 +67,6 @@
      !!! called directly by the user but instead the `ppm_interp_m2p`
      !!! routine should be used with the kernel argument set to
      !!! `ppm_param_rmsh_kernel_bsp2`.
-
-
-
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION

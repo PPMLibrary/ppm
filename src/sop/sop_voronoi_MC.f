@@ -4,13 +4,10 @@
       SUBROUTINE DTYPE(sop_voronoi_MC)(Particles,opts,info)
 
           USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
+          USE ppm_module_mpi
           USE ppm_module_io_vtk
           USE ppm_module_kdtree
-
           IMPLICIT NONE
-#ifdef __MPI
-          INCLUDE 'mpif.h'
-#endif
 
           DEFINE_MK()
           ! arguments

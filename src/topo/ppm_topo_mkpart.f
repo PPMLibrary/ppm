@@ -81,6 +81,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
+      USE ppm_module_mpi
       USE ppm_module_topo_cost
       USE ppm_module_topo_store
       USE ppm_module_define_subs_bc
@@ -91,6 +92,7 @@
       USE ppm_module_tree
       USE ppm_module_topo_box2subs
       IMPLICIT NONE
+
 #if    __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif  __KIND == __DOUBLE_PRECISION
@@ -99,9 +101,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -152,11 +151,11 @@
       !!! and are only available if ppm was compiled with METIS support.
 
 
-      REAL(MK), DIMENSION(:),             INTENT(IN   ) :: min_phys
+      REAL(MK), DIMENSION(:),             POINTER       :: min_phys
       !!! Minimum of physical extend of the computational domain
       !!!
       !!! first index is ppm_dim
-      REAL(MK), DIMENSION(:),             INTENT(IN   ) :: max_phys
+      REAL(MK), DIMENSION(:),             POINTER       :: max_phys
       !!! Maximum of physical extend of the computational domain
       !!!
       !!! first index is ppm_dim

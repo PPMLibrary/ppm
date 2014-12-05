@@ -131,7 +131,7 @@
             IF (ASSOCIATED(topo%nneighsubs)) DEALLOCATE(topo%nneighsubs,STAT=info)
             IF (ASSOCIATED(topo%ineighproc)) DEALLOCATE(topo%ineighproc,STAT=info)
             IF (ASSOCIATED(topo%icommseq))   DEALLOCATE(topo%icommseq,  STAT=info)
-            DEALLOCATE(topo,stat=info)
+            DEALLOCATE(topo,STAT=info)
             NULLIFY(topo)
             or_fail_dealloc('Deallocating topo',exit_point=no)
          ENDIF

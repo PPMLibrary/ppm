@@ -1,7 +1,78 @@
-minclude ppm_create_collection_interfaces(DTYPE(part_prop)_,DTYPE(part_prop)_)
-minclude ppm_create_collection_interfaces(DTYPE(neighlist)_,DTYPE(neighlist)_)
 minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
       !minclude ppm_create_collection_interfaces(DTYPE(ppm_t_sop)_)
+
+      SUBROUTINE DTYPE(part_create)_(Pc,Npart,info,name)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)            :: Pc
+          INTEGER,                    INTENT(IN   ) :: Npart
+          INTEGER,                    INTENT(  OUT) :: info
+          CHARACTER(LEN=*), OPTIONAL, INTENT(IN   ) :: name
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_destroy)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(particles_initialize2d)_(Pc,Npart_global,info, &
+      &          distrib,topoid,minphys,maxphys,cutoff,name)
+          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)                       :: Pc
+          INTEGER,                                INTENT(INOUT) :: Npart_global
+          INTEGER,                                INTENT(  OUT) :: info
+          INTEGER,                      OPTIONAL, INTENT(IN   ) :: distrib
+          INTEGER,                      OPTIONAL, INTENT(IN   ) :: topoid
+          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: minphys
+          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: maxphys
+          REAL(MK),                     OPTIONAL, INTENT(IN   ) :: cutoff
+          CHARACTER(LEN=*),             OPTIONAL, INTENT(IN   ) :: name
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(particles_initialize3d)_(Pc,Npart_global,info, &
+      &          distrib,topoid,minphys,maxphys,cutoff,name)
+          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)                       :: Pc
+          INTEGER,                                INTENT(INOUT) :: Npart_global
+          INTEGER,                                INTENT(  OUT) :: info
+          INTEGER,                      OPTIONAL, INTENT(IN   ) :: distrib
+          INTEGER,                      OPTIONAL, INTENT(IN   ) :: topoid
+          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: minphys
+          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: maxphys
+          REAL(MK),                     OPTIONAL, INTENT(IN   ) :: cutoff
+          CHARACTER(LEN=*),             OPTIONAL, INTENT(IN   ) :: name
+      END SUBROUTINE
+
+      !!temporary hack to deal with both 2d and 3d
+      SUBROUTINE DTYPE(part_initialize)_(Pc,Npart_global,info,&
+      &          distrib,topoid,minphys,maxphys,cutoff,name)
+          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)                        :: Pc
+          INTEGER,                                INTENT(INOUT) :: Npart_global
+          INTEGER,                                INTENT(  OUT) :: info
+          INTEGER,                      OPTIONAL, INTENT(IN   ) :: distrib
+          INTEGER,                      OPTIONAL, INTENT(IN   ) :: topoid
+          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: minphys
+          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: maxphys
+          REAL(MK),                     OPTIONAL, INTENT(IN   ) :: cutoff
+          CHARACTER(LEN=*),             OPTIONAL, INTENT(IN   ) :: name
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_del_parts)_(Pc,list_del_parts,nb_del,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)       :: Pc
+          INTEGER, DIMENSION(:), POINTER       :: list_del_parts
+          INTEGER,               INTENT(IN   ) :: nb_del
+          INTEGER,               INTENT(  OUT) :: info
+      END SUBROUTINE
+
+minclude ppm_create_collection_interfaces(DTYPE(part_prop)_,DTYPE(part_prop)_)
 
       !CREATE ENTRY
       SUBROUTINE DTYPE(prop_create)_(prop,datatype,parts,npart,lda,name,flags,info,field,zero)
@@ -36,25 +107,6 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
           INTEGER, OPTIONAL, INTENT(IN   ) :: level
           INTEGER, OPTIONAL, INTENT(IN   ) :: fileunit
           INTEGER, OPTIONAL, INTENT(IN   ) :: propid
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(get_xp)_(this,xp,info,with_ghosts)
-          IMPORT DTYPE(ppm_t_particles)_, MK
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                   :: this
-          REAL(MK), DIMENSION(:,:),          POINTER       :: xp
-          INTEGER,                           INTENT(  OUT) :: info
-          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: with_ghosts
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(set_xp)_(this,xp,info,read_only,ghosts_ok)
-          IMPORT DTYPE(ppm_t_particles)_, MK
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)          :: this
-          REAL(MK), DIMENSION(:,:), POINTER       :: xp
-          INTEGER,                  INTENT(  OUT) :: info
-          LOGICAL,        OPTIONAL, INTENT(IN   ) :: read_only
-          LOGICAL,        OPTIONAL, INTENT(IN   ) :: ghosts_ok
       END SUBROUTINE
 
       SUBROUTINE DTYPE(part_prop_create)_(this,info,field,part_prop, &
@@ -94,6 +146,93 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
           INTEGER, OPTIONAL,              INTENT(IN   ) :: lda
       END SUBROUTINE
 
+      SUBROUTINE DTYPE(part_get_discr)_(this,Field,prop,info)
+          IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
+          IMPORT DTYPE(ppm_t_part_prop)_,ppm_t_discr_data
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)         :: this
+          CLASS(ppm_t_field_),     TARGET        :: Field
+          !CLASS(DTYPE(ppm_t_part_prop)_),POINTER, INTENT(  OUT)  :: prop
+          CLASS(ppm_t_discr_data), POINTER       :: prop
+          INTEGER,                 INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_prop_zero)_(this,Field,info)
+          IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)     :: this
+          CLASS(ppm_t_field_), TARGET        :: Field
+          INTEGER,             INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_comp_global_index)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,        INTENT(   OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(get_xp)_(this,xp,info,with_ghosts)
+          IMPORT DTYPE(ppm_t_particles)_, MK
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)                   :: this
+          REAL(MK), DIMENSION(:,:),          POINTER       :: xp
+          INTEGER,                           INTENT(  OUT) :: info
+          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: with_ghosts
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(set_xp)_(this,xp,info,read_only,ghosts_ok)
+          IMPORT DTYPE(ppm_t_particles)_, MK
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)          :: this
+          REAL(MK), DIMENSION(:,:), POINTER       :: xp
+          INTEGER,                  INTENT(  OUT) :: info
+          LOGICAL,        OPTIONAL, INTENT(IN   ) :: read_only
+          LOGICAL,        OPTIONAL, INTENT(IN   ) :: ghosts_ok
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_move)_(Pc,disp,info)
+          IMPORT DTYPE(ppm_t_particles)_, MK
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)          :: Pc
+          REAL(MK), DIMENSION(:,:), TARGET        :: disp
+          INTEGER,                  INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_apply_bc)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_print_info)_(Pc,info,level,fileunit)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)   :: Pc
+          INTEGER,           INTENT(  OUT) :: info
+          INTEGER, OPTIONAL, INTENT(IN   ) :: level
+          INTEGER, OPTIONAL, INTENT(IN   ) :: fileunit
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_set_cutoff)_(Pc,cutoff,info,Nlist)
+          IMPORT DTYPE(ppm_t_particles)_,MK,DTYPE(ppm_t_neighlist)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)                          :: Pc
+          REAL(MK),                                 INTENT(IN   ) :: cutoff
+          INTEGER,                                  INTENT(  OUT) :: info
+          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, INTENT(INOUT) :: Nlist
+      END SUBROUTINE
+
+minclude ppm_create_collection_interfaces(DTYPE(neighlist)_,DTYPE(neighlist)_)
+
+      SUBROUTINE DTYPE(neigh_destroy)_(neigh,info)
+          IMPORT DTYPE(ppm_t_neighlist)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_neighlist)_) :: neigh
+          INTEGER,        INTENT(  OUT)  :: info
+      END SUBROUTINE
+
       SUBROUTINE DTYPE(part_neigh_create)_(this,Part_src,info, &
       &          name,skin,symmetry,cutoff,Nlist)
           IMPORT DTYPE(ppm_t_particles)_,MK,DTYPE(ppm_t_neighlist)_
@@ -117,257 +256,6 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
           INTEGER,                        INTENT(  OUT) :: info
       END SUBROUTINE
 
-      SUBROUTINE DTYPE(part_create)_(Pc,Npart,info,name)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)            :: Pc
-          INTEGER,                    INTENT(IN   ) :: Npart
-          INTEGER,                    INTENT(  OUT) :: info
-          CHARACTER(LEN=*), OPTIONAL, INTENT(IN   ) :: name
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_destroy)_(Pc,info)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(  OUT) :: info
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(particles_initialize2d)_(Pc,Npart_global,info,&
-      &          distrib,topoid,minphys,maxphys,cutoff,name)
-          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                       :: Pc
-          INTEGER,                                INTENT(INOUT) :: Npart_global
-          INTEGER,                                INTENT(  OUT) :: info
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: distrib
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: topoid
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: minphys
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: maxphys
-          REAL(MK),                     OPTIONAL, INTENT(IN   ) :: cutoff
-          CHARACTER(LEN=*),             OPTIONAL, INTENT(IN   ) :: name
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(particles_initialize3d)_(Pc,Npart_global,info,&
-      &          distrib,topoid,minphys,maxphys,cutoff,name)
-          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                       :: Pc
-          INTEGER,                                INTENT(INOUT) :: Npart_global
-          INTEGER,                                INTENT(  OUT) :: info
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: distrib
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: topoid
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: minphys
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: maxphys
-          REAL(MK),                     OPTIONAL, INTENT(IN   ) :: cutoff
-          CHARACTER(LEN=*),             OPTIONAL, INTENT(IN   ) :: name
-      END SUBROUTINE
-
-      !!temporary hack to deal with both 2d and 3d
-      SUBROUTINE DTYPE(part_initialize)_(Pc,Npart_global,info,&
-      &          distrib,topoid,minphys,maxphys,cutoff,name)
-          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                        :: Pc
-          INTEGER,                                INTENT(INOUT) :: Npart_global
-          INTEGER,                                INTENT(  OUT) :: info
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: distrib
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: topoid
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: minphys
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: maxphys
-          REAL(MK),                     OPTIONAL, INTENT(IN   ) :: cutoff
-          CHARACTER(LEN=*),             OPTIONAL, INTENT(IN   ) :: name
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_print_info)_(Pc,info,level,fileunit)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)   :: Pc
-          INTEGER,           INTENT(  OUT) :: info
-          INTEGER, OPTIONAL, INTENT(IN   ) :: level
-          INTEGER, OPTIONAL, INTENT(IN   ) :: fileunit
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_del_parts)_(Pc,list_del_parts,nb_del,info)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)       :: Pc
-          INTEGER, DIMENSION(:), POINTER       :: list_del_parts
-          INTEGER,               INTENT(IN   ) :: nb_del
-          INTEGER,               INTENT(  OUT) :: info
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_prop_push)_(Pc,prop_id,info)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(IN   ) :: prop_id
-          INTEGER,         INTENT(  OUT) :: info
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_prop_pop)_(Pc,prop_id,Npart_new,info)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(IN   ) :: prop_id
-          INTEGER,         INTENT(IN   ) :: Npart_new
-          INTEGER,         INTENT(  OUT) :: info
-      END SUBROUTINE
-
-      FUNCTION DTYPE(has_neighlist)_(this,Part) RESULT(res)
-          IMPORT DTYPE(ppm_t_particles)_,ppm_t_discr_kind
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_),    TARGET :: this
-          CLASS(ppm_t_discr_kind), OPTIONAL, TARGET :: Part
-          LOGICAL                                   :: res
-      END FUNCTION
-
-      FUNCTION DTYPE(get_neighlist)_(this,Part) RESULT(NList)
-          IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_,ppm_t_discr_kind
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_),    TARGET  :: this
-          CLASS(ppm_t_discr_kind), OPTIONAL, TARGET  :: Part
-          CLASS(DTYPE(ppm_t_neighlist)_),    POINTER :: NList
-      END FUNCTION
-
-      SUBROUTINE DTYPE(get_vlist)_(this,nvlist,vlist,info,NList)
-          IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                          :: this
-          INTEGER, DIMENSION(:),                    POINTER       :: nvlist
-          INTEGER, DIMENSION(:,:),                  POINTER       :: vlist
-          INTEGER,                                  INTENT(INOUT) :: info
-          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, TARGET        :: NList
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(get_nvlist)_(this,nvlist,info,NList)
-          IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                          :: this
-          INTEGER, DIMENSION(:),                    POINTER       :: nvlist
-          INTEGER,                                  INTENT(INOUT) :: info
-          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, TARGET        :: NList
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map)_(Pc,info,global,topoid)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)   :: Pc
-          INTEGER,           INTENT(  OUT) :: info
-          LOGICAL, OPTIONAL, INTENT(IN   ) :: global
-          INTEGER, OPTIONAL, INTENT(IN   ) :: topoid
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_positions)_(Pc,info,global,topoid)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)   :: Pc
-          INTEGER,           INTENT(  OUT) :: info
-          LOGICAL, OPTIONAL, INTENT(IN   ) :: global
-          INTEGER, OPTIONAL, INTENT(IN   ) :: topoid
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_push)_(Pc,info,Field)
-          IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)               :: Pc
-          INTEGER,                       INTENT(  OUT) :: info
-          CLASS(ppm_t_field_), OPTIONAL, INTENT(IN   ) :: Field
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_send)_(Pc,info)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(  OUT) :: info
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_isend)_(Pc,info)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(  OUT) :: info
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_pop)_(Pc,info,Field)
-          IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)               :: Pc
-          INTEGER,                       INTENT(  OUT) :: info
-          CLASS(ppm_t_field_), OPTIONAL, INTENT(IN   ) :: Field
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_pop_positions)_(Pc,info)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(  OUT) :: info
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_ghosts)_(Pc,info,ghostsize)
-          IMPORT DTYPE(ppm_t_particles)_,MK
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)    :: Pc
-          INTEGER,            INTENT(  OUT) :: info
-          REAL(MK), OPTIONAL, INTENT(IN   ) :: ghostsize
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_ghost_get)_(Pc,info,ghostsize)
-          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_t_field_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)    :: Pc
-          INTEGER,            INTENT(  OUT) :: info
-          REAL(MK), OPTIONAL, INTENT(IN   ) :: ghostsize
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_ghost_push)_(Pc,info,Field,ghostsize)
-          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_t_field_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)               :: Pc
-          INTEGER,                       INTENT(  OUT) :: info
-          CLASS(ppm_t_field_), OPTIONAL, INTENT(IN   ) :: Field
-          REAL(MK),            OPTIONAL, INTENT(IN   ) :: ghostsize
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_ghost_send)_(Pc,info)
-          IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(  OUT) :: info
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_ghost_pop)_(Pc,info,Field,ghostsize)
-          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_t_field_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)               :: Pc
-          INTEGER,                       INTENT(  OUT) :: info
-          CLASS(ppm_t_field_), OPTIONAL, INTENT(IN   ) :: Field
-          REAL(MK),            OPTIONAL, INTENT(IN   ) :: ghostsize
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_ghost_pop_pos)_(Pc,info,ghostsize)
-          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_t_field_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)    :: Pc
-          INTEGER,            INTENT(  OUT) :: info
-          REAL(MK), OPTIONAL, INTENT(IN   ) :: ghostsize
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_apply_bc)_(Pc,info)
-          IMPORT DTYPE(ppm_t_particles)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(  OUT) :: info
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_move)_(Pc,disp,info)
-          IMPORT DTYPE(ppm_t_particles)_, MK
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                   :: Pc
-          REAL(MK), DIMENSION(:,:), POINTER, INTENT(IN   ) :: disp
-          INTEGER,                           INTENT(  OUT) :: info
-      END SUBROUTINE
-
       SUBROUTINE DTYPE(part_neighlist)_(this,info,P_xset,name,skin, &
       &          symmetry,cutoff,lstore,incl_ghosts,knn)
           IMPORT DTYPE(ppm_t_particles)_,MK
@@ -384,47 +272,40 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
           INTEGER,                        OPTIONAL, INTENT(IN   ) :: knn
       END SUBROUTINE
 
-      SUBROUTINE DTYPE(part_set_cutoff)_(Pc,cutoff,info,Nlist)
-          IMPORT DTYPE(ppm_t_particles)_,MK,DTYPE(ppm_t_neighlist)_
+      SUBROUTINE DTYPE(get_nvlist)_(this,nvlist,info,NList)
+          IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_
           IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                          :: Pc
-          REAL(MK),                                 INTENT(IN   ) :: cutoff
-          INTEGER,                                  INTENT(  OUT) :: info
-          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, INTENT(INOUT) :: Nlist
+          CLASS(DTYPE(ppm_t_particles)_)                          :: this
+          INTEGER, DIMENSION(:),                    POINTER       :: nvlist
+          INTEGER,                                  INTENT(INOUT) :: info
+          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, TARGET        :: NList
       END SUBROUTINE
 
-      SUBROUTINE DTYPE(part_comp_global_index)_(Pc,info)
-          IMPORT DTYPE(ppm_t_particles)_
+      SUBROUTINE DTYPE(get_vlist)_(this,nvlist,vlist,info,NList)
+          IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_
           IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,        INTENT(   OUT) :: info
+          CLASS(DTYPE(ppm_t_particles)_)                          :: this
+          INTEGER, DIMENSION(:),                    POINTER       :: nvlist
+          INTEGER, DIMENSION(:,:),                  POINTER       :: vlist
+          INTEGER,                                  INTENT(INOUT) :: info
+          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, TARGET        :: NList
       END SUBROUTINE
 
-      SUBROUTINE DTYPE(part_map_create)_(Pc,id,source_topoid,target_topoid,info)
-          IMPORT DTYPE(ppm_t_particles)_
+      FUNCTION DTYPE(get_neighlist)_(this,Part) RESULT(NList)
+          IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_,ppm_t_discr_kind
           IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(  OUT) :: id
-          INTEGER,         INTENT(IN   ) :: source_topoid
-          INTEGER,         INTENT(IN   ) :: target_topoid
-          INTEGER,         INTENT(  OUT) :: info
+          CLASS(DTYPE(ppm_t_particles)_),    TARGET  :: this
+          CLASS(ppm_t_discr_kind), OPTIONAL, TARGET  :: Part
+          CLASS(DTYPE(ppm_t_neighlist)_),    POINTER :: NList
+      END FUNCTION
 
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_map_destroy)_(Pc,id,info)
-          IMPORT DTYPE(ppm_t_particles)_
+      FUNCTION DTYPE(has_neighlist)_(this,Part) RESULT(res)
+          IMPORT DTYPE(ppm_t_particles)_,ppm_t_discr_kind
           IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(INOUT) :: id
-          INTEGER,         INTENT(  OUT) :: info
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(neigh_destroy)_(neigh,info)
-          IMPORT DTYPE(ppm_t_neighlist)_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_neighlist)_) :: neigh
-          INTEGER,        INTENT(  OUT)  :: info
-      END SUBROUTINE
+          CLASS(DTYPE(ppm_t_particles)_),    TARGET :: this
+          CLASS(ppm_t_discr_kind), OPTIONAL, TARGET :: Part
+          LOGICAL                                   :: res
+      END FUNCTION
 
       FUNCTION DTYPE(has_ghosts)_(this,Field) RESULT(res)
           IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
@@ -433,25 +314,6 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
           CLASS(ppm_t_field_),  OPTIONAL :: Field
           LOGICAL                        :: res
       END FUNCTION
-
-      SUBROUTINE DTYPE(part_get_discr)_(this,Field,prop,info)
-          IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
-          IMPORT DTYPE(ppm_t_part_prop)_,ppm_t_discr_data
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)         :: this
-          CLASS(ppm_t_field_),     TARGET        :: Field
-          !CLASS(DTYPE(ppm_t_part_prop)_),POINTER, INTENT(  OUT)  :: prop
-          CLASS(ppm_t_discr_data), POINTER       :: prop
-          INTEGER,                 INTENT(  OUT) :: info
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(part_prop_zero)_(this,Field,info)
-          IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)     :: this
-          CLASS(ppm_t_field_), TARGET        :: Field
-          INTEGER,             INTENT(  OUT) :: info
-      END SUBROUTINE
 
       SUBROUTINE DTYPE(part_p2m)_(this,Mesh,Field,kernel,info,p2m_bcdef)
           IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_,ppm_t_equi_mesh_
@@ -496,4 +358,185 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
           INTEGER,                         INTENT(IN   ) :: kernel
           INTEGER,                         INTENT(  OUT) :: info
           INTEGER, DIMENSION(:), OPTIONAL, POINTER       :: p2m_bcdef
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_create)_(Pc,id,source_topoid,target_topoid,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: id
+          INTEGER,         INTENT(IN   ) :: source_topoid
+          INTEGER,         INTENT(IN   ) :: target_topoid
+          INTEGER,         INTENT(  OUT) :: info
+
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_destroy)_(Pc,id,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(INOUT) :: id
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_prop_push)_(Pc,prop_id,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(IN   ) :: prop_id
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_prop_pop)_(Pc,prop_id,Npart_new,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(IN   ) :: prop_id
+          INTEGER,         INTENT(IN   ) :: Npart_new
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_prop_ghost_pop)_(Pc,prop_id,Mpart,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(IN   ) :: prop_id
+          INTEGER,         INTENT(IN   ) :: Mpart
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_ghost_get)_(Pc,info,ghostsize)
+          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_t_field_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)    :: Pc
+          INTEGER,            INTENT(  OUT) :: info
+          REAL(MK), OPTIONAL, INTENT(IN   ) :: ghostsize
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_ghost_put)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_ghost_push)_(Pc,info,Field)
+          IMPORT DTYPE(ppm_t_particles)_,ppm_t_main_abstr
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)                   :: Pc
+          INTEGER,                           INTENT(  OUT) :: info
+          CLASS(ppm_t_main_abstr), OPTIONAL, TARGET        :: Field
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_ghost_send)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_ghost_isend)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_ghost_pop)_(Pc,info,Field)
+          IMPORT DTYPE(ppm_t_particles)_,ppm_t_main_abstr
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)                   :: Pc
+          INTEGER,                           INTENT(  OUT) :: info
+          CLASS(ppm_t_main_abstr), OPTIONAL, TARGET        :: Field
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_ghost_push_pos)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_ghost_pop_pos)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_ghosts)_(Pc,info,ghostsize)
+          IMPORT DTYPE(ppm_t_particles)_,MK
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)    :: Pc
+          INTEGER,            INTENT(  OUT) :: info
+          REAL(MK), OPTIONAL, INTENT(IN   ) :: ghostsize
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map)_(Pc,info,global,topoid)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)   :: Pc
+          INTEGER,           INTENT(  OUT) :: info
+          LOGICAL, OPTIONAL, INTENT(IN   ) :: global
+          INTEGER, OPTIONAL, INTENT(IN   ) :: topoid
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_positions)_(Pc,info,global,topoid)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)   :: Pc
+          INTEGER,           INTENT(  OUT) :: info
+          LOGICAL, OPTIONAL, INTENT(IN   ) :: global
+          INTEGER, OPTIONAL, INTENT(IN   ) :: topoid
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_push)_(Pc,info,Field)
+          IMPORT DTYPE(ppm_t_particles)_,ppm_t_main_abstr
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)                   :: Pc
+          INTEGER,                           INTENT(  OUT) :: info
+          CLASS(ppm_t_main_abstr), OPTIONAL, TARGET        :: Field
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_send)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_isend)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_pop)_(Pc,info,Field)
+          IMPORT DTYPE(ppm_t_particles)_,ppm_t_main_abstr
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_)                   :: Pc
+          INTEGER,                           INTENT(  OUT) :: info
+          CLASS(ppm_t_main_abstr), OPTIONAL, TARGET        :: Field
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_pop_positions)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_store)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      SUBROUTINE DTYPE(part_map_load)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
       END SUBROUTINE

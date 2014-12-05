@@ -69,9 +69,9 @@
             MODULE PROCEDURE ppm_map_connect_send
          END INTERFACE
 
-         PUBLIC :: ppm_map_connect_distrib, &
-         &         ppm_map_connect_prune,   &
-         &         ppm_map_connect_send
+         PUBLIC :: ppm_map_connect_distrib
+         PUBLIC :: ppm_map_connect_prune
+         PUBLIC :: ppm_map_connect_send
 
          !----------------------------------------------------------------------
          !  include the source

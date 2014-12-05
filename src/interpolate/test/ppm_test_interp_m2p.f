@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Test Case   :                   ppm_test_interp_m2p
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -39,13 +39,10 @@ program ppm_test_interp_m2p
     use ppm_module_map
     USE ppm_module_data_rmsh
     USE ppm_module_data_mesh
-
+    USE ppm_module_mpi
     implicit none
 
 #include "../../ppm_define.h"
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
 
     integer, parameter              :: debug = 0
     integer, parameter              :: MK = ppm_kind_double
@@ -256,7 +253,7 @@ program ppm_test_interp_m2p
 #ifdef __MPI
     call MPI_Finalize(info)
 #endif
-    
+
     deallocate(xp,wp,field_wp,min_phys,max_phys,ghostsize,nm)
 
     print *, 'done.'

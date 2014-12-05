@@ -144,16 +144,13 @@
       USE ppm_module_alloc
       USE ppm_module_write
       USE ppm_module_error
-
+      USE ppm_module_mpi
       IMPLICIT NONE
+
+      INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
-
-      INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------

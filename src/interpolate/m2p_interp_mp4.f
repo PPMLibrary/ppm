@@ -56,19 +56,17 @@
 #endif
 #endif
 #endif
-     !!! Mesh to particle interpolation following the MP4 scheme.
-     !!!
-     !!! The interpolation scheme is only implemented for 2D and 3D spaces. To
-     !!! increase performance the inner loops over the number of properties to
-     !!! be interpolated are unrolled for 2,3,4 and 5-vectors.
-     !!!
-     !!! [NOTE]
-     !!! This routine only performs the actual interpolation. It should not be
-     !!! called directly by the user but instead the `ppm_interp_m2p`
-     !!! routine should be used with the kernel argument set to
-     !!! `ppm_param_rmsh_kernel_mp4`.
-
-
+      !!! Mesh to particle interpolation following the MP4 scheme.
+      !!!
+      !!! The interpolation scheme is only implemented for 2D and 3D spaces. To
+      !!! increase performance the inner loops over the number of properties to
+      !!! be interpolated are unrolled for 2,3,4 and 5-vectors.
+      !!!
+      !!! [NOTE]
+      !!! This routine only performs the actual interpolation. It should not be
+      !!! called directly by the user but instead the `ppm_interp_m2p`
+      !!! routine should be used with the kernel argument set to
+      !!! `ppm_param_rmsh_kernel_mp4`.
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION

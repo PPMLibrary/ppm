@@ -14,11 +14,8 @@
               level_fun,wp_fun,nb_fun,printp,nb_part_del)
 
           USE ppm_module_alloc, ONLY: ppm_alloc
-
+          USE ppm_module_mpi
           IMPLICIT NONE
-#ifdef __MPI
-          INCLUDE 'mpif.h'
-#endif
 
           DEFINE_MK()
           ! arguments

@@ -284,7 +284,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         if (ndim.eq.2) then
            my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
         else
-           my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
+           my_patch(1:6) = (/0.15_mk,0.10_mk,0.41_mk,0.99_mk,0.7_mk,0.78_mk/)
         endif
 
         call Mesh1%def_patch(my_patch,info)

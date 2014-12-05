@@ -6,10 +6,8 @@
       &          wp_fun,wp_grad_fun,level_fun,level_grad_fun,nb_fun, &
       &          only_D_tilde,stats)
 
-          IMPLICIT NONE
-#ifdef __MPI
-          INCLUDE 'mpif.h'
-#endif
+        USE ppm_module_mpi
+        IMPLICIT NONE
 
         DEFINE_MK()
         ! arguments

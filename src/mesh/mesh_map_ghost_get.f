@@ -25,6 +25,7 @@
       !  Arguments
       !-------------------------------------------------------------------------
       CLASS(ppm_t_equi_mesh)                         :: this
+
       INTEGER,                         INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: ghostsize
@@ -58,7 +59,6 @@
       ELSE
          ghostsize_=this%ghostsize
       ENDIF
-
       !-------------------------------------------------------------------------
       !  Check if ghost mappings have been initalized, if no do so now.
       !-------------------------------------------------------------------------
