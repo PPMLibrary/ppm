@@ -45,7 +45,7 @@ test_suite ppm_module_vbp_particles
     ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),STAT=info)
 
     min_phys(1:ndim) = 0.0_MK
-    max_phys(1:ndim) = (/1.0_MK,0.64_MK/)
+    max_phys(1:ndim) = (/1.01_MK,0.65_MK/)
     len_phys(1:ndim) = max_phys-min_phys
     bcdef = ppm_param_bcdef_freespace
 
