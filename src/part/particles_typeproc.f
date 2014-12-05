@@ -1228,10 +1228,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              CASE (ppm_param_bcdef_freespace)
                 !delete particles that have crossed the boundary
                 DO ip=Npart,1,-1
-                   !TOCHECK
-                   !Yaser I changed this to GT instead of GE as for free space boundary conditions
-                   !you might have some particles on the max_phys border of the domain
-                   IF (xp(di,ip).GT.max_phys(di).OR.xp(di,ip).LT.min_phys(di)) THEN
+                   IF (xp(di,ip).GE.max_phys(di).OR.xp(di,ip).LT.min_phys(di)) THEN
                       del_part = del_part+1
                    ENDIF
                 ENDDO
