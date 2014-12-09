@@ -95,10 +95,10 @@
          PUBLIC :: ppm_map_part_ghost_pop
          PUBLIC :: ppm_map_part_ghost_put
 
-         !----------------------------------------------------------------------
-         !  include the source
-         !----------------------------------------------------------------------
-         CONTAINS
+      !----------------------------------------------------------------------
+      !  include the source
+      !----------------------------------------------------------------------
+      CONTAINS
 
 #define __KIND __SINGLE_PRECISION
 #include "map/ppm_map_part_ghost_get.f"

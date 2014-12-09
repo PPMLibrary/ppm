@@ -42,15 +42,33 @@
          USE ppm_module_map_connect,    ONLY : ppm_map_connect_distrib, &
          &   ppm_map_connect_prune,ppm_map_connect_send
       !   USE ppm_module_map_field
-         USE ppm_module_map_part,       ONLY : ppm_map_part_pop,            &
-         &   ppm_map_part_push,ppm_map_part_send,ppm_map_part_isend,        &
-         &   ppm_map_part_ghost_get,ppm_map_part_ghost_pop,                 &
-         &   ppm_map_part_ghost_put,ppm_map_part_global,ppm_map_part_remap, &
-         &   ppm_map_part_partial,ppm_map_part_eqdistrib,                   &
-         &   ppm_map_part_cancel,ppm_map_part_get_sub,                      &
-         &   ppm_map_part_load,ppm_map_part_ring_shift,ppm_map_part_store
+         USE ppm_module_map_part
          USE ppm_module_impose_part_bc, ONLY : ppm_impose_part_bc
          IMPLICIT NONE
+
+         PRIVATE
+
+         PUBLIC :: ppm_map_connect_distrib
+         PUBLIC :: ppm_map_connect_prune
+         PUBLIC :: ppm_map_connect_send
+         PUBLIC :: ppm_map_part_pop
+         PUBLIC :: ppm_map_part_push
+         PUBLIC :: ppm_map_part_send
+         PUBLIC :: ppm_map_part_isend
+         PUBLIC :: ppm_map_part_ghost_get
+         PUBLIC :: ppm_map_part_ghost_pop
+         PUBLIC :: ppm_map_part_ghost_put
+         PUBLIC :: ppm_map_part_global
+         PUBLIC :: ppm_map_part_remap
+         PUBLIC :: ppm_map_part_partial
+         PUBLIC :: ppm_map_part_eqdistrib
+         PUBLIC :: ppm_map_part_cancel
+         PUBLIC :: ppm_map_part_get_sub
+         PUBLIC :: ppm_map_part_load
+         PUBLIC :: ppm_map_part_ring_shift
+         PUBLIC :: ppm_map_part_store
+         PUBLIC :: ppm_impose_part_bc
+         PUBLIC :: ppm_map_type_isactive
 
       CONTAINS
 
