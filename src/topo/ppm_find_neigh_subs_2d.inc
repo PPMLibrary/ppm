@@ -71,12 +71,8 @@
                   ldc(1) = isize + 100
                   ldc(2) = nsubsplus
                   CALL ppm_alloc(ineigh,ldc,iopt,info)
-                  IF (info.NE.0) THEN
-                      info = ppm_error_fatal
-                      CALL ppm_error(ppm_err_alloc,'ppm_find_neigh',  &
-     &                    'allocation of ineigh failed',__LINE__,info)
-                      GOTO 9999
-                  ENDIF
+                  or_fail_alloc("allocation of ineigh failed",ppm_error=ppm_error_fatal)
+
                   !-------------------------------------------------------------
                   !  Save the size
                   !-------------------------------------------------------------

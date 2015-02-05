@@ -74,8 +74,8 @@
       USE ppm_module_decomp
       USE ppm_module_tree
       USE ppm_module_topo_box2subs
-
       IMPLICIT NONE
+
 #if    __KIND == __SINGLE_PRECISION
       INTEGER,  PARAMETER :: MK = ppm_kind_single
 #elif  __KIND == __DOUBLE_PRECISION
@@ -123,10 +123,8 @@
       !!! The type of subdomain-to-processor assignment. One of:
       !!!
       !!! *  ppm_param_assign_internal
-      !!! *  ppm_param_assign_nodal_cut
-      !!! *  ppm_param_assign_nodal_comm
-      !!! *  ppm_param_assign_dual_cut
-      !!! *  ppm_param_assign_dual_comm
+      !!! *  ppm_param_assign_metis_cut
+      !!! *  ppm_param_assign_metis_comm
       !!! *  ppm_param_assign_user_defined
       !!!
       !!! [NOTE]
@@ -208,12 +206,12 @@
       INTEGER                          :: iopt,treetype,nbox
       INTEGER                          :: isub,minbox
       INTEGER, DIMENSION(1)            :: ldc
-      INTEGER, DIMENSION(:,:), POINTER :: ineigh  => NULL()
-      INTEGER, DIMENSION(:),   POINTER :: nneigh  => NULL()
-      INTEGER, DIMENSION(:,:), POINTER :: subs_bc => NULL()
-      INTEGER, DIMENSION(:),   POINTER :: nchld   => NULL()
-      INTEGER, DIMENSION(:,:), POINTER :: istart  => NULL()
-      INTEGER, DIMENSION(:,:), POINTER :: ndata   => NULL()
+      INTEGER, DIMENSION(:,:), POINTER :: ineigh   => NULL()
+      INTEGER, DIMENSION(:),   POINTER :: nneigh   => NULL()
+      INTEGER, DIMENSION(:,:), POINTER :: subs_bc  => NULL()
+      INTEGER, DIMENSION(:),   POINTER :: nchld    => NULL()
+      INTEGER, DIMENSION(:,:), POINTER :: istart   => NULL()
+      INTEGER, DIMENSION(:,:), POINTER :: ndata    => NULL()
       INTEGER, DIMENSION(:),   POINTER :: isublist => NULL()
       INTEGER, DIMENSION(:),   POINTER :: sub2proc => NULL()
       INTEGER                          :: nsubs
@@ -575,15 +573,13 @@
          &    sub2proc,isublist,nsublist,info)
          or_fail('Assigning subs to processors failed')
 
-      CASE (ppm_param_assign_nodal_cut,  &
-      &     ppm_param_assign_nodal_comm, &
-      &     ppm_param_assign_dual_cut,   &
-      &     ppm_param_assign_dual_comm)
+      CASE (ppm_param_assign_metis_cut,  &
+      &     ppm_param_assign_metis_comm)
          !-------------------------------------------------------------------
          !  use METIS library to do assignment
          !-------------------------------------------------------------------
-         CALL ppm_topo_metis_s2p(min_sub,max_sub,nneigh,ineigh, &
-         &    cost,nsubs,assig,sub2proc,isublist,nsublist,info)
+         CALL ppm_topo_metis_s2p(min_phys,max_phys,min_sub,max_sub, &
+         &    nneigh,ineigh,cost,nsubs,assig,sub2proc,isublist,nsublist,info)
          or_fail('Assigning subs to processors using METIS failed')
 
       CASE (ppm_param_assign_user_defined)
@@ -638,9 +634,6 @@
       &    Offset=Offst,ghostsize=ighostsize)
       or_fail('Storing mesh definition failed')
 
-      !-------------------------------------------------------------------------
-      !  Return
-      !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(ineigh,ldc,iopt,info)
       or_fail_dealloc("ineigh")

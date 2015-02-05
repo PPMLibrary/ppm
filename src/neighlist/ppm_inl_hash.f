@@ -55,7 +55,7 @@
       REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(1) :: lda
-      INTEGER               :: iopt
+      INTEGER               :: iopt,i
 
       CHARACTER(LEN=ppm_char) :: caller='create_htable'
 
@@ -85,14 +85,17 @@
       !---------------------------------------------------------------------
       !  Set everything to NULL.
       !---------------------------------------------------------------------
-      table%keys        = htable_null
-      table%borders_pos = htable_null
+      FORALL (i=1:lda(1))
+         table%keys(i)        = htable_null
+         table%borders_pos(i) = htable_null
+      END FORALL
 
       9999 CONTINUE
       CALL substop(caller,t0,info)
       END SUBROUTINE create_htable
 
       SUBROUTINE destroy_htable(table,info)
+
       USE ppm_module_data
       USE ppm_module_alloc
       USE ppm_module_error
@@ -135,10 +138,12 @@
       END SUBROUTINE destroy_htable
 
       ELEMENTAL FUNCTION h_func(table, key, seed) RESULT(hash_val)
+
           IMPLICIT NONE
-      !---------------------------------------------------------------------
-      !  Arguments
-      !---------------------------------------------------------------------
+
+          !---------------------------------------------------------------------
+          !  Arguments
+          !---------------------------------------------------------------------
           CLASS(ppm_htable),       INTENT(IN   ) :: table
           !!! The hashtable to create. The pointer must not be NULL
           INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
@@ -215,7 +220,9 @@
       ELEMENTAL FUNCTION h_key(table, key, jump) RESULT(address)
       !!! Given the key and jump value, returns corresponding address on
       !!! "borders" array.
+
       IMPLICIT NONE
+
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
@@ -254,6 +261,7 @@
       USE ppm_module_substop
 #endif
       IMPLICIT NONE
+
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
@@ -315,7 +323,9 @@
       END SUBROUTINE hash_insert
 
       SUBROUTINE hash_insert_(table,key_,value,info)
+
       IMPLICIT NONE
+
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
@@ -333,6 +343,7 @@
       !  Local variables
       !---------------------------------------------------------------------
       INTEGER(ppm_kind_int64) :: key
+
       key=INT(key_,KIND=ppm_kind_int64)
       CALL table%hash_insert(key,value,info)
       END SUBROUTINE hash_insert_
@@ -425,13 +436,14 @@
       !  Local variables
       !---------------------------------------------------------------------
       INTEGER(ppm_kind_int64) :: key
+
       key=INT(key_,KIND=ppm_kind_int64)
       value=table%hash_search(key)
       END FUNCTION hash_search_
 
       !TODO check this sub
       !Yaser
-      !This function definitely suffers from a bug!
+      !This function PROBABLY suffers from a bug!
       SUBROUTINE hash_remove(table, key, info)
       !!! Given the key, removes the elements in the hash table. Info is
       !!! set to -1 if the key was NOT found.
@@ -445,6 +457,7 @@
       USE ppm_module_substop
 #endif
       IMPLICIT NONE
+
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
@@ -497,7 +510,9 @@
       END SUBROUTINE hash_remove
 
       SUBROUTINE hash_remove_(table, key_, info)
+
       IMPLICIT NONE
+
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
@@ -513,6 +528,7 @@
       !  Local variables
       !---------------------------------------------------------------------
       INTEGER(ppm_kind_int64) :: key
+
       key=INT(key_,KIND=ppm_kind_int64)
       CALL table%hash_remove(key, info)
       END SUBROUTINE hash_remove_
@@ -530,6 +546,7 @@
       USE ppm_module_substart
       USE ppm_module_substop
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------

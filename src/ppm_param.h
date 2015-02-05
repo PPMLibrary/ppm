@@ -127,11 +127,9 @@
       !  Define subdomain-to-processor assignment schemes
       !-------------------------------------------------------------------------
       INTEGER, PARAMETER :: ppm_param_assign_internal     = 1
-      INTEGER, PARAMETER :: ppm_param_assign_nodal_cut    = 2
-      INTEGER, PARAMETER :: ppm_param_assign_nodal_comm   = 3
-      INTEGER, PARAMETER :: ppm_param_assign_dual_cut     = 4
-      INTEGER, PARAMETER :: ppm_param_assign_dual_comm    = 5
-      INTEGER, PARAMETER :: ppm_param_assign_user_defined = 6
+      INTEGER, PARAMETER :: ppm_param_assign_metis_cut    = 2
+      INTEGER, PARAMETER :: ppm_param_assign_metis_comm   = 3
+      INTEGER, PARAMETER :: ppm_param_assign_user_defined = 4
       !-------------------------------------------------------------------------
       !  Define particle-mesh schemes
       !-------------------------------------------------------------------------

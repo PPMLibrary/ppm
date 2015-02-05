@@ -141,10 +141,8 @@
       !!! The type of subdomain-to-processor assignment. One of:
       !!!
       !!! *  ppm_param_assign_internal
-      !!! *  ppm_param_assign_nodal_cut
-      !!! *  ppm_param_assign_nodal_comm
-      !!! *  ppm_param_assign_dual_cut
-      !!! *  ppm_param_assign_dual_comm
+      !!! *  ppm_param_assign_metis_cut
+      !!! *  ppm_param_assign_metis_comm
       !!! *  ppm_param_assign_user_defined
       !!!
       !!! *nodal* and *dual* assignments  use the external library METIS
@@ -553,15 +551,13 @@
          &    isublist,nsublist,info)
          or_fail('Assigning subs to processors failed')
 
-      CASE (ppm_param_assign_nodal_cut,  &
-      &     ppm_param_assign_nodal_comm, &
-      &     ppm_param_assign_dual_cut,   &
-      &     ppm_param_assign_dual_comm)
+      CASE (ppm_param_assign_metis_cut, &
+      &     ppm_param_assign_metis_comm)
          !-------------------------------------------------------------------
          !  use METIS library to do assignment
          !-------------------------------------------------------------------
-         CALL ppm_topo_metis_s2p(min_sub,max_sub,nneigh,ineigh,cost,nsubs,&
-         &    assig,sub2proc,isublist,nsublist,info)
+         CALL ppm_topo_metis_s2p(min_phys,max_phys,min_sub,max_sub, &
+         &    nneigh,ineigh,cost,nsubs,assig,sub2proc,isublist,nsublist,info)
          or_fail('Assigning subs to processors using METIS failed')
 
       CASE (ppm_param_assign_user_defined)

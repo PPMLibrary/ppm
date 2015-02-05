@@ -44,7 +44,6 @@
       !!! The module also holds the needed work arrays for these routines.
 
       USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
-      USE ppm_module_topo_typedef
       USE ppm_module_map_part_util, ONLY : ppm_map_part_eqdistrib,    &
       &   ppm_map_part_cancel,ppm_map_part_get_sub,ppm_map_part_load, &
       &   ppm_map_part_ring_shift,ppm_map_part_store

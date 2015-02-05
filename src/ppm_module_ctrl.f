@@ -236,15 +236,18 @@
            END FUNCTION INTEGER_func
 
            LOGICAL FUNCTION LONGINT_func(variable)
-             INTEGER(8), POINTER :: variable
+             IMPORT :: ppm_kind_int64
+             INTEGER(ppm_kind_int64), POINTER :: variable
            END FUNCTION LONGINT_func
 
            LOGICAL FUNCTION SINGLE_func(variable)
-             REAL(KIND(1.0E0)), POINTER :: variable
+             IMPORT :: ppm_kind_single
+             REAL(ppm_kind_single), POINTER :: variable
            END FUNCTION SINGLE_func
 
            LOGICAL FUNCTION DOUBLE_func(variable)
-             REAL(KIND(1.0D0)), POINTER :: variable
+             IMPORT :: ppm_kind_double
+             REAL(ppm_kind_double), POINTER :: variable
            END FUNCTION DOUBLE_func
 
            LOGICAL FUNCTION LOGICAL_func(variable)
@@ -256,11 +259,13 @@
            END FUNCTION STRING_func
 
            LOGICAL FUNCTION COMPLEX_func(variable)
-             COMPLEX(KIND(1.0E0)), POINTER :: variable
+             IMPORT :: ppm_kind_single
+             COMPLEX(ppm_kind_single), POINTER :: variable
            END FUNCTION COMPLEX_func
 
            LOGICAL FUNCTION DCOMPLEX_func(variable)
-             COMPLEX(KIND(1.0D0)), POINTER :: variable
+             IMPORT :: ppm_kind_double
+             COMPLEX(ppm_kind_double), POINTER :: variable
            END FUNCTION DCOMPLEX_func
 
            ! array
@@ -269,15 +274,18 @@
            END FUNCTION INTEGER_array_func
 
            LOGICAL FUNCTION LONGINT_array_func(variable)
-             INTEGER(8), DIMENSION(:), POINTER :: variable
+             IMPORT :: ppm_kind_int64
+             INTEGER(ppm_kind_int64), DIMENSION(:), POINTER :: variable
            END FUNCTION LONGINT_array_func
 
            LOGICAL FUNCTION SINGLE_array_func(variable)
-             REAL(KIND(1.0E0)), DIMENSION(:), POINTER :: variable
+             IMPORT :: ppm_kind_single
+             REAL(ppm_kind_single), DIMENSION(:), POINTER :: variable
            END FUNCTION SINGLE_array_func
 
            LOGICAL FUNCTION DOUBLE_array_func(variable)
-             REAL(KIND(1.0D0)), DIMENSION(:), POINTER :: variable
+             IMPORT :: ppm_kind_double
+             REAL(ppm_kind_double), DIMENSION(:), POINTER :: variable
            END FUNCTION DOUBLE_array_func
 
            LOGICAL FUNCTION LOGICAL_array_func(variable)
@@ -289,11 +297,13 @@
            END FUNCTION STRING_array_func
 
            LOGICAL FUNCTION COMPLEX_array_func(variable)
-             COMPLEX(KIND(1.0E0)), DIMENSION(:), POINTER :: variable
+             IMPORT :: ppm_kind_single
+             COMPLEX(ppm_kind_single), DIMENSION(:), POINTER :: variable
            END FUNCTION COMPLEX_array_func
 
            LOGICAL FUNCTION DCOMPLEX_array_func(variable)
-             COMPLEX(KIND(1.0D0)), DIMENSION(:), POINTER :: variable
+             IMPORT :: ppm_kind_double
+             COMPLEX(ppm_kind_double), DIMENSION(:), POINTER :: variable
            END FUNCTION DCOMPLEX_array_func
 
         END INTERFACE

@@ -84,6 +84,7 @@
       USE ppm_module_util_rank
       USE ppm_module_neighlist
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -160,9 +161,7 @@
       !-------------------------------------------------------------------------
       !  Initialize the ID
       !-------------------------------------------------------------------------
-      DO i=1,nsubs
-         subid(i) = i
-      ENDDO
+      FORALL (i=1:nsubs) subid(i) = i
 
       !-------------------------------------------------------------------------
       !  Add ghost domains for the periodic system
@@ -182,9 +181,7 @@
       !-------------------------------------------------------------------------
       !  Initialize the number of neighbours to zero
       !-------------------------------------------------------------------------
-      DO i=1,nsubsplus
-         nneigh(i) = 0
-      ENDDO
+      FORALL (i=1:nsubsplus) nneigh(i) = 0
 
       !-------------------------------------------------------------------------
       !  And allocate the pointers to the neighbours
@@ -197,11 +194,7 @@
       !-------------------------------------------------------------------------
       !  Initialize the neighbor sub indices to undefined
       !-------------------------------------------------------------------------
-      DO i=1,nsubsplus
-         DO j=1,ldc(1)
-            ineigh(j,i) = ppm_param_undefined
-         ENDDO
-      ENDDO
+      FORALL (i=1:ldc(1),j=1:nsubsplus) ineigh(i,j) = ppm_param_undefined
 
       !-------------------------------------------------------------------------
       !  If there are less than 2 subs there can be no neighbors
@@ -315,7 +308,7 @@
               !  that we already have in the list and we need to check
               !  for duplicates when adding these subs.
               !-----------------------------------------------------------------
-              IF((j.EQ.jmx).AND.(bcdef(4).EQ.ppm_param_bcdef_periodic))THEN
+              IF ((j.EQ.jmx).AND.(bcdef(4).EQ.ppm_param_bcdef_periodic))THEN
                   pbdry = .TRUE.
               ELSE
                   pbdry = .FALSE.

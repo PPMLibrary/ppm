@@ -55,6 +55,7 @@
       USE ppm_module_write
       USE ppm_module_mpi
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -92,18 +93,20 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                          :: t0
+      REAL(MK)                        :: t0
 #ifdef __MPI
-      REAL(MK), DIMENSION(:), POINTER   :: costsum => NULL()
+      REAL(MK), DIMENSION(:), POINTER :: costsum => NULL()
 #endif
-      INTEGER, DIMENSION(ppm_dim)       :: ldu,Nc
-      REAL(MK),DIMENSION(ppm_dim)       :: len_sub
-      INTEGER                           :: i,ipart,j
-      INTEGER                           :: iopt,nlist1,nlist2,idom
-      INTEGER, DIMENSION(:), POINTER    :: ilist1 => NULL()
-      INTEGER, DIMENSION(:), POINTER    :: ilist2 => NULL()
-      INTEGER, DIMENSION(:), POINTER    :: ilist3
-      CHARACTER(LEN=ppm_char)           :: mesg
+      REAL(MK), DIMENSION(ppm_dim)    :: len_sub
+
+      INTEGER, DIMENSION(ppm_dim)    :: ldu,Nc
+      INTEGER                        :: i,ipart,j
+      INTEGER                        :: iopt,nlist1,nlist2,idom
+      INTEGER, DIMENSION(:), POINTER :: ilist1 => NULL()
+      INTEGER, DIMENSION(:), POINTER :: ilist2 => NULL()
+      INTEGER, DIMENSION(:), POINTER :: ilist3
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_topo_cost'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -111,14 +114,14 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_topo_cost',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -127,12 +130,7 @@
       iopt = ppm_param_alloc_fit
       ldu(1) = nsubs
       CALL ppm_alloc(cost,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_cost',    &
-          & 'costs per sub COST',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('costs per sub COST',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  And initialize to zero
@@ -144,36 +142,25 @@
       !  based on mesh points
       !-------------------------------------------------------------------------
       IF (Np .GT. 0) THEN
-          IF (ppm_debug .GT. 0) THEN
-              CALL ppm_write(ppm_rank,'ppm_topo_cost',   &
-              &    'Computing costs based on particles',info)
-          ENDIF
+         IF (ppm_debug .GT. 0) THEN
+            stdout("Computing costs based on particles")
+         ENDIF
           !---------------------------------------------------------------------
           !  Allocate memory for the particle lists
           !---------------------------------------------------------------------
           iopt = ppm_param_alloc_fit
           ldu(1) = Np
           CALL ppm_alloc(ilist1,ldu,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_topo_cost',    &
-              &    'particle list 1 ILIST1',__LINE__,info)
-              GOTO 9999
-          ENDIF
+          or_fail_alloc("particle list 1 ILIST1",ppm_error=ppm_error_fatal)
+
           CALL ppm_alloc(ilist2,ldu,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_topo_cost',    &
-              &   'particle list 2 ILIST2',__LINE__,info)
-              GOTO 9999
-          ENDIF
+          or_fail_alloc("particle list 2 ILIST2",ppm_error=ppm_error_fatal)
 
           !---------------------------------------------------------------------
           !  Initialize the particle list
           !---------------------------------------------------------------------
-          DO ipart=1,Np
-              ilist1(ipart) = ipart
-          ENDDO
+          FORALL (ipart=1:Np) ilist1(ipart) = ipart
+
           nlist1 = Np
 
           !---------------------------------------------------------------------
@@ -251,9 +238,7 @@
           !  Check that we did not miss a particle
           !---------------------------------------------------------------------
           IF (nlist2 .GT. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_part_unass,'ppm_topo_cost',        &
-              &   'Beware: computed costs are wrong!',__LINE__,info)
+             fail("Beware: computed costs are wrong!",ppm_err_part_unass,exit_point=no)
           ENDIF
 
           !---------------------------------------------------------------------
@@ -261,17 +246,10 @@
           !---------------------------------------------------------------------
           iopt = ppm_param_dealloc
           CALL ppm_alloc(ilist2,ldu,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,'ppm_topo_cost',    &
-              &   'particle list 2 ILIST2',__LINE__,info)
-          ENDIF
+          or_fail_dealloc("particle list 2 ILIST2",exit_point=no)
+
           CALL ppm_alloc(ilist1,ldu,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,'ppm_topo_cost',    &
-              &   'particle list 1 ILIST1',__LINE__,info)
-          ENDIF
+          or_fail_dealloc("particle list 1 ILIST1",exit_point=no)
 
           !---------------------------------------------------------------------
           !  Do an AllReduce of the costs as one processor only has ITS
@@ -289,12 +267,8 @@
              iopt = ppm_param_alloc_fit
              ldu(1) = nsubs
              CALL ppm_alloc(costsum,ldu,iopt,info)
-             IF (info .NE. 0) THEN
-                 info = ppm_error_fatal
-                 CALL ppm_error(ppm_err_alloc,'ppm_topo_cost',    &
-                 &    'sum of costs of all processors COSTSUM',__LINE__,info)
-                 GOTO 9999
-             ENDIF
+             or_fail_alloc('sum of costs of all processors COSTSUM',ppm_error=ppm_error_fatal)
+
              costsum = 0.0_MK
 #if   __KIND == __SINGLE_PRECISION
              CALL MPI_AllReduce(cost,costsum,nsubs,MPI_REAL, &
@@ -313,11 +287,7 @@
              !------------------------------------------------------------------
              iopt = ppm_param_dealloc
              CALL ppm_alloc(costsum,ldu,iopt,info)
-             IF (info .NE. 0) THEN
-                 info = ppm_error_error
-                 CALL ppm_error(ppm_err_dealloc,'ppm_topo_cost',  &
-                 &    'sum of costs costs COSTSUM',__LINE__,info)
-             ENDIF
+             or_fail_dealloc("sum of costs costs COSTSUM",exit_point=no)
           ENDIF
 #endif
       ENDIF !(Np .GT. 0)
@@ -327,21 +297,20 @@
           !  Cost based on mesh points
           !---------------------------------------------------------------------
           IF (ppm_debug .GT. 0) THEN
-              CALL ppm_write(ppm_rank,'ppm_topo_cost',   &
-              &   'Computing costs based on mesh points',info)
+             stdout("Computing costs based on mesh points")
           ENDIF
           IF (ppm_dim .EQ. 3) THEN
               DO i=1,nsubs
-                  Nc(1) = nnodes(1,i)
-                  Nc(2) = nnodes(2,i)
-                  Nc(3) = nnodes(3,i)
-                  cost(i) = cost(i) + REAL(PRODUCT(Nc),MK)
+                 Nc(1) = nnodes(1,i)
+                 Nc(2) = nnodes(2,i)
+                 Nc(3) = nnodes(3,i)
+                 cost(i) = cost(i) + REAL(PRODUCT(Nc),MK)
               ENDDO
           ELSE
               DO i=1,nsubs
-                  Nc(1) = nnodes(1,i)
-                  Nc(2) = nnodes(2,i)
-                  cost(i) = cost(i) + REAL(PRODUCT(Nc),MK)
+                 Nc(1) = nnodes(1,i)
+                 Nc(2) = nnodes(2,i)
+                 cost(i) = cost(i) + REAL(PRODUCT(Nc),MK)
               ENDDO
           ENDIF
       ELSEIF (Np .LT. 1) THEN
@@ -349,22 +318,20 @@
           !  Cost based on geometry if we have no particles and no mesh
           !---------------------------------------------------------------------
           IF (ppm_debug .GT. 0) THEN
-              CALL ppm_write(ppm_rank,'ppm_topo_cost',   &
-              &   'Computing costs based on geometry',info)
+              stdout("Computing costs based on geometry")
           ENDIF
           IF (ppm_dim .EQ. 3) THEN
               DO i=1,nsubs
-                  len_sub(1) = max_sub(1,i)-min_sub(1,i)
-                  len_sub(2) = max_sub(2,i)-min_sub(2,i)
-                  len_sub(3) = max_sub(3,i)-min_sub(3,i)
-                  !Yaser_Minor mistake as we forgot to add costs
-                  cost(i) = cost(i)+len_sub(1)*len_sub(2)*len_sub(3)
+                 len_sub(1) = max_sub(1,i)-min_sub(1,i)
+                 len_sub(2) = max_sub(2,i)-min_sub(2,i)
+                 len_sub(3) = max_sub(3,i)-min_sub(3,i)
+                 cost(i) = PRODUCT(len_sub)
               ENDDO
           ELSE
               DO i=1,nsubs
-                  len_sub(1) = max_sub(1,i)-min_sub(1,i)
-                  len_sub(2) = max_sub(2,i)-min_sub(2,i)
-                  cost(i) = cost(i)+len_sub(1)*len_sub(2)
+                 len_sub(1) = max_sub(1,i)-min_sub(1,i)
+                 len_sub(2) = max_sub(2,i)-min_sub(2,i)
+                 cost(i) = PRODUCT(len_sub)
               ENDDO
           ENDIF
       ENDIF
@@ -373,76 +340,51 @@
       !  Some diagnostics
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
-          CALL ppm_write(ppm_rank,'ppm_topo_cost',  &
-          &  '----------------------------------------------',info)
+          stdout("----------------------------------------------")
           DO i=1,nsubs
-              WRITE(mesg,'(I4,A,F15.3)') i,' sub cost: ',cost(i)
-              CALL ppm_write(ppm_rank,'ppm_topo_cost',  &
-              &      mesg,info)
+             stdout_f('(I4,A,F15.3)',i," sub cost: ",'cost(i)')
           ENDDO
-          CALL ppm_write(ppm_rank,'ppm_topo_cost',  &
-          &  '----------------------------------------------',info)
+          stdout("----------------------------------------------")
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_topo_cost',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (nsubs .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_topo_cost',  &
-              &   'nsubs must be > 0',__LINE__,info)
-              GOTO 8888
+             fail("nsubs must be > 0",exit_point=8888)
           ENDIF
           IF (SIZE(min_sub,2) .LT. nsubs .OR. SIZE(max_sub,2) .LT. nsubs) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_topo_cost',  &
-              &   'not enough subs specified in min_sub, max_sub',__LINE__,info)
-              GOTO 8888
+             fail("not enough subs specified in min_sub, max_sub",exit_point=8888)
           ENDIF
           IF (SIZE(min_sub,1).LT.ppm_dim.OR.SIZE(max_sub,1).LT.ppm_dim) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_topo_cost',  &
-              &   'leading dimension in min_sub, max_sub wrong',__LINE__,info)
-              GOTO 8888
+             fail("leading dimension in min_sub, max_sub wrong",exit_point=8888)
           ENDIF
           DO i=1,nsubs
-              DO j=1,ppm_dim
-                  IF (max_sub(j,i) .LT. min_sub(j,i)) THEN
-                      info = ppm_error_error
-                      CALL ppm_error(ppm_err_argument,'ppm_topo_cost',  &
-                      &   'max_sub must always be >= min_sub',__LINE__,info)
-                      GOTO 8888
-                  ENDIF
-              ENDDO
+             DO j=1,ppm_dim
+                IF (max_sub(j,i) .LT. min_sub(j,i)) THEN
+                   fail("max_sub must always be >= min_sub",exit_point=8888)
+                ENDIF
+             ENDDO
           ENDDO
           IF (Np .GT. 0) THEN
-              IF (SIZE(xp,2) .LT. Np) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_topo_cost',  &
-              &       'not enough particles contained in xp',__LINE__,info)
-                  GOTO 8888
-              ENDIF
-              IF (SIZE(xp,1) .LT. ppm_dim) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_topo_cost',  &
-              &       'leading dimension of xp insufficient',__LINE__,info)
-                  GOTO 8888
-              ENDIF
+             IF (SIZE(xp,2) .LT. Np) THEN
+                fail("not enough particles contained in xp",exit_point=8888)
+             ENDIF
+             IF (SIZE(xp,1) .LT. ppm_dim) THEN
+                fail("leading dimension of xp insufficient",exit_point=8888)
+             ENDIF
           ENDIF
           IF (PRESENT(pcost)) THEN
-              IF (SIZE(pcost,1) .LT. Np) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_topo_cost',  &
-              &       'pcost must be of at least length Np',__LINE__,info)
-                  GOTO 8888
-              ENDIF
+             IF (SIZE(pcost,1) .LT. Np) THEN
+                fail("pcost must be of at least length Np",exit_point=8888)
+             ENDIF
           ENDIF
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_topo_cost_s

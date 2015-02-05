@@ -63,6 +63,7 @@
       USE ppm_module_alloc
       USE ppm_module_topo_box2subs
       IMPLICIT NONE
+
 #if    __KIND == __SINGLE_PRECISION
       INTEGER,  PARAMETER :: MK = ppm_kind_single
 #elif  __KIND == __DOUBLE_PRECISION
@@ -101,10 +102,8 @@
       !!! The type of subdomain-to-processor assignment. One of:
       !!!
       !!! *  ppm_param_assign_internal
-      !!! *  ppm_param_assign_nodal_cut
-      !!! *  ppm_param_assign_nodal_comm
-      !!! *  ppm_param_assign_dual_cut
-      !!! *  ppm_param_assign_dual_comm
+      !!! *  ppm_param_assign_metis_cut
+      !!! *  ppm_param_assign_metis_comm
       !!! *  ppm_param_assign_user_defined
       !!!
       !!! [NOTE]
@@ -194,6 +193,7 @@
       !  Initialise
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
+
 #if    __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif  __KIND == __DOUBLE_PRECISION
@@ -410,15 +410,13 @@
          &    nsubs,sub2proc,isublist,nsublist,info)
          or_fail("Assigning subs to processors failed")
 
-      CASE (ppm_param_assign_nodal_cut,  &
-      &     ppm_param_assign_nodal_comm, &
-      &     ppm_param_assign_dual_cut,   &
-      &     ppm_param_assign_dual_comm)
+      CASE (ppm_param_assign_metis_cut, &
+      &     ppm_param_assign_metis_comm)
          !-------------------------------------------------------------------
          !  use METIS library to do assignment
          !-------------------------------------------------------------------
-         CALL ppm_topo_metis_s2p(min_sub,max_sub,nneigh,ineigh, &
-         &    cost,nsubs,assig,sub2proc,isublist,nsublist,info)
+         CALL ppm_topo_metis_s2p(min_phys,max_phys,min_sub,max_sub, &
+         &    nneigh,ineigh,cost,nsubs,assig,sub2proc,isublist,nsublist,info)
          or_fail("Assigning subs to processors using METIS failed")
 
       CASE (ppm_param_assign_user_defined)
@@ -566,7 +564,6 @@
          ENDIF
          IF (ghostsize .LT. 0.0_MK) THEN
             fail("ghostsize must be >= 0.0",exit_point=8888)
-            info = ppm_error_error
          ENDIF
          DO i=1,ppm_dim
             IF (max_phys(i).LE.min_phys(i)) THEN
