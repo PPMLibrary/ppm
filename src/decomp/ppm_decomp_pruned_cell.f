@@ -64,16 +64,13 @@
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! Position of the particles
-      INTEGER                 , INTENT(IN   ) :: Npart
+      INTEGER,                  INTENT(IN   ) :: Npart
       !!! Number of particles
-      REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: min_phys
+      REAL(MK), DIMENSION(:),   POINTER       :: min_phys
       !!! Minimum coordinate of the physical/computational domain
-      REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: max_phys
+      REAL(MK), DIMENSION(:),   POINTER       :: max_phys
       !!! Maximum coordinate of the physical/computational domain
-      REAL(MK), DIMENSION(:)  , OPTIONAL, INTENT(IN) :: pcost
-      !!! Argument of length Npart, specifying the
-      !!! computational cost of each particle
-      REAL(MK)                , INTENT(IN   ) :: ghostsize
+      REAL(MK),                 INTENT(IN   ) :: ghostsize
       !!! Size (width) of the ghost layer
       REAL(MK), DIMENSION(:,:), POINTER       :: min_sub
       !!! Minimum extent of the subdomain
@@ -83,6 +80,9 @@
       !!! Total number of subdomains
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
+      REAL(MK), DIMENSION(:),   INTENT(IN   ), OPTIONAL :: pcost
+      !!! Argument of length Npart, specifying the
+      !!! computational cost of each particle
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------

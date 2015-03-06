@@ -262,17 +262,11 @@
       or_fail_MPI('MPI_AllReduce failed')
 
       IF (Ntot.LT.1) THEN
-         info = ppm_error_notice
-         CALL ppm_error(ppm_err_argument,caller,   &
-         &   'No particles in domain',__LINE__,info)
-         GOTO 9999
+         fail('No particles in domain',ppm_error=ppm_error_notice)
       ENDIF
 #else
       IF (Npart.LT.1) THEN
-         info = ppm_error_notice
-         CALL ppm_error(ppm_err_argument,caller,   &
-         &    'No particle on this processor',__LINE__,info)
-         GOTO 9999
+        fail('No particle on this processor',ppm_error=ppm_error_notice)
       ENDIF
 #endif
 
@@ -606,7 +600,7 @@
       !-------------------------------------------------------------------------
       CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,  &
       &    subs_bc,sub2proc,nsubs,bcdef,ghostsize,isublist,nsublist, &
-      &    nneigh,ineigh,info)
+      &    nneigh,ineigh,info,decomp)
       or_fail('Storing topology failed')
 
       iopt = ppm_param_dealloc

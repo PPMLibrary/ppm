@@ -179,7 +179,8 @@
          CALL ppm_alloc(wxp,ldc,iopt,info)
          or_fail_alloc("work xp array wxp",ppm_error=ppm_error_fatal)
 
-         FORALL(i=1:npidx) wxp(:,i) = xp(:,pidx(i))
+         FORALL(i=1:npidx) wxp(1:ppm_dim,i) = xp(1:ppm_dim,pidx(i))
+
          wnp = npidx
       ELSE
          lpidx = .FALSE.
@@ -306,20 +307,24 @@
          !---------------------------------------------------------------------
          !  Rank the particles in this extended sub
          !---------------------------------------------------------------------
-         IF (ppm_dim .EQ. 2) THEN
+         SELECT CASE (ppm_dim)
+         CASE (2)
             CALL ppm_util_rank2d(wxp,wnp,xmin(1:2),xmax(1:2),   &
             &    clist(idom)%nm(1:2),ngl(1:4),clist(idom)%lpdx, &
             &    clist(idom)%lhbx,info)
+            or_fail('ranking of particles failed!')
             !-----------------------------------------------------------------
             !  We have to increase nm by the ghost layers to provide the same
             !  behaviour as before the change of interface of ppm_util_rank
             !-----------------------------------------------------------------
             clist(idom)%nm(1) = clist(idom)%nm(1) + ngl(1) + ngl(3)
             clist(idom)%nm(2) = clist(idom)%nm(2) + ngl(2) + ngl(4)
-         ELSEIF (ppm_dim .EQ. 3) THEN
+
+         CASE (3)
             CALL ppm_util_rank3d(wxp,wnp,xmin(1:3),xmax(1:3),   &
             &    clist(idom)%nm(1:3),ngl(1:6),clist(idom)%lpdx, &
             &    clist(idom)%lhbx,info)
+            or_fail('ranking of particles failed!')
             !-----------------------------------------------------------------
             !  We have to increase nm by the ghost layers to provide the same
             !  behaviour as before the change of interface of ppm_util_rank
@@ -327,8 +332,8 @@
             clist(idom)%nm(1) = clist(idom)%nm(1) + ngl(1) + ngl(4)
             clist(idom)%nm(2) = clist(idom)%nm(2) + ngl(2) + ngl(5)
             clist(idom)%nm(3) = clist(idom)%nm(3) + ngl(3) + ngl(6)
-         ENDIF
-         or_fail('ranking of particles failed!')
+
+         END SELECT
       ENDDO
       IF (lpidx) THEN
          iopt = ppm_param_dealloc

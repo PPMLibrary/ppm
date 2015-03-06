@@ -459,7 +459,7 @@
       !-------------------------------------------------------------------------
       CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub, &
       &    max_sub,subs_bc,sub2proc,nsubs,bcdef,ghostsize,  &
-      &    isublist,nsublist,nneigh,ineigh,info)
+      &    isublist,nsublist,nneigh,ineigh,info,decomp)
       or_fail("Storing topology failed")
 
       !-------------------------------------------------------------------------

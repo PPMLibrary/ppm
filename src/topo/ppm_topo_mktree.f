@@ -388,7 +388,7 @@
       !  Store the topology internally
       !-------------------------------------------------------------------------
       CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
-      &    sub2proc,nsubs,bcdef,minboxsize,isublist,nsublist,nneigh,ineigh,info)
+      &    sub2proc,nsubs,bcdef,minboxsize,isublist,nsublist,nneigh,ineigh,info,0)
       or_fail('Storing topology failed')
 
       IF (storemesh.AND.have_mesh) THEN

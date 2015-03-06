@@ -67,6 +67,9 @@
           !!! flag to tell if this topology is defined/in use
           INTEGER                                        :: prec
           !!! numerical precision (ppm_kind) for this topology
+          INTEGER                                        :: decomp
+          !!! Domain decomposition technique for this topology
+          !!! (0 means user specified arguments for ppm_tree)
 
           REAL(ppm_kind_single), DIMENSION(:),   POINTER :: min_physs => NULL()
           !!! minimum of physical extend of the computational domain (single)

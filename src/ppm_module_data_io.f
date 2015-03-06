@@ -38,7 +38,6 @@
          !  Modules
          !----------------------------------------------------------------------
          USE ppm_module_data, ONLY: ppm_kind_single, ppm_kind_double
-
          IMPLICIT NONE
 
          PRIVATE :: ppm_kind_single, ppm_kind_double

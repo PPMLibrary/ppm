@@ -66,13 +66,10 @@
       !!! Position of the particles
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! Number of particles
-      REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: min_phys
+      REAL(MK), DIMENSION(:)  , POINTER       :: min_phys
       !!! Minimum coordinate of the physical/computational domain
-      REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: max_phys
+      REAL(MK), DIMENSION(:)  , POINTER       :: max_phys
       !!! Maximum coordinate of the physical/computational domain
-      REAL(MK), DIMENSION(:)  , OPTIONAL, INTENT(IN) :: pcost
-      !!! Argument of length Npart, specifying the
-      !!! computational cost of each particle.
       REAL(MK)                , INTENT(IN   ) :: minboxsize
       !!! Minimum box size
       REAL(MK)                , INTENT(IN   ) :: tolerance
@@ -86,6 +83,9 @@
       !!! Total number of subdomains
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
+      REAL(MK), DIMENSION(:)  , OPTIONAL, INTENT(IN) :: pcost
+      !!! Argument of length Npart, specifying the
+      !!! computational cost of each particle.
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -122,8 +122,8 @@
       !  check input arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------

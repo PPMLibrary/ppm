@@ -30,11 +30,11 @@
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_topo_store_s(topoid,min_phys,max_phys,    &
       &          min_sub,max_sub,subs_bc,sub2proc,nsubs,bcdef, &
-      &          ghostsize,isublist,nsublist,nneigh,ineigh,info)
+      &          ghostsize,isublist,nsublist,nneigh,ineigh,info,decomp)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_topo_store_d(topoid,min_phys,max_phys,    &
       &          min_sub,max_sub,subs_bc,sub2proc,nsubs,bcdef, &
-      &          ghostsize,isublist,nsublist,nneigh,ineigh,info)
+      &          ghostsize,isublist,nsublist,nneigh,ineigh,info,decomp)
 #endif
       !!! This routine stores all relevant information about
       !!! the new topology (created by ppm_decomp routines) in
@@ -107,6 +107,8 @@
       !!! 2nd index: 1..nsubs (sub of which one wants to get the neighbors)
       INTEGER,                  INTENT(  OUT) :: info
       !!! Return status. 0 upon success.
+      INTEGER, OPTIONAL,        INTENT(IN   ) :: decomp
+      !!! Domain decomposition technique for this topology
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -346,6 +348,8 @@
       ENDDO
 
       topo%isdefined = .TRUE.
+
+      IF (PRESENT(decomp)) topo%decomp=decomp
 
       !-------------------------------------------------------------------------
       !  Return

@@ -227,9 +227,9 @@
       ENDIF
 
 #if   __KIND == __SINGLE_PRECISION
-      lmyeps = ppm_myepss
+      lmyeps=ppm_myepss
 #elif __KIND == __DOUBLE_PRECISION
-      lmyeps = ppm_myepsd
+      lmyeps=ppm_myepsd
 #endif
 
       nvtxs=nsubs
@@ -357,7 +357,7 @@
          ll=MIN(sx,sy)
 
          kk=1._MK
-         DO WHILE (ll.LE.1.0_MK)
+         DO WHILE (ll*kk.LE.1.0_MK)
             kk=kk*10._MK
          ENDDO
          !Coefficient to convert REAL number into INTEGER value
@@ -392,7 +392,7 @@
          ll=MIN(sx*sy,sx*sz,sy*sz)
 
          kk=1._MK
-         DO WHILE (ll.LE.1.0_MK)
+         DO WHILE (ll*kk.LE.1.0_MK)
             kk=kk*10._MK
          ENDDO
 
@@ -476,7 +476,7 @@
       !  Find subs2proc assignment based on graph decomposition
       !-------------------------------------------------------------------------
       ! a graph vertex is a sub
-      FORALL (isub=1:nsubs) sub2proc(isub) = part(isub)-1    ! MPI ranks start at 0
+      FORALL (isub=1:nsubs) sub2proc(isub)=part(isub)-1  ! MPI ranks start at 0
 
       !-------------------------------------------------------------------------
       !  Deallocate METIS work memory
@@ -510,20 +510,26 @@
       !-------------------------------------------------------------------------
       !  Count number of subs assigned to local processor
       !-------------------------------------------------------------------------
-      nsublist = COUNT(sub2proc(1:nsubs).EQ.ppm_rank)
+      nsublist=COUNT(sub2proc(1:nsubs).EQ.ppm_rank)
 
       !-------------------------------------------------------------------------
       !  Allocate the isublist array
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_fit
-      ldc(1) = nsublist
+      iopt  =ppm_param_alloc_fit
+      ldc(1)=nsublist
       CALL ppm_alloc(isublist,ldc,iopt,info)
       or_fail_alloc('isublist allocation failed',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Fill list of local subs
       !-------------------------------------------------------------------------
-      isublist(1:nsublist)=PACK(sub2proc(1:nsubs),sub2proc(1:nsubs).EQ.ppm_rank)
+      nsublist=0
+      DO isub=1,nsubs
+         IF (sub2proc(isub) .EQ. ppm_rank) THEN
+            nsublist=nsublist+1
+            isublist(nsublist)=isub
+         ENDIF
+      ENDDO
 #endif
 
       !-------------------------------------------------------------------------
