@@ -124,7 +124,7 @@
 
                 END SELECT
              ENDIF
-          ENDIF
+          ENDIF !this%flags(ppm_ops_interp)
 
           end_subroutine()
       END SUBROUTINE DTYPE(dcop_create)
@@ -174,6 +174,7 @@
           !!! (this is an expensive step and has to
           !!! be re-done everytime the particles move)
           IMPLICIT NONE
+
           DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
@@ -314,7 +315,7 @@
                     check_false(<#ASSOCIATED(Field_to%discr_info)#>,&
                     & "Destination field seems to be corrupted - Try Field%destroy()?")
 
-                    write(fname,'(A,A)') "Output_from_",TRIM(ADJUSTL(this%op_ptr%name))
+                    WRITE(fname,'(A,A)') "Output_from_",TRIM(ADJUSTL(this%op_ptr%name))
 
                     IF (vector_operator) THEN
                        CALL Field_to%create(this%op_ptr%nterms,info,name=fname)

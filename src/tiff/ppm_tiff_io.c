@@ -55,9 +55,40 @@ int open_tiff(char *filename) {
   return 0;
 }
 
+int open_bigtiff(char *filename) {
+
+  tif = TIFFOpen(filename,"r8");
+
+  if (!tif) {
+    return -1;
+  }
+
+  ScanlineSize=TIFFScanlineSize(tif);
+
+  bufSc = (unsigned char *)_TIFFmalloc(ScanlineSize);
+  if (!bufSc){
+    _TIFFfree(bufSc);
+    bufSc=NULL;
+    //Can't malloc strip
+    return -3;
+  }
+
+  return 0;
+}
+
 int open_write_tiff(char *filename) {
 
   tif = TIFFOpen(filename,"a+");
+
+  if (!tif) {
+    return -1;
+  }
+  return 0;
+}
+
+int open_write_bigtiff(char *filename) {
+
+  tif = TIFFOpen(filename,"w8");
 
   if (!tif) {
     return -1;
@@ -122,7 +153,7 @@ int read_tiff_infoC(char *filename,int *ngrid,int *bitsPerSample,int *samplesPer
     TIFFClose(tif);
   }
 
-  #ifdef __MPI
+#ifdef __MPI
   MPI_Datatype ppmTIFFTAGMPI;
   MPI_Datatype type[3]={MPI_UNSIGNED,MPI_UNSIGNED_SHORT,MPI_FLOAT};
   int blocklen[3]={3,10,2};
@@ -144,7 +175,7 @@ int read_tiff_infoC(char *filename,int *ngrid,int *bitsPerSample,int *samplesPer
   MPI_Type_commit(&ppmTIFFTAGMPI);
   MPI_Bcast(&ppmTIFFTAG,1,ppmTIFFTAGMPI,0,ccomm);
   MPI_Type_free(&ppmTIFFTAGMPI);
-  #endif
+#endif
 
   // Read the x and y values from the image and assign those to Ngrid
   // Be careful with the x/y assignment
@@ -927,7 +958,7 @@ int write_tiff_scanline_int1(int *scanline,int *rownm,int *bitsPerSample,int *Sa
     return -1;
   }
 
-  uint32 row =(uint32) *rownm;
+  uint32 row = (uint32) *rownm;
   uint16 smp = (uint16) *Sample;
   uint32 wdt = (uint32) *width;
   uint32   x;
@@ -1022,7 +1053,7 @@ int write_tiff_scanline_float1(float *scanline,int *rownm,int *bitsPerSample,int
 
     case 32:
       for (x=0; x<wdt; x++){
-        *((float*)bufSc+x) = (float) scanline[x];
+        *((float*)bufSc+x) = scanline[x];
       }
       break;
   }
@@ -1480,7 +1511,7 @@ int write_tiff_strip_float1(float *strip,int *bitsPerSample,int *width,int *leng
 
     case 32:
       for (x=0; x<pixelsPerRaster; x++){
-        *((float*)bufSt+x) = (float) strip[x];
+        *((float*)bufSt+x) = strip[x];
       }
       break;
   }

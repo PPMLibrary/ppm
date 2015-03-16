@@ -579,7 +579,7 @@
          !  use METIS library to do assignment
          !-------------------------------------------------------------------
          CALL ppm_topo_metis_s2p(min_phys,max_phys,min_sub,max_sub, &
-         &    nneigh,ineigh,cost,nsubs,assig,sub2proc,isublist,nsublist,info)
+         &    cost,nneigh,ineigh,nsubs,sub2proc,isublist,nsublist,assig,info)
          or_fail('Assigning subs to processors using METIS failed')
 
       CASE (ppm_param_assign_user_defined)

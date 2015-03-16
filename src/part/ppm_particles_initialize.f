@@ -85,7 +85,7 @@
           len_phys=max_phys-min_phys
 
           check_true(<#MINVAL(len_phys(1:ppm_dim)).GT.0#>,&
-          "Domain length is <= 0 along one dimension. Check input parameters")
+          & "Domain length is <= 0 along one dimension. Check input parameters")
 
 
           h = (PRODUCT(len_phys)/REAL(Npart_global))**(1./REAL(ppm_dim))

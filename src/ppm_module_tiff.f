@@ -59,10 +59,25 @@
           END FUNCTION
         END INTERFACE
         INTERFACE
+          FUNCTION open_bigtiff(filename) bind(C,NAME='open_bigtiff')
+            IMPORT            :: C_INT,C_CHAR
+            CHARACTER(C_CHAR) :: filename(*)
+            !!! Name of the TIFF file to open
+            INTEGER(C_INT)    :: open_bigtiff
+          END FUNCTION
+        END INTERFACE
+        INTERFACE
           FUNCTION open_write_tiff(filename) bind(C,NAME='open_write_tiff')
             IMPORT            :: C_INT,C_CHAR
             CHARACTER(C_CHAR) :: filename(*)
             INTEGER(C_INT)    :: open_write_tiff
+          END FUNCTION
+        END INTERFACE
+        INTERFACE
+          FUNCTION open_write_bigtiff(filename) bind(C,NAME='open_write_bigtiff')
+            IMPORT            :: C_INT,C_CHAR
+            CHARACTER(C_CHAR) :: filename(*)
+            INTEGER(C_INT)    :: open_write_bigtiff
           END FUNCTION
         END INTERFACE
         INTERFACE
@@ -371,7 +386,9 @@
         PUBLIC :: samplesPerPixel
 
         PUBLIC :: open_tiff
+        PUBLIC :: open_bigtiff
         PUBLIC :: open_write_tiff
+        PUBLIC :: open_write_bigtiff
         PUBLIC :: close_tiff
         PUBLIC :: write_tiff_header
         PUBLIC :: read_tiff_scanline

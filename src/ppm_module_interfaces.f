@@ -156,13 +156,16 @@ minclude ppm_create_collection(discr_data,discr_data,generate="concrete",vec=tru
       TYPE, ABSTRACT, EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
           !!! Generic differential operator
           !!! (It only contains semantic information on the operator)
-          INTEGER, DIMENSION(:),               POINTER :: degree => NULL()
-          !!! degree of each term in the linear combination of differential ops
+          INTEGER                                      :: nterms = 0
+          !!! number of terms
+
           REAL(ppm_kind_double), DIMENSION(:), POINTER :: coeffs => NULL()
           !!! array where the coefficients in linear combinations of
           !!! differential ops are stored
-          INTEGER                                      :: nterms = 0
-          !!! number of terms
+
+          INTEGER, DIMENSION(:),               POINTER :: degree => NULL()
+          !!! degree of each term in the linear combination of differential ops
+
           CHARACTER(LEN=ppm_char)                      :: name
           !!! name of the vector-valued property
 
@@ -177,11 +180,11 @@ minclude ppm_create_collection(operator_,operator_,generate="abstract")
       TYPE, ABSTRACT :: ppm_t_operator_discr_
           !!! discretized operator
           CLASS(ppm_t_discr_kind), POINTER              :: discr_src => NULL()
-          !!! Pointer to the discretization (mesh or particles) that this operator
-          !!! takes data from
+          !!! Pointer to the discretization (mesh or particles) that
+          !!! this operator takes data from
           CLASS(ppm_t_discr_kind), POINTER              :: discr_to  => NULL()
-          !!! Pointer to the discretization (mesh or particles) that this operator
-          !!! returns values on
+          !!! Pointer to the discretization (mesh or particles) that
+          !!! this operator returns values on
           INTEGER, DIMENSION(:),   POINTER              :: order     => NULL()
           !!! Order of approximation for each term of the differential operator
           CLASS(ppm_t_operator_),  POINTER              :: op_ptr    => NULL()

@@ -28,11 +28,9 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_topo_cost_s(xp,Np,min_sub,max_sub,nsubs,nnodes,cost,   &
-      &          info,pcost)
+      SUBROUTINE ppm_topo_cost_s(xp,Np,min_sub,max_sub,nsubs,nnodes,cost,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_topo_cost_d(xp,Np,min_sub,max_sub,nsubs,nnodes,cost,   &
-      &          info,pcost)
+      SUBROUTINE ppm_topo_cost_d(xp,Np,min_sub,max_sub,nsubs,nnodes,cost,info,pcost)
 #endif
       !!! This routine calculates the computational cost of
       !!! each subdomain based on either the particles (if there are any)
@@ -271,11 +269,9 @@
 
              costsum = 0.0_MK
 #if   __KIND == __SINGLE_PRECISION
-             CALL MPI_AllReduce(cost,costsum,nsubs,MPI_REAL, &
-             &    MPI_SUM,ppm_comm,info)
+             CALL MPI_AllReduce(cost,costsum,nsubs,MPI_REAL,MPI_SUM,ppm_comm,info)
 #elif __KIND == __DOUBLE_PRECISION
-             CALL MPI_AllReduce(cost,costsum,nsubs,MPI_DOUBLE_PRECISION,&
-             &    MPI_SUM,ppm_comm,info)
+             CALL MPI_AllReduce(cost,costsum,nsubs,MPI_DOUBLE_PRECISION,MPI_SUM,ppm_comm,info)
 #endif
              !------------------------------------------------------------------
              !  Copy data back

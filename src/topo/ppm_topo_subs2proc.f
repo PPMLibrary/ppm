@@ -28,11 +28,11 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_topo_subs2proc_s(cost,nneigh,ineigh,nsubs,sub2proc, &
-     &                                  isublist,nsublist,info)
+      SUBROUTINE ppm_topo_subs2proc_s(cost,nneigh,ineigh, &
+      &          nsubs,sub2proc,isublist,nsublist,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_topo_subs2proc_d(cost,nneigh,ineigh,nsubs,sub2proc, &
-     &                                  isublist,nsublist,info)
+      SUBROUTINE ppm_topo_subs2proc_d(cost,nneigh,ineigh, &
+      &          nsubs,sub2proc,isublist,nsublist,info)
 #endif
       !!! This routine assigns the subdomains to the processors
       !!! using the cost assigned to each subdomain. It assigns
@@ -51,12 +51,12 @@
       USE ppm_module_alloc
       USE ppm_module_write
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
-
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -92,7 +92,7 @@
       INTEGER                        :: isub,jsub,nassigned
       INTEGER                        :: assignedtorank
 
-      CHARACTER(ppm_char) :: mesg
+      CHARACTER(ppm_char) :: caller='ppm_topo_subs2proc'
 
       LOGICAL, DIMENSION(:), POINTER :: not_assigned => NULL()
       LOGICAL, DIMENSION(:), POINTER :: not_listed   => NULL()
@@ -104,14 +104,14 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_topo_subs2proc',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -121,11 +121,8 @@
       ldc(1) = nsubs
       CALL ppm_alloc(sub2proc,ldc,iopt,info)
       IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          WRITE (mesg,'(A,I10,A)') 'allocating ',nsubs,' sub2procs failed'
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc',            &
-          &    mesg,__LINE__,info)
-          GOTO 9999
+         WRITE (cbuf,'(A,I10,A)') 'allocating ',nsubs,' sub2procs failed'
+         fail(cbuf,ppm_err_alloc,ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -139,11 +136,8 @@
          ldc(1) = nsubs
          CALL ppm_alloc(isublist,ldc,iopt,info)
          IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             WRITE (mesg,'(A,I10,A)') 'allocating ',nsubs,' isublist failed'
-             CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc',            &
-             &    mesg,__LINE__,info)
-             GOTO 9999
+             WRITE (cbuf,'(A,I10,A)') 'allocating ',nsubs,' isublist failed'
+             fail(cbuf,ppm_err_alloc,ppm_error=ppm_error_fatal)
          ENDIF
          !----------------------------------------------------------------------
          !  Assign all subdomains to the processor and return
@@ -166,22 +160,14 @@
       !-------------------------------------------------------------------------
       CALL ppm_alloc(not_assigned,ldc,iopt,info)
       IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          WRITE (mesg,'(A,I10,A)') &
-          & 'allocating local array (1) of size ',nsubs,' failed'
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc', &
-          &    mesg,__LINE__,info)
-          GOTO 9999
+         WRITE (cbuf,'(A,I10,A)') 'allocating local array (1) of size ',nsubs,' failed'
+         fail(cbuf,ppm_err_alloc,ppm_error=ppm_error_fatal)
       ENDIF
 
-      CALL ppm_alloc(not_listed  ,ldc,iopt,info)
+      CALL ppm_alloc(not_listed,ldc,iopt,info)
       IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          WRITE (mesg,'(A,I10,A)') &
-          & 'allocating local array (2) of size ',nsubs,' failed'
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc', &
-          &    mesg,__LINE__,info)
-          GOTO 9999
+         WRITE (cbuf,'(A,I10,A)') 'allocating local array (2) of size ',nsubs,' failed'
+         fail(cbuf,ppm_err_alloc,ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -197,12 +183,8 @@
       ldc(1) = isize
       CALL ppm_alloc(list,ldc,iopt,info)
       IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          WRITE (mesg,'(A,I10,A)')                                 &
-          & 'allocating local array (3) of size ',isize,' failed'
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc',     &
-          &    mesg,__LINE__,info)
-          GOTO 9999
+         WRITE (cbuf,'(A,I10,A)') 'allocating local array (3) of size ',isize,' failed'
+         fail(cbuf,ppm_err_alloc,ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -284,12 +266,8 @@
                ldc(1) = isize
                CALL ppm_alloc(list,ldc,iopt,info)
                IF (info.NE.0) THEN
-                   info = ppm_error_fatal
-                   WRITE (mesg,'(A,I10,A)') &
-     &             'allocating local array (3) of size ',isize,' failed'
-                   CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc',     &
-     &                            mesg,__LINE__,info)
-                   GOTO 9999
+                  WRITE (cbuf,'(A,I10,A)')'allocating local array (3) of size ',isize,' failed'
+                  fail(cbuf,ppm_err_alloc,ppm_error=ppm_error_fatal)
                ENDIF
             ENDIF
 
@@ -352,9 +330,7 @@
                   EXIT
                ELSE
                   IF (ppm_debug .GT. 0) THEN
-                     WRITE(mesg,'(A,I6)')   &
-     &                   'found an island. Chosen sub as new land: ',isub
-                     CALL ppm_write(ppm_rank,'ppm_topo_subs2proc',mesg,info)
+                     stdout_f('(A,I6)',"found an island. Chosen sub as new land: ",isub)
                   ENDIF
                ENDIF
 
@@ -391,11 +367,8 @@
          !  If we found any, write an error message and bail out !
          !----------------------------------------------------------------------
          IF (i.NE.0) THEN
-            info = ppm_error_error
-            WRITE (mesg,'(A,I10,A)') 'missed: ',i,' sub domains'
-            CALL ppm_error(ppm_err_subs_map,'ppm_topo_subs2proc',     &
-            &    mesg,__LINE__,info)
-            GOTO 9999
+            WRITE (cbuf,'(A,I10,A)') 'missed: ',i,' sub domains'
+            fail(cbuf,ppm_err_subs_map)
          ENDIF
 
          !----------------------------------------------------------------------
@@ -409,9 +382,7 @@
                      costsum = costsum + cost(isub)
                   ENDIF
                ENDDO
-               WRITE(mesg,'(A,I5,A,E12.4)') 'cost for processor: ',rank, &
-               & ' is ',costsum
-               CALL ppm_write(ppm_rank,'ppm_topo_subs2proc',mesg,info)
+               stdout_f('(A,I5,A,E12.4)',"cost for processor: ",rank," is ",costsum)
             ENDDO
          ENDIF
          !----------------------------------------------------------------------
@@ -426,11 +397,8 @@
       iopt   = ppm_param_alloc_fit
       CALL ppm_alloc(isublist,ldc,iopt,info)
       IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          WRITE (mesg,'(A,I10,A)') 'isublist with dim ',nsubs,' failed'
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc',     &
-          &    mesg,__LINE__,info)
-          GOTO 9999
+         WRITE (cbuf,'(A,I10,A)') 'isublist with dim ',nsubs,' failed'
+         fail(cbuf,ppm_err_alloc,ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -448,50 +416,31 @@
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(list,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_subs2proc',     &
-     &        'deallocation of list failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('deallocation of list failed',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(not_assigned,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_subs2proc',     &
-     &        'deallocation of not_assigned failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('deallocation of not_assigned failed',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(not_listed,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_subs2proc',     &
-     &        'deallocation of not_listed failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('deallocation of not_listed failed',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_topo_subs2proc',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (nsubs .LE. 0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_topo_subs2proc', &
-     &           'nsubs must be > 0',__LINE__,info)
-            GOTO 8888
+            fail('nsubs must be > 0',ppm_err_argument,exit_point=8888)
          ENDIF
          DO isub=1,nsubs
-             IF (nneigh(isub) .LT. 0) THEN
-                 info = ppm_error_error
-                 CALL ppm_error(ppm_err_argument,'ppm_topo_subs2proc', &
-     &               'nneigh must be >= 0 for all subs',__LINE__,info)
-                GOTO 8888
-             ENDIF
+            IF (nneigh(isub) .LT. 0) THEN
+               fail('nneigh must be >= 0 for all subs',ppm_err_argument,exit_point=8888)
+            ENDIF
          ENDDO
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_topo_subs2proc_s

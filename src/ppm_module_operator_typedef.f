@@ -95,8 +95,8 @@ minclude ppm_create_collection_procedures(operator,operator_)
           INTEGER,                             INTENT(IN   ) :: nterms
           !!! Number of terms in the linear combination
           REAL(ppm_kind_double), DIMENSION(:), INTENT(IN   ) :: coeffs
-          !!! Multiplicative coefficients of each term in the linear combination of
-          !!! differential operators
+          !!! Multiplicative coefficients of each term in the linear
+          !!! combination of differential operators
           INTEGER,               DIMENSION(:), INTENT(IN   ) :: degree
           !!! Degree of differentiation of each term
           INTEGER,                             INTENT(  OUT) :: info
@@ -108,23 +108,25 @@ minclude ppm_create_collection_procedures(operator,operator_)
 
           !Check arguments
           IF (MINVAL(degree).LT.0) THEN
-             fail("invalid degree: must be positive")
-          ENDIF
-          IF (SIZE(degree).NE.ppm_dim*nterms) THEN
-             fail("wrong number of terms in degree argument")
+             fail("invalid degree: must be positive",ppm_error=ppm_error_fatal)
           ENDIF
           IF (SIZE(coeffs).NE.nterms) THEN
-             fail("wrong number of terms in coeffs argument")
+             fail("wrong number of terms in coeffs argument",ppm_error=ppm_error_fatal)
+          ENDIF
+          IF (SIZE(degree).NE.ppm_dim*nterms) THEN
+             fail("wrong number of terms in degree argument",ppm_error=ppm_error_fatal)
           ENDIF
 
-          !allocate operators descriptors
-          ldc(1) = ppm_dim * nterms
-          CALL ppm_alloc(this%degree,ldc,ppm_param_alloc_fit,info)
-          or_fail_alloc("this%degree")
 
+          !allocate operators descriptors
           ldc(1) = nterms
           CALL ppm_alloc(this%coeffs,ldc,ppm_param_alloc_fit,info)
           or_fail_alloc("this%coeffs")
+
+          !Yaser: I think this is a bug as the size should be nterms*nterms
+          ldc(1) = ppm_dim * nterms
+          CALL ppm_alloc(this%degree,ldc,ppm_param_alloc_fit,info)
+          or_fail_alloc("this%degree")
 
           this%coeffs = coeffs
           this%degree = degree
@@ -206,6 +208,7 @@ minclude ppm_create_collection_procedures(operator,operator_)
              SELECT TYPE(Discr_to)
              CLASS IS (ppm_t_equi_mesh_)
                 fail("mesh methods not yet implemented")
+
                 SELECT CASE (opts%method)
                 CASE (ppm_param_op_pse)
                    fail("Cannot use PSE on a mesh.")
