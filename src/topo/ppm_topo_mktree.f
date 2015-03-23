@@ -52,22 +52,10 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data
       USE ppm_module_data_mesh
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_error
-      USE ppm_module_alloc
       !USE ppm_module_mesh_alloc
-      USE ppm_module_topo_cost
-      USE ppm_module_topo_store
-      USE ppm_module_mesh_store
+      USE ppm_module_mesh_define
       USE ppm_module_mesh_on_subs
-      USE ppm_module_define_subs_bc
-      USE ppm_module_topo_subs2proc
-      USE ppm_module_topo_metis_s2p
-      USE ppm_module_find_neigh
-      USE ppm_module_tree
       USE ppm_module_topo_box2subs
       IMPLICIT NONE
 
@@ -236,13 +224,6 @@
          IF (info .NE. 0) GOTO 9999
       ENDIF
 
-!      IF (topoid .EQ. 0) THEN
-!         info = ppm_error_warning
-!         CALL ppm_error(ppm_err_argument, caller,    &
-!     &     'topoid was reset for non-null decomposition',__LINE__, info)
-!         topoid = -1
-!      ENDIF
-
       ! If the user defined nsubs then use those
       nsubs=MERGE(user_nsubs,0,PRESENT(user_nsubs))
 
@@ -319,11 +300,9 @@
       !  Find the cost of each subdomain
       !-------------------------------------------------------------------------
       IF (PRESENT(pcost)) THEN
-         CALL ppm_topo_cost(xp,Npart,min_sub,max_sub,nsubs,ndata,  &
-         &    cost,info,pcost)
+         CALL ppm_topo_cost(xp,Npart,min_sub,max_sub,nsubs,ndata,cost,info,pcost)
       ELSE
-         CALL ppm_topo_cost(xp,Npart,min_sub,max_sub,nsubs,ndata,  &
-         &    cost,info)
+         CALL ppm_topo_cost(xp,Npart,min_sub,max_sub,nsubs,ndata,cost,info)
       ENDIF
       or_fail('Computing costs failed')
 
@@ -393,9 +372,9 @@
 
       IF (storemesh.AND.have_mesh) THEN
          !---------------------------------------------------------------------
-         !  Store new mesh internally
+         !  Create and store new mesh internally
          !---------------------------------------------------------------------
-         CALL ppm_mesh_store(topoid,meshid,ndata,istart,Nm,info)
+         CALL ppm_mesh_define(topoid,meshid,Nm,info)
          or_fail('Storing mesh definition failed')
       ENDIF ! storemesh
 

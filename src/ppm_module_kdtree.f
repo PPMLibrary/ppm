@@ -33,6 +33,7 @@
       ! K-D tree routines in Fortran 90 by:
       ! Matthew B. Kennel, Institute For Nonlinear Science,
       ! reference: http://arxiv.org/abs/physics/0408067
+      ! Licensed under the Academic Free License version 1.1.
       !
       ! It has been adapted and amended for PPM library by Yaser Afshar.
       !
@@ -76,11 +77,11 @@
       TYPE(tree_search_record_d), SAVE, TARGET :: sr_d
       ! A GLOBAL VARIABLE for search
 
-      PUBLIC :: kdtree2_result_s,     kdtree2_result_d
+      PUBLIC :: kdtree_result_s,      kdtree_result_d
       PUBLIC :: pq
       PUBLIC :: interval_s,           interval_d
       PUBLIC :: tree_node_s,          tree_node_d
-      PUBLIC :: kdtree2_s,            kdtree2_d
+      PUBLIC :: kdtree_s,             kdtree_d
       PUBLIC :: tree_search_record_s, tree_search_record_d
       PUBLIC :: sr_s,                 sr_d
 

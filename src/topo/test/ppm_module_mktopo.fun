@@ -107,8 +107,13 @@ real(mk)                         :: t0,t1,t2,t3
         ! test cuboid decomposition
 
         use ppm_module_data
+        USE ppm_module_substart
+        USE ppm_module_substop
+        USE ppm_module_write
         use ppm_module_topo_typedef
         use ppm_module_mktopo
+
+        start_subroutine("cuboid")
 
         !----------------
         ! create particles
@@ -118,7 +123,7 @@ real(mk)                         :: t0,t1,t2,t3
         !----------------
         ! make topology
         !----------------
-        decomp = ppm_param_decomp_cuboid
+        decomp = ppm_param_decomp_bisection
         !decomp = ppm_param_decomp_xpencil
         assig  = ppm_param_assign_internal
 
@@ -128,6 +133,10 @@ real(mk)                         :: t0,t1,t2,t3
         &               cutoff,cost,info)
 
         Assert_Equal(info,0)
+
+        stdout('ppm_topo(topoid)%t%nsubs','ppm_topo(topoid)%t%nsublist')
+
+        end_subroutine()
 
     end test
 

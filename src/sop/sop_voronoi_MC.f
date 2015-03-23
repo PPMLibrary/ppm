@@ -34,10 +34,10 @@
           REAL(MK),DIMENSION(:,:,:),POINTER     :: xsamples
           REAL(MK)                              :: x_s,y_s
 
-          TYPE(ppm_t_topo), POINTER             :: topo
-          TYPE(DTYPE(kdtree2)),POINTER            :: tree
-          TYPE(DTYPE(kdtree2_result)),ALLOCATABLE :: results(:)
-          INTEGER                               :: knn = 1
+          TYPE(ppm_t_topo), POINTER               :: topo
+          TYPE(DTYPE(kdtree)), POINTER            :: tree
+          TYPE(DTYPE(kdtree_result)), ALLOCATABLE :: results(:)
+          INTEGER                                 :: knn = 1
           !!-------------------------------------------------------------------------!
           ! Initialize
           !!-------------------------------------------------------------------------!
@@ -86,7 +86,7 @@
               ENDDO
           ENDDO
 
-          tree => kdtree2_create(Particles%xp(1:ppm_dim,1:Particles%Mpart),&
+          tree => kdtree_create(Particles%xp(1:ppm_dim,1:Particles%Mpart),&
               sort=.TRUE.,rearrange=.TRUE.)
           allocate(results(knn+1))
 
@@ -94,7 +94,7 @@
           DO ip=1,Particles%Npart
               vor(ip) = 0._MK
               DO j=1,nsamples
-                  call kdtree2_n_nearest(tp=tree,qv=xsamples(1:ppm_dim,ip,j),&
+                  call kdtree_n_nearest(tp=tree,qv=xsamples(1:ppm_dim,ip,j),&
                       nn=knn+1,results=results)
 
                   IF (results(1)%idx .EQ. ip) THEN
@@ -104,7 +104,7 @@
               vor(ip) = vor(ip)/REAL(nsamples,MK) ! * pi*D(ip)**2
           ENDDO
 
-          call kdtree2_destroy(tree)
+          call kdtree_destroy(tree)
           deallocate(results)
 
 

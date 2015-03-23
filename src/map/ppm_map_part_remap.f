@@ -44,7 +44,6 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_topo_check
-      USE ppm_module_check_id
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single

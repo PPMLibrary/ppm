@@ -17,7 +17,7 @@
         !-------------------------------------------------------------------------
         CLASS(pq)                                         :: this
 
-        TYPE(DTYPE(kdtree2_result)), DIMENSION(:), TARGET :: results_in
+        TYPE(DTYPE(kdtree_result)), DIMENSION(:), TARGET :: results_in
         !-------------------------------------------------------------------------
         !  Local variables
         !-------------------------------------------------------------------------
@@ -68,7 +68,7 @@
            parentdis = this%DTYPE(elems)(parent)%dis
            IF (dis_in.GT.parentdis) THEN
               ! move what was in i's parent into i.
-              this%DTYPE(elems)(i)=DTYPE(kdtree2_result)(parentdis,this%DTYPE(elems)(parent)%idx)
+              this%DTYPE(elems)(i)=DTYPE(kdtree_result)(parentdis,this%DTYPE(elems)(parent)%idx)
               i = parent
            ELSE
               EXIT
@@ -76,7 +76,7 @@
         ENDDO
 
         ! insert the element at the determined position
-        this%DTYPE(elems)(i) = DTYPE(kdtree2_result)(dis_in,idx)
+        this%DTYPE(elems)(i) = DTYPE(kdtree_result)(dis_in,idx)
 
         dis_out = this%DTYPE(elems)(1)%dis
         RETURN
@@ -100,7 +100,7 @@
         !-------------------------------------------------------------------------
         !  Local variables
         !-------------------------------------------------------------------------
-        TYPE(DTYPE(kdtree2_result)) :: temp
+        TYPE(DTYPE(kdtree_result)) :: temp
 
         REAL(MK) :: pri_i, pri_l, pri_r, pri_largest
 
@@ -227,11 +227,11 @@
         !-------------------------------------------------------------------------
         !  Arguments
         !-------------------------------------------------------------------------
-        CLASS(pq)                                  :: this
+        CLASS(pq)                                 :: this
 
-        TYPE(DTYPE(kdtree2_result)), INTENT(  OUT) :: e
+        TYPE(DTYPE(kdtree_result)), INTENT(  OUT) :: e
 
-        INTEGER,                     INTENT(  OUT) :: info
+        INTEGER,                    INTENT(  OUT) :: info
         !-------------------------------------------------------------------------
         !  Local variables
         !-------------------------------------------------------------------------
@@ -276,11 +276,11 @@
         !-------------------------------------------------------------------------
         !  Arguments
         !-------------------------------------------------------------------------
-        CLASS(pq)                                  :: this
+        CLASS(pq)                                 :: this
 
-        TYPE(DTYPE(kdtree2_result)), INTENT(  OUT) :: e
+        TYPE(DTYPE(kdtree_result)), INTENT(  OUT) :: e
 
-        INTEGER,                     INTENT(  OUT) :: info
+        INTEGER,                    INTENT(  OUT) :: info
         !-------------------------------------------------------------------------
         !  Local variables
         !-------------------------------------------------------------------------
@@ -363,11 +363,11 @@
               ENDIF
            ENDDO loop
 
-           this%DTYPE(elems)(parent) = DTYPE(kdtree2_result)(dis,idx)
+           this%DTYPE(elems)(parent) = DTYPE(kdtree_result)(dis,idx)
 
            pqrmax = this%DTYPE(elems)(1)%dis
         ELSE
-           this%DTYPE(elems)(1) = DTYPE(kdtree2_result)(dis,idx)
+           this%DTYPE(elems)(1) = DTYPE(kdtree_result)(dis,idx)
 
            pqrmax = dis
         ENDIF
@@ -378,7 +378,7 @@
         RETURN
       END FUNCTION DTYPE(pq_replace_max)
 
-      SUBROUTINE DTYPE(kdtree2_create)(this,input_data,info,dim,sort,rearrange)
+      SUBROUTINE DTYPE(kdtree_create)(this,input_data,info,dim,sort,rearrange)
         !
         ! create the actual tree structure, given an input array of data.
         !
@@ -389,14 +389,14 @@
         !                      of input_data, otherwise, dim is inferred
         !                      from SIZE(input_data,1).
         !
-        !                      if sort .eqv. .true. then output results
+        !                      if sort is .true. then output results
         !                      will be sorted by increasing distance.
-        !                      default=.false., as it is faster to not sort.
+        !                      default is .false., as it is faster to not sort.
         !
-        !                      if rearrange .eqv. .true. then an internal
+        !                      if rearrange is .true. then an internal
         !                      copy of the data, rearranged by terminal node,
         !                      will be made for cache friendliness.
-        !                      default=.true., as it speeds searches, but
+        !                      default is .true., as it speeds searches, but
         !                      building takes longer, and extra memory is used.
         !
         ! .. Function Return Cut_value ..
@@ -406,7 +406,7 @@
         !-------------------------------------------------------------------------
         !  Arguments
         !-------------------------------------------------------------------------
-        CLASS(DTYPE(kdtree2))                   :: this
+        CLASS(DTYPE(kdtree))                    :: this
 
         REAL(MK), DIMENSION(:,:), TARGET        :: input_data
 
@@ -423,7 +423,7 @@
 
         INTEGER :: i,j,ldu(2),iopt
 
-        start_subroutine("kdtree2_create")
+        start_subroutine("kdtree_create")
 
         this%the_data => input_data
         ! pointer assignment
@@ -448,7 +448,9 @@
            or_fail_alloc("rearranged_data allocation has failed.", &
            & exit_point=no,ppm_error=ppm_error_fatal)
 
-           FORALL (i=1:this%dimen,j=1:this%n) this%rearranged_data(i,j) = this%the_data(i,this%ind(j))
+           FORALL (i=1:this%dimen,j=1:this%n)
+              this%rearranged_data(i,j) = this%the_data(i,this%ind(j))
+           END FORALL
         ENDIF
 
         !-------------------------------------------------------------------------
@@ -456,9 +458,9 @@
         !-------------------------------------------------------------------------
         end_subroutine()
         RETURN
-      END SUBROUTINE DTYPE(kdtree2_create)
+      END SUBROUTINE DTYPE(kdtree_create)
 
-      SUBROUTINE DTYPE(kdtree2_destroy)(this,info)
+      SUBROUTINE DTYPE(kdtree_destroy)(this,info)
         !
         ! Deallocates all memory for the tree, except input data matrix
         !
@@ -467,7 +469,7 @@
         !-------------------------------------------------------------------------
         !  Arguments
         !-------------------------------------------------------------------------
-        CLASS(DTYPE(kdtree2))  :: this
+        CLASS(DTYPE(kdtree))   :: this
 
         INTEGER, INTENT(  OUT) :: info
 
@@ -477,7 +479,7 @@
 
         INTEGER :: i,iopt,ldu(2)
 
-        start_subroutine("kdtree2_destroy")
+        start_subroutine("kdtree_destroy")
 
         CALL this%destroy_node(this%root)
 
@@ -496,15 +498,15 @@
         !-------------------------------------------------------------------------
         end_subroutine()
         RETURN
-      END SUBROUTINE DTYPE(kdtree2_destroy)
+      END SUBROUTINE DTYPE(kdtree_destroy)
 
-      RECURSIVE SUBROUTINE DTYPE(kdtree2_destroy_node)(this,tn)
+      RECURSIVE SUBROUTINE DTYPE(kdtree_destroy_node)(this,tn)
         !
         IMPLICIT NONE
         !-------------------------------------------------------------------------
         !  Arguments
         !-------------------------------------------------------------------------
-        CLASS(DTYPE(kdtree2))           :: this
+        CLASS(DTYPE(kdtree))            :: this
 
         TYPE(DTYPE(tree_node)), POINTER :: tn
 
@@ -524,7 +526,7 @@
         !-------------------------------------------------------------------------
       9999 CONTINUE
         RETURN
-      END SUBROUTINE DTYPE(kdtree2_destroy_node)
+      END SUBROUTINE DTYPE(kdtree_destroy_node)
 
       SUBROUTINE DTYPE(build_tree)(this,info)
         !
@@ -534,7 +536,7 @@
         !-------------------------------------------------------------------------
         !  Arguments
         !-------------------------------------------------------------------------
-        CLASS(DTYPE(kdtree2))  :: this
+        CLASS(DTYPE(kdtree))   :: this
 
         INTEGER, INTENT(  OUT) :: info
         !-------------------------------------------------------------------------
@@ -549,7 +551,7 @@
         iopt=ppm_param_alloc_fit
         ldu=this%n
         CALL ppm_alloc(this%ind,ldu,iopt,info)
-        or_fail_alloc("kdtree2 ind allocation failed.",ppm_error=ppm_error_fatal)
+        or_fail_alloc("kdtree ind allocation failed.",ppm_error=ppm_error_fatal)
 
         FORALL (i=1:this%n) this%ind(i)=i
 
@@ -568,7 +570,7 @@
         !-------------------------------------------------------------------------
         !  Arguments
         !-------------------------------------------------------------------------
-        CLASS(DTYPE(kdtree2))                 :: this
+        CLASS(DTYPE(kdtree))                  :: this
         ! .. Structure Arguments ..
 
         INTEGER,                INTENT(IN   ) :: l
@@ -714,7 +716,7 @@
         !-------------------------------------------------------------------------
         !  Arguments
         !-------------------------------------------------------------------------
-        CLASS(DTYPE(kdtree2))                :: this
+        CLASS(DTYPE(kdtree))                 :: this
         ! .. Structure Arguments ..
         INTEGER,               INTENT(IN   ) :: c
         INTEGER,               INTENT(IN   ) :: l
@@ -788,7 +790,7 @@
         !-------------------------------------------------------------------------
         !  Arguments
         !-------------------------------------------------------------------------
-        CLASS(DTYPE(kdtree2))   :: this
+        CLASS(DTYPE(kdtree))    :: this
 
         INTEGER,  INTENT(IN   ) :: c
 
@@ -796,7 +798,6 @@
 
         INTEGER,  INTENT(IN   ) :: li
         INTEGER,  INTENT(IN   ) :: ui
-
         INTEGER                 :: res
 
         !-------------------------------------------------------------------------

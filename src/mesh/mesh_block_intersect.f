@@ -13,7 +13,6 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data_mesh
       USE ppm_module_topo_typedef
-      USE ppm_module_check_id
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes

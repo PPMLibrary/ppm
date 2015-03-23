@@ -50,7 +50,6 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data_mesh
       USE ppm_module_topo_typedef
-      USE ppm_module_check_id
       USE ppm_module_util_invert_list
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION | __KIND == __SINGLE_PRECISION_COMPLEX
@@ -143,8 +142,8 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug.GT.0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       ! skip if buffer empty

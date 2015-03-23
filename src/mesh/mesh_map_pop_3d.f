@@ -50,7 +50,6 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data_mesh
       USE ppm_module_topo_typedef
-      USE ppm_module_check_id
       USE ppm_module_util_invert_list
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION | __KIND == __SINGLE_PRECISION_COMPLEX

@@ -105,7 +105,6 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
-      USE ppm_module_check_id
       USE ppm_module_util_commopt
       USE ppm_module_topo_typedef
       IMPLICIT NONE

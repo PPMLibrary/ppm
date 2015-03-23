@@ -52,7 +52,6 @@
       USE ppm_module_data_rmsh
       USE ppm_module_write
       USE ppm_module_util_time
-      USE ppm_module_check_id
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION

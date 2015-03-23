@@ -52,7 +52,6 @@
       USE ppm_module_alloc
       USE ppm_module_write
       USE ppm_module_mpi
-      USE ppm_module_check_id
       USE ppm_module_topo_cost
       USE ppm_module_data_loadbal
       IMPLICIT NONE

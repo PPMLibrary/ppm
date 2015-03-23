@@ -200,4 +200,21 @@
       PUBLIC :: ppm_topo
       PUBLIC :: ppm_next_avail_topo
 
+      !----------------------------------------------------------------------
+      !  Define interface to the topoid check routine
+      !----------------------------------------------------------------------
+      INTERFACE ppm_check_topoid
+      !!! checks topology ID
+         MODULE PROCEDURE ppm_check_topoid
+      END INTERFACE
+
+      PUBLIC :: ppm_check_topoid
+
+      !----------------------------------------------------------------------
+      !  include the source
+      !----------------------------------------------------------------------
+      CONTAINS
+
+#include "topo/ppm_check_topoid.f"
+
       END MODULE ppm_module_topo_typedef

@@ -50,6 +50,10 @@
          &   ppm_io_write_binary,ppm_io_delete,ppm_io_set_unit,ppm_io_unused_unit
          USE ppm_module_neighlist, ONLY : ppm_clist_destroy,ppm_neighlist_MkNeighIdx, &
          &   ppm_neighlist_clist,ppm_neighlist_vlist,ppm_t_clist
+         USE ppm_module_kdtree, ONLY : kdtree_s,kdtree_d,kdtree_result_s,kdtree_result_d
+         USE ppm_module_inl_k_vlist, ONLY : kdtree_n_nearest,kdtree_n_nearest_around_point, &
+         &   kdtree_r_nearest,kdtree_r_nearest_around_point,kdtree_r_count, &
+         &   kdtree_r_count_around_point
          USE ppm_module_tree, ONLY : ppm_tree
          USE ppm_module_mesh
          USE ppm_module_io_vtk, ONLY : ppm_vtk_particles,ppm_vtk_mesh_2d, &

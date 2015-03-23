@@ -76,7 +76,6 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_write
-      USE ppm_module_check_id
       USE ppm_module_util_commopt
       IMPLICIT NONE
 

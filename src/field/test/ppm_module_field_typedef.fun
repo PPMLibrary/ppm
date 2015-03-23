@@ -8,9 +8,8 @@ use ppm_module_finalize
 use ppm_module_interfaces
 
 #ifdef __MPI
-    INCLUDE "mpif.h"
+  include "mpif.h"
 #endif
-
     integer, parameter              :: debug = 0
     integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 #ifdef __MPI

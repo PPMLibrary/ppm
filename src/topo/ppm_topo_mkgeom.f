@@ -49,18 +49,6 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_error
-      USE ppm_module_topo_cost
-      USE ppm_module_topo_store
-      USE ppm_module_define_subs_bc
-      USE ppm_module_topo_subs2proc
-      USE ppm_module_topo_metis_s2p
-      USE ppm_module_find_neigh
-      USE ppm_module_tree
-      USE ppm_module_alloc
       USE ppm_module_topo_box2subs
       IMPLICIT NONE
 

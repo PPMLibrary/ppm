@@ -393,9 +393,9 @@
         !-------------------------------------------------------------------------
         TYPE(ppm_t_topo), POINTER :: topo
 
-        TYPE(DTYPE(kdtree2)), POINTER :: tree
+        TYPE(DTYPE(kdtree)), POINTER :: tree
 
-        TYPE(DTYPE(kdtree2_result)), DIMENSION(:), ALLOCATABLE, TARGET :: results
+        TYPE(DTYPE(kdtree_result)), DIMENSION(:), ALLOCATABLE, TARGET :: results
 
         CLASS(ppm_t_operator_discr_),   POINTER :: op
         CLASS(DTYPE(ppm_t_particles)_), POINTER :: Part_src
@@ -538,9 +538,9 @@
               or_fail_alloc("Nlist%vlist")
 
               DO ip=1,this%Npart
-                 CALL kdtree2_n_nearest(tree,this%xp(1:ppm_dim,ip),&
+                 CALL kdtree_n_nearest(tree,this%xp(1:ppm_dim,ip),&
                  &    knn+1,results,info)
-                 or_fail("kdtree2_n_nearest")
+                 or_fail("kdtree_n_nearest")
 
                  ! If the tree is not sorted you need to remove the
                  ! particle ip from the list of neighbors

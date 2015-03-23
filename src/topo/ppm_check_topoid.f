@@ -43,18 +43,17 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_write
-      USE ppm_module_topo_typedef
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER , INTENT(IN   ) :: topoid
+      INTEGER, INTENT(IN   ) :: topoid
       !!! Topology ID to be checked
-      LOGICAL , INTENT(  OUT) :: valid
+      LOGICAL, INTENT(  OUT) :: valid
       !!! Returns `TRUE` if the given meshid is valid and defined,
       !!! `FALSE` otherwise.
-      INTEGER , INTENT(  OUT) :: info
+      INTEGER, INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
 
       !-------------------------------------------------------------------------
@@ -65,18 +64,16 @@
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_check_topoid'
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
-
-      valid = .FALSE.
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL check
-         IF (info .NE. 0) GOTO 9999
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -85,6 +82,8 @@
       IF ((topoid.GE.1).AND.(topoid.LE.SIZE(ppm_topo)).AND. &
       &  (ppm_topo(topoid)%t%isdefined)) THEN
          valid = .TRUE.
+      ELSE
+         valid = .FALSE.
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -100,9 +99,11 @@
              fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
           ENDIF
           IF ((topoid.GT.SIZE(ppm_topo)).OR.(topoid.LT.1)) THEN
+             valid = .FALSE.
              fail('topoid indexing outside ppm_topo!',exit_point=8888)
           ENDIF
           IF (.NOT. ASSOCIATED(ppm_topo(topoid)%t)) THEN
+             valid = .FALSE.
              fail('ppm_topo(topoid) pointer not associated!',exit_point=8888)
           ENDIF
       8888 CONTINUE

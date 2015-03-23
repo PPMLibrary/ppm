@@ -61,7 +61,6 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_mpi
-      USE ppm_module_check_id
       IMPLICIT NONE
 
       INTEGER, PARAMETER :: MK = ppm_kind_double

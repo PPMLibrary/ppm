@@ -426,19 +426,21 @@
 #ifdef __MPI
           CALL MPI_Comm_Rank(MPI_COMM_WORLD, rank, info)
 #endif
-          IF (rank .EQ. 0) THEN
+          IF (rank.EQ.0) THEN
              !-------------------------------------------------------------------
              !  Copy default values into variables
              !-------------------------------------------------------------------
              CALL apply_defaults(info)
-             or_fail('Applying defaults failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
+             or_fail('Applying defaults failed!',ppm_err_argument, &
+             & exit_point=100,ppm_error=ppm_error_fatal)
 
              !-------------------------------------------------------------------
              !  Read in the command line
              !-------------------------------------------------------------------
              IF (.NOT. in_test) THEN
                 CALL read_cmd_args(info)
-                or_fail_alloc('Reading command line args failed!',exit_point=100,ppm_error=ppm_error_fatal)
+                or_fail_alloc('Reading command line args failed!', &
+                & exit_point=100,ppm_error=ppm_error_fatal)
              END IF
              !-------------------------------------------------------------------
              !  Parse help flag
@@ -475,7 +477,7 @@
                 CALL find_arg(1, ok, ctrl_file_name)
                 CALL parse_ctrl_file(info)
                 or_fail('Parsing control file failed!', &
-             & ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
+                & ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
              END IF
 #ifdef __F2003
              !-------------------------------------------------------------------

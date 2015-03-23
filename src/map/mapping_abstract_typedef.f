@@ -100,8 +100,7 @@
           INTEGER :: oldNpart
           INTEGER :: newNpart
 
-          CONTAINS
-
+      CONTAINS
           PROCEDURE(DTYPE(map_create)_),DEFERRED  :: create
           PROCEDURE(DTYPE(map_destroy)_),DEFERRED :: destroy
 

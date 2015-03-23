@@ -286,12 +286,12 @@
             ENDDO
          ENDDO
          IF (PRESENT(level)) THEN
-             IF (.NOT.PRESENT(blevel)) THEN
-                fail('blevel must be present if level is.',exit_point=8888)
-             ENDIF
-             IF (.NOT.PRESENT(child)) THEN
-                fail('child must be present if level is.',exit_point=8888)
-             ENDIF
+            IF (.NOT.PRESENT(blevel)) THEN
+               fail('blevel must be present if level is.',exit_point=8888)
+            ENDIF
+            IF (.NOT.PRESENT(child)) THEN
+               fail('child must be present if level is.',exit_point=8888)
+            ENDIF
          ENDIF
       8888 CONTINUE
       END SUBROUTINE check

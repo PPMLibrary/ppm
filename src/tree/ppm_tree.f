@@ -125,37 +125,17 @@
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! The data points
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: min_dom
-      !!! Minimum coordinate of the domain
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: max_dom
-      !!! Maximum coordinate of the domain
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: minboxsize
-      !!! Miminum box size in all directions
-      REAL(MK), DIMENSION(3,2), INTENT(IN   ) :: weights
-      !!! Weights for the three cost contributions (particles,
-      !!! mesh points, volume) (1st index) for box cost (weights(:,1))
-      !!! and the determination of the cut planes (weights(:,2)).
-      REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN) :: pcost
-      !!! Argument of length Np, specifying the
-      !!! cost of each data point.
-      LOGICAL , DIMENSION(:  ), INTENT(IN   ) :: fixed
-      !!! Flag which tells for each spatial dimension (1..ppm_dim) if it is
-      !!! fixed (i.e. no cuts perpendicular to it are allowed). fixed=(F,F,T)
-      !!! will e.g. enforce z-pencil decompositions.
-      LOGICAL                 , INTENT(IN   ) :: pruneboxes
-      !!! `TRUE` to prune the tree to only contain boxes of non-zero cost.
-      !!! `FALSE` to get a tree with all boxes (also the empty ones).
-      REAL(MK), DIMENSION(:,:), POINTER       :: min_box
-      !!! Min. extents of the boxes
-      REAL(MK), DIMENSION(:,:), POINTER       :: max_box
-      !!! Max. extents of the boxes
-      INTEGER                 , INTENT(IN   ) :: Np
+      INTEGER,                  INTENT(IN   ) :: Np
       !!! Number of data points.
       !!! If <= 0, decomposition is based on geometry and mesh only.
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
       !!! Number of grid points in the global mesh. (0,0,0) if there is
       !!! no mesh. If a mesh is present, the box boundaries will be aligned
       !!! with mesh planes.
+      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: min_dom
+      !!! Minimum coordinate of the domain
+      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: max_dom
+      !!! Maximum coordinate of the domain
       INTEGER                 , INTENT(IN   ) :: treetype
       !!! Type of multisection tree. One of:
       !!!
@@ -167,6 +147,11 @@
       INTEGER                 , INTENT(IN   ) :: minboxes
       !!! Minimum number of childless boxes (leaves) of non-zero cost to be
       !!! created. Set this to -1 if there is no minimum requirement.
+      LOGICAL                 , INTENT(IN   ) :: pruneboxes
+      !!! `TRUE` to prune the tree to only contain boxes of non-zero cost.
+      !!! `FALSE` to get a tree with all boxes (also the empty ones).
+      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: minboxsize
+      !!! Miminum box size in all directions
       REAL(MK)                , INTENT(IN   ) :: maxvariance
       !!! Maximum variance of cost allowed between boxes. The tree stops as
       !!! soon as the variance of costs of all boxes is below this max.
@@ -175,13 +160,27 @@
       !!! Maximum cost per box. Subdivision will stop
       !!! as soon as all boxes have costs below this value. Set this to -1
       !!! to not impose any limit.
+      LOGICAL , DIMENSION(:  ), INTENT(IN   ) :: fixed
+      !!! Flag which tells for each spatial dimension (1..ppm_dim) if it is
+      !!! fixed (i.e. no cuts perpendicular to it are allowed). fixed=(F,F,T)
+      !!! will e.g. enforce z-pencil decompositions.
+      REAL(MK), DIMENSION(3,2), INTENT(IN   ) :: weights
+      !!! Weights for the three cost contributions (particles,
+      !!! mesh points, volume) (1st index) for box cost (weights(:,1))
+      !!! and the determination of the cut planes (weights(:,2)).
+      REAL(MK), DIMENSION(:,:), POINTER       :: min_box
+      !!! Min. extents of the boxes
+      REAL(MK), DIMENSION(:,:), POINTER       :: max_box
+      !!! Max. extents of the boxes
       INTEGER                 , INTENT(  OUT) :: nbox
       !!! The total number of boxes
       INTEGER , DIMENSION(:  ), POINTER       :: nchld
       !!! Number of children of each box.
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 upon success
-
+      REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN   ) :: pcost
+      !!! Argument of length Np, specifying the
+      !!! cost of each data point.
 #if   __TYPE == __TREE
       INTEGER                 , INTENT(IN   ) :: maxlevels
       !!! Maximum number of levels to create. Tree stops as soon as
@@ -245,7 +244,6 @@
       INTEGER                           :: nboxlistalloc
       INTEGER                           :: info2,mxlev,bpc,istart,iend
 
-      CHARACTER(LEN=ppm_char) :: mesg
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_tree'
 
       LOGICAL :: up,nofixed,simpleweights
@@ -259,11 +257,13 @@
       !  Initialise
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
+
 #if   __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif __KIND == __DOUBLE_PRECISION
       lmyeps = ppm_myepsd
 #endif
+
       lcontinue = .TRUE.
       itype = treetype
 #if   __TYPE == __TREE
@@ -366,25 +366,22 @@
           nbpd = 2
           ncut = 1
           IF (ppm_debug .GT. 0) THEN
-             CALL ppm_write(ppm_rank,caller,'Creating binary tree.',info)
+             stdout("Creating binary tree.")
           ENDIF
       CASE (ppm_param_tree_quad)
           nbpd = 4
           ncut = 2
           IF (ppm_debug .GT. 0) THEN
-             CALL ppm_write(ppm_rank,caller,'Creating quad-tree.',info)
+             stdout("Creating quad-tree.")
           ENDIF
       CASE (ppm_param_tree_oct)
           nbpd = 8
           ncut = 3
           IF (ppm_debug .GT. 0) THEN
-             CALL ppm_write(ppm_rank,caller,'Creating oct-tree.',info)
+             stdout("Creating oct-tree.")
           ENDIF
       CASE DEFAULT
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_argument,caller,     &
-          &   'unknown tree type specified !',__LINE__,info)
-          GOTO 9999
+          fail('unknown tree type specified !')
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -406,8 +403,7 @@
           IF (maxboxcost .GT. 0.0_MK) THEN
               ! the number of levels needed under uniform particle
               ! distribution
-              nlevelalloc = CEILING(LOG(REAL(Np,MK)/maxboxcost)/   &
-              &             LOG(REAL(nbpd,MK)))
+              nlevelalloc = CEILING(LOG(REAL(Np,MK)/maxboxcost)/LOG(REAL(nbpd,MK)))
 #if __TYPE ==  __TREE
           ELSEIF (maxlevels .GT. 0) THEN
               ! assume we hit maxlevels
@@ -432,12 +428,10 @@
       IF (nboxalloc .LT. 1) nboxalloc = 1
       IF (ppm_debug .GT. 0) THEN
 #if   __TYPE == __TREE
-          WRITE(mesg,'(A,I3,A,I6,A)') 'Allocating ',nlevelalloc,   &
-     &        ' levels and ',nboxalloc,' boxes.'
+          stdout_f('(A,I3,A,I6,A)',"Allocating ",nlevelalloc," levels and ",nboxalloc," boxes.")
 #else
-          WRITE(mesg,'(A,I3,A)') 'Allocating ',nboxalloc,' boxes.'
+          stdout_f('(A,I3,A)',"Allocating ",nboxalloc," boxes.")
 #endif
-          CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
 #if   __TYPE == __TREE
       CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,nlevelalloc,min_box,max_box, &
@@ -584,8 +578,7 @@
       &    nlevel,maxvariance,maxboxcost,mxlev,lcontinue,info)
       IF (info .NE. ppm_param_success) GOTO 9999
       IF ((.NOT.lcontinue) .AND. (ppm_debug .GT. 0)) THEN
-         CALL ppm_write(ppm_rank,caller,     &
-         &    'Nothing to be done. Exiting.',info)
+         stdout("Nothing to be done. Exiting.")
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -597,8 +590,7 @@
       IF (ndiv(1) .LT. ncut) THEN
          lcontinue = .FALSE.
          IF (ppm_debug .GT. 0) THEN
-            CALL ppm_write(ppm_rank,caller,     &
-            &    'Initial domain is not divisible. Done.',info)
+            stdout("Initial domain is not divisible. Done.")
          ENDIF
       ENDIF
 
@@ -801,9 +793,8 @@
                       &  (nbpd**(nlevel-1))
                       IF(nlevel.GT.nlevelalloc) nlevelalloc=nlevelalloc+1
                       IF (ppm_debug .GT. 0) THEN
-                          WRITE(mesg,'(A,I3,A,I6,A)') 'Reallocating to ',   &
-                          & nlevelalloc,' levels and ',nboxalloc,' boxes.'
-                          CALL ppm_write(ppm_rank,caller,mesg,info)
+                         stdout_f('(A,I3,A,I6,A)',"Reallocating to ",nlevelalloc, &
+                         & " levels and ",nboxalloc," boxes.")
                       ENDIF
                       CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,nlevelalloc,  &
                       &    min_box,max_box,boxcost,parent,nchld,child,&
@@ -813,9 +804,7 @@
                   IF (nbox .GT. nboxalloc) THEN
                       nboxalloc = nboxalloc + (nbpd**(nlevel-1))
                       IF (ppm_debug .GT. 0) THEN
-                          WRITE(mesg,'(A,I3,A)') 'Reallocating to ',   &
-                          & nboxalloc,' boxes.'
-                          CALL ppm_write(ppm_rank,caller,mesg,info)
+                          stdout_f('(A,I3,A)',"Reallocating to ",nboxalloc," boxes.")
                       ENDIF
                       CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,min_box,max_box,&
                       &    boxcost,nchld,blevel,info)
@@ -938,7 +927,7 @@
           !---------------------------------------------------------------------
           !  Determine if tree is finished
           !---------------------------------------------------------------------
- 100      CALL ppm_tree_done(minboxes,nsubs,boxcost,boxlist,nboxlist,   &
+      100 CALL ppm_tree_done(minboxes,nsubs,boxcost,boxlist,nboxlist,   &
           &    nlevel,maxvariance,maxboxcost,mxlev,lcontinue,info)
           IF (info .NE. ppm_param_success) GOTO 9999
 
@@ -946,13 +935,9 @@
           !  Debug output
           !---------------------------------------------------------------------
           IF (ppm_debug .GT. 1) THEN
-              WRITE(mesg,'(A,I8)') 'Completed iteration ',lctr
-              CALL ppm_write(ppm_rank,caller,mesg,info)
-              WRITE(mesg,'(A,I8)') 'Total number of boxes: ',nbox
-              CALL ppm_write(ppm_rank,caller,mesg,info)
-              WRITE(mesg,'(A,I8)') 'Number of further divisible boxes: ', &
-              & nboxlist
-              CALL ppm_write(ppm_rank,caller,mesg,info)
+             stdout_f('(A,I8)',"Completed iteration ",lctr)
+             stdout_f('(A,I8)',"Total number of boxes: ",nbox)
+             stdout_f('(A,I8)',"Number of further divisible boxes: ",nboxlist)
           ENDIF
       ENDDO lcontinue_do ! while lcontinue
 
@@ -972,63 +957,46 @@
       !-------------------------------------------------------------------------
       !  Free memory
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
+
       iopt = ppm_param_dealloc
       CALL ppm_alloc(boxlist,ldc,iopt,info2)
       IF (info2 .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'list of divisible boxes BOXLIST',__LINE__,info)
+         fail('list of divisible boxes BOXLIST',ppm_err_dealloc,exit_point=no)
       ENDIF
       CALL ppm_alloc(ndiv,ldc,iopt,info2)
       IF (info2 .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'number of divisible dimensions NDIV',__LINE__,info)
+         fail('number of divisible dimensions NDIV',ppm_err_dealloc,exit_point=no)
       ENDIF
       CALL ppm_alloc(icut,ldc,iopt,info2)
       IF (info2 .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'cut directions ICUT',__LINE__,info)
+         fail('cut directions ICUT',ppm_err_dealloc,exit_point=no)
       ENDIF
       CALL ppm_alloc(cpos,ldc,iopt,info2)
       IF (info2 .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'cut positions CPOS',__LINE__,info)
+         fail('cut positions CPOS',ppm_err_dealloc,exit_point=no)
       ENDIF
       CALL ppm_alloc(minc,ldc,iopt,info2)
       IF (info2 .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'minimum positions of newly cut boxes MINC',__LINE__,info)
+         fail('minimum positions of newly cut boxes MINC',ppm_err_dealloc,exit_point=no)
       ENDIF
       CALL ppm_alloc(maxc,ldc,iopt,info2)
       IF (info2 .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'maximum positions of newly cut boxes MAXC',__LINE__,info)
+         fail('maximum positions of newly cut boxes MAXC',ppm_err_dealloc,exit_point=no)
       ENDIF
       CALL ppm_alloc(costc,ldc,iopt,info2)
       IF (info2 .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'costs of new boxes COSTC',__LINE__,info)
+         fail('costs of new boxes COSTC',ppm_err_dealloc,exit_point=no)
       ENDIF
       IF (have_mesh) THEN
-          CALL ppm_alloc(Nm_box,ldc,iopt,info2)
-          IF (info2 .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,caller,     &
-     &            'number of mesh points per box NM_BOX',__LINE__,info)
-          ENDIF
-          CALL ppm_alloc(Nmc,ldc,iopt,info2)
-          IF (info2 .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,caller,     &
-     &            'number of mesh points of newly cut boxes NMC',__LINE__,info)
-          ENDIF
+         CALL ppm_alloc(Nm_box,ldc,iopt,info2)
+         IF (info2 .NE. 0) THEN
+            fail('number of mesh points per box NM_BOX',ppm_err_dealloc,exit_point=no)
+         ENDIF
+         CALL ppm_alloc(Nmc,ldc,iopt,info2)
+         IF (info2 .NE. 0) THEN
+            fail('number of mesh points of newly cut boxes NMC',ppm_err_dealloc,exit_point=no)
+         ENDIF
       ENDIF
 #if   __KIND == __SINGLE_PRECISION
       CALL ppm_alloc(pcst_s,ldc,iopt,info2)
@@ -1036,9 +1004,7 @@
       CALL ppm_alloc(pcst_d,ldc,iopt,info2)
 #endif
       IF (info2 .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'particle cost part PCOST',__LINE__,info)
+         fail('particle cost part PCOST',ppm_err_dealloc,exit_point=no)
       ENDIF
 #ifdef __MPI
 #if   __KIND == __SINGLE_PRECISION
@@ -1047,109 +1013,75 @@
       CALL ppm_alloc(pcsum_d,ldc,iopt,info2)
 #endif
       IF (info2 .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'particle cost sums PCSUM',__LINE__,info)
+         fail('particle cost sums PCSUM',ppm_err_dealloc,exit_point=no)
       ENDIF
 #endif
       IF (have_particles) THEN
-          CALL ppm_alloc(lpdx_cut,ldc,iopt,info2)
-          IF (info2 .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,caller,     &
-     &            'particle index pointers LPDX_CUT',__LINE__,info)
-          ENDIF
-          CALL ppm_alloc(lhbx_cut,ldc,iopt,info2)
-          IF (info2 .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,caller,     &
-     &            'pointers to first particle in box LHBX_CUT',__LINE__,info)
-          ENDIF
+         CALL ppm_alloc(lpdx_cut,ldc,iopt,info2)
+         IF (info2 .NE. 0) THEN
+            fail('particle index pointers LPDX_CUT',ppm_err_dealloc,exit_point=no)
+         ENDIF
+         CALL ppm_alloc(lhbx_cut,ldc,iopt,info2)
+         IF (info2 .NE. 0) THEN
+            fail('pointers to first particle in box LHBX_CUT',ppm_err_dealloc,exit_point=no)
+         ENDIF
       ENDIF
 #if   __TYPE == __DECOMP
       CALL ppm_alloc(boxcost,ldc,iopt,info2)
       IF (info2 .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'costs of all boxes BOXCOST',__LINE__,info)
+         fail('costs of all boxes BOXCOST',ppm_err_dealloc,exit_point=no)
       ENDIF
       CALL ppm_alloc(blevel,ldc,iopt,info2)
       IF (info2 .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'tree levels of boxes BLEVEL',__LINE__,info)
+         fail('tree levels of boxes BLEVEL',ppm_err_dealloc,exit_point=no)
       ENDIF
       IF (have_particles) THEN
-          CALL ppm_alloc(npbx,ldc,iopt,info2)
-          IF (info2 .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,caller,     &
-     &            'number of particles per box NPBX',__LINE__,info)
-          ENDIF
-          CALL ppm_alloc(cbox,ldc,iopt,info2)
-          IF (info2 .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,caller,     &
-     &            'temporary box pointers CBOX',__LINE__,info)
-          ENDIF
-          CALL ppm_alloc(tree_lhbx,ldc,iopt,info2)
-          IF (info2 .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,caller,     &
-     &            'list of divisible boxes BOXLIST',__LINE__,info)
-          ENDIF
-          CALL ppm_alloc(tree_lpdx,ldc,iopt,info2)
-          IF (info2 .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,caller,     &
-     &            'list of divisible boxes BOXLIST',__LINE__,info)
-          ENDIF
+         CALL ppm_alloc(npbx,ldc,iopt,info2)
+         IF (info2 .NE. 0) THEN
+            fail('number of particles per box NPBX',ppm_err_dealloc,exit_point=no)
+         ENDIF
+         CALL ppm_alloc(cbox,ldc,iopt,info2)
+         IF (info2 .NE. 0) THEN
+            fail('temporary box pointers CBOX',ppm_err_dealloc,exit_point=no)
+         ENDIF
+         CALL ppm_alloc(tree_lhbx,ldc,iopt,info2)
+         IF (info2 .NE. 0) THEN
+            fail('Ranked particle lists TREE_LHBX',ppm_err_dealloc,exit_point=no)
+         ENDIF
+         CALL ppm_alloc(tree_lpdx,ldc,iopt,info2)
+         IF (info2 .NE. 0) THEN
+            fail('Ranked particle lists TREE_LPDX',ppm_err_dealloc,exit_point=no)
+         ENDIF
       ENDIF
 #endif
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 8000 CALL substop(caller,t0,info)
+      8000 CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
-         IF (weights(1,1).EQ.0.0_MK.AND.weights(2,1).EQ.0.0_MK.AND.   &
-     &      weights(3,1).EQ.0.0_MK) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,    &
-     &          'At least one weights(:,1) must be non-zero!',__LINE__,info)
-            GOTO 8888
+         IF (weights(1,1).EQ.0.0_MK.AND.weights(2,1).EQ.0.0_MK.AND.weights(3,1).EQ.0.0_MK) THEN
+            fail('At least one weights(:,1) must be non-zero!',exit_point=8888)
          ENDIF
-         IF (weights(1,2).EQ.0.0_MK.AND.weights(2,2).EQ.0.0_MK.AND.   &
-     &      weights(3,2).EQ.0.0_MK) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,    &
-     &          'At least one weights(:,2) must be non-zero!',__LINE__,info)
-            GOTO 8888
+         IF (weights(1,2).EQ.0.0_MK.AND.weights(2,2).EQ.0.0_MK.AND.weights(3,2).EQ.0.0_MK) THEN
+            fail('At least one weights(:,2) must be non-zero!',exit_point=8888)
          ENDIF
          IF (treetype.EQ.ppm_param_tree_oct.AND.ppm_dim.EQ.2) THEN
-            info = ppm_error_warning
-            CALL ppm_error(ppm_err_argument,caller,    &
-     &          'Octtree is not possible in 2d. Reverting to quadtree.',  &
-     &          __LINE__,info)
+            fail('Octtree is not possible in 2d. Reverting to quadtree.', &
+            & exit_point=8888,ppm_error=ppm_error_warning)
             itype = ppm_param_tree_quad
          ENDIF
          DO i=1,ppm_dim
             IF (minboxsize(i) .LT. 0.0_MK) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller,     &
-     &             'the minimum box size must be > 0 !',__LINE__,info)
-               GOTO 8888
+               fail('the minimum box size must be > 0 !',exit_point=8888)
             ENDIF
             IF (min_dom(i) .GT. max_dom(i)) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller,   &
-     &             'min_dom must be <= max_dom !',__LINE__,info)
-               GOTO 8888
+               fail('min_dom must be <= max_dom !',exit_point=8888)
             ENDIF
          ENDDO
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __TYPE == __DECOMP
 #if   __KIND == __SINGLE_PRECISION

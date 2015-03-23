@@ -52,7 +52,6 @@
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
-      USE ppm_module_check_id
       USE ppm_module_topo_typedef
       IMPLICIT NONE
 
@@ -70,6 +69,8 @@
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double) :: t0
 
+      CHARACTER(LEN=ppm_char) ::  caller='ppm_topo_get'
+
       LOGICAL :: valid
       !-------------------------------------------------------------------------
       !  Externals
@@ -78,7 +79,7 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_topo_get',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -94,7 +95,7 @@
       !  Return
       !-------------------------------------------------------------------------
       9999 CONTINUE
-      CALL substop('ppm_topo_get',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check

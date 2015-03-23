@@ -120,6 +120,9 @@ minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
 
       !----------------------------------------------------------------------
       ! DATA TYPE FOR COLLECTIVE STORAGE of meshs
+      !This is exactly the same as ppm_c_equi_mesh, except minor change
+      !for push and remove, and in order to have the full functionality
+      !we did not overwrite to the original procedures
       !----------------------------------------------------------------------
       TYPE,EXTENDS(ppm_c_equi_mesh) :: ppm_vc_equi_mesh
       CONTAINS
@@ -131,6 +134,16 @@ minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
       ! DATA STORAGE for the meshes
       !----------------------------------------------------------------------
       TYPE(ppm_vc_equi_mesh) :: ppm_mesh
+
+      !----------------------------------------------------------------------
+      !  Define interface to the meshid check routine
+      !----------------------------------------------------------------------
+      INTERFACE ppm_check_meshid
+      !!! checks mesh ID
+         MODULE PROCEDURE ppm_check_meshid
+      END INTERFACE
+
+      PUBLIC :: ppm_check_meshid
 
       !------------------------------------------------
       ! TODO: stuff that should be moved somewhere else:
@@ -630,7 +643,6 @@ minclude ppm_get_field_template(4,l)
           !  Modules
           !-------------------------------------------------------------------------
           USE ppm_module_topo_typedef
-          USE ppm_module_check_id
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Includes
@@ -954,7 +966,6 @@ minclude ppm_get_field_template(4,l)
           !  Modules
           !-------------------------------------------------------------------------
           USE ppm_module_topo_typedef
-          USE ppm_module_check_id
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Includes
@@ -1130,33 +1141,33 @@ minclude ppm_get_field_template(4,l)
               CASE (1)
               foreach n in equi_mesh(this) with sca_fields(Field) prec(ppm_kind_double)
                   for all
-                      Field_n = REAL(0,ppm_kind_double)
+                      Field_n = 0.0_ppm_kind_double
               end foreach
               CASE (2)
               foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
                   for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
+                      Field_n(1) = 0.0_ppm_kind_double
+                      Field_n(2) = 0.0_ppm_kind_double
               end foreach
               CASE (3)
               foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
                   for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
-                      Field_n(3) = REAL(0,ppm_kind_double)
+                      Field_n(1) = 0.0_ppm_kind_double
+                      Field_n(2) = 0.0_ppm_kind_double
+                      Field_n(3) = 0.0_ppm_kind_double
               end foreach
               CASE (4)
               foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
                   for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
-                      Field_n(3) = REAL(0,ppm_kind_double)
-                      Field_n(4) = REAL(0,ppm_kind_double)
+                      Field_n(1) = 0.0_ppm_kind_double
+                      Field_n(2) = 0.0_ppm_kind_double
+                      Field_n(3) = 0.0_ppm_kind_double
+                      Field_n(4) = 0.0_ppm_kind_double
               end foreach
               CASE DEFAULT
               foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
                   for all
-                      Field_n(1:lda) = REAL(0,ppm_kind_double)
+                      Field_n(1:lda) = 0.0_ppm_kind_double
               end foreach
               END SELECT
 
@@ -1165,33 +1176,33 @@ minclude ppm_get_field_template(4,l)
               CASE (1)
               foreach n in equi_mesh(this) with sca_fields(Field) indices(i,j,k) prec(ppm_kind_double)
                   for all
-                      Field_n = REAL(0,ppm_kind_double)
+                      Field_n = 0.0_ppm_kind_double
               end foreach
               CASE (2)
               foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
                   for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
+                      Field_n(1) = 0.0_ppm_kind_double
+                      Field_n(2) = 0.0_ppm_kind_double
               end foreach
               CASE (3)
               foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
                   for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
-                      Field_n(3) = REAL(0,ppm_kind_double)
+                      Field_n(1) = 0.0_ppm_kind_double
+                      Field_n(2) = 0.0_ppm_kind_double
+                      Field_n(3) = 0.0_ppm_kind_double
               end foreach
               CASE (4)
               foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
                   for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
-                      Field_n(3) = REAL(0,ppm_kind_double)
-                      Field_n(4) = REAL(0,ppm_kind_double)
+                      Field_n(1) = 0.0_ppm_kind_double
+                      Field_n(2) = 0.0_ppm_kind_double
+                      Field_n(3) = 0.0_ppm_kind_double
+                      Field_n(4) = 0.0_ppm_kind_double
               end foreach
               CASE DEFAULT
               foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
                   for all
-                      Field_n(1:lda) = REAL(0,ppm_kind_double)
+                      Field_n(1:lda) = 0.0_ppm_kind_double
               end foreach
               END SELECT
           END SELECT
@@ -2112,6 +2123,8 @@ minclude ppm_get_field_template(4,l)
 #undef __VFIELD
 
 #include "mesh/mesh_interp_to_part.f"
+#include "mesh/ppm_check_meshid.f"
+
       !PUSH
       SUBROUTINE ppm_vc_equi_mesh_push(this,element,info,id)
           !!! add an element into the collection

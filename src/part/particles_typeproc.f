@@ -1593,9 +1593,9 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
           TYPE(ppm_t_topo), POINTER :: topo
 
-          TYPE(DTYPE(kdtree2)), POINTER :: tree
+          TYPE(DTYPE(kdtree)), POINTER :: tree
 
-          TYPE(DTYPE(kdtree2_result)), DIMENSION(:), ALLOCATABLE, TARGET :: results
+          TYPE(DTYPE(kdtree_result)), DIMENSION(:), ALLOCATABLE, TARGET :: results
 
           REAL(MK)                      :: lskin
           REAL(MK),DIMENSION(2*ppm_dim) :: ghostlayer
@@ -1734,29 +1734,21 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
                 or_fail_alloc("results")
 
                 ldc(1) = knn
-                ldc(2) = this%Npart
+                ldc(2) = np_target
                 CALL ppm_alloc(Nlist%vlist,ldc,ppm_param_alloc_grow,info)
                 or_fail_alloc("Nlist%vlist")
 
-                DO ip=1,this%Npart
-                   CALL kdtree2_n_nearest(tree,this%xp(1:ppm_dim,ip),&
+                DO ip=1,np_target
+                   CALL kdtree_n_nearest(tree,this%xp(1:ppm_dim,ip),&
                    &    knn+1,results,info)
-                   or_fail("kdtree2_n_nearest")
+                   or_fail("kdtree_n_nearest")
 
-                   ! If the tree is not sorted you need to remove the
+                   ! If the tree is not sorted we need to remove the
                    ! particle ip from the list of neighbors
                    Nlist%vlist(1:knn,ip)=results(2:knn+1)%idx
-!                  !remove ip from the list
-!                  ineigh=0
-!                  DO i=1,knn+1
-!                     IF (results(i)%idx.NE.ip) THEN
-!                        ineigh=ineigh+1
-!                        Nlist%vlist(ineigh,ip)=results(i)%idx
-!                     ENDIF
-!                  ENDDO
                 ENDDO
 
-                ldc(1) = this%Npart
+                ldc(1) = np_target
                 CALL ppm_alloc(Nlist%nvlist,ldc,ppm_param_alloc_grow,info)
                 or_fail_alloc("Nlist%nvlist")
 
@@ -1765,12 +1757,9 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
                 CALL tree%destroy(info)
                 or_fail("tree%destroy")
 
-                DEALLOCATE(tree,STAT=info)
-                or_fail_dealloc("tree")
+                DEALLOCATE(tree,results,STAT=info)
+                or_fail_dealloc("tree & results")
                 NULLIFY(tree)
-
-                DEALLOCATE(results,STAT=info)
-                or_fail_dealloc("results")
 
                 CALL ppm_time(t2,info)
 

@@ -71,7 +71,6 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
-      USE ppm_module_check_id
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION

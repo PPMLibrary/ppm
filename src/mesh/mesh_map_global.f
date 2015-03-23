@@ -399,7 +399,6 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-        USE ppm_module_check_id
         IMPLICIT NONE
         CALL ppm_check_topoid(this%topoid,valid,info)
         IF (.NOT. valid) THEN

@@ -28,6 +28,19 @@
       !  Pfotenhauerstr. 108, 01307 Dresden, Germany
       !-------------------------------------------------------------------------
 
+      !----------------------------------------------------------------------
+      ! K-D tree routines in Fortran 90 by:
+      ! Matthew B. Kennel, Institute For Nonlinear Science,
+      ! reference: http://arxiv.org/abs/physics/0408067
+      ! Licensed under the Academic Free License version 1.1.
+      !
+      ! It has been adapted and amended for PPM library by Yaser Afshar.
+      !
+      ![NOTE]
+      ! In this adaptation the maximum query vector size has been set to three
+      ! in case of future development and higher dimensionality this routine
+      ! needs to be modified
+      !----------------------------------------------------------------------
       SUBROUTINE DTYPE(process_terminal_node)(node)
       ! Look for actual near neighbors in 'node', and update
       ! the search results on the sr data structure.
@@ -258,7 +271,7 @@
             ! there isn't enough room.
             sr%overflow = .TRUE.
          ELSE
-            sr%results(nfound)=DTYPE(kdtree2_result)(sd,indexofi)
+            sr%results(nfound)=DTYPE(kdtree_result)(sd,indexofi)
          ENDIF
       ENDDO mainloop
       !
@@ -440,7 +453,7 @@
 
                END SELECT !(sr%dimen)
                !
-               ! if we are still here then we need to search mroe.
+               ! if we are still here then we need to search more.
                !
                CALL DTYPE(search)(nfarther)
 
@@ -449,7 +462,7 @@
       ENDIF !.NOT.(ASSOCIATED(node%left).AND.ASSOCIATED(node%right))
       END SUBROUTINE DTYPE(search)
 
-      SUBROUTINE DTYPE(kdtree2_n_nearest)(tp,qv,nn,results,info)
+      SUBROUTINE DTYPE(kdtree_n_nearest)(tp,qv,nn,results,info)
       ! Find the 'nn' vectors in the tree nearest to 'qv' in euclidean norm
       ! returning their indexes and distances in 'indexes' and 'distances'
       ! arrays already allocated passed to this subroutine.
@@ -462,15 +475,15 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(DTYPE(kdtree2)),                      POINTER       :: tp
+      TYPE(DTYPE(kdtree)),                      POINTER       :: tp
 
-      REAL(MK),                    DIMENSION(:), INTENT(IN   ) :: qv
+      REAL(MK),                   DIMENSION(:), INTENT(IN   ) :: qv
 
-      INTEGER,                                   INTENT(IN   ) :: nn
+      INTEGER,                                  INTENT(IN   ) :: nn
 
-      TYPE(DTYPE(kdtree2_result)), DIMENSION(:), TARGET        :: results
+      TYPE(DTYPE(kdtree_result)), DIMENSION(:), TARGET        :: results
 
-      INTEGER,                                   INTENT(  OUT) :: info
+      INTEGER,                                  INTENT(  OUT) :: info
 
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
@@ -479,7 +492,7 @@
 
       REAL(MK) :: t0
 
-      CHARACTER(LEN=ppm_char) :: caller='kdtree2_n_nearest'
+      CHARACTER(LEN=ppm_char) :: caller='kdtree_n_nearest'
 
       CALL substart(caller,t0,info)
 
@@ -516,18 +529,18 @@
 
       IF (tp%sort) THEN
          CALL qsort(results(1:nn),info)
-         or_fail("kdtree2_util_qsort")
+         or_fail("kdtree_util_qsort")
       ENDIF
 
       ! DEALLOCATE(sr%pq)
       9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
-      END SUBROUTINE DTYPE(kdtree2_n_nearest)
+      END SUBROUTINE DTYPE(kdtree_n_nearest)
 
-      SUBROUTINE DTYPE(kdtree2_n_nearest_around_point)(tp,idxin,correltime,nn,results,info)
+      SUBROUTINE DTYPE(kdtree_n_nearest_around_point)(tp,idxin,correltime,nn,results,info)
       ! Find the 'nn' vectors in the tree nearest to point 'idxin',
-      ! with correlation window 'correltime', returing results in
+      ! with correlation window 'correltime', returning results in
       ! results(:), which must be pre-allocated upon entry.
       !-------------------------------------------------------------------------
       !  Modules
@@ -538,15 +551,15 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(DTYPE(kdtree2)),                      POINTER       :: tp
+      TYPE(DTYPE(kdtree)),                      POINTER       :: tp
 
-      INTEGER,                                   INTENT(IN   ) :: idxin
-      INTEGER,                                   INTENT(IN   ) :: correltime
-      INTEGER,                                   INTENT(IN   ) :: nn
+      INTEGER,                                  INTENT(IN   ) :: idxin
+      INTEGER,                                  INTENT(IN   ) :: correltime
+      INTEGER,                                  INTENT(IN   ) :: nn
 
-      TYPE(DTYPE(kdtree2_result)), DIMENSION(:), TARGET        :: results
+      TYPE(DTYPE(kdtree_result)), DIMENSION(:), TARGET        :: results
 
-      INTEGER,                                   INTENT(  OUT) :: info
+      INTEGER,                                  INTENT(  OUT) :: info
 
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
@@ -557,7 +570,7 @@
 
       INTEGER :: iopt,ldu(1)
 
-      CHARACTER(LEN=ppm_char) :: caller='kdtree2_n_nearest_around_point'
+      CHARACTER(LEN=ppm_char) :: caller='kdtree_n_nearest_around_point'
 
       CALL substart(caller,t0,info)
 
@@ -592,15 +605,15 @@
 
       IF (tp%sort) THEN
          CALL qsort(results(1:nn),info)
-         or_fail("kdtree2_util_qsort")
+         or_fail("kdtree_util_qsort")
       ENDIF
 
       9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
-      END SUBROUTINE DTYPE(kdtree2_n_nearest_around_point)
+      END SUBROUTINE DTYPE(kdtree_n_nearest_around_point)
 
-      SUBROUTINE DTYPE(kdtree2_r_nearest)(tp,qv,r2,nalloc,nfound,results,info)
+      SUBROUTINE DTYPE(kdtree_r_nearest)(tp,qv,r2,nalloc,nfound,results,info)
       ! Find the nearest neighbors to point 'idxin', within SQUARED
       ! Euclidean distance 'r2'.   Upon ENTRY, nalloc must be the
       ! size of memory allocated for results(1:nalloc).  Upon
@@ -620,17 +633,17 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(DTYPE(kdtree2)),                      POINTER       :: tp
+      TYPE(DTYPE(kdtree)),                      POINTER       :: tp
 
-      REAL(MK),                    DIMENSION(:), INTENT(IN   ) :: qv
-      REAL(MK),                                  INTENT(IN   ) :: r2
+      REAL(MK),                   DIMENSION(:), INTENT(IN   ) :: qv
+      REAL(MK),                                 INTENT(IN   ) :: r2
 
-      INTEGER,                                   INTENT(IN   ) :: nalloc
-      INTEGER,                                   INTENT(  OUT) :: nfound
+      INTEGER,                                  INTENT(IN   ) :: nalloc
+      INTEGER,                                  INTENT(  OUT) :: nfound
 
-      TYPE(DTYPE(kdtree2_result)), DIMENSION(:), TARGET        :: results
+      TYPE(DTYPE(kdtree_result)), DIMENSION(:), TARGET        :: results
 
-      INTEGER,                                   INTENT(  OUT) :: info
+      INTEGER,                                  INTENT(  OUT) :: info
 
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
@@ -641,7 +654,7 @@
 
       INTEGER :: iopt,ldu(1)
 
-      CHARACTER(LEN=ppm_char) :: caller='kdtree2_r_nearest'
+      CHARACTER(LEN=ppm_char) :: caller='kdtree_r_nearest'
 
       CALL substart(caller,t0,info)
 
@@ -676,11 +689,11 @@
 
       IF (tp%sort) THEN
          CALL qsort(results(1:nfound),info)
-         or_fail("kdtree2_util_qsort")
+         or_fail("kdtree_util_qsort")
       ENDIF
 
       IF (sr%overflow) THEN
-         stdout("KD_TREE_TRANS: warning! return from kdtree2_r_nearest found more neighbors")
+         stdout("KD_TREE_TRANS: warning! return from kdtree_r_nearest found more neighbors")
          stdout("KD_TREE_TRANS: than storage was provided for.  Answer is NOT smallest ball")
          stdout("KD_TREE_TRANS: with that number of neighbors!  I.e. it is wrong.")
       ENDIF
@@ -691,10 +704,11 @@
       9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
-      END SUBROUTINE DTYPE(kdtree2_r_nearest)
+      END SUBROUTINE DTYPE(kdtree_r_nearest)
 
-      SUBROUTINE DTYPE(kdtree2_r_nearest_around_point)(tp,idxin,correltime,nalloc,r2,nfound,results,info)
-      ! Like kdtree2_r_nearest, but around a point 'idxin' already existing
+      SUBROUTINE DTYPE(kdtree_r_nearest_around_point)(tp, &
+      &          idxin,correltime,nalloc,r2,nfound,results,info)
+      ! Like kdtree_r_nearest, but around a point 'idxin' already existing
       ! in the data set.
       !
       ! Results are NOT sorted unless tree was created with sort option.
@@ -707,19 +721,19 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(DTYPE(kdtree2)),                      POINTER       :: tp
+      TYPE(DTYPE(kdtree)),                      POINTER       :: tp
 
-      INTEGER,                                   INTENT(IN   ) :: idxin
-      INTEGER,                                   INTENT(IN   ) :: correltime
-      INTEGER,                                   INTENT(IN   ) :: nalloc
+      INTEGER,                                  INTENT(IN   ) :: idxin
+      INTEGER,                                  INTENT(IN   ) :: correltime
+      INTEGER,                                  INTENT(IN   ) :: nalloc
 
-      REAL(MK),                                  INTENT(IN   ) :: r2
+      REAL(MK),                                 INTENT(IN   ) :: r2
 
-      INTEGER,                                   INTENT(  OUT) :: nfound
+      INTEGER,                                  INTENT(  OUT) :: nfound
 
-      TYPE(DTYPE(kdtree2_result)), DIMENSION(:), TARGET        :: results
+      TYPE(DTYPE(kdtree_result)), DIMENSION(:), TARGET        :: results
 
-      INTEGER,                                   INTENT(  OUT) :: info
+      INTEGER,                                  INTENT(  OUT) :: info
 
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
@@ -730,7 +744,7 @@
 
       INTEGER :: iopt,ldu(1)
 
-      CHARACTER(LEN=ppm_char) :: caller='kdtree2_r_nearest_around_point'
+      CHARACTER(LEN=ppm_char) :: caller='kdtree_r_nearest_around_point'
 
       CALL substart(caller,t0,info)
 
@@ -764,11 +778,11 @@
 
       IF (tp%sort) THEN
          CALL qsort(results(1:nfound),info)
-         or_fail("kdtree2_util_qsort")
+         or_fail("kdtree_util_qsort")
       ENDIF
 
       IF (sr%overflow) THEN
-         stdout("KD_TREE_TRANS: warning! return from kdtree2_r_nearest found more neighbors")
+         stdout("KD_TREE_TRANS: warning! return from kdtree_r_nearest found more neighbors")
          stdout("KD_TREE_TRANS: than storage was provided for.  Answer is NOT smallest ball")
          stdout("KD_TREE_TRANS: with that number of neighbors!  I.e. it is wrong.")
       ENDIF
@@ -779,9 +793,9 @@
       9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
-      END SUBROUTINE DTYPE(kdtree2_r_nearest_around_point)
+      END SUBROUTINE DTYPE(kdtree_r_nearest_around_point)
 
-      SUBROUTINE DTYPE(kdtree2_r_count)(tp,qv,r2,nfound,info)
+      SUBROUTINE DTYPE(kdtree_r_count)(tp,qv,r2,nfound,info)
       ! Count the number of neighbors within square distance 'r2'.
       !-------------------------------------------------------------------------
       !  Modules
@@ -792,14 +806,13 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(DTYPE(kdtree2)),                      POINTER       :: tp
+      TYPE(DTYPE(kdtree)),    POINTER       :: tp
 
-      REAL(MK),                    DIMENSION(:), INTENT(IN   ) :: qv
-      REAL(MK),                                  INTENT(IN   ) :: r2
+      REAL(MK), DIMENSION(:), INTENT(IN   ) :: qv
+      REAL(MK),               INTENT(IN   ) :: r2
 
-      INTEGER,                                   INTENT(  OUT) :: nfound
-
-      INTEGER,                                   INTENT(  OUT) :: info
+      INTEGER,                INTENT(  OUT) :: nfound
+      INTEGER,                INTENT(  OUT) :: info
 
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
@@ -810,7 +823,7 @@
 
       INTEGER :: iopt,ldu(1)
 
-      CHARACTER(LEN=ppm_char) :: caller='kdtree2_r_count'
+      CHARACTER(LEN=ppm_char) :: caller='kdtree_r_count'
 
       CALL substart(caller,t0,info)
 
@@ -846,9 +859,9 @@
       9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
-      END SUBROUTINE DTYPE(kdtree2_r_count)
+      END SUBROUTINE DTYPE(kdtree_r_count)
 
-      SUBROUTINE DTYPE(kdtree2_r_count_around_point)(tp,idxin,correltime,r2,nfound,info)
+      SUBROUTINE DTYPE(kdtree_r_count_around_point)(tp,idxin,correltime,r2,nfound,info)
       ! Count the number of neighbors within square distance 'r2' around
       ! point 'idxin' with decorrelation time 'correltime'.
       !-------------------------------------------------------------------------
@@ -860,16 +873,15 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(DTYPE(kdtree2)),                      POINTER       :: tp
+      TYPE(DTYPE(kdtree)), POINTER       :: tp
 
-      INTEGER,                                   INTENT(IN   ) :: idxin
-      INTEGER,                                   INTENT(IN   ) :: correltime
+      INTEGER,             INTENT(IN   ) :: idxin
+      INTEGER,             INTENT(IN   ) :: correltime
 
-      REAL(MK),                                  INTENT(IN   ) :: r2
+      REAL(MK),            INTENT(IN   ) :: r2
 
-      INTEGER,                                   INTENT(  OUT) :: nfound
-
-      INTEGER,                                   INTENT(  OUT) :: info
+      INTEGER,             INTENT(  OUT) :: nfound
+      INTEGER,             INTENT(  OUT) :: info
 
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
@@ -880,7 +892,7 @@
 
       INTEGER :: iopt,ldu(1)
 
-      CHARACTER(LEN=ppm_char) :: caller='kdtree2_r_count_around_point'
+      CHARACTER(LEN=ppm_char) :: caller='kdtree_r_count_around_point'
 
       CALL substart(caller,t0,info)
 
@@ -915,9 +927,9 @@
       9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
-      END SUBROUTINE DTYPE(kdtree2_r_count_around_point)
+      END SUBROUTINE DTYPE(kdtree_r_count_around_point)
 
-      SUBROUTINE DTYPE(kdtree2_n_nearest_brute_force)(tp,qv,nn,results,info)
+      SUBROUTINE DTYPE(kdtree_n_nearest_brute_force)(tp,qv,nn,results,info)
       ! Find the 'n' nearest neighbors to 'qv' by exhaustive search.
       ! only use this subroutine for testing, as it is SLOW!  The
       ! whole point of a k-d tree is to avoid doing what this subroutine
@@ -931,15 +943,15 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(DTYPE(kdtree2)),                      POINTER       :: tp
+      TYPE(DTYPE(kdtree)),                      POINTER       :: tp
 
-      REAL(MK),                    DIMENSION(:), INTENT(IN   ) :: qv
+      REAL(MK),                   DIMENSION(:), INTENT(IN   ) :: qv
 
-      INTEGER,                                   INTENT(IN   ) :: nn
+      INTEGER,                                  INTENT(IN   ) :: nn
 
-      TYPE(DTYPE(kdtree2_result)), DIMENSION(:), TARGET        :: results
+      TYPE(DTYPE(kdtree_result)), DIMENSION(:), TARGET        :: results
 
-      INTEGER,                                   INTENT(  OUT) :: info
+      INTEGER,                                  INTENT(  OUT) :: info
 
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
@@ -949,7 +961,7 @@
 
       INTEGER :: i,j,k,d
 
-      CHARACTER(LEN=ppm_char) :: caller='kdtree2_n_nearest_brute_force'
+      CHARACTER(LEN=ppm_char) :: caller='kdtree_n_nearest_brute_force'
 
       CALL substart(caller,t0,info)
 
@@ -960,7 +972,7 @@
       FORALL (i=1:tp%n) all_distances(i) = SUM((qv(1:d)-tp%the_data(1:d,i))**2)
 
       ! now find 'n' smallest distances
-      FORALL (i=1:nn) results(i)=DTYPE(kdtree2_result)(HUGE(1.0),-1)
+      FORALL (i=1:nn) results(i)=DTYPE(kdtree_result)(HUGE(1.0),-1)
 
       DO i =1,tp%n
          IF (all_distances(i).LT.results(nn)%dis) THEN
@@ -972,7 +984,7 @@
             DO k = nn - 1, j, -1
                results(k+1) = results(k)
             ENDDO
-            results(j)=DTYPE(kdtree2_result)(all_distances(i),i)
+            results(j)=DTYPE(kdtree_result)(all_distances(i),i)
          ENDIF
       ENDDO
 
@@ -984,9 +996,9 @@
       9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
-      END SUBROUTINE DTYPE(kdtree2_n_nearest_brute_force)
+      END SUBROUTINE DTYPE(kdtree_n_nearest_brute_force)
 
-      SUBROUTINE DTYPE(kdtree2_r_nearest_brute_force)(tp,qv,r2,nfound,results,info)
+      SUBROUTINE DTYPE(kdtree_r_nearest_brute_force)(tp,qv,r2,nfound,results,info)
       ! Find the nearest neighbors to 'qv' with distance**2 <= r2 by exhaustive search.
       ! only use this subroutine for testing, as it is SLOW!  The
       ! whole point of a k-d tree is to avoid doing what this subroutine
@@ -1000,16 +1012,16 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(DTYPE(kdtree2)),                      POINTER       :: tp
+      TYPE(DTYPE(kdtree)),                      POINTER       :: tp
 
-      REAL(MK),                    DIMENSION(:), INTENT(IN   ) :: qv
-      REAL(MK),                                  INTENT(IN   ) :: r2
+      REAL(MK),                   DIMENSION(:), INTENT(IN   ) :: qv
+      REAL(MK),                                 INTENT(IN   ) :: r2
 
-      INTEGER,                                   INTENT(  OUT) :: nfound
+      INTEGER,                                  INTENT(  OUT) :: nfound
 
-      TYPE(DTYPE(kdtree2_result)), DIMENSION(:), TARGET        :: results
+      TYPE(DTYPE(kdtree_result)), DIMENSION(:), TARGET        :: results
 
-      INTEGER,                                   INTENT(  OUT) :: info
+      INTEGER,                                  INTENT(  OUT) :: info
 
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
@@ -1021,7 +1033,7 @@
 
       INTEGER :: iopt,ldu(1),i,d,nalloc
 
-      CHARACTER(LEN=ppm_char) :: caller='kdtree2_r_nearest_brute_force'
+      CHARACTER(LEN=ppm_char) :: caller='kdtree_r_nearest_brute_force'
 
       CALL substart(caller,t0,info)
 
@@ -1039,7 +1051,7 @@
             ! insert it somewhere on the list
             IF (nfound.LT.nalloc) THEN
                nfound = nfound+1
-               results(nfound)=DTYPE(kdtree2_result)(all_distances(i),i)
+               results(nfound)=DTYPE(kdtree_result)(all_distances(i),i)
             ENDIF
          ENDIF
       ENDDO
@@ -1048,7 +1060,7 @@
       or_fail_dealloc("all_distances")
 
       CALL qsort(results(1:nfound),info)
-      or_fail("kdtree2_util_qsort")
+      or_fail("kdtree_util_qsort")
 
       !-------------------------------------------------------------------------
       !  Return
@@ -1056,9 +1068,9 @@
       9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
-      END SUBROUTINE DTYPE(kdtree2_r_nearest_brute_force)
+      END SUBROUTINE DTYPE(kdtree_r_nearest_brute_force)
 
-      SUBROUTINE DTYPE(kdtree2_util_qsort)(inlist,info)
+      SUBROUTINE DTYPE(kdtree_util_qsort)(inlist,info)
       !!! From a list of values sorts them into ascending order.
       !!! [NOTE]
       !! Yaser
@@ -1077,14 +1089,14 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(DTYPE(kdtree2_result)), DIMENSION(:), INTENT(INOUT) :: inlist
+      TYPE(DTYPE(kdtree_result)), DIMENSION(:), INTENT(INOUT) :: inlist
       !!! List to be sorted
       INTEGER,                                   INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(DTYPE(kdtree2_result)) :: datap
+      TYPE(DTYPE(kdtree_result)) :: datap
 
       REAL(ppm_kind_double) :: t0
 
@@ -1102,7 +1114,7 @@
       INTEGER                            :: istk
       INTEGER                            :: inlistu,inlistl
 
-      CHARACTER(LEN=ppm_char) :: caller='kdtree2_util_qsort'
+      CHARACTER(LEN=ppm_char) :: caller='kdtree_util_qsort'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -1314,7 +1326,7 @@
       CALL substop(caller,t0,info)
       RETURN
 
-      END SUBROUTINE DTYPE(kdtree2_util_qsort)
+      END SUBROUTINE DTYPE(kdtree_util_qsort)
 
 #undef  __KIND
 #undef    MK

@@ -57,23 +57,10 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data
       USE ppm_module_data_mesh
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_error
-      USE ppm_module_alloc
-      USE ppm_module_topo_cost
-      USE ppm_module_topo_store
-      USE ppm_module_define_subs_bc
       USE ppm_module_mesh_on_subs
-      USE ppm_module_mesh_store
-      USE ppm_module_topo_subs2proc
-      USE ppm_module_topo_metis_s2p
-      USE ppm_module_find_neigh
+      USE ppm_module_mesh_define
       USE ppm_module_decomp
-      USE ppm_module_tree
-      USE ppm_module_topo_box2subs
       IMPLICIT NONE
 
 #if    __KIND == __SINGLE_PRECISION
@@ -229,11 +216,13 @@
       !  Initialise
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
+
 #if    __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif  __KIND == __DOUBLE_PRECISION
       lmyeps = ppm_myepsd
 #endif
+
       ! do not care about the variance for meshes. Stop as soon as you have
       ! enough subdomains.
       maxvar = HUGE(maxvar)
@@ -241,16 +230,16 @@
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL check
-         IF (info .NE. 0) GOTO 9999
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
       ! If the user defined nsubs then use those
       IF (PRESENT(user_nsubs)) THEN
-          nsubs = user_nsubs
+         nsubs = user_nsubs
       ELSE
-          nsubs = 0
+         nsubs = 0
       ENDIF
       IF (PRESENT(user_minsub)) THEN
          min_sub => user_minsub
@@ -261,6 +250,7 @@
       IF (PRESENT(user_sub2proc)) THEN
          sub2proc => user_sub2proc
       ENDIF
+
       IF (PRESENT(Offset)) THEN
 #if    __KIND == __SINGLE_PRECISION
          Offst(1:ppm_dim)=REAL(Offset(1:ppm_dim),ppm_kind_double)
@@ -270,12 +260,13 @@
       ELSE
          Offst=0.0_ppm_kind_double
       ENDIF
+
       !-------------------------------------------------------------------------
       !  Compute grid spacing
       !-------------------------------------------------------------------------
       h(1) = (max_phys(1)-min_phys(1))/REAL(Nm(1)-1,ppm_kind_double)
       h(2) = (max_phys(2)-min_phys(2))/REAL(Nm(2)-1,ppm_kind_double)
-      IF (ppm_dim .GT. 2) THEN
+      IF (ppm_dim.GT.2) THEN
          h(3) = (max_phys(3)-min_phys(3))/REAL(Nm(3)-1,ppm_kind_double)
       ENDIF
 
@@ -311,11 +302,11 @@
          ! build a binary tree
          treetype = ppm_param_tree_bin
          IF (Npart .GT. 0) THEN
-             weights(1,1:2) = 0.5_MK    ! particles have 50% weight
-             weights(2,1:2) = 0.5_MK    ! mesh has 50% weight
+            weights(1,1:2) = 0.5_MK    ! particles have 50% weight
+            weights(2,1:2) = 0.5_MK    ! mesh has 50% weight
          ELSE
-             weights(1,1:2) = 0.0_MK    ! only mesh has weight
-             weights(2,1:2) = 1.0_MK
+            weights(1,1:2) = 0.0_MK    ! only mesh has weight
+            weights(2,1:2) = 1.0_MK
          ENDIF
          ! geometry has no weight
          weights(3,1:2)     = 0.0_MK
@@ -348,9 +339,6 @@
       CASE (ppm_param_decomp_xpencil, &
       &     ppm_param_decomp_ypencil, &
       &     ppm_param_decomp_zpencil)
-         IF (decomp.EQ.ppm_param_decomp_zpencil.AND.ppm_dim.LT.3) THEN
-            fail('Cannot make z pencils in 2D!')
-         ENDIF
          IF (Npart.LT.1) THEN
              !------------------------------------------------------------------
              !  No particles: cartesian pencil decomposition
@@ -416,12 +404,6 @@
       CASE (ppm_param_decomp_xy_slab, &
       &     ppm_param_decomp_xz_slab, &
       &     ppm_param_decomp_yz_slab)
-         IF (decomp.EQ.ppm_param_decomp_xz_slab.AND.ppm_dim.LT.3) THEN
-            fail('Cannot make x-z slabs in 2D!')
-         ENDIF
-         IF (decomp.EQ.ppm_param_decomp_yz_slab.AND.ppm_dim.LT.3) THEN
-            fail('Cannot make y-z slabs in 2D!')
-         ENDIF
          !-------------------------------------------------------------------
          !  slab bisection using the general ppm_tree
          !-------------------------------------------------------------------
@@ -523,13 +505,13 @@
       !  User provides decomposition: Do nothing
       !-------------------------------------------------------------------------
       CASE (ppm_param_decomp_user_defined)
-          ! NOP
+         ! NOP
       !-------------------------------------------------------------------------
       !  Unknown decomposition type
       !-------------------------------------------------------------------------
       CASE DEFAULT
-         WRITE(msg,'(A,I5)') 'Unknown decomposition type: ',decomp
-         fail(msg)
+         stdout_f('(A,I5)',"Unknown decomposition type: ",decomp)
+         fail(cbuf,ppm_error=ppm_error_fatal)
 
       END SELECT
 
@@ -607,8 +589,8 @@
          !-------------------------------------------------------------------
          !  unknown assignment scheme
          !-------------------------------------------------------------------
-         WRITE(msg,'(A,I5)') 'Unknown assignment scheme: ',assig
-         fail(msg)
+         stdout_f('(A,I5)',"Unknown assignment scheme: ",assig)
+         fail(cbuf,ppm_error=ppm_error_fatal)
 
       END SELECT
 
@@ -628,10 +610,9 @@
       or_fail('Storing topology failed')
 
       !-------------------------------------------------------------------------
-      !  Store new mesh internally
+      !  Create and store the new mesh internally
       !-------------------------------------------------------------------------
-      CALL ppm_mesh_store(topoid,meshid,ndata,istart,Nm,info, &
-      &    Offset=Offst,ghostsize=ighostsize)
+      CALL ppm_mesh_define(topoid,meshid,Nm,info,Offset=Offst,ghostsize=ighostsize)
       or_fail('Storing mesh definition failed')
 
       iopt = ppm_param_dealloc
@@ -708,38 +689,38 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-        IF (.NOT. ppm_initialized) THEN
+        IF (.NOT.ppm_initialized) THEN
            fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
         ENDIF
         DO i=1,ppm_dim
            IF (max_phys(i).LE.min_phys(i)) THEN
               fail('max_phys must be > min_phys',exit_point=8888)
            ENDIF
-           IF (Nm(i) .LT. 2) THEN
+           IF (Nm(i).LT.2) THEN
               fail('Nm must be > 1 in all dimensions',exit_point=8888)
            ENDIF
-           IF (ighostsize(i) .LT. 0) THEN
+           IF (ighostsize(i).LT. 0) THEN
               fail('ighostsize must be >= 0',exit_point=8888)
            ENDIF
         ENDDO
-        IF (Npart .GT. 0 .AND. ASSOCIATED(xp)) THEN
-           IF (SIZE(xp,2) .LT. Npart) THEN
+        IF (Npart.GT.0.AND.ASSOCIATED(xp)) THEN
+           IF (SIZE(xp,2).LT.Npart) THEN
               fail('not enough particles contained in xp',exit_point=8888)
            ENDIF
-           IF (SIZE(xp,1) .LT. ppm_dim) THEN
+           IF (SIZE(xp,1).LT.ppm_dim) THEN
               fail('leading dimension of xp too small',exit_point=8888)
            ENDIF
            IF (PRESENT(pcost)) THEN
-              IF (SIZE(pcost,1) .LT. Npart) THEN
+              IF (SIZE(pcost,1).LT.Npart) THEN
                  fail('pcost does not contain costs for all particles',exit_point=8888)
               ENDIF
            ENDIF
         ENDIF
-        IF (assig .EQ. ppm_param_assign_user_defined) THEN
-           IF (decomp .NE. ppm_param_decomp_user_defined) THEN
+        IF (assig.EQ.ppm_param_assign_user_defined) THEN
+           IF (decomp.NE.ppm_param_decomp_user_defined) THEN
               fail('decomp type is set to user_defined for this assignment',exit_point=8888)
            ENDIF
-           IF (user_nsubs .LE. 0) THEN
+           IF (user_nsubs.LE.0) THEN
               fail('no subs defined in user_defined assignment',exit_point=8888)
            ENDIF
            IF (.NOT.ASSOCIATED(user_sub2proc)) THEN
@@ -751,8 +732,8 @@
               ENDIF
            ENDDO
         ENDIF
-        IF (decomp .EQ. ppm_param_decomp_user_defined) THEN
-           IF (user_nsubs .LE. 0) THEN
+        IF (decomp.EQ.ppm_param_decomp_user_defined) THEN
+           IF (user_nsubs.LE.0) THEN
               fail('no subs defined in user_defined decomposition',exit_point=8888)
            ENDIF
            IF ((.NOT.ASSOCIATED(user_minsub)).OR. &
@@ -785,8 +766,15 @@
            ENDIF
         ENDIF
 
-      8888 CONTINUE
-
+        IF (decomp.EQ.ppm_param_decomp_zpencil.AND.ppm_dim.LT.3) THEN
+           fail('Cannot make z pencils in 2D!',exit_point=8888)
+        ENDIF
+        IF (decomp.EQ.ppm_param_decomp_xz_slab.AND.ppm_dim.LT.3) THEN
+           fail('Cannot make x-z slabs in 2D!',exit_point=8888)
+        ENDIF
+        IF (decomp.EQ.ppm_param_decomp_yz_slab.AND.ppm_dim.LT.3) THEN
+           fail('Cannot make y-z slabs in 2D!',exit_point=8888)
+        ENDIF
         !----------------------------------------------------------------------
         ! Check bcdef
         !----------------------------------------------------------------------
@@ -799,6 +787,7 @@
         !  Will be accounted for as soon as the structure of
         !  the field type is better defined
         !----------------------------------------------------------------------
+      8888 CONTINUE
       END SUBROUTINE check
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_topo_mkfield_s
