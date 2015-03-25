@@ -54,6 +54,7 @@
       USE ppm_module_mpi
       USE ppm_module_topo_cost
       USE ppm_module_data_loadbal
+      USE ppm_module_mesh_typedef
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single

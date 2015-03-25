@@ -121,8 +121,8 @@
         PUBLIC :: LOGICAL_ARRAY_func, STRING_ARRAY_func
         PUBLIC :: COMPLEX_ARRAY_func, DCOMPLEX_ARRAY_func
 #endif
-        PUBLIC :: reset, add_cmd, ctrl_file_name, break_help
-        PUBLIC :: find_arg, find_flag, arg_count
+        PUBLIC :: reset, reset_i, add_cmd, ctrl_file_name
+        PUBLIC :: break_help, find_arg, find_flag, arg_count
         PUBLIC :: enabling_flag, disabling_flag, exit_gracefully
 
         PRIVATE
@@ -437,11 +437,11 @@
              !-------------------------------------------------------------------
              !  Read in the command line
              !-------------------------------------------------------------------
-             IF (.NOT. in_test) THEN
+             IF (.NOT.in_test) THEN
                 CALL read_cmd_args(info)
                 or_fail_alloc('Reading command line args failed!', &
                 & exit_point=100,ppm_error=ppm_error_fatal)
-             END IF
+             ENDIF
              !-------------------------------------------------------------------
              !  Parse help flag
              !-------------------------------------------------------------------
@@ -452,8 +452,8 @@
                    CALL print_help
                    info = exit_gracefully
                    GOTO 100
-                END IF
-             END IF
+                ENDIF
+             ENDIF
              !-------------------------------------------------------------------
              !  Print Control file
              !-------------------------------------------------------------------
@@ -461,8 +461,8 @@
                 CALL find_flag('--print-ctrl', ok)
                 IF (ok) THEN
                    printing_ctrl = .TRUE.
-                END IF
-             END IF
+                ENDIF
+             ENDIF
              !-------------------------------------------------------------------
              !  Parse rest of the command line
              !-------------------------------------------------------------------
@@ -478,7 +478,7 @@
                 CALL parse_ctrl_file(info)
                 or_fail('Parsing control file failed!', &
                 & ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
-             END IF
+             ENDIF
 #ifdef __F2003
              !-------------------------------------------------------------------
              !  Call default funcs
@@ -508,11 +508,11 @@
                 CALL print_ctrl
                 info = exit_gracefully
                 GOTO 100
-             END IF
+             ENDIF
              !-------------------------------------------------------------------
              !  DONE!
              !-------------------------------------------------------------------
-          END IF ! (ppm_rank .EQ. 0)
+          ENDIF ! (ppm_rank.EQ.0)
           !----------------------------------------------------------------------
           !  Exchange data
           !----------------------------------------------------------------------
@@ -739,6 +739,7 @@
         9999 CONTINUE
           ! cleanup
           CALL deallocate_memory(info.NE.0)
+
           CALL substop(caller,t0,info)
           RETURN
         END SUBROUTINE parse_args
@@ -755,7 +756,8 @@
              IF (ASSOCIATED(cmd_args))         DEALLOCATE(cmd_args)
              IF (ASSOCIATED(cmd_args_len))     DEALLOCATE(cmd_args_len)
              IF (ASSOCIATED(cmd_args_used))    DEALLOCATE(cmd_args_used)
-          END IF
+             NULLIFY(cmd_args,cmd_args_len,cmd_args_used)
+          ENDIF
           ! scalar
           IF (ASSOCIATED(INTEGER_args))        DEALLOCATE(INTEGER_args)
           IF (ASSOCIATED(LONGINT_args))        DEALLOCATE(LONGINT_args)
@@ -765,6 +767,9 @@
           IF (ASSOCIATED(STRING_args))         DEALLOCATE(STRING_args)
           IF (ASSOCIATED(COMPLEX_args))        DEALLOCATE(COMPLEX_args)
           IF (ASSOCIATED(DCOMPLEX_args))       DEALLOCATE(DCOMPLEX_args)
+          NULLIFY(INTEGER_args,LONGINT_args,SINGLE_args,DOUBLE_args)
+          NULLIFY(LOGICAL_args,STRING_args,COMPLEX_args,DCOMPLEX_args)
+
           ! array
           IF (ASSOCIATED(INTEGER_array_args))  DEALLOCATE(INTEGER_array_args)
           IF (ASSOCIATED(LONGINT_array_args))  DEALLOCATE(LONGINT_array_args)
@@ -774,20 +779,21 @@
           IF (ASSOCIATED(STRING_array_args))   DEALLOCATE(STRING_array_args)
           IF (ASSOCIATED(COMPLEX_array_args))  DEALLOCATE(COMPLEX_array_args)
           IF (ASSOCIATED(DCOMPLEX_array_args)) DEALLOCATE(DCOMPLEX_array_args)
+          NULLIFY(INTEGER_array_args,LONGINT_array_args,SINGLE_array_args,DOUBLE_array_args)
+          NULLIFY(LOGICAL_array_args,STRING_array_args,COMPLEX_array_args,DCOMPLEX_array_args)
+
           ! other
           IF (ASSOCIATED(groups))              DEALLOCATE(groups)
           IF (ASSOCIATED(group_size))          DEALLOCATE(group_size)
           IF (ASSOCIATED(group_has_ctrl))      DEALLOCATE(group_has_ctrl)
           IF (ASSOCIATED(group_has_arg))       DEALLOCATE(group_has_arg)
+          NULLIFY(groups,group_size,group_has_ctrl,group_has_arg)
 
         END SUBROUTINE deallocate_memory
 
-        SUBROUTINE reset
-        !!! Debugging and testing routine. Resets all module variables.
+        SUBROUTINE reset_i
 
           IMPLICIT NONE
-
-          CALL deallocate_memory(.TRUE.)
           ! scalar
           INTEGER_args_i        = 0
           LONGINT_args_i        = 0
@@ -806,6 +812,15 @@
           STRING_array_args_i   = 0
           COMPLEX_array_args_i  = 0
           DCOMPLEX_array_args_i = 0
+        END SUBROUTINE reset_i
+
+        SUBROUTINE reset
+        !!! Debugging and testing routine. Resets all module variables.
+
+          IMPLICIT NONE
+
+          CALL deallocate_memory(.TRUE.)
+          CALL reset_i
           ! other
           cmd_args_i            = 0
           cmd_i                 = 0
@@ -873,7 +888,7 @@
             !-------------------------------------------------------------------------
             !  Return
             !-------------------------------------------------------------------------
-      9999 CONTINUE
+        9999 CONTINUE
            CALL substop(caller,t0,info)
         END SUBROUTINE apply_defaults
         !------------------------------------------------------------------------
@@ -924,7 +939,7 @@
           ALLOCATE(cmd_args(1:cmd_args_i),      STAT=info)
           ALLOCATE(cmd_args_len(1:cmd_args_i),  STAT=info)
           ALLOCATE(cmd_args_used(1:cmd_args_i), STAT=info)
-          IF (info .NE. 0) RETURN
+          IF (info.NE.0) RETURN
 
           cmd_args_used = .FALSE.
           ! read in all args
@@ -932,7 +947,7 @@
              CALL GET_COMMAND_ARGUMENT(start+i, cbuf)
              cmd_args_len(i) = LEN_TRIM(cbuf)
              cmd_args(i)     = cbuf(1:cmd_args_len(i))
-          END DO
+          ENDDO
 
         END SUBROUTINE read_cmd_args
         !-------------------------------------------------------------------------
@@ -1006,7 +1021,7 @@
           INTEGER :: i,j,idx
 
           CHARACTER(LEN=*), PARAMETER :: caller='parse_ctrl_file'
-          CHARACTER(LEN=ppm_char)     :: cbuf, cvalue, carg, cvar
+          CHARACTER(LEN=ppm_char)     :: cvalue,carg,cvar,cbuf
           CHARACTER(LEN=ppm_char)     :: current_var
           CHARACTER(LEN=10000)        :: errmsg
 
@@ -1016,29 +1031,24 @@
           !  Check that the ctrl file exists
           !-------------------------------------------------------------
           ilenctrl = LEN_TRIM(ctrl_file_name)
-          IF (ilenctrl .LT. 1) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_argument, caller, &
-             &    'No ctrl file given', __LINE__, info)
-             GOTO 9999
-          END IF
+          IF (ilenctrl.LT.1) THEN
+             fail('No ctrl file given',ppm_err_argument,ppm_error=ppm_error_fatal)
+          ENDIF
 
           INQUIRE(FILE=ctrl_file_name, EXIST=lExist)
           IF (.NOT. lExist) THEN
              WRITE(cvar,'(2A)') 'No such file: ', ctrl_file_name(1:ilenctrl)
-
              fail(cvar,ppm_error=ppm_error_fatal)
-          END IF
+          ENDIF
           !-------------------------------------------------------------
           !  Open the file
           !-------------------------------------------------------------
           iUnit = 19
           OPEN(iUnit, FILE=ctrl_file_name, IOSTAT=ios, ACTION='READ')
-          IF (ios .NE. 0) THEN
+          IF (ios.NE.0) THEN
              WRITE(cvar,'(2A)') 'Failed to open file: ', ctrl_file_name(1:ilenctrl)
-
              fail(cvar,ppm_error=ppm_error_fatal)
-          END IF
+          ENDIF
           !-------------------------------------------------------------
           !  Scan file
           !-------------------------------------------------------------
@@ -1053,17 +1063,17 @@
              !----------------------------------------------------------
              !  Skip comment or empty lines
              !----------------------------------------------------------
-             IF (ilen .GT. 0 .AND. cbuf(1:1) .NE. '#') THEN
+             IF (ilen.GT.0.AND.cbuf(1:1).NE.'#') THEN
                 !-------------------------------------------------------
                 !  Remove space
                 !-------------------------------------------------------
                 j = 0
                 DO i=1,ilen
-                   IF (cbuf(i:i) .NE. ' ' .AND. cbuf(i:i) .NE. ACHAR(9)) THEN
+                   IF (cbuf(i:i).NE.' '.AND.cbuf(i:i).NE.ACHAR(9)) THEN
                       j = j + 1
                       cbuf(j:j) = cbuf(i:i)
-                   END IF
-                END DO
+                   ENDIF
+                ENDDO
                 !-------------------------------------------------------
                 !  Update length of string
                 !-------------------------------------------------------
@@ -1075,9 +1085,8 @@
                 !-------------------------------------------------------
                 !  Exit if missing
                 !-------------------------------------------------------
-                IF (idx .LT. 0) THEN
+                IF (idx.LT.0) THEN
                    WRITE(cvar,'(A,I5)') 'Incorrect line: ', iline
-
                    fail(cvar,ppm_error=ppm_error_fatal)
                 ENDIF
                 !-------------------------------------------------------
@@ -1127,10 +1136,10 @@
 #include "ctrl/parse_ctrl.f"
 #define DTYPE DCOMPLEX_array
 #include "ctrl/parse_ctrl.f"
-             END IF
-          END DO var_loop
+             ENDIF
+          ENDDO var_loop
           GOTO 9999
-      300 CONTINUE
+        300 CONTINUE
           WRITE(errmsg,'(5A,I5,2A)') 'Error reading variable: ', &
           & current_var(1:LEN_TRIM(current_var)),                &
           & ' from string: ', cvalue(1:LEN_TRIM(cvalue)),        &
@@ -1138,17 +1147,17 @@
           & ' of file: ', ctrl_file_name(1:ilenctrl)
 
           fail(errmsg,ppm_error=ppm_error_fatal)
-      200 CONTINUE
+        200 CONTINUE
 
           WRITE(errmsg,'(A,I5,2A)') 'Error reading line: ', iline, &
           & ' of file: ', ctrl_file_name(1:ilenctrl)
 
           fail(errmsg,ppm_error=ppm_error_fatal)
-      100 CONTINUE
+        100 CONTINUE
           !----------------------------------------------------------------------
           !  Close file
           !----------------------------------------------------------------------
-      9999 CONTINUE
+        9999 CONTINUE
           CLOSE(iUnit)
           RETURN
         END SUBROUTINE parse_ctrl_file
@@ -1199,7 +1208,7 @@
 #include "ctrl/default_func.f"
 #define DTYPE DCOMPLEX_array
 #include "ctrl/default_func.f"
-      9999 CONTINUE
+        9999 CONTINUE
 
         END SUBROUTINE call_default_funcs
 #endif
@@ -1241,7 +1250,7 @@
       ! #define __STRING
       ! #include "ctrl/minmax.f"
 #undef ARRAY
-      9999 CONTINUE
+        9999 CONTINUE
         END SUBROUTINE check_minmax
 #ifdef __F2003
         !------------------------------------------------------------------------
@@ -1353,7 +1362,7 @@
              cmd_args_used = .FALSE.
           ELSE
              l = SIZE(cmd_args)
-             IF (l .LT. cmd_args_i + inc) THEN
+             IF (l.LT.cmd_args_i + inc) THEN
                 ALLOCATE(temp_a(1:(l + di)))
                 ALLOCATE(temp_l(1:(l + di)))
                 temp_a(1:l) = cmd_args(1:l)
@@ -1365,18 +1374,18 @@
                 cmd_args     => temp_a
                 cmd_args_len => temp_l
                 cmd_args_used = .FALSE.
-             END IF
-          END IF
+             ENDIF
+          ENDIF
           cmd_i = cmd_i + 1
           cmd_args_i = cmd_args_i + 1
           cmd_args(cmd_args_i)     =     arg
           cmd_args_len(cmd_args_i) = LEN(arg)
-          IF (inc .EQ. 2) THEN
+          IF (inc.EQ.2) THEN
              cmd_i = cmd_i + 1
              cmd_args_i = cmd_args_i + 1
              cmd_args(cmd_args_i)     =     value
              cmd_args_len(cmd_args_i) = LEN(value)
-          END IF
+          ENDIF
         END SUBROUTINE add_cmd
         !-------------------------------------------------------------------------
         !  Look-up flags
@@ -1404,14 +1413,14 @@
 
           success = .FALSE.
           IF (PRESENT(err)) err = .FALSE.
-          IF (cmd_args_i .EQ. 0) RETURN
+          IF (cmd_args_i.EQ.0) RETURN
           DO i=1,cmd_args_i
-             IF (cmd_args(i)(1:cmd_args_len(i)) .EQ. flag) THEN
+             IF (cmd_args(i)(1:cmd_args_len(i)).EQ.flag) THEN
                 success          = .TRUE.
                 IF (.NOT. cmd_args_used(i)) cmd_i = cmd_i - 1
                 cmd_args_used(i) = .TRUE.
                 IF (PRESENT(value)) THEN
-                   IF (i+1 .GT. cmd_args_i) THEN
+                   IF (i+1.GT.cmd_args_i) THEN
                       success = .FALSE.
                       IF (PRESENT(err)) err = .TRUE.
                       WRITE (cvar,*) "Flag ", flag, " requires an argument."
@@ -1421,11 +1430,11 @@
                       value = cmd_args(i+1)
                       IF (.NOT. cmd_args_used(i+1)) cmd_i = cmd_i - 1
                       cmd_args_used(i+1) = .TRUE.
-                   END IF
-                END IF
+                   ENDIF
+                ENDIF
                 RETURN
-             END IF
-          END DO
+             ENDIF
+          ENDDO
         END SUBROUTINE find_flag
         !------------------------------------------------------------------------
         !  Get arg count
@@ -1445,12 +1454,12 @@
 
           IMPLICIT NONE
 
-          INTEGER,          INTENT(IN   )  :: position
+          INTEGER,          INTENT(IN   ) :: position
           !!! Index of the positional argument, 1 based.
-          LOGICAL,          INTENT(  OUT)  :: success
+          LOGICAL,          INTENT(  OUT) :: success
           !!! True on success. False if there is no positional arg with the
           !!! supplied index.
-          CHARACTER(LEN=*), INTENT(INOUT)  :: value
+          CHARACTER(LEN=*), INTENT(INOUT) :: value
           !!! The value of the positional argument (character string).
 
           INTEGER :: i, j
@@ -1460,13 +1469,13 @@
           DO i=1,cmd_args_i
              IF (.NOT. cmd_args_used(i)) THEN
                 j = j + 1
-                IF (position .EQ. j) THEN
+                IF (position.EQ.j) THEN
                    value   = cmd_args(i)
                    success = .TRUE.
                    RETURN
-                END IF
-             END IF
-          END DO
+                ENDIF
+             ENDIF
+          ENDDO
         END SUBROUTINE find_arg
         !------------------------------------------------------------------------
         !  Argument groups
@@ -1494,7 +1503,7 @@
              ALLOCATE(group_max_len(0:di))
              ALLOCATE(group_has_ctrl(0:di))
              ALLOCATE(group_has_arg(0:di))
-          ELSE IF (groups_i+1 .GT. SIZE(groups)) THEN
+          ELSE IF (groups_i+1.GT.SIZE(groups)) THEN
              ALLOCATE(temp_g(0:(SIZE(groups)+di)))
              ALLOCATE(temp_s(0:(SIZE(groups)+di)))
              ALLOCATE(temp_m(0:(SIZE(groups)+di)))
@@ -1515,15 +1524,15 @@
              group_max_len  => temp_m
              group_has_ctrl => temp_c
              group_has_arg  => temp_a
-          END IF
+          ENDIF
           groups(groups_i)         = name
           group_size(groups_i)     = 0
           group_max_len(groups_i)  = 0
           group_has_ctrl(groups_i) = .FALSE.
           group_has_arg(groups_i)  = .FALSE.
-          IF (groups_i .EQ. 0 .AND. (help_enabled .OR. ctrl_enabled)) THEN
+          IF (groups_i.EQ.0.AND.(help_enabled .OR. ctrl_enabled)) THEN
              group_has_arg(0) = .TRUE.
-          END IF
+          ENDIF
         END SUBROUTINE arg_group
         !------------------------------------------------------------------------
         !  Help string break
@@ -1555,46 +1564,46 @@
              fl = skip_first_line
           ELSE
              fl = .TRUE.
-          END IF
+          ENDIF
           start = 1
           break = 1
           next  = 1
           end   = LEN(ht)
           ! line loop
-          DO WHILE (start .LT. end)
+          DO WHILE (start.LT.end)
              ! break < start + w < next
-             DO WHILE (next .LT. end .AND. next .LT. start+w)
+             DO WHILE (next.LT.end.AND.next.LT.start+w)
                 ! find next blank or new line
                 skip = 1
-                DO WHILE (next .LT. end .AND. ht(next:next) .NE. ' ')
-                   IF (next .LT. end) THEN
-                      IF (ht(next:next+1) .EQ. '\n') THEN
+                DO WHILE (next.LT.end.AND.ht(next:next).NE.' ')
+                   IF (next.LT.end) THEN
+                      IF (ht(next:next+1).EQ.'\n') THEN
                          ! line break
                          skip = 3
                          break = next - 1
                          next = next + 2
                          GOTO 1234
-                      END IF
-                   END IF
+                      ENDIF
+                   ENDIF
                    next = next + 1
-                END DO
+                ENDDO
                 break = next
                 next = next + 1
-             END DO
+             ENDDO
              ! print line
-      1234   IF (fl) THEN
+        1234 IF (fl) THEN
                 fl = .FALSE.
                 WRITE(cbuf1,'(3A)') cbuft,ht(start:break),''
              ELSE
                 WRITE(cbuf1,'(4A)') cbuft,prefix,ht(start:break),''
-             END IF
+             ENDIF
              cbuf1=ADJUSTL(cbuf1)
              stdout(cbuf1)
              cbuft=''
              ! iterate
              start = break + skip
              break = next
-          END DO
+          ENDDO
         END SUBROUTINE break_help
         !------------------------------------------------------------------------
         !  Print command line help
@@ -1613,26 +1622,26 @@
              stdout("Usage: progname {ctrl-file} [options] [args]")
           ELSE
              stdout("Usage: progname [options] [args]")
-          END IF
+          ENDIF
           DO k=0,groups_i
              IF (.NOT. group_has_arg(k)) CYCLE
              stdout("")
              WRITE(cbuf,'(A)')groups(k)
              stdout(cbuf)
 
-             IF (k .EQ. 0) THEN
+             IF (k.EQ.0) THEN
                 IF (help_enabled) THEN
                    stdout("  help                          Print this help message and exit.")
                    stdout("                  short flag :  -h")
                    stdout("                   long flag :  --help")
                    stdout("")
-                END IF
+                ENDIF
                 IF (ctrl_enabled) THEN
                    stdout("  control file                  Print sample control file and exit.")
                    stdout("                   long flag :  --print-ctrl")
                    stdout("")
-                END IF
-             END IF
+                ENDIF
+             ENDIF
              group_loop: DO i=1,group_size(k)
                 ! scalar
 #define DTYPE INTEGER
@@ -1682,8 +1691,8 @@
 #define DTYPE DCOMPLEX_array
 #include "ctrl/help.f"
 #undef ARRAY
-             END DO group_loop
-          END DO
+             ENDDO group_loop
+          ENDDO
         END SUBROUTINE print_help
         !------------------------------------------------------------------------
         !  Print sample control file
@@ -1700,10 +1709,10 @@
 
           LOGICAL :: in_line
 
-          IF (groups_i .EQ. -1) THEN
+          IF (groups_i.EQ.-1) THEN
              stdout("No args have been defined...")
              RETURN
-          END IF
+          ENDIF
           stdout("#-------------------------------------------------------------------------------")
           stdout("#  Sample control file for ppm_client")
           stdout("#")
@@ -1765,7 +1774,7 @@
 #define DTYPE DCOMPLEX_array
 #include "ctrl/ctrl_comment.f"
 #undef ARRAY
-             END DO comment_loop
+             ENDDO comment_loop
 
              stdout("#-------------------------------------------------------------------------------")
 
@@ -1808,9 +1817,9 @@
 #define DTYPE DCOMPLEX_array
 #include "ctrl/ctrl.f"
 #undef ARRAY
-             END DO var_loop
+             ENDDO var_loop
 
-          END DO
+          ENDDO
         END SUBROUTINE print_ctrl
         !------------------------------------------------------------------------
         !  Debug
@@ -1824,13 +1833,13 @@
       ! #define DTYPE INTEGER
       ! #include "ctrl/dump.f"
       ! #undef DTYPE
-      !     END DO
+      !     ENDDO
       !     WRITE (*,'(//A/)') "Reals: "
       !     DO i=1,REAL_args_i
       ! #define DTYPE REAL
       ! #include "ctrl/dump.f"
       ! #undef DTYPE
-      !     END DO
+      !     ENDDO
       !     WRITE (*,'(//A/)') "Chars: "
       !     DO i=1,CHAR_args_i
       ! #define DTYPE CHAR
@@ -1838,7 +1847,7 @@
       ! #include "ctrl/dump.f"
       ! #undef STRING
       ! #undef DTYPE
-      !     END DO
+      !     ENDDO
       !     WRITE (*,'(//A/)') "Logicals: "
       !     DO i=1,LOGICAL_args_i
       ! #define DTYPE LOGICAL
@@ -1846,7 +1855,7 @@
       ! #include "ctrl/dump.f"
       ! #undef BOOL
       ! #undef DTYPE
-      !     END DO
+      !     ENDDO
       !   END SUBROUTINE dump_defines
         SUBROUTINE dump_args
         !!! Debugging procedure. Prints all supplied command line args.
@@ -1869,8 +1878,8 @@
                 stdout("used")
              ELSE
                 stdout("not used")
-             END IF
-          END DO
+             ENDIF
+          ENDDO
         END SUBROUTINE dump_args
         !------------------------------------------------------------------------
         !  Adders - black or otherwise
@@ -2002,7 +2011,7 @@
 !           !-------------------------------------------------------------------------
 !           !  Return
 !           !-------------------------------------------------------------------------
-!  9999     CONTINUE
+!     9999 CONTINUE
 !           RETURN
 !         END SUBROUTINE Uppercase
 

@@ -2,99 +2,116 @@
       !!! Computes resolution field D
       !!!----------------------------------------------------------------------------!
 
-      SUBROUTINE DTYPE(sop_compute_D)(this,D_fun,opts,info, &
-      &          wp_fun,wp_grad_fun,level_fun,level_grad_fun,nb_fun, &
-      &          only_D_tilde,stats)
+      SUBROUTINE DTYPE(sop_compute_D)(this,D_fun,opts,info,   &
+      &          wp_fun,wp_grad_fun,level_fun,level_grad_fun, &
+      &          nb_fun,only_D_tilde,stats)
 
         USE ppm_module_mpi
         IMPLICIT NONE
 
         DEFINE_MK()
-        ! arguments
-        CLASS(DTYPE(ppm_t_sop)),              INTENT(INOUT)   :: this
+        !-------------------------------------------------------------------------
+        !  Arguments
+        !-------------------------------------------------------------------------
+        CLASS(DTYPE(ppm_t_sop))                             :: this
         !!! particles
-        TYPE(DTYPE(ppm_t_options_sop)),       INTENT(IN   )   :: opts
-        !!! options
-        INTEGER,                              INTENT(  OUT)   :: info
-
-        !optional arguments
-        OPTIONAL                                              :: wp_fun
-        !!! if field is known analytically
-        OPTIONAL                                              :: wp_grad_fun
-        !!! if field gradients are known analytically
-        OPTIONAL                                              :: level_fun
-        !!! if level function is known analytically
-        OPTIONAL                                              :: level_grad_fun
-        !!! if level gradients are known analytically
-        OPTIONAL                                              :: nb_fun
-        !!! if narrow-band function is known analytically
-        LOGICAL, OPTIONAL                                     :: only_D_tilde
-        !!! only compute D_tilde, then exits (no ghosts, no neighlists, no D)
-        TYPE(DTYPE(sop_t_stats)),POINTER,OPTIONAL,INTENT(OUT) :: stats
-        !!! statistics on output
-
         ! argument-functions need an interface
         INTERFACE
           !Monitor function
           FUNCTION D_fun(f1,dfdx,opts,f2)
-              USE ppm_module_data, ONLY: ppm_dim
-              USE ppm_module_interfaces
-              import DTYPE(ppm_t_options_sop)
-              DEFINE_MK()
-              REAL(MK)                               :: D_fun
-              REAL(MK),                   INTENT(IN) :: f1
-              REAL(MK),DIMENSION(ppm_dim),INTENT(IN) :: dfdx
-              TYPE(DTYPE(ppm_t_options_sop)),   INTENT(IN) :: opts
-              REAL(MK),OPTIONAL,          INTENT(IN) :: f2
+              IMPORT                                        :: DTYPE(ppm_t_options_sop)
+              IMPORT                                        :: MK,ppm_dim
+              IMPLICIT NONE
+              REAL(MK),                       INTENT(IN   ) :: f1
+              REAL(MK), DIMENSION(ppm_dim),   INTENT(IN   ) :: dfdx
+              TYPE(DTYPE(ppm_t_options_sop)), INTENT(IN   ) :: opts
+              REAL(MK), OPTIONAL,             INTENT(IN   ) :: f2
+              REAL(MK)                                      :: D_fun
           END FUNCTION D_fun
+        END INTERFACE
 
-          !Function that returns the width of the narrow band
-          FUNCTION nb_fun(kappa,scale_D)
-              USE ppm_module_interfaces
-              DEFINE_MK()
-              REAL(MK)                             :: nb_fun
-              REAL(MK),                INTENT(IN)  :: kappa
-              REAL(MK),                INTENT(IN)  :: scale_D
-          END FUNCTION nb_fun
-
+        TYPE(DTYPE(ppm_t_options_sop)),     INTENT(IN   )   :: opts
+        !!! options
+        INTEGER,                            INTENT(  OUT)   :: info
+        !-------------------------------------------------------------------------
+        !  Optional arguments
+        !-------------------------------------------------------------------------
+        OPTIONAL                                            :: wp_fun
+        !!! if field is known analytically
+        ! argument-functions need an interface
+        INTERFACE
           !Field function (usually known only during initialisation)
           FUNCTION wp_fun(pos)
-              USE ppm_module_data, ONLY: ppm_dim
-              USE ppm_module_interfaces
-              DEFINE_MK()
-              REAL(MK),DIMENSION(ppm_dim),INTENT(IN)        :: pos
-              REAL(MK)                                      :: wp_fun
+              IMPORT                                      :: MK,ppm_dim
+              IMPLICIT NONE
+              REAL(MK), DIMENSION(ppm_dim), INTENT(IN   ) :: pos
+              REAL(MK)                                    :: wp_fun
           END FUNCTION wp_fun
+        END INTERFACE
 
-          !Level function (usually known only during initialisation)
-          FUNCTION level_fun(pos)
-              USE ppm_module_data, ONLY: ppm_dim
-              USE ppm_module_interfaces
-              DEFINE_MK()
-              REAL(MK),DIMENSION(ppm_dim),INTENT(IN)        :: pos
-              REAL(MK)                                      :: level_fun
-          END FUNCTION level_fun
-
+        OPTIONAL                                            :: wp_grad_fun
+        !!! if field gradients are known analytically
+        ! argument-functions need an interface
+        INTERFACE
           !Gradient of the field func. (usually known only during initialisation)
           FUNCTION wp_grad_fun(pos)
-              USE ppm_module_data, ONLY: ppm_dim
-              USE ppm_module_interfaces
-              DEFINE_MK()
-              REAL(MK),DIMENSION(ppm_dim)                      :: wp_grad_fun
-              REAL(MK),DIMENSION(ppm_dim),INTENT(IN)           :: pos
+              IMPORT                                      :: MK,ppm_dim
+              IMPLICIT NONE
+              REAL(MK), DIMENSION(ppm_dim), INTENT(IN   ) :: pos
+              REAL(MK), DIMENSION(ppm_dim)                :: wp_grad_fun
           END FUNCTION wp_grad_fun
+        END INTERFACE
 
+        OPTIONAL                                            :: level_fun
+        !!! if level function is known analytically
+        ! argument-functions need an interface
+        INTERFACE
+          !Level function (usually known only during initialisation)
+          FUNCTION level_fun(pos)
+              IMPORT                                      :: MK,ppm_dim
+              IMPLICIT NONE
+              REAL(MK), DIMENSION(ppm_dim), INTENT(IN   ) :: pos
+              REAL(MK)                                    :: level_fun
+          END FUNCTION level_fun
+        END INTERFACE
+
+        OPTIONAL                                            :: level_grad_fun
+        !!! if level gradients are known analytically
+        ! argument-functions need an interface
+        INTERFACE
           !Gradient of the level func. (usually known only during initialisation)
           FUNCTION level_grad_fun(pos)
-              USE ppm_module_data, ONLY: ppm_dim
-              USE ppm_module_interfaces
-              DEFINE_MK()
-              REAL(MK),DIMENSION(ppm_dim)                      :: level_grad_fun
-              REAL(MK),DIMENSION(ppm_dim),INTENT(IN)           :: pos
+              IMPORT                                      :: MK,ppm_dim
+              IMPLICIT NONE
+              REAL(MK), DIMENSION(ppm_dim), INTENT(IN   ) :: pos
+              REAL(MK), DIMENSION(ppm_dim)                :: level_grad_fun
           END FUNCTION level_grad_fun
         END INTERFACE
 
-        ! local variables
+        OPTIONAL                                            :: nb_fun
+        !!! if narrow-band function is known analytically
+        ! argument-functions need an interface
+        INTERFACE
+          !Function that returns the width of the narrow band
+          FUNCTION nb_fun(kappa,scale_D)
+              IMPORT                  :: MK
+              IMPLICIT NONE
+              REAL(MK), INTENT(IN   ) :: kappa
+              REAL(MK), INTENT(IN   ) :: scale_D
+              REAL(MK)                :: nb_fun
+          END FUNCTION nb_fun
+        END INTERFACE
+
+        LOGICAL,                  OPTIONAL                  :: only_D_tilde
+        !!! only compute D_tilde, then exits (no ghosts, no neighlists, no D)
+        ! argument-functions need an interface
+
+        TYPE(DTYPE(sop_t_stats)), OPTIONAL, POINTER         :: stats
+        !!! statistics on output
+
+        !-------------------------------------------------------------------------
+        !  Local variables
+        !-------------------------------------------------------------------------
         INTEGER                                    :: i,ip,ineigh,iq
         CHARACTER(LEN=64)                          :: myformat
 

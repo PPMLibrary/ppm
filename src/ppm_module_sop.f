@@ -32,7 +32,7 @@
 #define  _MK _ppm_kind_double
 #include "sop/sop_typedef.f"
 
-      INTEGER, PRIVATE, DIMENSION(3) :: ldc
+      INTEGER, DIMENSION(3) :: ldc
       !!! Number of elements in all dimensions for allocation
 
       PUBLIC :: ppm_t_sop_s, ppm_t_sop_d
@@ -53,9 +53,8 @@
 #include "sop/sop_compute_D.f"
 #include "sop/sop_self_organize.f"
 #undef  DEFINE_MK
-
-#undef  DTYPE
 #undef  __KIND
+#undef  DTYPE
 
 
 #define DTYPE(a) a/**/_d
@@ -66,9 +65,8 @@
 #include "sop/sop_compute_D.f"
 #include "sop/sop_self_organize.f"
 #undef  DEFINE_MK
-
-#undef  DTYPE
 #undef  __KIND
+#undef  DTYPE
 
       END MODULE ppm_module_sop
 

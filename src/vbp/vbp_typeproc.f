@@ -2,10 +2,11 @@
           !!! create a set of particles
           !!! This allocates the particle positions.
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
           CLASS(DTYPE(ppm_t_vbp))                   :: Pc
           !!! Data structure containing the particles
           INTEGER,                    INTENT(IN   ) :: Npart
@@ -79,10 +80,11 @@
           !!! the ghosts are flagged as "not up-to-date" and will have to be
           !!! recomputed before they are used again.
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
           CLASS(DTYPE(ppm_t_vbp))                  :: Pc
           REAL(MK),                 INTENT(IN   )  :: cutoff
           !!! cutoff radius (same number of elements as we have particles)

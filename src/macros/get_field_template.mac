@@ -1,5 +1,16 @@
 include macro ppm_get_field_template(ndim_arg,el_type)
 % ndim = ndim_arg.to_s.to_i
+% if el_type.to_s == "rs"
+%   kind = "ppm_kind_single"
+% elsif el_type.to_s == "rd"
+%   kind = "ppm_kind_double"
+% elsif el_type.to_s == "cs"
+%   kind = "ppm_kind_single"
+% elsif el_type.to_s == "cd"
+%   kind = "ppm_kind_double"
+% elsif el_type.to_s == "li"
+%   kind = "ppm_kind_int64"
+% end
       SUBROUTINE subpatch_get_field_<%= ndim %>d_<%= el_type%>(this,Field,wp,info)
           !!! Points wp to the data array for the discretization of Field
           !!! on this subpatch.
@@ -12,17 +23,6 @@ include macro ppm_get_field_template(ndim_arg,el_type)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch)                                       :: this
           CLASS(ppm_t_field_)                                         :: Field
-% if el_type.to_s == "rs"
-%   kind = "ppm_kind_single"
-% elsif el_type.to_s == "rd"
-%   kind = "ppm_kind_double"
-% elsif el_type.to_s == "cs"
-%   kind = "ppm_kind_single"
-% elsif el_type.to_s == "cd"
-%   kind = "ppm_kind_double"
-% elsif el_type.to_s == "li"
-%   kind = "ppm_kind_int64"
-% end
 
 % if ndim == 2
 % if el_type.to_s == "rs" || el_type.to_s == "rd"
@@ -87,23 +87,21 @@ end macro
 
 include macro ppm_get_field_interface_template(ndim_arg,el_type)
 % ndim = ndim_arg.to_s.to_i
-      SUBROUTINE subpatch_get_field_<%= ndim %>d_<%= el_type%>_(this,Field,wp,info)
-      IMPORT ppm_t_subpatch_,ppm_t_field_
 % if el_type.to_s == "rs"
 %   kind = "ppm_kind_single"
-      IMPORT <%= kind %>
 % elsif el_type.to_s == "rd"
 %   kind = "ppm_kind_double"
-      IMPORT <%= kind %>
 % elsif el_type.to_s == "cs"
 %   kind = "ppm_kind_single"
-      IMPORT <%= kind %>
 % elsif el_type.to_s == "cd"
 %   kind = "ppm_kind_double"
-      IMPORT <%= kind %>
 % elsif el_type.to_s == "li"
 %   kind = "ppm_kind_int64"
-      IMPORT <%= kind %>
+% end
+      SUBROUTINE subpatch_get_field_<%= ndim %>d_<%= el_type%>_(this,Field,wp,info)
+          IMPORT :: ppm_t_subpatch_,ppm_t_field_
+% if el_type.to_s != "i" && el_type.to_s != "l"
+          IMPORT :: <%= kind %>
 % end
           IMPLICIT NONE
           !-------------------------------------------------------------------------

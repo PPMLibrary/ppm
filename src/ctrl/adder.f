@@ -173,7 +173,7 @@
           IF (.NOT. ASSOCIATED(WRAP(DTYPE)_args)) THEN
              ALLOCATE(WRAP(DTYPE)_args(1:di))
              WRAP(DTYPE)_args_i = 0
-          END IF
+          ENDIF
           ! increment counter
           WRAP(DTYPE)_args_i = WRAP(DTYPE)_args_i + 1
           ! grow storage by di if needed
@@ -181,7 +181,7 @@
              ALLOCATE(temp(1:SIZE(WRAP(DTYPE)_args)+di),SOURCE=WRAP(DTYPE)_args)
              DEALLOCATE(WRAP(DTYPE)_args)
              WRAP(DTYPE)_args => temp
-          END IF
+          ENDIF
           ! populate structure
           def%variable  => variable
           def%name      =  name
@@ -204,13 +204,13 @@
              def%flag_set             =  .TRUE.
              def%settable             =  .TRUE.
              group_has_arg(groups_i)  =  .TRUE.
-          END IF
+          ENDIF
           IF (PRESENT(long_flag)) THEN
              def%long_flag            =  long_flag
              def%long_flag_set        =  .TRUE.
              def%settable             =  .TRUE.
              group_has_arg(groups_i)  =  .TRUE.
-          END IF
+          ENDIF
           IF (PRESENT(ctrl_name)) THEN
              def%ctrl_name            =  ctrl_name
              def%ctrl_name_set        =  .TRUE.
@@ -218,48 +218,48 @@
              group_has_ctrl(groups_i) =  .TRUE.
              len                      =  LEN_TRIM(ctrl_name)
              IF (len .GT. group_max_len(groups_i)) group_max_len(groups_i) = len
-          END IF
+          ENDIF
           IF (PRESENT(help)) THEN
              def%help                 =  help
              def%help_set             =  .TRUE.
-          END IF
+          ENDIF
           IF (PRESENT(default)) THEN
              def%default              =  default
              def%default_set          =  .TRUE.
-          END IF
+          ENDIF
 #ifdef __F2003
           IF (PRESENT(default_func)) THEN
              def%default_func         => default_func
              def%default_func_set     =  .TRUE.
-          END IF
+          ENDIF
           IF (PRESENT(validator)) THEN
              def%validator            => validator
              def%validator_set        =  .TRUE.
-          END IF
+          ENDIF
 #endif
 #if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
           IF (PRESENT(min)) THEN
              def%min                  =  min
              def%min_set              =  .TRUE.
-          END IF
+          ENDIF
           IF (PRESENT(max)) THEN
              def%max                  =  max
              def%max_set              =  .TRUE.
-          END IF
+          ENDIF
 #elif defined(__STRING)
       !     IF (PRESENT(min)) THEN
       !        def%min                  =  min
       !        def%min_set              =  .TRUE.
-      !     END IF
+      !     ENDIF
       !     IF (PRESENT(max)) THEN
       !        def%max                  =  max
       !        def%max_set              =  .TRUE.
-      !     END IF
+      !     ENDIF
 #endif
 #if defined(__LOGICAL) && !defined(ARRAY)
           IF (PRESENT(vtype)) THEN
              def%vtype = vtype
-          END IF
+          ENDIF
 #endif
           ! group
           def%group            = groups_i

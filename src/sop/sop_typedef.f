@@ -17,7 +17,6 @@
          !!! index of the wps array where the level-set is stored
          !    INTEGER                           :: level_old_id
          !!! index of the wps array where the level-set is backed up before adapt
-
          CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: level_grad => NULL()
          !!! index of the wps array where the gradient of the level-set is stored
          !    INTEGER                           :: level_grad_old_id
@@ -35,7 +34,7 @@
          !!! index where G is stored
 
       CONTAINS
-      !PRIVATE
+         !PRIVATE
          PROCEDURE :: self_organize => DTYPE(sop_self_organize)
          PROCEDURE :: compute_D     => DTYPE(sop_compute_D)
       END TYPE DTYPE(ppm_t_sop)
