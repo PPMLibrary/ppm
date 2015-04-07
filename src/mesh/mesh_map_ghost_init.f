@@ -56,8 +56,7 @@
       INTEGER                               :: iopt,iset,ibuffer,pdim,isize,nnd
       INTEGER                               :: nsendlist,nsend,tag1,lb,ub,nrecv
 #ifdef __MPI
-      INTEGER                               :: sendrequest1,sendrequest2
-      INTEGER                               :: recvrequest1,recvrequest2
+      INTEGER, DIMENSION(2)                 :: request1,request2
       INTEGER, DIMENSION(MPI_STATUS_SIZE,2) :: status1,status2
 #endif
 
@@ -475,11 +474,11 @@
                ! How many blocks am I sending to that guy
                nsend = ub - lb
                tag1 = 100
-               CALL MPI_Isend(nsend,1,MPI_INTEGER,sendrank,tag1,ppm_comm,sendrequest1,info)
-               or_fail_MPI("MPI_Isend")
-
-               CALL MPI_Irecv(nrecv,1,MPI_INTEGER,recvrank,tag1,ppm_comm,recvrequest1,info)
+               CALL MPI_Irecv(nrecv,1,MPI_INTEGER,recvrank,tag1,ppm_comm,request1(1),info)
                or_fail_MPI("MPI_Irecv")
+
+               CALL MPI_Isend(nsend,1,MPI_INTEGER,sendrank,tag1,ppm_comm,request1(2),info)
+               or_fail_MPI("MPI_Isend")
 
                !--------------------------------------------------------------
                !  Allocate memory for block data send buffers
@@ -511,10 +510,7 @@
 
                ! Send it to the destination processor and get my stuff
                tag1 = 200
-               CALL MPI_Isend(sendbuf,iset,MPI_INTEGER,sendrank,tag1,ppm_comm,sendrequest2,info)
-               or_fail_MPI("MPI_Isend")
-
-               CALL MPI_Waitall(2,(/sendrequest1,recvrequest1/),status1,info)
+               CALL MPI_Waitall(2,request1,status1,info)
                or_fail_MPI("MPI_Waitall")
 
                !--------------------------------------------------------------
@@ -526,9 +522,11 @@
                or_fail_alloc("recvbuf")
 
                ! Send it to the destination processor and get my stuff
-               tag1 = 200
-               CALL MPI_Irecv(recvbuf,ldu(1),MPI_INTEGER,recvrank,tag1,ppm_comm,recvrequest2,info)
+               CALL MPI_Irecv(recvbuf,ldu(1),MPI_INTEGER,recvrank,tag1,ppm_comm,request2(1),info)
                or_fail_MPI("MPI_Irecv")
+
+               CALL MPI_Isend(sendbuf,iset,MPI_INTEGER,sendrank,tag1,ppm_comm,request2(2),info)
+               or_fail_MPI("MPI_Isend")
 
                ! How many blocks will I receive from the guy?
                this%ghost_nrecv            = this%ghost_nrecv      + nrecv
@@ -561,7 +559,7 @@
                lb = this%ghost_recvblk(i)
                ub = this%ghost_recvblk(ibuffer)
 
-               CALL MPI_Waitall(2,(/sendrequest2,recvrequest2/),status2,info)
+               CALL MPI_Waitall(2,request2,status2,info)
                or_fail_MPI("MPI_Waitall")
 
                iset = 0
