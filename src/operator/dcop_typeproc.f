@@ -222,6 +222,7 @@
         !!! The dimension of Field_to needs to conform the output of the
         !!! operator (vector or scalar, type, etc...).
         USE ppm_module_mpi
+        USE ppm_module_util_time
         IMPLICIT NONE
         !-------------------------------------------------------------------------
         !  Include
@@ -274,7 +275,7 @@
         start_subroutine("dcop_compute")
 
 #ifdef __MPI
-        t1 = MPI_WTIME(info)
+        CALL ppm_util_time(t1)
 #endif
         !-------------------------------------------------------------------------
         ! Check arguments
@@ -578,7 +579,7 @@
 
               Part_src%stats%nb_dc_apply = Part_src%stats%nb_dc_apply + 1
 #ifdef __MPI
-              t2 = MPI_WTIME(info)
+              CALL ppm_util_time(t2)
               Part_src%stats%t_dc_apply = Part_src%stats%t_dc_apply+(t2-t1)
 #endif
 

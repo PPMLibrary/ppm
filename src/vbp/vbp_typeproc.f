@@ -356,6 +356,7 @@
         USE ppm_module_inl_xset_vlist
         USE ppm_module_inl_k_vlist
         USE ppm_module_kdtree
+        USE ppm_module_util_time
         IMPLICIT NONE
 
         DEFINE_MK()
@@ -520,9 +521,8 @@
 
            IF (lknn) THEN
               this%stats%nb_kdtree = this%stats%nb_kdtree+1
-#ifdef __MPI
-              t1 = MPI_WTIME(info)
-#endif
+
+              CALL ppm_util_time(t1)
 
               ALLOCATE(tree,STAT=info)
               or_fail_alloc("tree")
@@ -572,10 +572,9 @@
 
               DEALLOCATE(results,STAT=info)
               or_fail_dealloc("results")
-#ifdef __MPI
-              t2 = MPI_WTIME(info)
+
+              CALL ppm_util_time(t2)
               this%stats%t_kdtree = this%stats%t_kdtree+(t2-t1)
-#endif
            ELSE
               !FIXME: when adaptive ghost layers are available
               ghostlayer(1:2*ppm_dim)=Part_src%ghostlayer
@@ -584,9 +583,8 @@
               conventionalinl: IF (this%conventionalinl) THEN
                  this%stats%nb_cinl = this%stats%nb_cinl+1
 
-#ifdef __MPI
-                 t1 = MPI_WTIME(info)
-#endif
+                 CALL ppm_util_time(t1)
+
                  !HUGLY HACK to make CNL routines work on a topology with
                  !several subdomains
 #if   __KIND == __SINGLE_PRECISION
@@ -604,42 +602,38 @@
 #endif
                  or_fail("ppm_cinl_vlist failed")
                  !end HUGLY HACK
-#ifdef __MPI
-                 t2 = MPI_WTIME(info)
+
+                 CALL ppm_util_time(t2)
                  this%stats%t_cinl = this%stats%t_cinl + (t2 - t1)
-#endif
               ELSE
 #endif
                  !__WITH_CNL
                  IF (xset_neighlists) THEN
                     this%stats%nb_xset_nl = this%stats%nb_xset_nl + 1
-#ifdef __MPI
-                    t1 = MPI_WTIME(info)
-#endif
+
+                    CALL ppm_util_time(t1)
+
                     CALL ppm_inl_xset_vlist(topoid,this%xp,                &
                     &    this%Npart,this%Mpart,Part_src%xp,Part_src%Npart, &
                     &    Part_src%Mpart,rcp,                               &
                     &    tskin,ghostlayer,info,Nlist%vlist,                &
                     &    Nlist%nvlist,lstore)
                     or_fail("ppm_inl_xset_vlist failed")
-#ifdef __MPI
-                    t2 = MPI_WTIME(info)
+
+                    CALL ppm_util_time(t2)
                     this%stats%t_xset_nl = this%stats%t_xset_nl + (t2 - t1)
-#endif
                  ELSE
                     this%stats%nb_inl = this%stats%nb_inl+1
-#ifdef __MPI
-                    t1 = MPI_WTIME(info)
-#endif
+
+                    CALL ppm_util_time(t1)
+
                     CALL ppm_inl_vlist(topoid,this%xp,np_target,     &
                     &    this%Mpart,rcp,tskin,lsymm,ghostlayer,info, &
                     &    Nlist%vlist,Nlist%nvlist)
                     or_fail("ppm_inl_vlist failed")
 
-#ifdef __MPI
-                    t2 = MPI_WTIME(info)
+                    CALL ppm_util_time(t2)
                     this%stats%t_inl = this%stats%t_inl + (t2 - t1)
-#endif
                  ENDIF ! XSET
 #ifdef __WITH_CNL
               ENDIF conventionalinl

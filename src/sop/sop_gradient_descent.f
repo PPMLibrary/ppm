@@ -16,6 +16,7 @@
           !!!---------------------------------------------------------------------!
 
           USE ppm_module_mpi
+          USE ppm_module_util_time
           USE ppm_module_inl_xset_vlist
           USE ppm_module_io_vtk
 #ifdef __USE_LBFGS
@@ -354,7 +355,7 @@
               !call check_duplicates(Particles)
 
 #ifdef __MPI
-              add_t1 = MPI_WTIME(info)
+              CALL ppm_util_time(add_t1)
 #endif
               !count neighbours at a distance < D and decide
               ! whether we need to add new particles
@@ -453,7 +454,7 @@
               ENDIF
 
 #ifdef __MPI
-              add_t2 = MPI_WTIME(info)
+              CALL ppm_util_time(add_t2)
               Particles%stats%t_add = Particles%stats%t_add + (add_t2-add_t1)
 #endif
 
@@ -470,7 +471,7 @@
               !(needs ghost particles to be up-to-date)
 
 #ifdef __MPI
-              del_t1 = MPI_WTIME(info)
+              CALL ppm_util_time(del_t1)
 #endif
 
 #ifdef __USE_DEL_METHOD2
@@ -488,7 +489,7 @@
               Particles%areinside=.TRUE.
               Particles%ontopology=.TRUE.
 #ifdef __MPI
-              del_t2 = MPI_WTIME(info)
+              CALL ppm_util_time(del_t2)
               Particles%stats%t_del = Particles%stats%t_del + (del_t2-del_t1)
 #endif
 
@@ -505,7 +506,7 @@
               ENDIF
 
 #ifdef __MPI
-              compD_t1 = MPI_WTIME(info)
+              CALL ppm_util_time(compD_t1)
 #endif
               Compute_D: IF (PRESENT(wp_grad_fun).OR. &
                   (.NOT.need_derivatives.AND.PRESENT(wp_fun))) THEN
@@ -525,7 +526,7 @@
 
               ENDIF Compute_D
 #ifdef __MPI
-              compD_t2 = MPI_WTIME(info)
+              CALL ppm_util_time(compD_t2)
               Particles%stats%t_compD = Particles%stats%t_compD + (compD_t2-compD_t1)
 #endif
 
@@ -542,7 +543,7 @@
                   ! if it has neighbours from the initial generation (D_old) that
                   ! also have a small D.
 #ifdef __MPI
-              t1 = MPI_WTIME(info)
+              CALL ppm_util_time(t1)
 #endif
               !WRITE(filename,'(A,I0,A,I0)') 'debug_old_',Particles%itime,'_',it_adapt
               !CALL ppm_vtk_particle_cloud(filename,Particles_old,info)
@@ -588,7 +589,7 @@
                   xp_old => Get_xp(Particles_old,with_ghosts=.true.)
 
 #ifdef __MPI
-              t2 = MPI_WTIME(info)
+              CALL ppm_util_time(t2)
               Particles%stats%t_xset_inl = Particles%stats%t_xset_inl + (t2-t1)
               Particles%stats%nb_xset_inl = Particles%stats%nb_xset_inl+1
 #endif
@@ -716,7 +717,7 @@
               !!---------------------------------------------------------------------!
               Particles%stats%nb_ls = Particles%stats%nb_ls + 1
 #ifdef __MPI
-              ls_t1 = MPI_WTIME(info)
+              CALL ppm_util_time(ls_t1)
 #endif
 
               !!---------------------------------------------------------------------!
@@ -1005,7 +1006,7 @@
 #endif
       !end ifdef between LBFGS and  SD  algorithms
 #ifdef __MPI
-              ls_t2 = MPI_WTIME(info)
+              CALL ppm_util_time(ls_t2)
               Particles%stats%t_ls = Particles%stats%t_ls + (ls_t2-ls_t1)
 #endif
 
