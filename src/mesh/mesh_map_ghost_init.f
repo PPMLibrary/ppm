@@ -48,16 +48,17 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      INTEGER, DIMENSION(2)          :: ldu
-      INTEGER, DIMENSION(ppm_dim)    :: op
-      INTEGER, DIMENSION(ppm_dim)    :: ghostsize_
-      INTEGER, DIMENSION(ppm_dim,26) :: ond
-      INTEGER                        :: i,j,sendrank,recvrank,isub,jsub,k
-      INTEGER                        :: iopt,iset,ibuffer,pdim,isize,nnd
-      INTEGER                        :: nsendlist,nsend,tag1,lb,ub,nrecv
+      INTEGER, DIMENSION(2)                 :: ldu
+      INTEGER, DIMENSION(ppm_dim)           :: op
+      INTEGER, DIMENSION(ppm_dim)           :: ghostsize_
+      INTEGER, DIMENSION(ppm_dim,26)        :: ond
+      INTEGER                               :: i,j,sendrank,recvrank,isub,jsub,k
+      INTEGER                               :: iopt,iset,ibuffer,pdim,isize,nnd
+      INTEGER                               :: nsendlist,nsend,tag1,lb,ub,nrecv
 #ifdef __MPI
-      INTEGER                        :: sendrequest1,sendrequest2
-      INTEGER                        :: recvrequest1,recvrequest2
+      INTEGER                               :: sendrequest1,sendrequest2
+      INTEGER                               :: recvrequest1,recvrequest2
+      INTEGER, DIMENSION(MPI_STATUS_SIZE,2) :: status1,status2
 #endif
 
       LOGICAL :: lsouth,lnorth,least,lwest,ltop,lbottom
@@ -82,7 +83,7 @@
          !-----------------------------------------------------------------------
          CALL ppm_util_commopt(this%topoid,info)
          IF (info.NE.0) GOTO 9999
-         IF (ppm_debug .GT. 1) THEN
+         IF (ppm_debug.GT.1) THEN
             DO i=1,topo%nneighproc
                stdout_f('(A,I4)',"have neighbor: ",'topo%ineighproc(i)')
             ENDDO
@@ -513,7 +514,7 @@
                CALL MPI_Isend(sendbuf,iset,MPI_INTEGER,sendrank,tag1,ppm_comm,sendrequest2,info)
                or_fail_MPI("MPI_Isend")
 
-               CALL MPI_Waitall(2,(/sendrequest1,recvrequest1/),MPI_STATUSES_IGNORE,info)
+               CALL MPI_Waitall(2,(/sendrequest1,recvrequest1/),status1,info)
                or_fail_MPI("MPI_Waitall")
 
                !--------------------------------------------------------------
@@ -560,7 +561,7 @@
                lb = this%ghost_recvblk(i)
                ub = this%ghost_recvblk(ibuffer)
 
-               CALL MPI_Waitall(2,(/sendrequest2,recvrequest2/),MPI_STATUSES_IGNORE,info)
+               CALL MPI_Waitall(2,(/sendrequest2,recvrequest2/),status2,info)
                or_fail_MPI("MPI_Waitall")
 
                iset = 0

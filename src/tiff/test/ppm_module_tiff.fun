@@ -190,6 +190,9 @@ test_suite ppm_module_tiff
        info=write_tiff_strip(wp(1:nm(1),1:nm(2)),bitsPerSampleW,nm(1),nm(2),0,1)
        Assert_Equal(info,0)
 
+       OPEN(UNIT=10000,FILE=outputimage,IOSTAT=info)
+       IF (info.EQ.0) CLOSE(10000,STATUS='DELETE')
+
        info=close_tiff()
        Assert_Equal(info,0)
 

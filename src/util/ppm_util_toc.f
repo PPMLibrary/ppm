@@ -40,6 +40,7 @@
       USE ppm_module_error
       USE ppm_module_util_time
       IMPLICIT NONE
+
       INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
       !  Arguments
@@ -55,23 +56,19 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                :: t0,t1
+      REAL(MK) :: t0,t1
 
-      INTEGER, DIMENSION(3)   :: ldu
+      INTEGER, DIMENSION(3) :: ldu
 
       !!! Current CPU clock time
-      CHARACTER(LEN=ppm_char) :: cbuf
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_tstats_toc'
 
       info = 0
       !-------------------------------------------------------------------------
       !  Call ppm_util_time
       !-------------------------------------------------------------------------
-      IF (ppm_tstats(id)%times(step).EQ.0.0_mk) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_sub_failed,'ppm_util_toc',&
-              'never has been ticked before',__LINE__,info)
-          GOTO 9999
+      IF (ppm_tstats(id)%times(step).EQ.0.0_MK) THEN
+         fail("never has been ticked before",ppm_err_sub_failed,ppm_error=ppm_error_fatal)
       ENDIF
       CALL ppm_util_time(t1)
 
@@ -80,16 +77,14 @@
       ppm_tstats(id)%times(step) = diff_t
 
       IF (PRESENT(verbose)) THEN
-          IF (verbose) THEN
-              WRITE(cbuf,'(A,A,E17.7,A)')ppm_tstats(id)%label, ' took ',&
-              & diff_t,' seconds'
-              CALL ppm_write(ppm_rank,caller,cbuf,info)
-          ENDIF
+         IF (verbose) THEN
+            stdout_f('(A,A,E17.7,A)','ppm_tstats(id)%label'," took ",diff_t," seconds")
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       RETURN
       END SUBROUTINE ppm_tstats_toc

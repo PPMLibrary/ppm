@@ -41,7 +41,6 @@
       USE ppm_module_write
       USE ppm_module_error
       USE ppm_module_util_time
-
       IMPLICIT NONE
 
       INTEGER, PARAMETER :: MK = ppm_kind_double
@@ -65,22 +64,17 @@
       !-------------------------------------------------------------------------
       !  Call ppm_util_time
       !-------------------------------------------------------------------------
-
       ! check that the array in ppm_btic%tic is large enough - reallocate if not
       IF (step.GT.ppm_tstats_nsamples) THEN
-          ldu(1) = 2 * ppm_tstats_nsamples
-          iopt = ppm_param_alloc_grow_preserve
-          DO istat = 1,ppm_ntstats
+         ldu(1) = 2 * ppm_tstats_nsamples
+         iopt = ppm_param_alloc_grow_preserve
+         DO istat = 1,ppm_ntstats
             CALL ppm_alloc(ppm_tstats(istat)%times,ldu,iopt,info)
-            IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,caller,'growing ppm_tstats',__LINE__,info)
-              GOTO 9999
-            ENDIF
-            ppm_tstats(istat)% &
-            &   times(ppm_tstats_nsamples+1:2*ppm_tstats_nsamples) = 0.0_mk
-          ENDDO
-          ppm_tstats_nsamples = 2 * ppm_tstats_nsamples
+            or_fail_alloc("growing ppm_tstats",ppm_error=ppm_error_fatal)
+
+            ppm_tstats(istat)%times(ppm_tstats_nsamples+1:2*ppm_tstats_nsamples) = 0.0_MK
+         ENDDO
+         ppm_tstats_nsamples = 2 * ppm_tstats_nsamples
       ENDIF
 
       ! add a timing entry in the buffer
@@ -89,6 +83,6 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       RETURN
       END SUBROUTINE ppm_tstats_tic
