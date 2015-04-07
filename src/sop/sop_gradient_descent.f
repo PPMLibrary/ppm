@@ -127,13 +127,12 @@
           REAL(MK),DIMENSION(:),ALLOCATABLE   :: DIAG
           REAL(MK),DIMENSION(:),ALLOCATABLE   :: xp_lbfgs,grad_lbfgs
 #endif
-#ifdef __MPI
+
           REAL(KIND(1.D0))                    :: t1,t2
           REAL(KIND(1.D0))                    :: ls_t1,ls_t2
           REAL(KIND(1.D0))                    :: add_t1,add_t2
           REAL(KIND(1.D0))                    :: del_t1,del_t2
           REAL(KIND(1.D0))                    :: compD_t1,compD_t2
-#endif
 
 
 #ifdef __USE_DEL_METHOD2
@@ -354,9 +353,8 @@
 
               !call check_duplicates(Particles)
 
-#ifdef __MPI
               CALL ppm_util_time(add_t1)
-#endif
+
               !count neighbours at a distance < D and decide
               ! whether we need to add new particles
               adaptation_ok = .true.
@@ -453,10 +451,9 @@
                   GOTO 9999
               ENDIF
 
-#ifdef __MPI
+
               CALL ppm_util_time(add_t2)
               Particles%stats%t_add = Particles%stats%t_add + (add_t2-add_t1)
-#endif
 
 
 #if debug_verbosity > 2
@@ -470,9 +467,7 @@
               !Delete (fuse) particles that are too close to each other
               !(needs ghost particles to be up-to-date)
 
-#ifdef __MPI
               CALL ppm_util_time(del_t1)
-#endif
 
 #ifdef __USE_DEL_METHOD2
               CALL sop_fuse2_particles(Particles,opts,info,nb_part_del=nb_fuse)
@@ -488,10 +483,9 @@
               !we only removed particles - they didnt move.
               Particles%areinside=.TRUE.
               Particles%ontopology=.TRUE.
-#ifdef __MPI
+
               CALL ppm_util_time(del_t2)
               Particles%stats%t_del = Particles%stats%t_del + (del_t2-del_t1)
-#endif
 
 #ifdef __USE_LBFGS
               IF (nb_fuse .GT. 0) lbfgs_continue = .FALSE.
@@ -505,9 +499,8 @@
                   GOTO 9999
               ENDIF
 
-#ifdef __MPI
               CALL ppm_util_time(compD_t1)
-#endif
+
               Compute_D: IF (PRESENT(wp_grad_fun).OR. &
                   (.NOT.need_derivatives.AND.PRESENT(wp_fun))) THEN
                   !!-----------------------------------------------------------------!
@@ -525,10 +518,9 @@
                   ! do not update D
 
               ENDIF Compute_D
-#ifdef __MPI
+
               CALL ppm_util_time(compD_t2)
               Particles%stats%t_compD = Particles%stats%t_compD + (compD_t2-compD_t1)
-#endif
 
               IF (.NOT. PRESENT(wp_fun)) THEN
                   !------------------------------------------------------------------!
@@ -542,9 +534,9 @@
                   ! It means that a particle can have a small D only
                   ! if it has neighbours from the initial generation (D_old) that
                   ! also have a small D.
-#ifdef __MPI
+
               CALL ppm_util_time(t1)
-#endif
+
               !WRITE(filename,'(A,I0,A,I0)') 'debug_old_',Particles%itime,'_',it_adapt
               !CALL ppm_vtk_particle_cloud(filename,Particles_old,info)
               !WRITE(filename,'(A,I0,A,I0)') 'debug_new_',Particles%itime,'_',it_adapt
@@ -588,11 +580,10 @@
                   xp => Get_xp(Particles)
                   xp_old => Get_xp(Particles_old,with_ghosts=.true.)
 
-#ifdef __MPI
               CALL ppm_util_time(t2)
               Particles%stats%t_xset_inl = Particles%stats%t_xset_inl + (t2-t1)
               Particles%stats%nb_xset_inl = Particles%stats%nb_xset_inl+1
-#endif
+
 
               !Linear interpolation of D_tilde
                   DO ip=1,Particles%Npart
@@ -716,9 +707,8 @@
               !! /begin Line search **
               !!---------------------------------------------------------------------!
               Particles%stats%nb_ls = Particles%stats%nb_ls + 1
-#ifdef __MPI
+
               CALL ppm_util_time(ls_t1)
-#endif
 
               !!---------------------------------------------------------------------!
               !! Reallocate arrays whose sizes have changed
@@ -1005,10 +995,9 @@
               GOTO 9999
 #endif
       !end ifdef between LBFGS and  SD  algorithms
-#ifdef __MPI
+
               CALL ppm_util_time(ls_t2)
               Particles%stats%t_ls = Particles%stats%t_ls + (ls_t2-ls_t1)
-#endif
 
 
 #if debug_verbosity > 0

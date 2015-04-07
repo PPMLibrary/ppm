@@ -274,9 +274,8 @@
 
         start_subroutine("dcop_compute")
 
-#ifdef __MPI
         CALL ppm_util_time(t1)
-#endif
+
         !-------------------------------------------------------------------------
         ! Check arguments
         !-------------------------------------------------------------------------
@@ -578,10 +577,9 @@
               ENDIF
 
               Part_src%stats%nb_dc_apply = Part_src%stats%nb_dc_apply + 1
-#ifdef __MPI
+
               CALL ppm_util_time(t2)
               Part_src%stats%t_dc_apply = Part_src%stats%t_dc_apply+(t2-t1)
-#endif
 
            CLASS DEFAULT
               fail("Wrong type. Operator should be discretized on a particle set")
