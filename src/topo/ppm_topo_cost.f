@@ -91,7 +91,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                        :: t0
+      REAL(MK)                        :: t0,ll,kk
 #ifdef __MPI
       REAL(MK), DIMENSION(:), POINTER :: costsum => NULL()
 #endif
@@ -117,9 +117,9 @@
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL check
-         IF (info .NE. 0) GOTO 9999
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -139,8 +139,8 @@
       !  Determine the total cost of each sub either based on particles or
       !  based on mesh points
       !-------------------------------------------------------------------------
-      IF (Np .GT. 0) THEN
-         IF (ppm_debug .GT. 0) THEN
+      IF (Np.GT.0) THEN
+         IF (ppm_debug.GT.0) THEN
             stdout("Computing costs based on particles")
          ENDIF
           !---------------------------------------------------------------------
@@ -171,7 +171,7 @@
                   !-------------------------------------------------------------
                   !  If the particle is inside the current subdomain, assign it
                   !-------------------------------------------------------------
-                  IF (ppm_dim .GT. 2) THEN
+                  IF (ppm_dim.GT.2) THEN
                       IF (xp(1,ipart).GE.min_sub(1,idom).AND.   &
                       &   xp(1,ipart).LT.max_sub(1,idom).AND.   &
                       &   xp(2,ipart).GE.min_sub(2,idom).AND.   &
@@ -235,7 +235,7 @@
           !---------------------------------------------------------------------
           !  Check that we did not miss a particle
           !---------------------------------------------------------------------
-          IF (nlist2 .GT. 0) THEN
+          IF (nlist2.GT.0) THEN
              fail("Beware: computed costs are wrong!",ppm_err_part_unass,exit_point=no)
           ENDIF
 
@@ -261,7 +261,7 @@
           !  topology. In the latter case the AllReduce would lead to wrong
           !  results.
           !---------------------------------------------------------------------
-          IF (nsubs .GT. 1) THEN
+          IF (nsubs.GT.1) THEN
              iopt = ppm_param_alloc_fit
              ldu(1) = nsubs
              CALL ppm_alloc(costsum,ldu,iopt,info)
@@ -286,13 +286,13 @@
              or_fail_dealloc("sum of costs costs COSTSUM",exit_point=no)
           ENDIF
 #endif
-      ENDIF !(Np .GT. 0)
+      ENDIF !(Np.GT.0)
 
       IF (SIZE(nnodes,2) .GE. nsubs) THEN
           !---------------------------------------------------------------------
           !  Cost based on mesh points
           !---------------------------------------------------------------------
-          IF (ppm_debug .GT. 0) THEN
+          IF (ppm_debug.GT.0) THEN
              stdout("Computing costs based on mesh points")
           ENDIF
           IF (ppm_dim .EQ. 3) THEN
@@ -309,11 +309,11 @@
                  cost(i) = cost(i) + REAL(PRODUCT(Nc),MK)
               ENDDO
           ENDIF
-      ELSEIF (Np .LT. 1) THEN
+      ELSE IF (Np .LT. 1) THEN
           !---------------------------------------------------------------------
           !  Cost based on geometry if we have no particles and no mesh
           !---------------------------------------------------------------------
-          IF (ppm_debug .GT. 0) THEN
+          IF (ppm_debug.GT.0) THEN
               stdout("Computing costs based on geometry")
           ENDIF
           IF (ppm_dim .EQ. 3) THEN
@@ -330,12 +330,23 @@
                  cost(i) = PRODUCT(len_sub)
               ENDDO
           ENDIF
+
+          ll=MINVAL(cost)
+          IF (ll.GT.0.0_MK) THEN
+             kk=1._MK
+             DO WHILE (ll*kk.LE.1.0_MK)
+                kk=kk*10._MK
+             ENDDO
+             IF (kk.LT.10._MK**10) THEN
+                cost(1:nsubs)=cost(1:nsubs)*kk
+             ENDIF
+          ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Some diagnostics
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 1) THEN
+      IF (ppm_debug.GT.1) THEN
           stdout("----------------------------------------------")
           DO i=1,nsubs
              stdout_f('(I4,A,F15.3)',i," sub cost: ",'cost(i)')
@@ -367,7 +378,7 @@
                 ENDIF
              ENDDO
           ENDDO
-          IF (Np .GT. 0) THEN
+          IF (Np.GT.0) THEN
              IF (SIZE(xp,2) .LT. Np) THEN
                 fail("not enough particles contained in xp",exit_point=8888)
              ENDIF
