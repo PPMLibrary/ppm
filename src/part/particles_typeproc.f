@@ -476,7 +476,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
                    prop%data_2d_i(1:lda,1:npart) = 0
 
                 CASE (ppm_type_longint)
-                   prop%data_2d_li(1:lda,1:npart) = 0
+                   prop%data_2d_li(1:lda,1:npart) = 0_ppm_kind_int64
 
                 CASE (ppm_type_real,ppm_type_real_single)
                    prop%data_2d_r(1:lda,1:npart) = 0._MK
@@ -520,7 +520,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
                    prop%data_1d_i(1:npart) = 0
 
                 CASE (ppm_type_longint)
-                   prop%data_1d_li(1:npart) = 0
+                   prop%data_1d_li(1:npart) = 0_ppm_kind_int64
 
                 CASE (ppm_type_real,ppm_type_real_single)
                    prop%data_1d_r(1:npart) = 0._MK
@@ -3149,8 +3149,10 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
              ENDDO
 
              IF (.NOT.skip_send) THEN
-                CALL ppm_map_part_send(Pc%Npart,Pc%Mpart,info)
-                or_fail("ppm_map_part_send")
+!                 CALL ppm_map_part_send(Pc%Npart,Pc%Mpart,info)
+!                 or_fail("ppm_map_part_send")
+                CALL ppm_map_part_isend(Pc%Npart,Pc%Mpart,info)
+                or_fail("ppm_map_part_isend")
 
                 prop => Pc%props%last()
                 DO WHILE (ASSOCIATED(prop))
@@ -3294,8 +3296,10 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
                 prop => Pc%props%next()
              ENDDO
 
-             CALL ppm_map_part_send(Pc%Npart,Npart_new,info)
-             or_fail("ppm_map_part_send")
+!              CALL ppm_map_part_send(Pc%Npart,Npart_new,info)
+!              or_fail("ppm_map_part_send")
+             CALL ppm_map_part_isend(Pc%Npart,Npart_new,info)
+             or_fail("ppm_map_part_isend")
 
              prop => Pc%props%last()
              DO WHILE (ASSOCIATED(prop))
@@ -3539,7 +3543,6 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_push)
-
 
       SUBROUTINE DTYPE(part_map_send)(Pc,info)
 
