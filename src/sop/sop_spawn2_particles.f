@@ -416,6 +416,8 @@
           INTEGER,DIMENSION(:),POINTER          :: nb_neigh
           INTEGER                               :: nb_close_theo, nb_fuse_neigh
 
+          REAL(MK), PARAMETER :: big=HUGE(1.0_MK)
+
           info = 0
           nvlist => Particles%nvlist
           vlist => Particles%vlist
@@ -430,7 +432,7 @@
           !max_nn = 0._mk
           avg_nn = 0._mk
           particle_loop: DO ip = 1,Particles%Npart
-              nn = HUGE(1._MK)
+              nn = big
               close_neigh = 0
               nb_fuse_neigh = 0
               very_close_neigh = 0

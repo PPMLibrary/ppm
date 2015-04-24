@@ -128,6 +128,8 @@
           REAL(MK),DIMENSION(:),ALLOCATABLE   :: xp_lbfgs,grad_lbfgs
 #endif
 
+          REAL(MK), PARAMETER :: big=HUGE(1._MK)
+
           REAL(KIND(1.D0))                    :: t1,t2
           REAL(KIND(1.D0))                    :: ls_t1,ls_t2
           REAL(KIND(1.D0))                    :: add_t1,add_t2
@@ -201,10 +203,10 @@
 
           it_adapt = 0
           adding_particles=.TRUE.
-          Psi_max = HUGE(1._MK)
-          gradPsi_max = HUGE(1._MK)
-          Psi_global = HUGE(1._MK)
-          Psi_global_old = HUGE(1._MK)
+          Psi_max = big
+          gradPsi_max = big
+          Psi_global = big
+          Psi_global_old = big
 
           ! Adaptivity stopping criterion
           IF (PRESENT(threshold)) THEN
@@ -591,8 +593,8 @@
                           Dtilde(ip) = opts%maximum_D
                           D(ip) = opts%maximum_D
                       else
-                          minDold=HUGE(1._MK)
-                          tmpvar1=HUGE(1._MK)
+                          minDold=big
+                          tmpvar1=big
                           Dtilde(ip) = 0._mk
                           weight_sum = 0._mk
 
@@ -892,7 +894,7 @@
 #endif
 
 
-              Psi_1 = HUGE(1._MK)
+              Psi_1 = big
               alpha1 = -1._MK
               alpha2 = -1._MK
               step_previous = 0._MK
@@ -1323,9 +1325,9 @@
           ENDIF
 
           it_adapt = 0
-          Psi_max = HUGE(1._MK)
-          Psi_global = HUGE(1._MK)
-          Psi_global_old = HUGE(1._MK)
+          Psi_max = big
+          Psi_global = big
+          Psi_global_old = big
 
           ! Adaptivity stopping criterion
           IF (PRESENT(threshold)) THEN
@@ -1509,7 +1511,7 @@
                   D     => Get_wps(Particles,    Particles%D_id)
                   D_old => Get_wps(Particles_old,Particles_old%D_id)
                   DO ip=1,Particles%Npart
-                      minDold=HUGE(1._MK)
+                      minDold=big
                       DO ineigh=1,nvlist_cross(ip)
                           iq=vlist_cross(ineigh,ip)
                           minDold=MIN(minDold,D_old(iq))
@@ -1799,7 +1801,7 @@
               !ENDIF
 
               Psi_global_old = Psi_global
-              Psi_1 = HUGE(1._MK)
+              Psi_1 = big
               alpha1 = -1._MK
               alpha2 = -1._MK
               step_previous = 0._MK

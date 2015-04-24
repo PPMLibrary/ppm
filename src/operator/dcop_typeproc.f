@@ -35,6 +35,7 @@
           REAL(MK), DIMENSION(:),   POINTER :: nn2
           REAL(MK), DIMENSION(:,:), POINTER :: xp => NULL()
           REAL(MK)                          :: dist2
+          REAL(MK), PARAMETER               :: big=HUGE(1.0_MK)
 
           INTEGER, DIMENSION(:),   POINTER :: nvlist
           INTEGER, DIMENSION(:,:), POINTER :: vlist
@@ -100,7 +101,7 @@
                    or_fail("could not get pointer to Verlet lists")
 
                    DO ip=1,Part_src%Npart
-                      nn2(ip) = HUGE(1._MK)
+                      nn2(ip) = big
                       DO ineigh=1,nvlist(ip)
                          iq=vlist(ineigh,ip)
                          dist2 = SUM((xp(1:ppm_dim,iq)-xp(1:ppm_dim,ip))**2)

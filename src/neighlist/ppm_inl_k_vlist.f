@@ -490,7 +490,8 @@
       !-------------------------------------------------------------------------
       TYPE(DTYPE(tree_search_record)), POINTER :: sr
 
-      REAL(MK) :: t0
+      REAL(MK)            :: t0
+      REAL(MK), PARAMETER :: big=REAL(HUGE(1.0),MK)
 
       CHARACTER(LEN=ppm_char) :: caller='kdtree_n_nearest'
 
@@ -505,7 +506,7 @@
       sr%correltime = 0
       sr%nalloc     = nn   ! will be checked
       sr%ind        => tp%ind
-      sr%ballsize   = HUGE(1.0)
+      sr%ballsize   = big
       sr%qv(1:tp%dimen)=qv(1:tp%dimen)
       IF (tp%rearrange) THEN
          sr%data    => tp%rearranged_data
@@ -566,7 +567,8 @@
       !-------------------------------------------------------------------------
       TYPE(DTYPE(tree_search_record)), POINTER :: sr
 
-      REAL(MK) :: t0
+      REAL(MK)            :: t0
+      REAL(MK), PARAMETER :: big=REAL(HUGE(1.0),MK)
 
       INTEGER :: iopt,ldu(1)
 
@@ -582,7 +584,7 @@
       sr%correltime =correltime
       sr%nalloc     = nn   ! will be checked
       sr%ind        => tp%ind
-      sr%ballsize   = HUGE(1.0)
+      sr%ballsize   = big
       sr%qv(1:tp%dimen)=tp%the_data(:,idxin) ! copy the vector
       IF (tp%rearrange) THEN
          sr%data    => tp%rearranged_data
@@ -957,6 +959,7 @@
       !  Local variables, arrays and counters
       !-------------------------------------------------------------------------
       REAL(MK)                            :: t0
+      REAL(MK), PARAMETER                 :: big=REAL(HUGE(1.0),MK)
       REAL(MK), DIMENSION(:), ALLOCATABLE :: all_distances
 
       INTEGER :: i,j,k,d
@@ -972,7 +975,7 @@
       FORALL (i=1:tp%n) all_distances(i) = SUM((qv(1:d)-tp%the_data(1:d,i))**2)
 
       ! now find 'n' smallest distances
-      FORALL (i=1:nn) results(i)=DTYPE(kdtree_result)(HUGE(1.0),-1)
+      FORALL (i=1:nn) results(i)=DTYPE(kdtree_result)(big,-1)
 
       DO i =1,tp%n
          IF (all_distances(i).LT.results(nn)%dis) THEN

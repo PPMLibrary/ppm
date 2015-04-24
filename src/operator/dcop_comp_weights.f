@@ -61,6 +61,7 @@
           REAL(MK), DIMENSION(:,:), POINTER     :: eta => NULL()
           REAL(MK)                              :: c_value
           REAL(MK)                              :: min_sv_p
+          REAL(MK), PARAMETER                   :: big=HUGE(1.0_MK)
 
           INTEGER, DIMENSION(:,:), ALLOCATABLE :: alpha,gamma
           INTEGER                              :: order_a
@@ -245,7 +246,7 @@
 
           !only used to compute the SVD, mainly for debugging.
           IF (PRESENT(min_sv)) THEN
-             min_sv = HUGE(1._MK)
+             min_sv = big
              ALLOCATE(Z_copy(ncoeff,ncoeff),STAT=info)
              or_fail_alloc("Z_copy")
           ENDIF

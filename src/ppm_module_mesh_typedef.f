@@ -1582,15 +1582,16 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          REAL(ppm_kind_double),DIMENSION(2*ppm_dim) :: patch
+          REAL(ppm_kind_double), DIMENSION(2*ppm_dim) :: patch
+          REAL(ppm_kind_double), PARAMETER :: big=HUGE(1._ppm_kind_double)
 
           start_subroutine("mesh_def_uniform")
 
           !----------------------------------------------------------------
           ! Create a huge patch
           !----------------------------------------------------------------
-          patch(1:ppm_dim)           = -HUGE(1._ppm_kind_double)
-          patch(ppm_dim+1:2*ppm_dim) =  HUGE(1._ppm_kind_double)
+          patch(1:ppm_dim)           = -big
+          patch(ppm_dim+1:2*ppm_dim) =  big
 
           !----------------------------------------------------------------
           !and add it to the mesh (it will compute the intersection
