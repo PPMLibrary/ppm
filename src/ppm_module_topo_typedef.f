@@ -195,11 +195,6 @@
       !!! store the new topology, if it is > size(ppm_topo) then the ppm_topo
       !!! array must be extended
 
-      PUBLIC :: ppm_t_topo
-      PUBLIC :: ppm_t_ptr_topo
-      PUBLIC :: ppm_topo
-      PUBLIC :: ppm_next_avail_topo
-
       !----------------------------------------------------------------------
       !  Define interface to the topoid check routine
       !----------------------------------------------------------------------
@@ -208,6 +203,10 @@
          MODULE PROCEDURE ppm_check_topoid
       END INTERFACE
 
+      PUBLIC :: ppm_t_topo
+      PUBLIC :: ppm_t_ptr_topo
+      PUBLIC :: ppm_topo
+      PUBLIC :: ppm_next_avail_topo
       PUBLIC :: ppm_check_topoid
 
       !----------------------------------------------------------------------

@@ -1,6 +1,6 @@
 include macro overload_function(func_name)
-%conf.ppm.type.all.each do |type_name|
-      SUBROUTINE <%=func_name%>_<%= type_name %>
+% conf.ppm.type.all.each do |type_name|
+SUBROUTINE <%=func_name%>_<%= type_name %>
 % end
 end macro
 
@@ -8,17 +8,15 @@ include macro ppm_create_collection(coll_type,el_type,generate="concrete",vec=fa
 % gen = generate.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 % def_pointer = def_ptr.to_s.match(/(true|t|yes|y|1)$/i) != nil
 % vector = vec.to_s.match(/(true|t|yes|y|1)$/i) != nil
-% def_pointer = def_ptr.to_s.match(/(true|t|yes|y|1)$/i) != nil
 % element_type = 'ppm_t_'+el_type.to_s
-% element_ptr_type   = 'ppm_t_ptr_'+el_type.to_s
 % if abstr_type == nil
 % abstr_type = coll_type.to_s + '_'
 % end
 % if ptr_type == nil
-% element_ptr_type   = 'ppm_t_ptr_'+el_type.to_s
+% element_ptr_type = 'ppm_t_ptr_'+el_type.to_s
 % element_ptr_type = element_ptr_type.gsub( /_\Z/m, "" )
 % else
-% element_ptr_type   = 'ppm_t_ptr_'+ptr_type.to_s
+% element_ptr_type = 'ppm_t_ptr_'+ptr_type.to_s
 % end
 % if vector
 % collection_type = 'ppm_v_'+coll_type.to_s
@@ -52,7 +50,7 @@ include macro ppm_create_collection(coll_type,el_type,generate="concrete",vec=fa
 % if gen == "extend"
 %#
       !
-      TYPE, EXTENDS(<%= abstr_collection_type %>) :: <%= collection_type %>
+      TYPE,EXTENDS(<%= abstr_collection_type %>) :: <%= collection_type %>
       CONTAINS
 %proc_list.each do |func_name|
           PROCEDURE :: <%=func_name%> => <%= collection_type %>_<%=func_name%>
@@ -88,58 +86,67 @@ include macro ppm_create_collection_interfaces(coll_type,el_type,vec=false)
 % end
       !FIRST ELEMENT
       FUNCTION <%= collection_type %>_begin(this) RESULT (iterator)
-          IMPORT <%= collection_type %>,<%= element_type %>
+          IMPORT :: <%= collection_type %>,<%= element_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>), INTENT(INOUT) :: this
           CLASS(<%= element_type %>),    POINTER       :: iterator
       END FUNCTION <%= collection_type %>_begin
       !NEXT ELEMENT
       FUNCTION <%= collection_type %>_next(this) RESULT (iterator)
-          IMPORT <%= collection_type %>,<%= element_type %>
+          IMPORT :: <%= collection_type %>,<%= element_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>), INTENT(INOUT) :: this
           CLASS(<%= element_type %>),    POINTER       :: iterator
       END FUNCTION <%= collection_type %>_next
       !PREVIOUS ELEMENT
       FUNCTION <%= collection_type %>_prev(this) RESULT (iterator)
-          IMPORT <%= collection_type %>,<%= element_type %>
+          IMPORT :: <%= collection_type %>,<%= element_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>), INTENT(INOUT) :: this
           CLASS(<%= element_type %>),    POINTER       :: iterator
       END FUNCTION <%= collection_type %>_prev
       !LAST ELEMENT
       FUNCTION <%= collection_type %>_last(this) RESULT (iterator)
-          IMPORT <%= collection_type %>,<%= element_type %>
+          IMPORT :: <%= collection_type %>,<%= element_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>), INTENT(INOUT) :: this
           CLASS(<%= element_type %>),    POINTER       :: iterator
       END FUNCTION <%= collection_type %>_last
       !DESTROY COLLECTION
       SUBROUTINE <%= collection_type %>_destroy(this,info)
-          IMPORT <%= collection_type %>
+          IMPORT :: <%= collection_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>), INTENT(INOUT) :: this
           INTEGER,                       INTENT(  OUT) :: info
       END SUBROUTINE <%= collection_type %>_destroy
       !EXISTS
       FUNCTION <%= collection_type %>_exists(this,id) RESULT(exists)
-          IMPORT <%= collection_type %>
+          IMPORT :: <%= collection_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>), INTENT(IN   ) :: this
           INTEGER,                       INTENT(IN   ) :: id
           LOGICAL                                      :: exists
       END FUNCTION <%= collection_type %>_exists
       !HAS
       FUNCTION <%= collection_type %>_has(this,element) RESULT(has)
-          IMPORT <%= collection_type %>,<%= element_type %>
+          IMPORT :: <%= collection_type %>,<%= element_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>),      INTENT(INOUT) :: this
           CLASS(<%= element_type %>), TARGET, INTENT(IN   ) :: element
           LOGICAL                                           :: has
       END FUNCTION <%= collection_type %>_has
       !GET_ID
       FUNCTION <%= collection_type %>_get_id(this,element) RESULT(id)
-          IMPORT <%= collection_type %>,<%= element_type %>
+          IMPORT :: <%= collection_type %>,<%= element_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>),      INTENT(INOUT) :: this
           CLASS(<%= element_type %>), TARGET, INTENT(IN   ) :: element
           INTEGER                                           :: id
       END FUNCTION <%= collection_type %>_get_id
       !PUSH ELEMENT INTO COLLECTION
       SUBROUTINE <%= collection_type %>_push(this,element,info,id)
-          IMPORT <%= collection_type %>,<%= element_type %>
+          IMPORT :: <%= collection_type %>,<%= element_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>), INTENT(INOUT) :: this
           CLASS(<%= element_type %>),    POINTER       :: element
           INTEGER,                       INTENT(  OUT) :: info
@@ -147,20 +154,23 @@ include macro ppm_create_collection_interfaces(coll_type,el_type,vec=false)
       END SUBROUTINE <%= collection_type %>_push
       !REMOVE ELEMENT FROM COLLECTION
       SUBROUTINE <%= collection_type %>_remove(this,info,element)
-          IMPORT <%= collection_type %>,<%= element_type %>
+          IMPORT :: <%= collection_type %>,<%= element_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>),        INTENT(INOUT) :: this
           INTEGER,                              INTENT(  OUT) :: info
           CLASS(<%= element_type %>), OPTIONAL, INTENT(INOUT) :: element
       END SUBROUTINE <%= collection_type %>_remove
       !GROW COLLECTION SIZE
       SUBROUTINE <%= collection_type %>_grow_size(this,info)
-          IMPORT <%= collection_type %>
+          IMPORT :: <%= collection_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>), INTENT(INOUT) :: this
           INTEGER,                       INTENT(  OUT) :: info
       END SUBROUTINE <%= collection_type %>_grow_size
       !AT
       FUNCTION <%= collection_type %>_at(this,i) RESULT (element)
-          IMPORT <%= collection_type %>,<%= element_type %>
+          IMPORT :: <%= collection_type %>,<%= element_type %>
+          IMPLICIT NONE
           CLASS(<%= collection_type %>),  INTENT(INOUT) :: this
           INTEGER,                        INTENT(IN   ) :: i
           CLASS(<%= element_type %>),     POINTER       :: element
@@ -181,15 +191,16 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
       !also deletes the object itself)
 % end
 % if ptr_type == nil
-% element_ptr_type   = 'ppm_t_ptr_'+el_type.to_s
+% element_ptr_type = 'ppm_t_ptr_'+el_type.to_s
 % element_ptr_type = element_ptr_type.gsub( /_\Z/m, "" )
 % else
-% element_ptr_type   = 'ppm_t_ptr_'+ptr_type.to_s
+% element_ptr_type = 'ppm_t_ptr_'+ptr_type.to_s
 % end
       !BEGIN
       FUNCTION <%= collection_type %>_begin(this) RESULT (iterator)
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -205,10 +216,12 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           ENDIF
           iterator => NULL()
       END FUNCTION <%= collection_type %>_begin
+
       !NEXT
       FUNCTION <%= collection_type %>_next(this) RESULT (iterator)
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -224,10 +237,12 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           ENDIF
           iterator => NULL()
       END FUNCTION <%= collection_type %>_next
+
       !PREVIOUS
       FUNCTION <%= collection_type %>_prev(this) RESULT (iterator)
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -247,6 +262,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
       FUNCTION <%= collection_type %>_last(this) RESULT (iterator)
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -267,6 +283,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
       SUBROUTINE <%= collection_type %>_destroy(this,info)
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -310,6 +327,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !!! Check whether an element exists and can be accessed at this id
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -341,7 +359,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           ENDIF
           exists = .TRUE.
 
- 9999 CONTINUE
+      9999 CONTINUE
           RETURN
 
       END FUNCTION <%= collection_type %>_exists
@@ -351,6 +369,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !!! Check whether an element is present in the collection (slow...)
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -385,6 +404,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !!! Returs -1 if the element is not found.
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -419,6 +439,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !!! add an element into the collection
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -459,6 +480,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
 
           end_subroutine()
       END SUBROUTINE <%= collection_type %>_push
+
       !REMOVE
       SUBROUTINE <%= collection_type %>_remove(this,info,element)
           !!! If element is present, remove it from the collection
@@ -467,6 +489,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !!! of the collection, the removed part willl be linked to the next item
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -513,12 +536,14 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
 
           end_subroutine()
       END SUBROUTINE <%= collection_type %>_remove
+
       !GROW COLLECTION SIZE
       SUBROUTINE <%= collection_type %>_grow_size(this,info)
           !!! Reallocate collection to a larger size
           !!! (twice the size seems good)
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -571,6 +596,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
 
           end_subroutine()
       END SUBROUTINE <%= collection_type %>_grow_size
+
       !AT
       FUNCTION <%= collection_type %>_at(this,i) RESULT (element)
           !!! Access the i-th element of the collection
@@ -580,6 +606,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !!! returns a NULL pointer.
 
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------

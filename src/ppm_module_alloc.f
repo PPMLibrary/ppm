@@ -48,8 +48,8 @@
 
         USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double,&
                                  & ppm_kind_int64
-
         IMPLICIT NONE
+
         !----------------------------------------------------------------------
         !  Work arrays for reallocation.
         !----------------------------------------------------------------------

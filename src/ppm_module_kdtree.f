@@ -59,7 +59,7 @@
       ! Global variables
       !----------------------------------------------------------------------
       INTEGER, PARAMETER :: bucket_size = 12
-      ! The maximum number of points to keep in a terminal node.
+      !!! The maximum number of points to keep in a terminal node.
 
 #define  DTYPE(a) a/**/_s
 #define __KIND __SINGLE_PRECISION

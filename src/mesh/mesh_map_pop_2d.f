@@ -123,6 +123,7 @@
       INTEGER               :: iopt,totopo,xhi,yhi,xlo,ylo,imesh,jmesh
       INTEGER               :: btype,idom
       INTEGER               :: rtype
+      INTEGER, DIMENSION(:), POINTER :: sublist
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
 #endif
@@ -244,21 +245,10 @@
       !  Build the inverse sub list to find local sub indeices based on
       !  global ones (the global ones are communicated)
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_fit
       ldu(1) = target_topo%nsublist
-      CALL ppm_alloc(sublist,ldu,iopt,info)
-      or_fail_alloc("sublist")
-
-      ! We need to copy it into a temp list, since directly using
-      ! ppm_isublist(:,ppm_field_topoid) as an argument to invert_list is
-      ! not possible since the argument needs to be a POINTER.
-      sublist(1:ldu(1)) = target_topo%isublist(1:ldu(1))
+      sublist  => target_topo%isublist(1:ldu(1))
       CALL ppm_util_invert_list(sublist,invsublist,info)
       or_fail("ppm_util_invert_list")
-
-      iopt   = ppm_param_dealloc
-      CALL ppm_alloc(sublist,ldu,iopt,info)
-      or_fail_dealloc("sublist")
 
       !-------------------------------------------------------------------------
       !  Determine the number of data points to be received

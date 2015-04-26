@@ -28,11 +28,9 @@
       !-------------------------------------------------------------------------
 
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_s(topoid, &
-      &          xp,lda,Npart,isymm,ghostsize,info)
+      SUBROUTINE ppm_map_part_ghost_get_s(topoid,xp,lda,Npart,isymm,ghostsize,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_d(topoid, &
-      &          xp,lda,Npart,isymm,ghostsize,info)
+      SUBROUTINE ppm_map_part_ghost_get_d(topoid,xp,lda,Npart,isymm,ghostsize,info)
 #endif
       !!! This routine maps/adds the ghost particles on the current topology.
       !!! This routine is similar to the partial mapping routine
@@ -184,6 +182,7 @@
       ENDIF
 
       topo => ppm_topo(topoid)%t
+
 #if __KIND == __DOUBLE_PRECISION
       eps = ppm_myepsd
 #else

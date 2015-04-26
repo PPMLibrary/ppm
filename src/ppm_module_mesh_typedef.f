@@ -18,6 +18,7 @@
       USE ppm_module_error
       USE ppm_module_util_functions
       USE ppm_module_interfaces
+      USE ppm_module_mapping_typedef
       IMPLICIT NONE
 
       !----------------------------------------------------------------------
@@ -26,15 +27,15 @@
       !----------------------------------------------------------------------
       ! Module variables
       !----------------------------------------------------------------------
-      INTEGER, PRIVATE, DIMENSION(4)  :: ldc
+      INTEGER, PRIVATE, DIMENSION(4) :: ldc
 
       !----------------------------------------------------------------------
       ! Type declaration
       !----------------------------------------------------------------------
 
-      !!----------------------------------------------------------------------
-      !! Patches (contains the actual data arrays for this field)
-      !!----------------------------------------------------------------------
+      !----------------------------------------------------------------------
+      ! Patches (contains the actual data arrays for this field)
+      !----------------------------------------------------------------------
       TYPE,EXTENDS(ppm_t_subpatch_data_) :: ppm_t_subpatch_data
       CONTAINS
           PROCEDURE :: create    => subpatch_data_create
@@ -183,7 +184,6 @@ minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
       INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: mesh_ghost_offset => NULL()
 
       INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: invsublist => NULL()
-      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: sublist    => NULL()
 
       !----------------------------------------------------------------------
       !  Type-bound procedures
@@ -1040,20 +1040,19 @@ minclude ppm_get_field_template(4,l)
 
           destroy_collection_ptr(this%field_ptr)
 
+          destroy_collection_ptr(this%maps)
+
           destroy_collection_ptr(this%subpatch)
 
           destroy_collection_ptr(this%patch)
 
           destroy_collection_ptr(this%mdata)
 
-          dealloc_pointer("this%subpatch_by_sub")
-
-          dealloc_pointers(this%ghost_fromsub,this%ghost_tosub,this%ghost_patchid,this%ghost_blkstart,this%ghost_blksize,this%ghost_blk,this%ghost_recvtosub,this%ghost_recvpatchid,this%ghost_recvblkstart,this%ghost_recvblksize,this%ghost_recvblk)
+          dealloc_pointer(this%subpatch_by_sub)
 
           this%ID = 0
           this%topoid = 0
           this%npatch = 0
-          this%ghost_initialized = .FALSE.
 
           CALL ppm_mesh%vremove(info,this)
           or_fail("could not remove a detroyed object from a collection")
@@ -1555,9 +1554,6 @@ minclude ppm_get_field_template(4,l)
 
           !Increment the number of patches defined on this mesh
           this%npatch = this%npatch + 1
-
-          !The ghost mesh nodes have not been computed
-          this%ghost_initialized = .FALSE.
 
           DEALLOCATE(indsub,STAT=info)
           or_fail_dealloc("indsub")

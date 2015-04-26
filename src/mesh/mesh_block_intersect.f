@@ -1,6 +1,6 @@
-      SUBROUTINE equi_mesh_block_intersect(this,to_mesh,isub,jsub,offset, &
-      &          nsendlist,isendfromsub,isendtosub,isendpatchid,          &
-      &          isendblkstart,isendblksize,ioffset,info,lsymm,ghostsize)
+      SUBROUTINE equi_mesh_block_intersect(this,to_mesh,isub,jsub,offsetb, &
+      &          nsendlistb,isendfromsubb,isendtosubb,isendpatchidb,       &
+      &          isendblkstartb,isendblksizeb,ioffsetb,info,lsymm,ghostsize)
       !!! This routine determines, for each patch, common mesh blocks
       !!! (intersections) of two subpatches, on different subdomains,
       !!! possibly shifted and/or extended with ghostlayers.
@@ -11,9 +11,9 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data_mesh
-      USE ppm_module_topo_typedef
+      USE ppm_module_topo_typedef, ONLY : ppm_topo
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -28,15 +28,23 @@
       !!! Source sub (from which data will be sent) in global numbering
       INTEGER,                         INTENT(IN   ) :: jsub
       !!! Destination sub in global numbering
-      INTEGER, DIMENSION(:),           INTENT(IN   ) :: offset
+      INTEGER, DIMENSION(:),           INTENT(IN   ) :: offsetb
       !!! Shift offset for the source subdomain. Index: 1:ppm_dim
-      INTEGER, DIMENSION(:),           POINTER       :: isendfromsub
+      INTEGER,                         INTENT(INOUT) :: nsendlistb
+      !!! Number of mesh blocks in the lists so far
+      INTEGER, DIMENSION(:),           POINTER       :: isendfromsubb
       !!! Global sub index of sources
-      INTEGER, DIMENSION(:),           POINTER       :: isendtosub
+      INTEGER, DIMENSION(:),           POINTER       :: isendtosubb
       !!! Global sub index of targets
-      INTEGER, DIMENSION(:,:),         POINTER       :: isendpatchid
+      INTEGER, DIMENSION(:,:),         POINTER       :: isendpatchidb
       !!! Global patch index of data patches
-      INTEGER, DIMENSION(:,:),         POINTER       :: ioffset
+      INTEGER, DIMENSION(:,:),         POINTER       :: isendblkstartb
+      !!! Start of the mesh blocks in the global mesh. 1st index:
+      !!! 1:ppm_dim, 2nd: meshblock.
+      INTEGER, DIMENSION(:,:),         POINTER       :: isendblksizeb
+      !!! Size of the meshblocks in numbers of grid points. 1st index:
+      !!! 1:ppm_dim, 2nd: meshblock
+      INTEGER, DIMENSION(:,:),         POINTER       :: ioffsetb
       !!! Meshblock offset for periodic images.
       !!!
       !!! 1st index: 1:ppm_dim                                                 +
@@ -44,14 +52,6 @@
       !!!
       !!! To be added to isendblkstart in order to get irecvblkstart on the
       !!! target subdomain.
-      INTEGER, DIMENSION(:,:),         POINTER       :: isendblkstart
-      !!! Start of the mesh blocks in the global mesh. 1st index:
-      !!! 1:ppm_dim, 2nd: meshblock.
-      INTEGER, DIMENSION(:,:),         POINTER       :: isendblksize
-      !!! Size of the meshblocks in numbers of grid points. 1st index:
-      !!! 1:ppm_dim, 2nd: meshblock
-      INTEGER,                         INTENT(INOUT) :: nsendlist
-      !!! Number of mesh blocks in the lists so far
       INTEGER,                         INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       LOGICAL, DIMENSION(3), OPTIONAL, INTENT(IN   ) :: lsymm
@@ -59,26 +59,25 @@
       INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: ghostsize
       !!! Size of the ghost layer in numbers of grid points in all space
       !!! dimensions (1...ppm_dim).
+
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(2)       :: ldu
       INTEGER, DIMENSION(ppm_dim) :: iblockstart,nblocksize
-      INTEGER                     :: iblockstopk,k,iopt,pdim,isize,ipatch
+      INTEGER                     :: iblockstopk,k,iopt,isize,ipatch
       INTEGER                     :: fromistartk,toistartk
       INTEGER                     :: fromiendk,toiendk
       INTEGER, DIMENSION(ppm_dim) :: chop
       INTEGER, DIMENSION(ppm_dim) :: ghostsize_
-      LOGICAL                     :: dosend
-      LOGICAL                     :: valid
+
+      LOGICAL :: dosend
 
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       start_subroutine("mesh_block_intersect")
-
-      pdim = ppm_dim
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -106,12 +105,12 @@
       !-------------------------------------------------------------------------
       !  Determine current minimal common length of lists
       !-------------------------------------------------------------------------
-      isize = MIN(SIZE(isendfromsub,1),  &
-      &           SIZE(isendtosub,1),    &
-      &           SIZE(isendpatchid,2),  &
-      &           SIZE(isendblkstart,2), &
-      &           SIZE(isendblksize,2),  &
-      &           SIZE(ioffset,2))
+      isize = MIN(SIZE(isendfromsubb,1),  &
+      &           SIZE(isendtosubb,1),    &
+      &           SIZE(isendpatchidb,2),  &
+      &           SIZE(isendblkstartb,2), &
+      &           SIZE(isendblksizeb,2),  &
+      &           SIZE(ioffsetb,2))
 
       !-------------------------------------------------------------------------
       !  Determine intersecting mesh blocks
@@ -136,7 +135,7 @@
             IF (ppm_debug.GT.2) THEN
                stdout("---------------------------------")
                stdout("INTERSECTING: source_sub = ",isub," target_sub",jsub)
-               stdout("  OFFSET = ",offset)
+               stdout("  OFFSET = ",offsetb)
                stdout("  CHOP = ",chop)
                stdout(" patch : ")
                stdout("     ",'p%istart_p')
@@ -148,29 +147,29 @@
                stdout("     ",'p%ghostsize(1)','p%ghostsize(3)')
                stdout("     ",'p%ghostsize(2)','p%ghostsize(4)')
                stdout(" source sub : ")
-               stdout("     ",'this%istart(1:pdim,isub)')
-               stdout("     ",'this%iend(1:pdim,isub)')
+               stdout("     ",'this%istart(1:ppm_dim,isub)')
+               stdout("     ",'this%iend(1:ppm_dim,isub)')
                stdout(" offset source sub : ")
-               stdout("     ",'this%istart(1:pdim,isub)+offset(1:pdim)')
-               stdout("     ",'this%iend(1:pdim,isub)+offset(1:pdim)-chop(1:pdim)')
+               stdout("     ",'this%istart(1:ppm_dim,isub)+offsetb(1:ppm_dim)')
+               stdout("     ",'this%iend(1:ppm_dim,isub)+offsetb(1:ppm_dim)-chop(1:ppm_dim)')
                stdout(" target sub : ")
-               stdout("     ",'to_mesh%istart(1:pdim,jsub)')
-               stdout("     ",'to_mesh%iend(1:pdim,jsub)')
+               stdout("     ",'to_mesh%istart(1:ppm_dim,jsub)')
+               stdout("     ",'to_mesh%iend(1:ppm_dim,jsub)')
                stdout(" extended target sub : ")
                stdout("     ",'to_mesh%istart(1,jsub)-this%ghostsize(1)',&
                               'to_mesh%istart(2,jsub)-this%ghostsize(1)')
-               IF (pdim.GT.2) THEN
+               IF (ppm_dim.GT.2) THEN
                   stdout("     ",'to_mesh%istart(3,jsub)-this%ghostsize(3)')
                END IF
                stdout("     ",'to_mesh%iend(1,jsub)+this%ghostsize(2)',&
                               'to_mesh%iend(2,jsub)+this%ghostsize(2)')
-               IF (pdim.GT.2) THEN
+               IF (ppm_dim.GT.2) THEN
                   stdout("     ",'to_mesh%iend(3,jsub)+this%ghostsize(3)')
                END IF
             ENDIF
 
             !No intersection if the patch is not on the target subdomain
-            DO k=1,pdim
+            DO k=1,ppm_dim
                IF (p%istart_p(k).GT.to_mesh%iend(k,jsub)) THEN
                   dosend = .FALSE.
                   EXIT
@@ -180,8 +179,8 @@
                   EXIT
                ENDIF
 
-               fromistartk = this%istart(k,isub)+offset(k)
-               fromiendk   = this%iend(k,isub)  +offset(k)-chop(k)
+               fromistartk = this%istart(k,isub)+offsetb(k)
+               fromiendk   = this%iend(k,isub)  +offsetb(k)-chop(k)
 
                toistartk = p%istart_p(k)
                toiendk   = p%iend_p(k)
@@ -223,32 +222,32 @@
             ENDIF
 
             IF (dosend) THEN
-               nsendlist = nsendlist + 1
-               IF (nsendlist .GT. isize) THEN
+               nsendlistb = nsendlistb + 1
+               IF (nsendlistb .GT. isize) THEN
                   !-----------------------------------------------------------
                   !  Grow memory for the sendlists
                   !-----------------------------------------------------------
-                  isize  = MAX(2*isize,nsendlist)
                   iopt   = ppm_param_alloc_grow_preserve
+                  isize  = MAX(2*isize,nsendlistb)
                   ldu(1) = isize
-                  CALL ppm_alloc(isendfromsub,ldu,iopt,info)
+                  CALL ppm_alloc(isendfromsubb,ldu,iopt,info)
                   or_fail_alloc("isendfromsub")
 
-                  CALL ppm_alloc(isendtosub,ldu,iopt,info)
+                  CALL ppm_alloc(isendtosubb,ldu,iopt,info)
                   or_fail_alloc("isendtosub")
 
-                  ldu(1) = pdim
+                  ldu(1) = ppm_dim
                   ldu(2) = isize
-                  CALL ppm_alloc(isendpatchid,ldu,iopt,info)
+                  CALL ppm_alloc(isendpatchidb,ldu,iopt,info)
                   or_fail_alloc("isendpatchid")
 
-                  CALL ppm_alloc(isendblkstart,ldu,iopt,info)
+                  CALL ppm_alloc(isendblkstartb,ldu,iopt,info)
                   or_fail_alloc("isendblkstart")
 
-                  CALL ppm_alloc(isendblksize,ldu,iopt,info)
+                  CALL ppm_alloc(isendblksizeb,ldu,iopt,info)
                   or_fail_alloc("isendblksize")
 
-                  CALL ppm_alloc(ioffset,ldu,iopt,info)
+                  CALL ppm_alloc(ioffsetb,ldu,iopt,info)
                   or_fail_alloc("ioffset")
                ENDIF
                !---------------------------------------------------------------
@@ -256,18 +255,17 @@
                !  from sub isub to sub jsub
                !---------------------------------------------------------------
                ! global sub index of local sub where the blocks come from
-               isendfromsub(nsendlist)        = isub
+               isendfromsubb(nsendlistb)           = isub
                ! global sub index of other sub where the blocks go to
-               isendtosub(nsendlist)          = jsub
+               isendtosubb(nsendlistb)             = jsub
                ! global patch index of which the blocks belong
-               isendpatchid(1:pdim,nsendlist) = p%istart_p(1:pdim)
+               isendpatchidb(1:ppm_dim,nsendlistb) = p%istart_p(1:ppm_dim)
                ! start of mesh block in global mesh
-               isendblkstart(1:pdim,nsendlist)= iblockstart(1:pdim) - &
-               &                                offset(1:pdim)
+               isendblkstartb(1:ppm_dim,nsendlistb)= iblockstart(1:ppm_dim)-offsetb(1:ppm_dim)
                ! size of mesh block
-               isendblksize(1:pdim,nsendlist) = nblocksize(1:pdim)
+               isendblksizeb(1:ppm_dim,nsendlistb) = nblocksize(1:ppm_dim)
                ! mesh block offset for periodic images
-               ioffset(1:pdim,nsendlist)      = offset(1:pdim)
+               ioffsetb(1:ppm_dim,nsendlistb)      = offsetb(1:ppm_dim)
             ENDIF
          END SELECT
       ENDDO
@@ -280,7 +278,7 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF (SIZE(offset,1) .LT. ppm_dim) THEN
+          IF (SIZE(offsetb,1) .LT. ppm_dim) THEN
              fail('offset must be at least of length ppm_dim',exit_point=8888)
           ENDIF
           IF ((isub.LE.0).OR.(isub.GT.ppm_topo(this%topoid)%t%nsubs)) THEN

@@ -129,13 +129,14 @@
       !!! For scalar fields, the first index is omitted (the others shift
       !!! accordingly).
 
-      INTEGER, DIMENSION(3) :: ldu,mofs,patchid
-      INTEGER               :: i,j,k,ibuffer,isub
-      INTEGER               :: imesh,jmesh,kmesh,jsub
-      INTEGER               :: ipatch
-      INTEGER               :: iopt,Ndata,xlo,xhi,ylo,yhi,zlo,zhi,ldb
+      INTEGER, DIMENSION(3)          :: ldu,mofs,patchid
+      INTEGER                        :: i,j,k,ibuffer,isub
+      INTEGER                        :: imesh,jmesh,kmesh,jsub
+      INTEGER                        :: ipatch
+      INTEGER                        :: iopt,Ndata,xlo,xhi,ylo,yhi,zlo,zhi,ldb
+      INTEGER, DIMENSION(:), POINTER :: sublist
 #if   __DIM == __SFIELD
-      INTEGER, PARAMETER    :: lda = 1
+      INTEGER, PARAMETER             :: lda = 1
 #endif
 
       LOGICAL :: ldo,found_patch
@@ -233,19 +234,11 @@
          !  Build the inverse sub list to find local sub indeices based on
          !  global ones (the global ones are communicated)
          !-------------------------------------------------------------------------
-         iopt   = ppm_param_alloc_fit
          ldu(1) = topo%nsublist
-         CALL ppm_alloc(sublist,ldu,iopt,info)
-         or_fail_alloc("sublist")
-         ! We need to copy it into a temp list, since directly using
-         ! ppm_isublist(:,ppm_field_topoid) as an argument to invert_list is
-         ! not possible since the argument needs to be a POINTER.
-         sublist(1:ldu(1)) = topo%isublist(1:ldu(1))
-         CALL ppm_util_invert_list(sublist,invsublist,info)
+         sublist  => topo%isublist(1:ldu(1))
 
-         iopt   = ppm_param_dealloc
-         CALL ppm_alloc(sublist,ldu,iopt,info)
-         or_fail_alloc("ppm_sublist")
+         CALL ppm_util_invert_list(sublist,invsublist,info)
+         or_fail("ppm_util_invert_list")
       ENDIF
 
       !-------------------------------------------------------------------------

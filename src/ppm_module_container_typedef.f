@@ -39,10 +39,14 @@
          !----------------------------------------------------------------------
          IMPLICIT NONE
 
+         PRIVATE
+
          !----------------------------------------------------------------------
          ! Type declaration
          !----------------------------------------------------------------------
-#include "cont/container_typedef.inc"
+#include "cont/container_typedef.f"
+
+         PUBLIC :: ppm_t_container
 
       END MODULE ppm_module_container_typedef
 
