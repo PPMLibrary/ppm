@@ -52,7 +52,6 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data_mesh
       !USE ppm_module_mesh_alloc
       USE ppm_module_mesh_define
       USE ppm_module_mesh_on_subs

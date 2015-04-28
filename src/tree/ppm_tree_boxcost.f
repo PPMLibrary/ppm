@@ -165,7 +165,7 @@
       !-------------------------------------------------------------------------
       !  Computation of particle contributions to box costs
       !-------------------------------------------------------------------------
-      IF (have_particles .AND. weights(1) .NE. 0.0_MK) THEN
+      IF (have_particles .AND. ABS(weights(1)).GT.0.0_MK) THEN
           DO i=1,nbox
               pcst(i)  = 0.0_MK
 #ifdef __MPI
@@ -207,7 +207,7 @@
               meshtotal = 0.0_MK
               len_box(1) = max_box(1,i)-min_box(1,i)
               len_box(2) = max_box(2,i)-min_box(2,i)
-              IF (have_mesh .AND. weights(2) .NE. 0) THEN
+              IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
                   meshtotal = REAL(Nm(1,i),MK)*REAL(Nm(2,i),MK)
               ENDIF
               geomtotal = len_box(1)*len_box(2)
@@ -215,8 +215,7 @@
               !  Compute weighted sum of costs and store it
               !-----------------------------------------------------------------
               IF(have_particles) THEN
-                 boxcost(i) = pcst(i)*weights(1) + meshtotal*weights(2) +    &
-     &                            geomtotal*weights(3)
+                 boxcost(i) = pcst(i)*weights(1) + meshtotal*weights(2) + geomtotal*weights(3)
               ELSE
                  boxcost(i) = meshtotal*weights(2) + geomtotal*weights(3)
               END IF
@@ -230,7 +229,7 @@
               len_box(1) = max_box(1,i)-min_box(1,i)
               len_box(2) = max_box(2,i)-min_box(2,i)
               len_box(3) = max_box(3,i)-min_box(3,i)
-              IF (have_mesh .AND. weights(2) .NE. 0) THEN
+              IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
                   meshtotal = REAL(Nm(1,i),MK)*REAL(Nm(2,i),MK)*REAL(Nm(3,i),MK)
               ENDIF
               geomtotal = len_box(1)*len_box(2)*len_box(3)
@@ -238,8 +237,7 @@
               !  Compute weighted sum of costs and store it
               !-----------------------------------------------------------------
               IF(have_particles) THEN
-                 boxcost(i) = pcst(i)*weights(1) + meshtotal*weights(2) +    &
-     &                            geomtotal*weights(3)
+                 boxcost(i) = pcst(i)*weights(1) + meshtotal*weights(2) +geomtotal*weights(3)
               ELSE
                  boxcost(i) = meshtotal*weights(2) + geomtotal*weights(3)
               END IF

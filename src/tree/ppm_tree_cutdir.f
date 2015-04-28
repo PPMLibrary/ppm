@@ -221,7 +221,7 @@
       !------------------------------------------------------------------------
       ctotal = 0.0_MK
       cgeom  = 0.0_MK
-      IF (weights(3) .NE. 0.0_MK) THEN
+      IF (ABS(weights(3)).GT.0.0_MK) THEN
           IF (ppm_dim .GT. 2) THEN
               cgeom(1) = len_box(2)*len_box(3)
               cgeom(2) = len_box(1)*len_box(3)
@@ -258,7 +258,7 @@
       !               cmesh(3) = Nm_box(1,cutbox)*Nm_box(2,cutbox)
       !------------------------------------------------------------------------
       cmesh = 0.0_MK
-      IF (have_mesh .AND. weights(2) .NE. 0.0_MK) THEN
+      IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
           IF (ppm_dim .GT. 2) THEN
               cmesh(1) = Nm_box(2,cutbox)*Nm_box(3,cutbox)
               cmesh(2) = Nm_box(1,cutbox)*Nm_box(3,cutbox)
@@ -291,7 +291,7 @@
       !  Compute the particles cost: the moments of inertia
       !------------------------------------------------------------------------
       cpart = 0.0_MK
-      IF (have_particles .AND. weights(1) .NE. 0.0_MK) THEN
+      IF (have_particles .AND. ABS(weights(1)).GT.0.0_MK) THEN
           !---------------------------------------------------------------------
           !  Compute the cost of local particles
           !---------------------------------------------------------------------

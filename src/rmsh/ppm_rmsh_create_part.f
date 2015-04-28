@@ -120,7 +120,6 @@
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_data
-      USE ppm_module_data_mesh
       USE ppm_module_data_rmsh
       IMPLICIT NONE
 

@@ -247,7 +247,7 @@
 
       int_addr = 1_ppm_kind_int64 + &
       & MOD((table%h_func(key,seed1)+jump*table%h_func(key,seed2)),table%nrow)
-      address  = int_addr
+      address  = INT(int_addr)
       END FUNCTION h_key
 
       SUBROUTINE hash_insert(table, key, value, info)

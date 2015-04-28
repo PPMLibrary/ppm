@@ -151,6 +151,7 @@
       FORALL (ipart=1:this%Npart) ilist1(ipart)=ipart
 
       nlist1=this%Npart
+      nlist2=0
 
       !-------------------------------------------------------------------------!
       !  Loop over the subpatches in each subdomain

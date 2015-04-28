@@ -93,7 +93,7 @@
       !-------------------------------------------------------------------------
       REAL(MK)                        :: t0,ll,kk
 #ifdef __MPI
-      REAL(MK), DIMENSION(:), POINTER :: costsum => NULL()
+      REAL(MK), DIMENSION(:), ALLOCATABLE :: costsum
 #endif
       REAL(MK), DIMENSION(ppm_dim)    :: len_sub
 
@@ -160,6 +160,7 @@
           FORALL (ipart=1:Np) ilist1(ipart) = ipart
 
           nlist1 = Np
+          nlist2 = 0
 
           !---------------------------------------------------------------------
           !  Loop over all subdomains
@@ -262,12 +263,11 @@
           !  results.
           !---------------------------------------------------------------------
           IF (nsubs.GT.1) THEN
-             iopt = ppm_param_alloc_fit
-             ldu(1) = nsubs
-             CALL ppm_alloc(costsum,ldu,iopt,info)
+             ALLOCATE(costsum(nsubs),STAT=info)
              or_fail_alloc('sum of costs of all processors COSTSUM',ppm_error=ppm_error_fatal)
 
              costsum = 0.0_MK
+
 #if   __KIND == __SINGLE_PRECISION
              CALL MPI_AllReduce(cost,costsum,nsubs,MPI_REAL,MPI_SUM,ppm_comm,info)
 #elif __KIND == __DOUBLE_PRECISION
@@ -276,13 +276,12 @@
              !------------------------------------------------------------------
              !  Copy data back
              !------------------------------------------------------------------
-             cost = costsum
+             cost(1:nsubs) = costsum(1:nsubs)
 
              !------------------------------------------------------------------
              !  Deallocate the temporary costsum array
              !------------------------------------------------------------------
-             iopt = ppm_param_dealloc
-             CALL ppm_alloc(costsum,ldu,iopt,info)
+             DEALLOCATE(costsum,STAT=info)
              or_fail_dealloc("sum of costs costs COSTSUM",exit_point=no)
           ENDIF
 #endif

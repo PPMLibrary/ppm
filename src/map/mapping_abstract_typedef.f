@@ -3,9 +3,9 @@
       !  Generic mapping data type
       !----------------------------------------------------------------------
       TYPE,ABSTRACT :: ppm_t_mapping_
-          INTEGER                           :: source_topoid
+          INTEGER                           :: source_topoid = -1
           !!! topology ID on which the data was stored before computing the mapping
-          INTEGER                           :: target_topoid
+          INTEGER                           :: target_topoid = -1
           !!! topology ID on which the data should be stored after the mapping
           !------------------------------------------------------------------
           !  buffers for communication
@@ -132,6 +132,7 @@ minclude ppm_create_collection(DTYPE(part_mapping)_,DTYPE(part_mapping)_,generat
           !!! list of target subs of ghost mesh blocks (globel sub number).
           !!! These are the subs a block will serve as a ghost on.
           !!! 1st index: meshblock ID
+          !Yaser
           INTEGER,               DIMENSION(:,:), POINTER :: ghost_patchid     => NULL()
           !!! list of patches of ghost mesh blocks (globel sub number).
           !!! 1st index: patch ID
@@ -164,6 +165,31 @@ minclude ppm_create_collection(DTYPE(part_mapping)_,DTYPE(part_mapping)_,generat
           !!! 1st index: x,y[,z], 2nd: meshblock ID
           INTEGER,               DIMENSION(:),   POINTER :: ghost_recvblk     => NULL()
           !!! mesh ghost block receive list. 1st index: target processor
+
+          !----------------------------------------------------------------------
+          !  Mesh mapping, send and receive lists
+          !----------------------------------------------------------------------
+          INTEGER, DIMENSION(:  ), POINTER :: ppm_mesh_isendfromsub  => NULL()
+          !!! list of source subs to send from local processor (local sub number
+          !!! on source processor)
+          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendblkstart => NULL()
+          ! start (lower-left corner) of mesh block to be sent in GLOBAL
+          ! mesh coordinates. First index: x,y[,z], 2nd: isendlist
+          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendpatchid  => NULL()
+          !!! list of source patch ids to send from local processor
+          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendblksize  => NULL()
+          ! size (in grid points) of blocks to be sent
+
+          INTEGER, DIMENSION(:  ), POINTER :: ppm_mesh_irecvtosub    => NULL()
+          ! list of destination subs to recv to on local processors (local sub
+          ! number on destination processor)
+          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvblkstart => NULL()
+          ! start (lower-left corner) of mesh block to be recvd in GLOBAL
+          ! mesh coordinates. First index: x,y[,z], 2nd: isendlist
+          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvpatchid  => NULL()
+          !!! list of source patch ids to receive from local processor
+          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvblksize  => NULL()
+          ! size (in grid points) of blocks to be recvd
 
       CONTAINS
            PROCEDURE(map_mesh_create_),  DEFERRED :: create

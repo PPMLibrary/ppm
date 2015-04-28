@@ -234,6 +234,7 @@
          ilist1(ipart)    = ipart
          part2proc(ipart) = -1
       ENDDO
+      nlist2 = 0
 
       !-------------------------------------------------------------------------
       !  Assign particles to processors in part2proc(ipart) = sendrank

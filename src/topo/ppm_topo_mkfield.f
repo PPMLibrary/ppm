@@ -57,7 +57,6 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data_mesh
       USE ppm_module_mesh_on_subs
       USE ppm_module_mesh_define
       USE ppm_module_decomp
@@ -182,7 +181,7 @@
       REAL(MK)                                  :: parea,sarea,larea
       REAL(MK)                                  :: lmyeps,maxvar
       REAL(MK),              DIMENSION(ppm_dim) :: gsvec
-      REAL(ppm_kind_double), DIMENSION(ppm_dim) :: h,Offst
+      REAL(ppm_kind_double), DIMENSION(ppm_dim) :: h,Offst,righostsize
       REAL(MK),              DIMENSION(3,2)          :: weights
       REAL(MK),              DIMENSION(:,:), POINTER :: min_box => NULL()
       REAL(MK),              DIMENSION(:,:), POINTER :: max_box => NULL()
@@ -261,6 +260,8 @@
          Offst=0.0_ppm_kind_double
       ENDIF
 
+      righostsize=REAL(ighostsize,ppm_kind_double)
+
       !-------------------------------------------------------------------------
       !  Compute grid spacing
       !-------------------------------------------------------------------------
@@ -312,7 +313,7 @@
          weights(3,1:2)     = 0.0_MK
          ! all directions can be cut
          fixed(1:ppm_dim) = .FALSE.
-         gsvec(1:ppm_dim) = REAL(ighostsize(1:ppm_dim),MK)*h(1:ppm_dim)
+         gsvec(1:ppm_dim) = REAL(righostsize(1:ppm_dim)*h(1:ppm_dim),MK)
 
          minbox = ppm_nproc
          IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)
@@ -373,10 +374,10 @@
              IF (decomp .EQ. ppm_param_decomp_xpencil) fixed(1) = .TRUE.
              IF (decomp .EQ. ppm_param_decomp_ypencil) fixed(2) = .TRUE.
              IF (decomp .EQ. ppm_param_decomp_zpencil) fixed(3) = .TRUE.
-             gsvec(1)         = REAL(ighostsize(1),MK)*h(1)
-             gsvec(2)         = REAL(ighostsize(2),MK)*h(2)
+             gsvec(1) = REAL(righostsize(1)*h(1),MK)
+             gsvec(2) = REAL(righostsize(2)*h(2),MK)
              IF (ppm_dim .GT. 2) THEN
-                 gsvec(3)     = REAL(ighostsize(3),MK)*h(3)
+                gsvec(3)= REAL(righostsize(3)*h(3),MK)
              ENDIF
              minbox = ppm_nproc
              IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)
@@ -432,10 +433,10 @@
              fixed(2) = .TRUE.
              fixed(3) = .TRUE.
          ENDIF
-         gsvec(1)         = REAL(ighostsize(1),MK)*h(1)
-         gsvec(2)         = REAL(ighostsize(2),MK)*h(2)
+         gsvec(1)    = REAL(righostsize(1)*h(1),MK)
+         gsvec(2)    = REAL(righostsize(2)*h(2),MK)
          IF (ppm_dim .GT. 2) THEN
-             gsvec(3)     = REAL(ighostsize(3),MK)*h(3)
+             gsvec(3)= REAL(righostsize(3)*h(3),MK)
          ENDIF
          minbox = ppm_nproc
          IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)
@@ -477,10 +478,10 @@
          weights(3,1:2)     = 0.0_MK
          ! all directions can be cut
          fixed(1:ppm_dim) = .FALSE.
-         gsvec(1)         = REAL(ighostsize(1),MK)*h(1)
-         gsvec(2)         = REAL(ighostsize(2),MK)*h(2)
+         gsvec(1)     = REAL(righostsize(1)*h(1),MK)
+         gsvec(2)     = REAL(righostsize(2)*h(2),MK)
          IF (ppm_dim .GT. 2) THEN
-             gsvec(3)         = REAL(ighostsize(3),MK)*h(3)
+             gsvec(3) = REAL(righostsize(3)*h(3),MK)
          ENDIF
          minbox = ppm_nproc
          IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)

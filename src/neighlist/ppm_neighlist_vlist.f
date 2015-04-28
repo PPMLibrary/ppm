@@ -271,7 +271,7 @@
             n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
             IF (ppm_dim.EQ.3) THEN
                nz  = cl(idom)%nm(3)
-            ELSE IF (ppm_dim .EQ. 2) THEN
+            ELSE !IF (ppm_dim .EQ. 2) THEN
                n2 = 0
                nz = lb(3)+2
             ENDIF
@@ -457,7 +457,7 @@
             n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
             IF (ppm_dim.EQ.3) THEN
                nz  = cl(idom)%nm(3)
-            ELSE IF (ppm_dim .EQ. 2) THEN
+            ELSE !IF (ppm_dim .EQ. 2) THEN
                n2 = 0
                nz = lb(3)+2
             ENDIF

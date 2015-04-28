@@ -209,12 +209,12 @@
       !------------------------------------------------------------------------
       meshtotal = 0.0_MK
       IF (ppm_dim .EQ. 2) THEN
-         IF (have_mesh .AND. weights(2) .NE. 0) THEN
+         IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
             meshtotal = REAL(Nm_box(1,cutbox),MK)*REAL(Nm_box(2,cutbox),MK)
          ENDIF
          geomtotal = len_box(1)*len_box(2)
       ELSE
-         IF (have_mesh .AND. weights(2) .NE. 0) THEN
+         IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
             meshtotal = REAL(Nm_box(1,cutbox),MK)* &
             &           REAL(Nm_box(2,cutbox),MK)* &
             &           REAL(Nm_box(3,cutbox),MK)
@@ -241,7 +241,7 @@
       !------------------------------------------------------------------------
       DO i=1,ncut
           cutdir = icut(i)
-          IF (have_particles .AND. weights(1) .NE. 0.0_MK) THEN
+          IF (have_particles .AND. ABS(weights(1)).GT.0.0_MK) THEN
              partpos = pc(i)/pc(ncp1)
           ELSE
              partpos = 0.0_MK

@@ -306,12 +306,12 @@
          IF (fixed(i)) nofixed = .FALSE.
       ENDDO
       simpleweights = .TRUE.
-      IF (weights(1,1) .NE. 1.0_MK) simpleweights = .FALSE.
-      IF (weights(2,1) .NE. 0.0_MK) simpleweights = .FALSE.
-      IF (weights(3,1) .NE. 0.0_MK) simpleweights = .FALSE.
-      IF (weights(1,2) .NE. 0.0_MK) simpleweights = .FALSE.
-      IF (weights(2,2) .NE. 0.0_MK) simpleweights = .FALSE.
-      IF (weights(3,2) .NE. 1.0_MK) simpleweights = .FALSE.
+      IF (ABS(weights(1,1)-1.0_MK).LE.lmyeps) simpleweights = .FALSE.
+      IF (ABS(weights(2,1))       .LE.lmyeps) simpleweights = .FALSE.
+      IF (ABS(weights(3,1))       .LE.lmyeps) simpleweights = .FALSE.
+      IF (ABS(weights(1,2))       .LE.lmyeps) simpleweights = .FALSE.
+      IF (ABS(weights(2,2))       .LE.lmyeps) simpleweights = .FALSE.
+      IF (ABS(weights(3,2)-1.0_MK).LE.lmyeps) simpleweights = .FALSE.
 
      ! IF ((itype .EQ. ppm_param_tree_quad) .AND. (.NOT.have_mesh) .AND.  &
      !&    (have_particles) .AND. (.NOT.pruneboxes) .AND. (nofixed) .AND. &
@@ -1062,10 +1062,10 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-         IF (weights(1,1).EQ.0.0_MK.AND.weights(2,1).EQ.0.0_MK.AND.weights(3,1).EQ.0.0_MK) THEN
+         IF (ABS(weights(1,1)).LE.lmyeps.AND.ABS(weights(2,1)).LE.lmyeps.AND.ABS(weights(3,1)).LE.lmyeps) THEN
             fail('At least one weights(:,1) must be non-zero!',exit_point=8888)
          ENDIF
-         IF (weights(1,2).EQ.0.0_MK.AND.weights(2,2).EQ.0.0_MK.AND.weights(3,2).EQ.0.0_MK) THEN
+         IF (ABS(weights(1,2)).LE.lmyeps.AND.ABS(weights(2,2)).LE.lmyeps.AND.ABS(weights(3,2)).LE.lmyeps) THEN
             fail('At least one weights(:,2) must be non-zero!',exit_point=8888)
          ENDIF
          IF (treetype.EQ.ppm_param_tree_oct.AND.ppm_dim.EQ.2) THEN

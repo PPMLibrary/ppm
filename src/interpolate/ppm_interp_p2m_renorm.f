@@ -336,6 +336,9 @@
          nlist1         = nlist1 + 1
          ilist1(nlist1) = ipart
       ENDDO
+      nlist2 = 0
+
+
 #if   __KIND == __SINGLE_PRECISION
       myeps = ppm_myepss
       min_sub => topo%min_subs

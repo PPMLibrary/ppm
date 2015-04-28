@@ -45,6 +45,7 @@
       USE ppm_module_substart
       USE ppm_module_substop
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -85,7 +86,7 @@
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                     :: t0
-      REAL(MK), DIMENSION(ppm_dim) :: len_phys,dx,rat
+      REAL(MK), DIMENSION(ppm_dim) :: len_phys,dx
       REAL(MK), DIMENSION(ppm_dim) :: Offst
 
       INTEGER, DIMENSION(ppm_dim) :: iend
@@ -93,7 +94,6 @@
       INTEGER, DIMENSION(ppm_dim) :: ldu,Nc
       INTEGER                     :: iopt,i,j,k
 
-      CHARACTER(LEN=ppm_char) :: mesg
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_mesh_on_subs'
       !-------------------------------------------------------------------------
       !  Externals

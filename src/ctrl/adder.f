@@ -163,23 +163,34 @@
           !----------------------------------------------------------------------
           TYPE(WRAP(DTYPE)_arg), DIMENSION(:), POINTER :: temp
           TYPE(WRAP(DTYPE)_arg)                        :: def
-          INTEGER                                      :: len
+
+          INTEGER :: len
+
           !----------------------------------------------------------------------
           !  Body
           !----------------------------------------------------------------------
           ! create default group
           IF (groups_i .EQ. -1) CALL arg_group("General Options")
           ! allocate initial storage
-          IF (.NOT. ASSOCIATED(WRAP(DTYPE)_args)) THEN
+          IF (.NOT.ASSOCIATED(WRAP(DTYPE)_args)) THEN
              ALLOCATE(WRAP(DTYPE)_args(1:di))
              WRAP(DTYPE)_args_i = 0
+             len=di
+          ELSE
+             len=SIZE(WRAP(DTYPE)_args)
           ENDIF
+
           ! increment counter
           WRAP(DTYPE)_args_i = WRAP(DTYPE)_args_i + 1
+
           ! grow storage by di if needed
-          IF (WRAP(DTYPE)_args_i .GT. SIZE(WRAP(DTYPE)_args)) THEN
-             ALLOCATE(temp(1:SIZE(WRAP(DTYPE)_args)+di),SOURCE=WRAP(DTYPE)_args)
+          IF (WRAP(DTYPE)_args_i .GT. len) THEN
+             ALLOCATE(temp(1:len+di))
+
+             temp(1:len)=WRAP(DTYPE)_args(1:len)
+
              DEALLOCATE(WRAP(DTYPE)_args)
+
              WRAP(DTYPE)_args => temp
           ENDIF
           ! populate structure
@@ -266,6 +277,7 @@
           group_size(groups_i) = group_size(groups_i) + 1
           def%group_i          = group_size(groups_i)
           WRAP(DTYPE)_args(WRAP(DTYPE)_args_i) = def
+
         END SUBROUTINE WRAP(DTYPE)_add_arg
 #undef DTYPE
 #undef __INTEGER
