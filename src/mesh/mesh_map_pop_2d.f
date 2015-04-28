@@ -245,8 +245,8 @@
       !  Build the inverse sub list to find local sub indeices based on
       !  global ones (the global ones are communicated)
       !-------------------------------------------------------------------------
-      ldu(1) = target_topo%nsublist
-      sublist  => target_topo%isublist(1:ldu(1))
+      ldu(1)  = target_topo%nsublist
+      sublist => target_topo%isublist(1:ldu(1))
       CALL ppm_util_invert_list(sublist,invsublist,info)
       or_fail("ppm_util_invert_list")
 

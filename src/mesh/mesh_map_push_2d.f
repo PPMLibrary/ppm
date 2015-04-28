@@ -1547,7 +1547,7 @@
          !-------------------------------------------------------------------------
          !  Deallocate inverse sub list
          !-------------------------------------------------------------------------
-         iopt   = ppm_param_dealloc
+         iopt = ppm_param_dealloc
          CALL ppm_alloc(invsublist,ldu,iopt,info)
          or_fail_dealloc("INVSUBLIST")
       ENDIF
