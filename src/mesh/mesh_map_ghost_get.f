@@ -14,10 +14,13 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data_mesh
       USE ppm_module_topo_typedef
       USE ppm_module_interfaces, ONLY : ppm_t_mesh_mapping_
-      USE ppm_module_mapping_typedef, ONLY : ppm_c_mesh_mapping
+      USE ppm_module_mapping_typedef, ONLY : ppm_c_mesh_mapping, &
+      &   ppm_mesh_isendfromsub,ppm_mesh_isendblkstart,          &
+      &   ppm_mesh_isendpatchid,ppm_mesh_isendblksize,           &
+      &   ppm_mesh_irecvtosub,ppm_mesh_irecvblkstart,            &
+      &   ppm_mesh_irecvpatchid,ppm_mesh_irecvblksize
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
@@ -205,7 +208,7 @@
          DO j=lb,ub-1
             ppm_mesh_isendblkstart(1:ppm_dim,j) = map%ghost_blkstart(1:ppm_dim,j)
             ppm_mesh_isendblksize(1:ppm_dim,j)  = map%ghost_blksize(1:ppm_dim,j)
-            ppm_mesh_isendfromsub(j)         = map%ghost_fromsub(j)
+            ppm_mesh_isendfromsub(j)            = map%ghost_fromsub(j)
             ppm_mesh_isendpatchid(1:ppm_dim,j)  = map%ghost_patchid(1:ppm_dim,j)
          ENDDO
 

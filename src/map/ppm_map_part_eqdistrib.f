@@ -71,18 +71,24 @@
       !!! The number of particles
       INTEGER                 , INTENT(  OUT) :: info
       !!! The return status, 0 on success
+
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
+#if    __KIND == __SINGLE_PRECISION
+      CLASS(ppm_t_part_mapping_s), POINTER :: map
+#else
+      CLASS(ppm_t_part_mapping_d), POINTER :: map
+#endif
+
       REAL(MK) :: t0
 
       INTEGER, DIMENSION(3) :: ldu
       INTEGER               :: i,j,k,ipart
-      INTEGER               :: iopt,iset,ibuffer,dim,totalpart
+      INTEGER               :: iopt,iset,ibuffer,totalpart
       INTEGER               :: ipos,max_val,max_exc,min_val,min_exc,temp_val
 
       CHARACTER(ppm_char) :: caller='ppm_map_part_eqdistrib'
-      CHARACTER(ppm_char) :: mesg
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -91,7 +97,6 @@
       !  Initialise
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
-      dim = ppm_dim
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -101,10 +106,25 @@
          IF (info .NE. 0) GOTO 9999
       ENDIF
 
+#if    __KIND == __SINGLE_PRECISION
+      IF (.NOT.ASSOCIATED(map_s)) THEN
+         ALLOCATE(map_s,STAT=info)
+         or_fail_alloc("map_s")
+      ENDIF
+      map => map_s
+#else
+      IF (.NOT.ASSOCIATED(map_d)) THEN
+         ALLOCATE(map_d,STAT=info)
+         or_fail_alloc("map_s")
+      ENDIF
+      map => map_d
+#endif
+
       !-------------------------------------------------------------------------
       !  Save the map type for the subsequent calls (not used yet)
       !-------------------------------------------------------------------------
-      ppm_map_type = ppm_param_map_global
+      ppm_map_type     = ppm_param_map_global
+      map%ppm_map_type = ppm_param_map_global
 
       !-------------------------------------------------------------------------
       !  Allocate memory for particle per processor lists
@@ -294,7 +314,7 @@
       CALL ppm_alloc(ppm_buffer_type,ldu,iopt,info)
       or_fail_alloc('buffer types PPM_BUFFER_TYPE',ppm_error=ppm_error_fatal)
 
-      ppm_buffer_dim(ppm_buffer_set)  = dim
+      ppm_buffer_dim(ppm_buffer_set)  = ppm_dim
       SELECT CASE (ppm_kind)
       CASE (ppm_kind_single)
          ppm_buffer_type(ppm_buffer_set) = ppm_kind_single
@@ -306,7 +326,7 @@
       !  (Re)allocate memory for the buffer
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
-      ldu(1) = dim * Npart
+      ldu(1) = ppm_dim * Npart
       SELECT CASE (ppm_kind)
       CASE (ppm_kind_single)
          CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
@@ -356,7 +376,7 @@
          !----------------------------------------------------------------------
          !  Store the particle
          !----------------------------------------------------------------------
-         DO i = 1,dim
+         DO i = 1,ppm_dim
             ibuffer                  = ibuffer + 1
 #if    __KIND == __SINGLE_PRECISION
             ppm_sendbuffers(ibuffer) = xp(i,ipart)
@@ -387,7 +407,7 @@
                !---------------------------------------------------------------
                !  Store the particle
                !---------------------------------------------------------------
-               DO i = 1, dim
+               DO i = 1, ppm_dim
                   ibuffer                  = ibuffer + 1
 #if    __KIND == __SINGLE_PRECISION
                   ppm_sendbuffers(ibuffer) = xp(i,temp_val)

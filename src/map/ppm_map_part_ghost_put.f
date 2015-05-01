@@ -77,6 +77,9 @@
       USE ppm_module_error
       USE ppm_module_write
       USE ppm_module_util_commopt
+      USE ppm_module_mapping_typedef, ONLY : ppm_ghosthack,ppm_psendbuffer, &
+      &   ppm_buffer2part,ppm_buffer_set,ppm_nsendlist,ppm_nrecvlist,       &
+      &   ppm_isendlist,ppm_irecvlist,ppm_map_type,ppm_precvbuffer
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------

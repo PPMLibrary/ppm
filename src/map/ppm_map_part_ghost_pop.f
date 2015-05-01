@@ -73,6 +73,10 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
+      USE ppm_module_mapping_typedef, ONLY : ppm_buffer_set,ppm_recvbuffers, &
+      &   ppm_recvbufferd,ppm_buffer_dim,ppm_buffer_type,ppm_nrecvbuffer,    &
+      &   ppm_nsendbuffer,ppm_nsendlist,ppm_nrecvlist,ppm_ghosthack,         &
+      &   ppm_psendbuffer
       IMPLICIT NONE
 
 #if    __KIND == __SINGLE_PRECISION | __KIND == __SINGLE_PRECISION_COMPLEX

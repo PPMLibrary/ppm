@@ -95,5 +95,6 @@
          &    find_arg, find_flag, arg_count,                         &
          &    enabling_flag, disabling_flag, exit_gracefully
          USE ppm_module_options, ONLY : ppm_t_options_op
+         USE ppm_module_mapping_typedef
 
       END MODULE ppm_module_core

@@ -24,8 +24,10 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_mpi
-      USE ppm_module_data_mesh
+      USE ppm_module_mapping_typedef, ONLY : ppm_mesh_isendpatchid, &
+      &   ppm_mesh_isendblksize,ppm_mesh_irecvblksize
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------

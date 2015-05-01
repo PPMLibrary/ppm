@@ -16,10 +16,6 @@
           INTEGER,  DIMENSION(:),   POINTER :: precv => NULL()
           INTEGER,  DIMENSION(:,:), POINTER :: pp    => NULL()
           INTEGER,  DIMENSION(:,:), POINTER :: qq    => NULL()
-
-          INTEGER                           :: old_nsendlist = 0
-          INTEGER                           :: old_buffer_set = 0
-
           !------------------------------------------------------------------
           !
           !------------------------------------------------------------------
@@ -48,6 +44,10 @@
           INTEGER                           :: ppm_buffer_set
           !!! the total number of particle fields packed in
           !!! the send buffer, ie. xp, vp is two sets
+          INTEGER,  DIMENSION(:),   POINTER :: ppm_buffer2part  => NULL()
+          !!! Used for the original on-processor particle IDs in the order in which
+          !!! they are in the sendbuffer. Used to push additional particle
+          !!! data on the buffer in the correct order.
           INTEGER,  DIMENSION(:),   POINTER :: ppm_buffer_type  => NULL()
           !!! types of the data on the sendbuffer
           INTEGER,  DIMENSION(:),   POINTER :: ppm_buffer_dim   => NULL()
@@ -64,29 +64,19 @@
 #endif
 
       TYPE,ABSTRACT,EXTENDS(ppm_t_mapping_) :: DTYPE(ppm_t_part_mapping)_
+          INTEGER                           :: oldNpart
+          INTEGER                           :: newNpart
           !------------------------------------------------------------------
           !  buffers for communication
           !------------------------------------------------------------------
           REAL(MK), DIMENSION(:),   POINTER :: send  => NULL()
           REAL(MK), DIMENSION(:),   POINTER :: recv  => NULL()
 
-          INTEGER                           :: oldNpart
-          INTEGER                           :: newNpart
-
           INTEGER,  DIMENSION(:,:), POINTER :: ppm_ghosthack    => NULL()
           !!! invert map of ghost for symmetry
-          INTEGER,  DIMENSION(:),   POINTER :: ppm_buffer2part  => NULL()
-          !!! Used for the original on-processor particle IDs in the order in which
-          !!! they are in the sendbuffer. Used to push additional particle
-          !!! data on the buffer in the correct order.
-
           !------------------------------------------------------------------
           !
           !------------------------------------------------------------------
-          REAL(MK), DIMENSION(:),   POINTER :: ppm_recvbuffer  => NULL()
-          !!! receive buffer for particles
-          REAL(MK), DIMENSION(:),   POINTER :: ppm_sendbuffer  => NULL()
-          !!! send buffer for particles
           REAL(MK), DIMENSION(:),   POINTER :: ppm_ghost_offset => NULL()
           !!! ghost offset
           !!!
@@ -122,73 +112,72 @@ minclude ppm_create_collection(DTYPE(part_mapping)_,DTYPE(part_mapping)_,generat
           !------------------------------------------------------------------
           !  Mesh ghosts mappings
           !------------------------------------------------------------------
-          INTEGER,               DIMENSION(:),   POINTER :: ghostsize         => NULL()
+          INTEGER, DIMENSION(:),   POINTER :: ghostsize          => NULL()
           !!! size of the ghost layer, in number of mesh points
-          INTEGER,               DIMENSION(:),   POINTER :: ghost_fromsub     => NULL()
+          INTEGER, DIMENSION(:),   POINTER :: ghost_fromsub      => NULL()
           !!! list of source subs of ghost mesh blocks (globel sub number).
           !!! These are the owner subs of the actual real mesh points
           !!! 1st index: meshblock ID
-          INTEGER,               DIMENSION(:),   POINTER :: ghost_tosub       => NULL()
+          INTEGER, DIMENSION(:),   POINTER :: ghost_tosub        => NULL()
           !!! list of target subs of ghost mesh blocks (globel sub number).
           !!! These are the subs a block will serve as a ghost on.
           !!! 1st index: meshblock ID
           !Yaser
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_patchid     => NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: ghost_patchid      => NULL()
           !!! list of patches of ghost mesh blocks (globel sub number).
           !!! 1st index: patch ID
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_blkstart    => NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: ghost_blkstart     => NULL()
           !!! start (lower-left corner) of ghost mesh block in GLOBAL
           !!! mesh coordinates. First index: x,y[,z], 2nd: meshblock ID
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_blksize     => NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: ghost_blksize      => NULL()
           !!! size (in grid points) of ghost blocks. 1st index: x,y[,z], 2nd:
           !!! meshblock ID
-          INTEGER,               DIMENSION(:),   POINTER :: ghost_blk         => NULL()
+          INTEGER, DIMENSION(:),   POINTER :: ghost_blk          => NULL()
           !!! mesh ghost block list. 1st index: target processor
-          INTEGER                                        :: ghost_nsend
+          INTEGER                          :: ghost_nsend
           !!! number of mesh blocks to be sent as ghosts
-          INTEGER                                        :: ghost_nrecv
+          INTEGER                          :: ghost_nrecv
           !!! number of mesh blocks to be recvd as ghosts
-          INTEGER,               DIMENSION(:),   POINTER :: ghost_recvtosub   => NULL()
+          INTEGER, DIMENSION(:),   POINTER :: ghost_recvtosub    => NULL()
           !!! list of target subs for ghost mesh blocks to be received,
           !!! i.e. being ghost on the local processor (globel sub number).
           !!! These are the subs where the blocks will serve as ghosts
           !!! 1st index: meshblock ID
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_recvpatchid => NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: ghost_recvpatchid  => NULL()
           !!! list of patches (global indices) for ghost mesh blocks to be received,
           !!! i.e. being ghost on the local processor (globel sub number).
           !!! 1st index: patch ID
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_recvblkstart=> NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: ghost_recvblkstart => NULL()
           !!! start (lower-left corner) of received ghost mesh block in
           !!! GLOBAL  mesh coordinates. 1st index: x,y[,z], 2nd: meshblock ID
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_recvblksize => NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: ghost_recvblksize  => NULL()
           !!! size (in grid points) of recvd ghost blocks.
           !!! 1st index: x,y[,z], 2nd: meshblock ID
-          INTEGER,               DIMENSION(:),   POINTER :: ghost_recvblk     => NULL()
+          INTEGER, DIMENSION(:),   POINTER :: ghost_recvblk      => NULL()
           !!! mesh ghost block receive list. 1st index: target processor
-
           !----------------------------------------------------------------------
           !  Mesh mapping, send and receive lists
           !----------------------------------------------------------------------
-          INTEGER, DIMENSION(:  ), POINTER :: ppm_mesh_isendfromsub  => NULL()
+          INTEGER, DIMENSION(:  ), POINTER :: isendfromsub       => NULL()
           !!! list of source subs to send from local processor (local sub number
           !!! on source processor)
-          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendblkstart => NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: isendblkstart      => NULL()
           ! start (lower-left corner) of mesh block to be sent in GLOBAL
           ! mesh coordinates. First index: x,y[,z], 2nd: isendlist
-          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendpatchid  => NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: isendpatchid       => NULL()
           !!! list of source patch ids to send from local processor
-          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendblksize  => NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: isendblksize       => NULL()
           ! size (in grid points) of blocks to be sent
 
-          INTEGER, DIMENSION(:  ), POINTER :: ppm_mesh_irecvtosub    => NULL()
+          INTEGER, DIMENSION(:  ), POINTER :: irecvtosub         => NULL()
           ! list of destination subs to recv to on local processors (local sub
           ! number on destination processor)
-          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvblkstart => NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: irecvblkstart      => NULL()
           ! start (lower-left corner) of mesh block to be recvd in GLOBAL
           ! mesh coordinates. First index: x,y[,z], 2nd: isendlist
-          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvpatchid  => NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: irecvpatchid       => NULL()
           !!! list of source patch ids to receive from local processor
-          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvblksize  => NULL()
+          INTEGER, DIMENSION(:,:), POINTER :: irecvblksize       => NULL()
           ! size (in grid points) of blocks to be recvd
 
       CONTAINS

@@ -45,6 +45,8 @@
       USE ppm_module_alloc
       USE ppm_module_mpi
       USE ppm_module_util_invert_list
+      USE ppm_module_mapping_typedef, ONLY : ppm_buffer_set,ppm_buffer2part, &
+      &   ppm_nsendlist,ppm_psendbuffer,ppm_isendlist,ppm_irecvlist
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------

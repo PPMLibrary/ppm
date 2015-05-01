@@ -48,9 +48,11 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data_mesh
       USE ppm_module_topo_typedef
       USE ppm_module_util_invert_list
+      USE ppm_module_mapping_typedef, ONLY : ppm_mesh_isendblksize,  &
+      &   ppm_mesh_irecvtosub,ppm_mesh_irecvblkstart,                &
+      &   ppm_mesh_irecvpatchid,ppm_mesh_irecvblksize
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION | __KIND == __SINGLE_PRECISION_COMPLEX
       INTEGER, PARAMETER :: MK = ppm_kind_single

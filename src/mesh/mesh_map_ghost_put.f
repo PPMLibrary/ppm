@@ -18,10 +18,13 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data_mesh
       USE ppm_module_topo_typedef
       USE ppm_module_interfaces, ONLY : ppm_t_mesh_mapping_
-      USE ppm_module_mapping_typedef, ONLY : ppm_c_mesh_mapping
+      USE ppm_module_mapping_typedef, ONLY : ppm_c_mesh_mapping, &
+      &   ppm_mesh_isendfromsub,ppm_mesh_isendblkstart,          &
+      &   ppm_mesh_isendpatchid,ppm_mesh_isendblksize,           &
+      &   ppm_mesh_irecvtosub,ppm_mesh_irecvblkstart,            &
+      &   ppm_mesh_irecvpatchid,ppm_mesh_irecvblksize
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
