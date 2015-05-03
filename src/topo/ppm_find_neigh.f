@@ -212,29 +212,28 @@
       !-------------------------------------------------------------------------
       !  Store the center points and the max extent of any sub
       !-------------------------------------------------------------------------
+      bsize = 0.0_MK
       SELECT CASE (ppm_dim)
       CASE (3)
-          bsize(1:3) = 0.0_MK
           DO i=1,nsubsplus
-              ctrs(1,i)  = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
-              ctrs(2,i)  = 0.5_MK*(min_sub(2,i) + max_sub(2,i))
-              ctrs(3,i)  = 0.5_MK*(min_sub(3,i) + max_sub(3,i))
-              len_sub(1) = max_sub(1,i) - min_sub(1,i)
-              len_sub(2) = max_sub(2,i) - min_sub(2,i)
-              len_sub(3) = max_sub(3,i) - min_sub(3,i)
-              IF (len_sub(1).GT.bsize(1)) bsize(1) = len_sub(1)
-              IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
-              IF (len_sub(3).GT.bsize(3)) bsize(3) = len_sub(3)
+             ctrs(1,i)  = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
+             ctrs(2,i)  = 0.5_MK*(min_sub(2,i) + max_sub(2,i))
+             ctrs(3,i)  = 0.5_MK*(min_sub(3,i) + max_sub(3,i))
+             len_sub(1) = max_sub(1,i) - min_sub(1,i)
+             len_sub(2) = max_sub(2,i) - min_sub(2,i)
+             len_sub(3) = max_sub(3,i) - min_sub(3,i)
+             IF (len_sub(1).GT.bsize(1)) bsize(1) = len_sub(1)
+             IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
+             IF (len_sub(3).GT.bsize(3)) bsize(3) = len_sub(3)
           ENDDO
       CASE (2)
-          bsize(1:2) = 0.0_MK
           DO i=1,nsubsplus
-              ctrs(1,i) = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
-              ctrs(2,i) = 0.5_MK*(min_sub(2,i) + max_sub(2,i))
-              len_sub(1) = max_sub(1,i) - min_sub(1,i)
-              len_sub(2) = max_sub(2,i) - min_sub(2,i)
-              IF (len_sub(1).GT.bsize(1)) bsize(1) = len_sub(1)
-              IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
+             ctrs(1,i) = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
+             ctrs(2,i) = 0.5_MK*(min_sub(2,i) + max_sub(2,i))
+             len_sub(1) = max_sub(1,i) - min_sub(1,i)
+             len_sub(2) = max_sub(2,i) - min_sub(2,i)
+             IF (len_sub(1).GT.bsize(1)) bsize(1) = len_sub(1)
+             IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
           ENDDO
       END SELECT
 
