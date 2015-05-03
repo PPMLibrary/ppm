@@ -47,14 +47,37 @@
         USE ppm_module_substop
         USE ppm_module_interfaces, ONLY : ppm_t_equi_mesh_,ppm_t_field_, &
         &   ppm_t_subpatch_
-        USE ppm_module_interp_m2p_bsp2
-        USE ppm_module_interp_m2p_mp4
+        USE ppm_module_interp_m2p_sca
+        USE ppm_module_interp_m2p_vec
         IMPLICIT NONE
 
         PRIVATE
         !-----------------------------------------------------------------------
         !  Interface
         !-----------------------------------------------------------------------
+        INTERFACE m2p_interp_bsp2
+            MODULE PROCEDURE m2p_interp_bsp2_ss_2d
+            MODULE PROCEDURE m2p_interp_bsp2_ds_2d
+            MODULE PROCEDURE m2p_interp_bsp2_ss_3d
+            MODULE PROCEDURE m2p_interp_bsp2_ds_3d
+
+            MODULE PROCEDURE m2p_interp_bsp2_sv_2d
+            MODULE PROCEDURE m2p_interp_bsp2_dv_2d
+            MODULE PROCEDURE m2p_interp_bsp2_sv_3d
+            MODULE PROCEDURE m2p_interp_bsp2_dv_3d
+        END INTERFACE
+
+        INTERFACE m2p_interp_mp4
+            MODULE PROCEDURE m2p_interp_mp4_ss_2d
+            MODULE PROCEDURE m2p_interp_mp4_ds_2d
+            MODULE PROCEDURE m2p_interp_mp4_ss_3d
+            MODULE PROCEDURE m2p_interp_mp4_ds_3d
+
+            MODULE PROCEDURE m2p_interp_mp4_sv_2d
+            MODULE PROCEDURE m2p_interp_mp4_dv_2d
+            MODULE PROCEDURE m2p_interp_mp4_sv_3d
+            MODULE PROCEDURE m2p_interp_mp4_dv_3d
+        END INTERFACE
 
         PUBLIC :: m2p_interp_bsp2
         PUBLIC :: m2p_interp_mp4
