@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :            ppm_module_interp_m2p
+      !  Module       :            ppm_module_interp_m2p_vecs
       !-------------------------------------------------------------------------
       ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
@@ -28,13 +28,11 @@
       !-------------------------------------------------------------------------
 
 #define __SINGLE_PRECISION 1
-#define __DOUBLE_PRECISION 2
 #define __2D               3
 #define __3D               4
 #define __VEC              5
-#define __SCA              6
 
-      MODULE ppm_module_interp_m2p
+      MODULE ppm_module_interp_m2p_vecs
       !!! Contains the mesh to particle interpolation routines. Currently we
       !!! support 2nd order B-spline and MP4 interpolation schemes.
         !-------------------------------------------------------------------------
@@ -47,9 +45,6 @@
         USE ppm_module_substop
         USE ppm_module_interfaces, ONLY : ppm_t_equi_mesh_,ppm_t_field_, &
         &   ppm_t_subpatch_
-        USE ppm_module_interp_m2p_sca
-        USE ppm_module_interp_m2p_vecs
-        USE ppm_module_interp_m2p_vecd
         IMPLICIT NONE
 
         PRIVATE
@@ -57,32 +52,39 @@
         !-----------------------------------------------------------------------
         !  Interface
         !-----------------------------------------------------------------------
-        INTERFACE m2p_interp_bsp2
-            MODULE PROCEDURE m2p_interp_bsp2_ss_2d
-            MODULE PROCEDURE m2p_interp_bsp2_ds_2d
-            MODULE PROCEDURE m2p_interp_bsp2_ss_3d
-            MODULE PROCEDURE m2p_interp_bsp2_ds_3d
+        !-----------------------------------------------------------------------
+        !
+        !-----------------------------------------------------------------------
+        PUBLIC :: m2p_interp_bsp2_sv_2d
+        PUBLIC :: m2p_interp_bsp2_sv_3d
 
-            MODULE PROCEDURE m2p_interp_bsp2_sv_2d
-            MODULE PROCEDURE m2p_interp_bsp2_dv_2d
-            MODULE PROCEDURE m2p_interp_bsp2_sv_3d
-            MODULE PROCEDURE m2p_interp_bsp2_dv_3d
-        END INTERFACE
+        PUBLIC :: m2p_interp_mp4_sv_2d
+        PUBLIC :: m2p_interp_mp4_sv_3d
 
-        INTERFACE m2p_interp_mp4
-            MODULE PROCEDURE m2p_interp_mp4_ss_2d
-            MODULE PROCEDURE m2p_interp_mp4_ds_2d
-            MODULE PROCEDURE m2p_interp_mp4_ss_3d
-            MODULE PROCEDURE m2p_interp_mp4_ds_3d
+      CONTAINS
 
-            MODULE PROCEDURE m2p_interp_mp4_sv_2d
-            MODULE PROCEDURE m2p_interp_mp4_dv_2d
-            MODULE PROCEDURE m2p_interp_mp4_sv_3d
-            MODULE PROCEDURE m2p_interp_mp4_dv_3d
-        END INTERFACE
+#define __KIND  __SINGLE_PRECISION
+#define __DIME  __2D
+#define __MODE  __VEC
+        ! 2D VEC SINGLE
+#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_mp4.f"
+#undef  __MODE
+#undef  __DIME
 
-        PUBLIC :: m2p_interp_bsp2
-        PUBLIC :: m2p_interp_mp4
+#define __DIME  __3D
+#define __MODE  __VEC
+        ! 3D VEC SINGLE
+#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_mp4.f"
+#undef  __MODE
+#undef  __DIME
+#undef  __KIND
 
-      END MODULE ppm_module_interp_m2p
+#undef __SINGLE_PRECISION
+#undef __2D
+#undef __3D
+#undef __VEC
+
+      END MODULE ppm_module_interp_m2p_vecs
 
