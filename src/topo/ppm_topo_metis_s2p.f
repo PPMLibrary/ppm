@@ -38,6 +38,12 @@
       !!! using the METIS grid partitioning library version 5.1
       !
       ! Note: For METIS_PartGraphRecursive the assig does not differ
+      !
+      ! Note: In the current implementation, load imbalance at each partition
+      ! is set as:
+      ! For Multilevel recursive bisectioning, the default value is 1 (i.e.,
+      ! load imbalance of 1.001) and for Multilevel k-way partitioning,
+      ! the default value is 30 (i.e., load imbalance of 1.03)
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
@@ -109,6 +115,10 @@
       !for each partition and constraint.
       REAL(ppm_kind_single), DIMENSION(:), POINTER :: ubvec
       !Array for load imbalance
+      !For Multilevel recursive bisectioning,
+      !the default value is 1 (i.e., load imbalance of 1.001)
+      !For Multilevel k-way partitioning,
+      !the default value is 30 (i.e., load imbalance of 1.03)
 
       INTEGER                        :: nvtxs
       !The number of vertices in the graph
@@ -304,6 +314,9 @@
 
       !Array for load imbalance
       NULLIFY(ubvec)
+      ldc(1)=ncon
+      CALL ppm_alloc(ubvec,ldc,iopt,info)
+      or_fail_alloc('METIS array for load imbalance, array UBVEC',ppm_error=ppm_error_fatal)
 
       CALL METIS_SetDefaultOptions(options)
       !Initializes the options array into its default values.
@@ -479,6 +492,7 @@
 
       SELECT CASE (ppm_nproc)
       CASE (2:8)
+         ubvec=1.001
          CALL METIS_PartGraphRecursive(nvtxs,ncon,xadj,adjncy,vwgt, &
          &    vsize,adjwgt,nparts,tpwgts,ubvec,options,objval,part)
 
@@ -497,6 +511,7 @@
             fail('Unknown METIS assignment scheme. Bailing out.')
          END SELECT
 
+         ubvec=1.03
          CALL METIS_PartGraphKway(nvtxs,ncon,xadj,adjncy,vwgt, &
          &    vsize,adjwgt,nparts,tpwgts,ubvec,options,objval,part)
 
