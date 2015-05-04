@@ -105,15 +105,15 @@
       !-------------------------------------------------------------------------
       REAL(MK),              DIMENSION(ppm_dim)    :: len_phys
       ! physical extent of comput. domain
-      REAL(MK)                                     :: t0,lmyeps
+      REAL(MK)                                     :: t0,lmyeps,tmp
       REAL(MK)                                     :: minsp,maxsp,meansp
       REAL(MK)                                     :: sx,sy,sz
       REAL(MK)                                     :: ex,ey,ez
       REAL(MK)                                     :: lx,ly,lz,ll,kk
-      REAL(ppm_kind_single), DIMENSION(:), POINTER :: tpwgts
+      REAL(ppm_kind_single), DIMENSION(:), POINTER :: tpwgts => NULL()
       !This is an array of size nparts*ncon that specifies the desired weight
       !for each partition and constraint.
-      REAL(ppm_kind_single), DIMENSION(:), POINTER :: ubvec
+      REAL(ppm_kind_single), DIMENSION(:), POINTER :: ubvec => NULL()
       !Array for load imbalance
       !For Multilevel recursive bisectioning,
       !the default value is 1 (i.e., load imbalance of 1.001)
@@ -298,22 +298,27 @@
          ENDIF
       ENDIF
 
-      NULLIFY(tpwgts)
-      IF (lasymm) THEN
-         ldc(1) = nparts
-         CALL ppm_alloc(tpwgts,ldc,iopt,info)
-         or_fail_alloc('METIS desired weight for each (partition) processor, array TPWGTS',ppm_error=ppm_error_fatal)
+      ldc(1)=nparts*ncon
+      CALL ppm_alloc(tpwgts,ldc,iopt,info)
+      or_fail_alloc('METIS desired weight for each (partition) processor, array TPWGTS',ppm_error=ppm_error_fatal)
 
+      IF (lasymm) THEN
          !-------------------------------------------------------------------------
          !  Store partition weights for METIS if needed
          !-------------------------------------------------------------------------
-         DO i=1,nparts
-            tpwgts(i) = REAL(ppm_proc_speed(i-1),ppm_kind_single)
+         DO i=0,nparts-1
+            DO j=1,ncon
+               !The target partition weight for the ith partition and jth
+               !constraint is specified at tpwgts[i*ncon+j]
+               tpwgts(i*ncon+j) = REAL(ppm_proc_speed(i),ppm_kind_single)
+            ENDDO
          ENDDO
+      ELSE
+         tmp=1.0_ppm_kind_single/REAL(nparts,ppm_kind_single)
+         FORALL (i=1:ldc(1)) tpwgts(i)=tmp
       ENDIF
 
       !Array for load imbalance
-      NULLIFY(ubvec)
       ldc(1)=ncon
       CALL ppm_alloc(ubvec,ldc,iopt,info)
       or_fail_alloc('METIS array for load imbalance, array UBVEC',ppm_error=ppm_error_fatal)
@@ -554,11 +559,8 @@
       CALL ppm_alloc(adjwgt,ldc,iopt,info)
       or_fail_dealloc('METIS weights of the edges, array ADJWGT',exit_point=no)
 
-      IF (lasymm) THEN
-         CALL ppm_alloc(tpwgts,ldc,iopt,info)
-         or_fail_dealloc('METIS graph adjacency array TPWGTS',exit_point=no)
-      ENDIF
-      NULLIFY(tpwgts)
+      CALL ppm_alloc(tpwgts,ldc,iopt,info)
+      or_fail_dealloc('METIS graph adjacency array TPWGTS',exit_point=no)
 
       CALL ppm_alloc(part,ldc,iopt,info)
       or_fail_dealloc('METIS partition vector of the graph which tells each vertex belongs to which partition or processor, array PART',exit_point=no)
