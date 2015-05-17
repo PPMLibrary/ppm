@@ -79,9 +79,6 @@
       INTEGER               :: hops
       INTEGER, PARAMETER    :: big=HUGE(1)
       INTEGER               :: min_,max_
-#ifdef __MPI
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
-#endif
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_map_connect_send'
       !-------------------------------------------------------------------------
@@ -197,7 +194,7 @@
          tag = 100
          CALL MPI_SendRecv(csend(k),1,MPI_INTEGER,ppm_isendlist(k),tag, &
          &                 crecv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag, &
-         &                 ppm_comm,status,info)
+         &                 ppm_comm,MPI_STATUS_IGNORE,info)
          or_fail_MPI("MPI_SendRecv")
 
          msend = msend + csend(k)
@@ -250,10 +247,9 @@
          ENDDO
 
          tag = 200
-         CALL MPI_SendRecv(sendbuffer,csend(k)*lda,MPI_INTEGER,      &
-         &                 ppm_isendlist(k),tag,                     &
-         &                 recvbuffer,crecv(k)*lda,MPI_INTEGER,      &
-         &                 ppm_irecvlist(k),tag,ppm_comm,status,info)
+         CALL MPI_SendRecv(sendbuffer,csend(k)*lda,MPI_INTEGER,         &
+         &    ppm_isendlist(k),tag,recvbuffer,crecv(k)*lda,MPI_INTEGER, &
+         &    ppm_irecvlist(k),tag,ppm_comm,MPI_STATUS_IGNORE,info)
          or_fail_MPI("MPI_SendRecv")
 
          !----------------------------------------------------------------------

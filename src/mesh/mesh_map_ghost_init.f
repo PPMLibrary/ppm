@@ -52,17 +52,16 @@
 
       CLASS(ppm_t_mesh_mapping_), POINTER :: map
 
-      INTEGER, DIMENSION(2)                 :: ldu
-      INTEGER, DIMENSION(ppm_dim)           :: op
-      INTEGER, DIMENSION(ppm_dim)           :: ghostsize_
-      INTEGER, DIMENSION(ppm_dim,26)        :: ond
-      INTEGER                               :: i,j,sendrank,recvrank,isub,jsub,k
-      INTEGER                               :: iopt,iset,ibuffer,isize,nnd
-      INTEGER                               :: nsendlist,nsend,tag1,lb,ub,nrecv
+      INTEGER, DIMENSION(2)          :: ldu
+      INTEGER, DIMENSION(ppm_dim)    :: op
+      INTEGER, DIMENSION(ppm_dim)    :: ghostsize_
+      INTEGER, DIMENSION(ppm_dim,26) :: ond
+      INTEGER                        :: i,j,sendrank,recvrank,isub,jsub,k
+      INTEGER                        :: iopt,iset,ibuffer,isize,nnd
+      INTEGER                        :: nsendlist,nsend,tag,lb,ub,nrecv
 #ifdef __MPI
-      INTEGER                               :: requestr
-      INTEGER, DIMENSION(2)                 :: requests
-      INTEGER, DIMENSION(MPI_STATUS_SIZE,2) :: statuss
+      INTEGER                        :: requestr
+      INTEGER, DIMENSION(2)          :: requests
 #endif
 
       LOGICAL :: lsouth,lnorth,least,lwest,ltop,lbottom
@@ -479,6 +478,15 @@
                ENDDO
 #ifdef __MPI
             ELSE
+               IF (ppm_rank.GT.recvrank) THEN
+                  tag=ppm_rank*(ppm_rank-1)/2+recvrank+100
+               ELSE
+                  tag=recvrank*(recvrank-1)/2+ppm_rank+100
+               ENDIF
+
+               CALL MPI_Irecv(nrecv,1,MPI_INTEGER,recvrank,tag,ppm_comm,requestr,info)
+               or_fail_MPI("MPI_Irecv")
+
                !--------------------------------------------------------------
                !  Communicate the block indices
                !--------------------------------------------------------------
@@ -486,11 +494,14 @@
                ub = map%ghost_blk(ibuffer)
                ! How many blocks am I sending to that guy
                nsend = ub - lb
-               tag1 = 100
-               CALL MPI_Irecv(nrecv,1,MPI_INTEGER,recvrank,tag1,ppm_comm,requestr,info)
-               or_fail_MPI("MPI_Irecv")
 
-               CALL MPI_Isend(nsend,1,MPI_INTEGER,sendrank,tag1,ppm_comm,requests(1),info)
+               IF (ppm_rank.GT.sendrank) THEN
+                  tag=ppm_rank*(ppm_rank-1)/2+sendrank+100
+               ELSE
+                  tag=sendrank*(sendrank-1)/2+ppm_rank+100
+               ENDIF
+
+               CALL MPI_Isend(nsend,1,MPI_INTEGER,sendrank,tag,ppm_comm,requests(1),info)
                or_fail_MPI("MPI_Isend")
 
                !--------------------------------------------------------------
@@ -522,8 +533,13 @@
                ENDDO
 
                ! Send it to the destination processor and get my stuff
-               tag1 = 200
+               IF (ppm_rank.GT.recvrank) THEN
+                  tag=ppm_rank*(ppm_rank-1)/2+recvrank+200
+               ELSE
+                  tag=recvrank*(recvrank-1)/2+ppm_rank+200
+               ENDIF
 
+               !Wait to have nrecv
                CALL MPI_Wait(requestr,MPI_STATUS_IGNORE,info)
                or_fail_MPI("MPI_Wait")
 
@@ -536,10 +552,16 @@
                or_fail_alloc("recvbuf")
 
                ! Send it to the destination processor and get my stuff
-               CALL MPI_Irecv(recvbuf,ldu(1),MPI_INTEGER,recvrank,tag1,ppm_comm,requestr,info)
+               CALL MPI_Irecv(recvbuf,ldu(1),MPI_INTEGER,recvrank,tag,ppm_comm,requestr,info)
                or_fail_MPI("MPI_Irecv")
 
-               CALL MPI_Isend(sendbuf,iset,MPI_INTEGER,sendrank,tag1,ppm_comm,requests(2),info)
+               IF (ppm_rank.GT.sendrank) THEN
+                  tag=ppm_rank*(ppm_rank-1)/2+sendrank+200
+               ELSE
+                  tag=sendrank*(sendrank-1)/2+ppm_rank+200
+               ENDIF
+
+               CALL MPI_Isend(sendbuf,iset,MPI_INTEGER,sendrank,tag,ppm_comm,requests(2),info)
                or_fail_MPI("MPI_Isend")
 
                ! How many blocks will I receive from the guy?
@@ -591,7 +613,7 @@
                   iset = iset + ppm_dim
                ENDDO
 
-               CALL MPI_Waitall(2,requests,statuss,info)
+               CALL MPI_Waitall(2,requests,MPI_STATUSES_IGNORE,info)
                or_fail_MPI("MPI_Waitall")
 #endif
              ENDIF ! sendrank.EQ.ppm_rank

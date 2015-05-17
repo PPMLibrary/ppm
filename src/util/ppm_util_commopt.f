@@ -93,10 +93,6 @@
       INTEGER                              :: p1,p2
       ! min and max of assigned colors
       INTEGER                              :: mincolor,maxcolor
-#ifdef __MPI
-      ! MPI comm status
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
-#endif
 
       LOGICAL :: valid
 
@@ -160,7 +156,8 @@
          nneighprocs(1) = topo%nneighproc
          maxneigh = nneighprocs(1)
          DO i=1,ppm_nproc-1
-            CALL MPI_Recv(nneighprocs(i+1),1,MPI_INTEGER,i,i,ppm_comm,status,info)
+            CALL MPI_Recv(nneighprocs(i+1),1,MPI_INTEGER,i,i,ppm_comm, &
+            &    MPI_STATUS_IGNORE,info)
             IF (nneighprocs(i+1).GT.maxneigh) maxneigh=nneighprocs(i+1)
          ENDDO
       ENDIF
@@ -182,7 +179,7 @@
 
          DO i=1,ppm_nproc-1
             CALL MPI_Recv(ineighprocs(1:nneighprocs(i+1),i+1),nneighprocs(i+1), &
-            &    MPI_INTEGER,i,i,ppm_comm,status,info)
+            &    MPI_INTEGER,i,i,ppm_comm,MPI_STATUS_IGNORE,info)
          ENDDO
       ENDIF
 
@@ -325,7 +322,7 @@
       ! Then distribute the individual optimized neighbor lists
       IF (ppm_rank.GT.0) THEN
          CALL MPI_Recv(topo%icommseq(2:topo%ncommseq),topo%ncommseq-1, &
-         &    MPI_INTEGER,0,ppm_rank,ppm_comm,status,info)
+         &    MPI_INTEGER,0,ppm_rank,ppm_comm,MPI_STATUS_IGNORE,info)
       ELSE
          topo%icommseq(2:topo%ncommseq) = ineighprocs(1:ii,1)
          DO i=1,ppm_nproc-1

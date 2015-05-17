@@ -228,20 +228,32 @@
       !  Compute the pointer to the position of the data in the main send
       !  buffer
       !-------------------------------------------------------------------------
-      DO k=1,ppm_buffer_set
-         IF (k.EQ.1) THEN
-            qq(1,k) = 1
-         ELSE
-            qq(1,k) = qq(1,k-1) + npart_send*ppm_buffer_dim(k-1)
-         ENDIF
-         bdim = ppm_buffer_dim(k)
-         DO j=2,ppm_nsendlist
-            qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
-            IF (ppm_debug .GT. 1) THEN
-               stdout_f('(A,I9)',"qq(j,k)=",'qq(j,k)')
+      IF (ppm_debug .GT. 1) THEN
+         DO k=1,ppm_buffer_set
+            IF (k.EQ.1) THEN
+               qq(1,k) = 1
+            ELSE
+               qq(1,k) = qq(1,k-1) + npart_send*ppm_buffer_dim(k-1)
             ENDIF
+            bdim = ppm_buffer_dim(k)
+            DO j=2,ppm_nsendlist
+               qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
+               stdout_f('(A,I9)',"qq(j,k)=",'qq(j,k)')
+            ENDDO
          ENDDO
-      ENDDO
+      ELSE
+         DO k=1,ppm_buffer_set
+            IF (k.EQ.1) THEN
+               qq(1,k) = 1
+            ELSE
+               qq(1,k) = qq(1,k-1) + npart_send*ppm_buffer_dim(k-1)
+            ENDIF
+            bdim = ppm_buffer_dim(k)
+            DO j=2,ppm_nsendlist
+               qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
+            ENDDO
+         ENDDO
+      ENDIF
 
       IF (nsr.GT.0) THEN
          CALL MPI_Waitall(nsr,request(1:nsr),MPI_STATUSES_IGNORE,info)
@@ -304,27 +316,51 @@
       !  Compute the pointer to the position of the data in the main receive
       !  buffer
       !-------------------------------------------------------------------------
-      DO k=1,ppm_buffer_set
-         IF (k.EQ.1) THEN
-            pp(1,k) = 1
-         ELSE
-            pp(1,k) = pp(1,k-1) + npart_recv*ppm_buffer_dim(k-1)
-         ENDIF
-         bdim    = ppm_buffer_dim(k)
-         DO j=2,ppm_nsendlist
-            pp(j,k) = pp(j-1,k) + precv(j-1)*bdim
-            IF (ppm_debug .GT. 1) THEN
+      IF (ppm_debug.GT.1) THEN
+         DO k=1,ppm_buffer_set
+            IF (k.EQ.1) THEN
+               pp(1,k) = 1
+            ELSE
+               pp(1,k) = pp(1,k-1) + npart_recv*ppm_buffer_dim(k-1)
+            ENDIF
+            bdim = ppm_buffer_dim(k)
+            DO j=2,ppm_nsendlist
+               pp(j,k) = pp(j-1,k) + precv(j-1)*bdim
                stdout_f('(A,I9)',"pp(j,k)=",'pp(j,k)')
                stdout_f('(A,I9,A,I4)',"precv(j-1)=",'precv(j-1)',", bdim=",bdim)
-            ENDIF
+            ENDDO
          ENDDO
-      ENDDO
+      ELSE
+         DO k=1,ppm_buffer_set
+            IF (k.EQ.1) THEN
+               pp(1,k) = 1
+            ELSE
+               pp(1,k) = pp(1,k-1) + npart_recv*ppm_buffer_dim(k-1)
+            ENDIF
+            bdim = ppm_buffer_dim(k)
+            DO j=2,ppm_nsendlist
+               pp(j,k) = pp(j-1,k) + precv(j-1)*bdim
+            ENDDO
+         ENDDO
+      ENDIF
 
       !counter for number of send & recv
       nsr=0
 #endif
       IF (ppm_kind.EQ.ppm_kind_double) THEN
 #ifdef __MPI
+         DO k=1,ppm_buffer_set
+            !----------------------------------------------------------------------
+            !  For each processor
+            !----------------------------------------------------------------------
+            bdim = ppm_buffer_dim(k)
+            l=qq(1,k)-1
+            m=pp(1,k)-1
+            DO j=1,psend(1)*bdim
+               ppm_recvbufferd(m+j)=ppm_sendbufferd(l+j)
+            ENDDO
+         ENDDO !k=1,ppm_buffer_set
+
          DO k=1,ppm_buffer_set
             bdim = ppm_buffer_dim(k)
             !-------------------------------------------------------------------------
@@ -351,8 +387,7 @@
 
                   nsr=nsr+1
                   CALL MPI_Isend(ppm_sendbufferd(qq(i,k)),psend(i)*bdim, &
-                  &    ppm_mpi_kind,ppm_isendlist(i),tag,ppm_comm,          &
-                  &    request(nsr),info)
+                  &    ppm_mpi_kind,ppm_isendlist(i),tag,ppm_comm,request(nsr),info)
                   or_fail_MPI("MPI_Isend")
                ENDIF
                IF (precv(i).GT.0) THEN
@@ -364,12 +399,16 @@
 
                   nsr=nsr+1
                   CALL MPI_Irecv(ppm_recvbufferd(pp(i,k)),precv(i)*bdim, &
-                  &    ppm_mpi_kind,ppm_irecvlist(i),tag,ppm_comm,          &
-                  &    request(nsr),info)
+                  &    ppm_mpi_kind,ppm_irecvlist(i),tag,ppm_comm,request(nsr),info)
                   or_fail_MPI("MPI_Irecv")
                ENDIF
             ENDDO !i=2,ppm_nsendlist
          ENDDO !k=1,ppm_buffer_set
+#else
+         ppm_recvbufferd=ppm_sendbufferd
+#endif
+      ELSE
+#ifdef __MPI
          DO k=1,ppm_buffer_set
             !----------------------------------------------------------------------
             !  For each processor
@@ -378,14 +417,10 @@
             l=qq(1,k)-1
             m=pp(1,k)-1
             DO j=1,psend(1)*bdim
-               ppm_recvbufferd(m+j)=ppm_sendbufferd(l+j)
+               ppm_recvbuffers(m+j)=ppm_sendbuffers(l+j)
             ENDDO
          ENDDO !k=1,ppm_buffer_set
-#else
-         ppm_recvbufferd=ppm_sendbufferd
-#endif
-      ELSE
-#ifdef __MPI
+
          DO k=1,ppm_buffer_set
             bdim = ppm_buffer_dim(k)
             !-------------------------------------------------------------------------
@@ -412,8 +447,7 @@
 
                   nsr=nsr+1
                   CALL MPI_Isend(ppm_sendbuffers(qq(i,k)),psend(i)*bdim, &
-                  &    ppm_mpi_kind,ppm_isendlist(i),tag,ppm_comm,          &
-                  &    request(nsr),info)
+                  &    ppm_mpi_kind,ppm_isendlist(i),tag,ppm_comm,request(nsr),info)
                   or_fail_MPI("MPI_Isend")
                ENDIF
                IF (precv(i).GT.0) THEN
@@ -425,22 +459,10 @@
 
                   nsr=nsr+1
                   CALL MPI_Irecv(ppm_recvbuffers(pp(i,k)),precv(i)*bdim, &
-                  &    ppm_mpi_kind,ppm_irecvlist(i),tag,ppm_comm,          &
-                  &    request(nsr),info)
+                  &    ppm_mpi_kind,ppm_irecvlist(i),tag,ppm_comm,request(nsr),info)
                   or_fail_MPI("MPI_Irecv")
                ENDIF
             ENDDO !i=2,ppm_nsendlist
-         ENDDO !k=1,ppm_buffer_set
-         DO k=1,ppm_buffer_set
-            !----------------------------------------------------------------------
-            !  For each processor
-            !----------------------------------------------------------------------
-            bdim = ppm_buffer_dim(k)
-            l=qq(1,k)-1
-            m=pp(1,k)-1
-            DO j=1,psend(1)*bdim
-               ppm_recvbuffers(m+j)=ppm_sendbuffers(l+j)
-            ENDDO
          ENDDO !k=1,ppm_buffer_set
 #else
          ppm_recvbuffers=ppm_sendbuffers

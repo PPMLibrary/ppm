@@ -113,8 +113,6 @@
       INTEGER                               :: mincolor,maxcolor
       LOGICAL                               :: valid
 #ifdef __MPI
-      ! MPI comm status
-      INTEGER, DIMENSION(MPI_STATUS_SIZE)   :: status
       LOGICAL, DIMENSION(3)                 :: periods
       INTEGER, DIMENSION(3)                 :: ndims
 #endif

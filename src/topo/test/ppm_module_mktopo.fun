@@ -125,7 +125,8 @@ real(mk)                         :: t0,t1,t2,t3
         !----------------
         decomp = ppm_param_decomp_bisection
         !decomp = ppm_param_decomp_xpencil
-        assig  = ppm_param_assign_internal
+        !assig  = ppm_param_assign_internal
+        assig  = ppm_param_assign_metis_comm
 
         topoid = 0
 

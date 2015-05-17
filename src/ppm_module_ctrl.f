@@ -400,9 +400,8 @@
           INTEGER :: i
           INTEGER :: rank = 0
 #ifdef __MPI3
-          INTEGER                              :: request_count,cnt
-          INTEGER, DIMENSION(:),   ALLOCATABLE :: request
-          INTEGER, DIMENSION(:,:), ALLOCATABLE :: status
+          INTEGER                            :: request_count,cnt
+          INTEGER, DIMENSION(:), ALLOCATABLE :: request
 #endif
 
           CHARACTER(LEN=*), PARAMETER :: caller='parse_args'
@@ -540,9 +539,8 @@
           &             COMPLEX_array_args_i+ &
           &             DCOMPLEX_array_args_i
 
-          ALLOCATE(status(MPI_STATUS_SIZE,request_count), &
-          & request(request_count),STAT=info)
-          or_fail_MPI("status & request")
+          ALLOCATE(request(request_count),STAT=info)
+          or_fail_MPI("request")
 
           ! scalar
           DO i=1,INTEGER_args_i
@@ -635,11 +633,11 @@
              &    MPI_DOUBLE_COMPLEX,0,ppm_comm,request(cnt+i),info)
           ENDDO
 
-          CALL MPI_Waitall(request_count,request,status,info)
+          CALL MPI_Waitall(request_count,request,MPI_STATUSES_IGNORE,info)
           or_fail_MPI("MPI_Waitall")
 
-          DEALLOCATE(request,status,STAT=info)
-          or_fail_dealloc("request,status")
+          DEALLOCATE(request,STAT=info)
+          or_fail_dealloc("request")
 #else
           ! scalar
           DO i=1,INTEGER_args_i

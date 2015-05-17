@@ -168,7 +168,6 @@
       LOGICAL, DIMENSION(:), POINTER :: rbuf
 #endif
 #ifdef __MPI
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: mpstat
       INTEGER                          :: MPTYPE,iproc,rem
       INTEGER                          :: mpreq,jproc
       INTEGER, DIMENSION(:),   POINTER :: asize => NULL()
@@ -640,7 +639,7 @@
                       !---------------------------------------------------------
                       !  Wait for MPI receive to complete
                       !---------------------------------------------------------
-                      CALL MPI_Wait(mpreq,mpstat,info)
+                      CALL MPI_Wait(mpreq,MPI_STATUS_IGNORE,info)
                       !---------------------------------------------------------
                       !  Reallocate and copy buffers
                       !---------------------------------------------------------
@@ -711,7 +710,7 @@
                   IF (mpreq .NE. MPI_REQUEST_NULL) CALL MPI_Cancel(mpreq,info2)
                   GOTO 9999
               ELSE
-                  IF (ppm_rank .NE. 0) CALL MPI_Wait(mpreq,mpstat,info)
+                  IF (ppm_rank .NE. 0) CALL MPI_Wait(mpreq,MPI_STATUS_IGNORE,info)
               ENDIF
 
           !---------------------------------------------------------------------
@@ -1037,7 +1036,7 @@
                       !---------------------------------------------------------
                       !  Wait for MPI send to complete
                       !---------------------------------------------------------
-                      CALL MPI_Wait(mpreq,mpstat,info)
+                      CALL MPI_Wait(mpreq,MPI_STATUS_IGNORE,info)
                       !---------------------------------------------------------
                       !  Reallocate and copy buffers
                       !---------------------------------------------------------
@@ -1118,7 +1117,7 @@
                   IF (mpreq .NE. MPI_REQUEST_NULL) CALL MPI_Cancel(mpreq,info2)
                   GOTO 9999
               ELSE
-                  IF (ppm_rank .NE. 0) CALL MPI_Wait(mpreq,mpstat,info)
+                  IF (ppm_rank .NE. 0) CALL MPI_Wait(mpreq,MPI_STATUS_IGNORE,info)
               ENDIF
 
           ENDIF    ! dist

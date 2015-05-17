@@ -90,16 +90,14 @@
       REAL(MK):: rdx,rdy,rdz,x0,y0,z0,rmean_npbx
       REAL(MK):: t0
 
-      INTEGER , DIMENSION(ppm_dim) :: Nm
-      INTEGER , DIMENSION(3)       :: ldc
-      INTEGER :: i,j,k,iopt,Mm,ibox,idx,jdx,kdx,ipart
-      INTEGER :: istat,n1,n2
+      INTEGER, DIMENSION(ppm_dim) :: Nm
+      INTEGER, DIMENSION(3)       :: ldc
+      INTEGER                     :: i,j,k,iopt,Mm,ibox,idx,jdx,kdx,ipart
+      INTEGER                     :: istat,n1,n2
 #ifdef __MPI
-      INTEGER                             :: request
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
+      INTEGER                     :: request
 #endif
 
-      CHARACTER(ppm_char) :: mesg
       CHARACTER(ppm_char) :: caller = 'ppm_decomp_pruned_cell'
       !-------------------------------------------------------------------------
       !  Externals
@@ -237,7 +235,7 @@
       or_fail_alloc('allocation of max_sub failed')
 
 #ifdef __MPI3
-      CALL MPI_Wait(request,status,info)
+      CALL MPI_Wait(request,MPI_STATUS_IGNORE,info)
       or_fail_MPI("MPI_Wait")
 
       DO k=1,Mm

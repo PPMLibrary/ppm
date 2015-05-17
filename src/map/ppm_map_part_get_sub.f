@@ -89,9 +89,6 @@
       INTEGER                             :: ipart,sendrank,recvrank
       INTEGER                             :: iopt,iset,ibuffer
       INTEGER                             :: tag1,tag2
-#ifdef __MPI
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
-#endif
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_map_part_get_sub'
 
@@ -318,7 +315,7 @@
          !----------------------------------------------------------------------
          CALL MPI_SendRecv(nlist3,1,MPI_INTEGER,recvrank,tag1, &
          &                 nlist4,1,MPI_INTEGER,sendrank,tag1, &
-         &                 ppm_comm,status,info)
+         &                 ppm_comm,MPI_STATUS_IGNORE,info)
          or_fail_MPI("MPI_SendRecv for nlist3 & nlist4 failed.")
 
          !----------------------------------------------------------------------
@@ -335,7 +332,7 @@
          !----------------------------------------------------------------------
          CALL MPI_SendRecv(ilist3,nlist3,MPI_INTEGER,recvrank,tag2, &
          &                 ilist4,nlist4,MPI_INTEGER,sendrank,tag2, &
-         &                 ppm_comm,status,info)
+         &                 ppm_comm,MPI_STATUS_IGNORE,info)
          or_fail_MPI("MPI_SendRecv for ilist3 & ilist4 failed.")
 
          !----------------------------------------------------------------------

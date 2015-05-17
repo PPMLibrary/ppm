@@ -33,15 +33,14 @@
       ! Module for MPI calls
       !----------------------------------------------------------------------
 #ifdef __MPI
-!           USE mpi
-!           USE mpi_f08
+          USE mpi
 #endif
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           ! Include
           !-------------------------------------------------------------------------
 #ifdef __MPI
-          INCLUDE "mpif.h"
+!           INCLUDE "mpif.h"
 #else
           ! TYPES
           INTEGER, PARAMETER :: MPI_LOGICAL          = 1

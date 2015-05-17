@@ -937,11 +937,10 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          INTEGER                             :: i,offset
-          INTEGER, DIMENSION(:),      POINTER :: wp => NULL()
+          INTEGER                        :: i,offset
+          INTEGER, DIMENSION(:), POINTER :: wp => NULL()
 #ifdef __MPI3
-          INTEGER                             :: request
-          INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
+          INTEGER                        :: request
 #endif
           !-------------------------------------------------------------------------
           !  Initialise
@@ -967,7 +966,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
 
           CALL Pc%get(Pc%gi,wp,info)
 #ifdef __MPI3
-          CALL MPI_Wait(request,status,info)
+          CALL MPI_Wait(request,MPI_STATUS_IGNORE,info)
           or_fail_MPI("MPI_Wait")
 #endif
           FORALL (i=1:Pc%Npart) wp(i) = offset + i !- 1 !uncomment if index from 0
@@ -984,10 +983,10 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           IMPLICIT NONE
 
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))                    :: this
-          REAL(MK), DIMENSION(:,:),          POINTER       :: xp
-          INTEGER,                           INTENT(  OUT) :: info
-          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: with_ghosts
+          CLASS(DTYPE(ppm_t_particles))           :: this
+          REAL(MK), DIMENSION(:,:), POINTER       :: xp
+          INTEGER,                  INTENT(  OUT) :: info
+          LOGICAL,        OPTIONAL, INTENT(IN   ) :: with_ghosts
 
           start_subroutine("get_xp")
 
@@ -1300,26 +1299,27 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                          :: Pc
+          CLASS(DTYPE(ppm_t_particles))    :: Pc
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)      :: info
+          INTEGER,           INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional arguments
           !-------------------------------------------------------------------------
-          INTEGER, OPTIONAL,                  INTENT(IN   )      :: level
+          INTEGER, OPTIONAL, INTENT(IN   ) :: level
           !!! indentation level at which to printout the info. Default = 0
-          INTEGER, OPTIONAL,                  INTENT(IN   )      :: fileunit
+          INTEGER, OPTIONAL, INTENT(IN   ) :: fileunit
           !!! Already open file unit for printout. Default = stdout
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          INTEGER                              :: lev,fileu
-          CHARACTER(LEN = ppm_char)            :: myformat
           CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
 
-          start_subroutine("part_print_info")
+          INTEGER :: lev,fileu
 
+          CHARACTER(LEN = ppm_char) :: myformat
+
+          start_subroutine("part_print_info")
 
           IF (PRESENT(fileunit)) THEN
              fileu = fileunit
@@ -2452,15 +2452,15 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                :: Pc
+          CLASS(DTYPE(ppm_t_particles))                    :: Pc
 
           !!! Data structure containing the particles
-          INTEGER,                       INTENT(  OUT) :: info
+          INTEGER,                           INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_main_abstr), OPTIONAL, TARGET :: Field
+          CLASS(ppm_t_main_abstr), OPTIONAL, TARGET        :: Field
           !!! Push only this field. Default is to push all of them.
           !-------------------------------------------------------------------------
           !  Local variables
