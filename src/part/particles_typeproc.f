@@ -1114,7 +1114,10 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           CALL Pc%get_xp(xp,info)
           or_fail("Particle positions cannot be accessed")
 
-          FORALL (ip=1:Pc%Npart) xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + disp(1:ppm_dim,ip)
+          !FORALL (ip=1:Pc%Npart) xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + disp(1:ppm_dim,ip)
+          DO ip=1,Pc%Npart
+             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + disp(1:ppm_dim,ip)
+          ENDDO
 
           CALL Pc%set_xp(xp,info)
           or_fail("set_xp")
