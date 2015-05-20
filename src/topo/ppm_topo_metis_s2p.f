@@ -103,17 +103,18 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK),              DIMENSION(ppm_dim)    :: len_phys
+      REAL(MK),              DIMENSION(ppm_dim)          :: len_phys
       ! physical extent of comput. domain
-      REAL(MK)                                     :: t0,lmyeps,tmp
-      REAL(MK)                                     :: minsp,maxsp,meansp
-      REAL(MK)                                     :: sx,sy,sz
-      REAL(MK)                                     :: ex,ey,ez
-      REAL(MK)                                     :: lx,ly,lz,ll,kk
-      REAL(ppm_kind_single), DIMENSION(:), POINTER :: tpwgts => NULL()
+      REAL(MK),              DIMENSION(:,:), ALLOCATABLE :: len_subs
+      REAL(MK)                                           :: t0,lmyeps,tmp
+      REAL(MK)                                           :: minsp,maxsp,meansp
+      REAL(MK)                                           :: sx,sy,sz
+      REAL(MK)                                           :: ex,ey,ez
+      REAL(MK)                                           :: lx,ly,lz,ll,kk
+      REAL(ppm_kind_single), DIMENSION(:),   POINTER     :: tpwgts => NULL()
       !This is an array of size nparts*ncon that specifies the desired weight
       !for each partition and constraint.
-      REAL(ppm_kind_single), DIMENSION(:), POINTER :: ubvec => NULL()
+      REAL(ppm_kind_single), DIMENSION(:),   POINTER     :: ubvec => NULL()
       !Array for load imbalance
       !For Multilevel recursive bisectioning,
       !the default value is 1 (i.e., load imbalance of 1.001)
@@ -356,6 +357,12 @@
       sx=MINVAL(max_sub(1,1:nsubs)-min_sub(1,1:nsubs))/len_phys(1)
       sy=MINVAL(max_sub(2,1:nsubs)-min_sub(2,1:nsubs))/len_phys(2)
 
+
+      ALLOCATE(len_subs(ppm_dim,nsubs),STAT=info)
+      or_fail_alloc("len_subs")
+
+      len_subs(1:ppm_dim,1:nsubs)=max_sub(1:ppm_dim,1:nsubs)-min_sub(1:ppm_dim,1:nsubs)+lmyeps
+
       !----------------------------------------------------------------
       !  Fill the weights of the edge array (adjwgt).
       !  Here we consider the length (area) of the neighbor subdomain
@@ -384,28 +391,39 @@
             DO i=1,nneigh(isub)
                jsub=ineigh(i,isub)
 
-               !Correction for neighbor cells through periodic boundary conditions
-               IF (max_sub(1,jsub)-min_sub(1,isub)+lmyeps.GE.len_phys(1)) THEN
-                  sx=MAX(min_sub(1,isub),min_sub(1,jsub)-len_phys(1))
-                  ex=MIN(max_sub(1,isub),max_sub(1,jsub)-len_phys(1))
-               ELSE IF (max_sub(1,isub)-min_sub(1,jsub)+lmyeps.GE.len_phys(1)) THEN
-                  sx=MAX(min_sub(1,isub)-len_phys(1),min_sub(1,jsub))
-                  ex=MIN(max_sub(1,isub)-len_phys(1),max_sub(1,jsub))
+               IF (len_subs(1,jsub).GE.len_phys(1).AND.len_subs(1,isub).GE.len_phys(1)) THEN
+                  sx=min_sub(1,jsub)
+                  ex=max_sub(1,jsub)
                ELSE
-                  sx=MAX(min_sub(1,isub),min_sub(1,jsub))
-                  ex=MIN(max_sub(1,isub),max_sub(1,jsub))
+                  !Correction for neighbor cells through periodic boundary conditions
+                  IF (max_sub(1,jsub)-min_sub(1,isub)+lmyeps.GE.len_phys(1)) THEN
+                     sx=MAX(min_sub(1,isub),min_sub(1,jsub)-len_phys(1))
+                     ex=MIN(max_sub(1,isub),max_sub(1,jsub)-len_phys(1))
+                  ELSE IF (max_sub(1,isub)-min_sub(1,jsub)+lmyeps.GE.len_phys(1)) THEN
+                     sx=MAX(min_sub(1,isub)-len_phys(1),min_sub(1,jsub))
+                     ex=MIN(max_sub(1,isub)-len_phys(1),max_sub(1,jsub))
+                  ELSE
+                     sx=MAX(min_sub(1,isub),min_sub(1,jsub))
+                     ex=MIN(max_sub(1,isub),max_sub(1,jsub))
+                  ENDIF
                ENDIF
                lx=ABS(ex-sx)
 
-               IF (max_sub(2,jsub)-min_sub(2,isub)+lmyeps.GE.len_phys(2)) THEN
-                  sy=MAX(min_sub(2,isub),min_sub(2,jsub)-len_phys(2))
-                  ey=MIN(max_sub(2,isub),max_sub(2,jsub)-len_phys(2))
-               ELSE IF (max_sub(2,isub)-min_sub(2,jsub)+lmyeps.GE.len_phys(2)) THEN
-                  sy=MAX(min_sub(2,isub)-len_phys(2),min_sub(2,jsub))
-                  ey=MIN(max_sub(2,isub)-len_phys(2),max_sub(2,jsub))
+
+               IF (len_subs(2,jsub).GE.len_phys(2).AND.len_subs(2,isub).GE.len_phys(2)) THEN
+                  sy=min_sub(2,jsub)
+                  ey=max_sub(2,jsub)
                ELSE
-                  sy=MAX(min_sub(2,isub),min_sub(2,jsub))
-                  ey=MIN(max_sub(2,isub),max_sub(2,jsub))
+                  IF (max_sub(2,jsub)-min_sub(2,isub)+lmyeps.GE.len_phys(2)) THEN
+                     sy=MAX(min_sub(2,isub),min_sub(2,jsub)-len_phys(2))
+                     ey=MIN(max_sub(2,isub),max_sub(2,jsub)-len_phys(2))
+                  ELSE IF (max_sub(2,isub)-min_sub(2,jsub)+lmyeps.GE.len_phys(2)) THEN
+                     sy=MAX(min_sub(2,isub)-len_phys(2),min_sub(2,jsub))
+                     ey=MIN(max_sub(2,isub)-len_phys(2),max_sub(2,jsub))
+                  ELSE
+                     sy=MAX(min_sub(2,isub),min_sub(2,jsub))
+                     ey=MIN(max_sub(2,isub),max_sub(2,jsub))
+                  ENDIF
                ENDIF
                ly=ABS(ey-sy)
 
@@ -420,8 +438,8 @@
                ENDIF
 
                vsize(isub)=vsize(isub)+adjwgt(j)
-            ENDDO
-         ENDDO
+            ENDDO !i=1,nneigh(isub)
+         ENDDO !isub=1,nsubs
 
       CASE (3)
          sz=MINVAL(max_sub(3,1:nsubs)-min_sub(3,1:nsubs))/len_phys(3)
@@ -438,40 +456,55 @@
             DO i=1,nneigh(isub)
                jsub=ineigh(i,isub)
 
-               !Correction for neighbor cells through periodic boundary conditions
-               IF (max_sub(1,jsub)-min_sub(1,isub)+lmyeps.GE.len_phys(1)) THEN
-                  sx=MAX(min_sub(1,isub),min_sub(1,jsub)-len_phys(1))
-                  ex=MIN(max_sub(1,isub),max_sub(1,jsub)-len_phys(1))
-               ELSE IF (max_sub(1,isub)-min_sub(1,jsub)+lmyeps.GE.len_phys(1)) THEN
-                  sx=MAX(min_sub(1,isub)-len_phys(1),min_sub(1,jsub))
-                  ex=MIN(max_sub(1,isub)-len_phys(1),max_sub(1,jsub))
+               IF (len_subs(1,jsub).GE.len_phys(1).AND.len_subs(1,isub).GE.len_phys(1)) THEN
+                  sx=min_sub(1,jsub)
+                  ex=max_sub(1,jsub)
                ELSE
-                  sx=MAX(min_sub(1,isub),min_sub(1,jsub))
-                  ex=MIN(max_sub(1,isub),max_sub(1,jsub))
+                  !Correction for neighbor cells through periodic boundary conditions
+                  IF (max_sub(1,jsub)-min_sub(1,isub)+lmyeps.GE.len_phys(1)) THEN
+                     sx=MAX(min_sub(1,isub),min_sub(1,jsub)-len_phys(1))
+                     ex=MIN(max_sub(1,isub),max_sub(1,jsub)-len_phys(1))
+                  ELSE IF (max_sub(1,isub)-min_sub(1,jsub)+lmyeps.GE.len_phys(1)) THEN
+                     sx=MAX(min_sub(1,isub)-len_phys(1),min_sub(1,jsub))
+                     ex=MIN(max_sub(1,isub)-len_phys(1),max_sub(1,jsub))
+                  ELSE
+                     sx=MAX(min_sub(1,isub),min_sub(1,jsub))
+                     ex=MIN(max_sub(1,isub),max_sub(1,jsub))
+                  ENDIF
                ENDIF
                lx=ABS(ex-sx)
 
-               IF (max_sub(2,jsub)-min_sub(2,isub)+lmyeps.GE.len_phys(2)) THEN
-                  sy=MAX(min_sub(2,isub),min_sub(2,jsub)-len_phys(2))
-                  ey=MIN(max_sub(2,isub),max_sub(2,jsub)-len_phys(2))
-               ELSE IF (max_sub(2,isub)-min_sub(2,jsub)+lmyeps.GE.len_phys(2)) THEN
-                  sy=MAX(min_sub(2,isub)-len_phys(2),min_sub(2,jsub))
-                  ey=MIN(max_sub(2,isub)-len_phys(2),max_sub(2,jsub))
+               IF (len_subs(2,jsub).GE.len_phys(2).AND.len_subs(2,isub).GE.len_phys(2)) THEN
+                  sy=min_sub(2,jsub)
+                  ey=max_sub(2,jsub)
                ELSE
-                  sy=MAX(min_sub(2,isub),min_sub(2,jsub))
-                  ey=MIN(max_sub(2,isub),max_sub(2,jsub))
+                  IF (max_sub(2,jsub)-min_sub(2,isub)+lmyeps.GE.len_phys(2)) THEN
+                     sy=MAX(min_sub(2,isub),min_sub(2,jsub)-len_phys(2))
+                     ey=MIN(max_sub(2,isub),max_sub(2,jsub)-len_phys(2))
+                  ELSE IF (max_sub(2,isub)-min_sub(2,jsub)+lmyeps.GE.len_phys(2)) THEN
+                     sy=MAX(min_sub(2,isub)-len_phys(2),min_sub(2,jsub))
+                     ey=MIN(max_sub(2,isub)-len_phys(2),max_sub(2,jsub))
+                  ELSE
+                     sy=MAX(min_sub(2,isub),min_sub(2,jsub))
+                     ey=MIN(max_sub(2,isub),max_sub(2,jsub))
+                  ENDIF
                ENDIF
                ly=ABS(ey-sy)
 
-               IF (max_sub(3,jsub)-min_sub(3,isub)+lmyeps.GE.len_phys(3)) THEN
-                  sz=MAX(min_sub(3,isub),min_sub(3,jsub)-len_phys(3))
-                  ez=MIN(max_sub(3,isub),max_sub(3,jsub)-len_phys(3))
-               ELSE IF (max_sub(3,isub)-min_sub(3,jsub)+lmyeps.GE.len_phys(3)) THEN
-                  sz=MAX(min_sub(3,isub)-len_phys(3),min_sub(3,jsub))
-                  ez=MIN(max_sub(3,isub)-len_phys(3),max_sub(3,jsub))
+               IF (len_subs(3,jsub).GE.len_phys(3).AND.len_subs(3,isub).GE.len_phys(3)) THEN
+                  sz=min_sub(3,jsub)
+                  ez=max_sub(3,jsub)
                ELSE
-                  sz=MAX(min_sub(3,isub),min_sub(3,jsub))
-                  ez=MIN(max_sub(3,isub),max_sub(3,jsub))
+                  IF (max_sub(3,jsub)-min_sub(3,isub)+lmyeps.GE.len_phys(3)) THEN
+                     sz=MAX(min_sub(3,isub),min_sub(3,jsub)-len_phys(3))
+                     ez=MIN(max_sub(3,isub),max_sub(3,jsub)-len_phys(3))
+                  ELSE IF (max_sub(3,isub)-min_sub(3,jsub)+lmyeps.GE.len_phys(3)) THEN
+                     sz=MAX(min_sub(3,isub)-len_phys(3),min_sub(3,jsub))
+                     ez=MIN(max_sub(3,isub)-len_phys(3),max_sub(3,jsub))
+                  ELSE
+                     sz=MAX(min_sub(3,isub),min_sub(3,jsub))
+                     ez=MIN(max_sub(3,isub),max_sub(3,jsub))
+                  ENDIF
                ENDIF
                lz=ABS(ez-sz)
 
@@ -485,9 +518,13 @@
                ENDIF
 
                vsize(isub)=vsize(isub)+adjwgt(j)
-            ENDDO
-         ENDDO
+            ENDDO !i=1,nneigh(isub)
+         ENDDO !isub=1,nsubs
+
       END SELECT
+
+      DEALLOCATE(len_subs,STAT=info)
+      or_fail_dealloc("len_subs")
 
       options( 3)=1 !Sorted heavy-edge matching
       options( 4)=0 !Grows a bisection using a greedy strategy.

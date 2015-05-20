@@ -158,6 +158,17 @@
          ! communication rounds where the current processor has to wait
          ! (only needed in the partial mapping).
          IF (ppm_isendlist(k).GE.0.AND.ppm_irecvlist(k).GE.0) THEN
+           IF (ppm_rank.GT.ppm_irecvlist(k)) THEN
+               tag=ppm_rank*(ppm_rank-1)/2+ppm_irecvlist(k)+k
+            ELSE
+               tag=ppm_irecvlist(k)*(ppm_irecvlist(k)-1)/2+ppm_rank+k
+            ENDIF
+
+            nsr=nsr+1
+            CALL MPI_Irecv(precv(k),1,MPI_INTEGER,ppm_irecvlist(k), &
+            &    tag,ppm_comm,request(nsr),info)
+            or_fail_MPI("MPI_Irecv")
+
             IF (ppm_rank.GT.ppm_isendlist(k)) THEN
                tag=ppm_rank*(ppm_rank-1)/2+ppm_isendlist(k)+k
             ELSE
@@ -173,17 +184,6 @@
                stdout_f('(A,I5,A,I9)',"sending to ",'ppm_isendlist(k)', &
                & ", psend=",'psend(k)')
             ENDIF
-
-            IF (ppm_rank.GT.ppm_irecvlist(k)) THEN
-               tag=ppm_rank*(ppm_rank-1)/2+ppm_irecvlist(k)+k
-            ELSE
-               tag=ppm_irecvlist(k)*(ppm_irecvlist(k)-1)/2+ppm_rank+k
-            ENDIF
-
-            nsr=nsr+1
-            CALL MPI_Irecv(precv(k),1,MPI_INTEGER,ppm_irecvlist(k), &
-            &    tag,ppm_comm,request(nsr),info)
-            or_fail_MPI("MPI_Irecv")
          ELSE
             ! skip this round, i.e. neither send nor receive any
             ! particles.
@@ -378,18 +378,6 @@
                ! communication rounds where the current processor has to wait
                ! (only needed in the partial mapping).
                IF (ppm_isendlist(i).LT.0.OR.ppm_irecvlist(i).LT.0) CYCLE
-               IF (psend(i).GT.0) THEN
-                  IF (ppm_rank.GT.ppm_isendlist(i)) THEN
-                     tag=ppm_rank*(ppm_rank-1)/2+ppm_isendlist(i)+k
-                  ELSE
-                     tag=ppm_isendlist(i)*(ppm_isendlist(i)-1)/2+ppm_rank+k
-                  ENDIF
-
-                  nsr=nsr+1
-                  CALL MPI_Isend(ppm_sendbufferd(qq(i,k)),psend(i)*bdim, &
-                  &    ppm_mpi_kind,ppm_isendlist(i),tag,ppm_comm,request(nsr),info)
-                  or_fail_MPI("MPI_Isend")
-               ENDIF
                IF (precv(i).GT.0) THEN
                   IF (ppm_rank.GT.ppm_irecvlist(i)) THEN
                      tag=ppm_rank*(ppm_rank-1)/2+ppm_irecvlist(i)+k
@@ -401,6 +389,18 @@
                   CALL MPI_Irecv(ppm_recvbufferd(pp(i,k)),precv(i)*bdim, &
                   &    ppm_mpi_kind,ppm_irecvlist(i),tag,ppm_comm,request(nsr),info)
                   or_fail_MPI("MPI_Irecv")
+               ENDIF
+               IF (psend(i).GT.0) THEN
+                  IF (ppm_rank.GT.ppm_isendlist(i)) THEN
+                     tag=ppm_rank*(ppm_rank-1)/2+ppm_isendlist(i)+k
+                  ELSE
+                     tag=ppm_isendlist(i)*(ppm_isendlist(i)-1)/2+ppm_rank+k
+                  ENDIF
+
+                  nsr=nsr+1
+                  CALL MPI_Isend(ppm_sendbufferd(qq(i,k)),psend(i)*bdim, &
+                  &    ppm_mpi_kind,ppm_isendlist(i),tag,ppm_comm,request(nsr),info)
+                  or_fail_MPI("MPI_Isend")
                ENDIF
             ENDDO !i=2,ppm_nsendlist
          ENDDO !k=1,ppm_buffer_set
@@ -438,18 +438,6 @@
                ! communication rounds where the current processor has to wait
                ! (only needed in the partial mapping).
                IF (ppm_isendlist(i).LT.0.OR.ppm_irecvlist(i).LT.0) CYCLE
-               IF (psend(i).GT.0) THEN
-                  IF (ppm_rank.GT.ppm_isendlist(i)) THEN
-                     tag=ppm_rank*(ppm_rank-1)/2+ppm_isendlist(i)+k
-                  ELSE
-                     tag=ppm_isendlist(i)*(ppm_isendlist(i)-1)/2+ppm_rank+k
-                  ENDIF
-
-                  nsr=nsr+1
-                  CALL MPI_Isend(ppm_sendbuffers(qq(i,k)),psend(i)*bdim, &
-                  &    ppm_mpi_kind,ppm_isendlist(i),tag,ppm_comm,request(nsr),info)
-                  or_fail_MPI("MPI_Isend")
-               ENDIF
                IF (precv(i).GT.0) THEN
                   IF (ppm_rank.GT.ppm_irecvlist(i)) THEN
                      tag=ppm_rank*(ppm_rank-1)/2+ppm_irecvlist(i)+k
@@ -461,6 +449,18 @@
                   CALL MPI_Irecv(ppm_recvbuffers(pp(i,k)),precv(i)*bdim, &
                   &    ppm_mpi_kind,ppm_irecvlist(i),tag,ppm_comm,request(nsr),info)
                   or_fail_MPI("MPI_Irecv")
+               ENDIF
+               IF (psend(i).GT.0) THEN
+                  IF (ppm_rank.GT.ppm_isendlist(i)) THEN
+                     tag=ppm_rank*(ppm_rank-1)/2+ppm_isendlist(i)+k
+                  ELSE
+                     tag=ppm_isendlist(i)*(ppm_isendlist(i)-1)/2+ppm_rank+k
+                  ENDIF
+
+                  nsr=nsr+1
+                  CALL MPI_Isend(ppm_sendbuffers(qq(i,k)),psend(i)*bdim, &
+                  &    ppm_mpi_kind,ppm_isendlist(i),tag,ppm_comm,request(nsr),info)
+                  or_fail_MPI("MPI_Isend")
                ENDIF
             ENDDO !i=2,ppm_nsendlist
          ENDDO !k=1,ppm_buffer_set
