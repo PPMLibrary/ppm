@@ -29,10 +29,12 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_topo_metis_s2p_s(min_phys,max_phys,min_sub,max_sub, &
-      &          cost,nneigh,ineigh,nsubs,sub2proc,isublist,nsublist,assig,info)
+      &          cost,ghostsize,nneigh,ineigh,nsubs,sub2proc,isublist,   &
+      &          nsublist,assig,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_topo_metis_s2p_d(min_phys,max_phys,min_sub,max_sub, &
-      &          cost,nneigh,ineigh,nsubs,sub2proc,isublist,nsublist,assig,info)
+      &          cost,ghostsize,nneigh,ineigh,nsubs,sub2proc,isublist,   &
+      &          nsublist,assig,info)
 #endif
       !!! This routine assigns the subdomains to the processors
       !!! using the METIS grid partitioning library version 5.1
@@ -77,6 +79,8 @@
       REAL(MK), DIMENSION(:  ), POINTER       :: cost
       !!! Costs of all subdomains (i.e. sum of particle/mesh node costs in
       !!! that subdomain. Used for weighting the assignment.
+      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: ghostsize
+      !!! The size (width) of the ghost layer.
       INTEGER,  DIMENSION(:  ), POINTER       :: nneigh
       !!! The number of neighbours of a subdomain
       INTEGER,  DIMENSION(:,:), POINTER       :: ineigh
@@ -90,6 +94,7 @@
 
       INTEGER,                  INTENT(  OUT) :: nsublist
       !!! The number of subdomains assigned
+
       INTEGER,                  INTENT(IN   ) :: assig
       !!! METIS assignment type. One of:
       !!!
@@ -110,7 +115,7 @@
       REAL(MK)                                           :: minsp,maxsp,meansp
       REAL(MK)                                           :: sx,sy,sz
       REAL(MK)                                           :: ex,ey,ez
-      REAL(MK)                                           :: lx,ly,lz,ll,kk
+      REAL(MK)                                           :: lx,ly,lz
       REAL(ppm_kind_single), DIMENSION(:),   POINTER     :: tpwgts => NULL()
       !This is an array of size nparts*ncon that specifies the desired weight
       !for each partition and constraint.
@@ -352,12 +357,6 @@
 
       len_phys(1:ppm_dim) = max_phys(1:ppm_dim) - min_phys(1:ppm_dim)
 
-      !Finding the smallest edge, we can find the biggest factor of 10
-      !in order to convert the REAL communication Coefficient into INTEGER weight
-      sx=MINVAL(max_sub(1,1:nsubs)-min_sub(1,1:nsubs))/len_phys(1)
-      sy=MINVAL(max_sub(2,1:nsubs)-min_sub(2,1:nsubs))/len_phys(2)
-
-
       ALLOCATE(len_subs(ppm_dim,nsubs),STAT=info)
       or_fail_alloc("len_subs")
 
@@ -378,14 +377,6 @@
 
       SELECT CASE (ppm_dim)
       CASE (2)
-         ll=MIN(sx,sy)
-
-         kk=1._MK
-         DO WHILE (ll*kk.LE.1.0_MK)
-            kk=kk*10._MK
-         ENDDO
-         !Coefficient to convert REAL number into INTEGER value
-
          j=0
          DO isub=1,nsubs
             DO i=1,nneigh(isub)
@@ -429,10 +420,12 @@
 
                j=j+1
 
-               IF (lx.LE.lmyeps) THEN
-                  adjwgt(j)=INT(ly/len_phys(2)*kk)
+               IF (lx.LE.lmyeps.AND.ly.LE.lmyeps) THEN
+                  adjwgt(j)=1
+               ELSE IF (lx.LE.lmyeps) THEN
+                  adjwgt(j)=INT(ly/ghostsize(2))
                ELSE IF (ly.LE.lmyeps) THEN
-                  adjwgt(j)=INT(lx/len_phys(1)*kk)
+                  adjwgt(j)=INT(lx/ghostsize(1))
                ELSE
                   fail("St is wrong!!!",ppm_error=ppm_error_fatal)
                ENDIF
@@ -442,15 +435,6 @@
          ENDDO !isub=1,nsubs
 
       CASE (3)
-         sz=MINVAL(max_sub(3,1:nsubs)-min_sub(3,1:nsubs))/len_phys(3)
-
-         ll=MIN(sx*sy,sx*sz,sy*sz)
-
-         kk=1._MK
-         DO WHILE (ll*kk.LE.1.0_MK)
-            kk=kk*10._MK
-         ENDDO
-
          j=0
          DO isub=1,nsubs
             DO i=1,nneigh(isub)
@@ -509,12 +493,22 @@
                lz=ABS(ez-sz)
 
                j=j+1
-               IF (lx.LE.lmyeps) THEN
-                  adjwgt(j)=INT(ly*lz/(len_phys(2)*len_phys(3))*kk)
+               IF (lx.LE.lmyeps.AND.ly.LE.lmyeps.AND.lz.LE.lmyeps) THEN
+                  adjwgt(j)=1
+               ELSE IF (lx.LE.lmyeps.AND.ly.LE.lmyeps) THEN
+                  adjwgt(j)=INT(lz/ghostsize(3))
+               ELSE IF (lx.LE.lmyeps.AND.lz.LE.lmyeps) THEN
+                  adjwgt(j)=INT(ly/ghostsize(2))
+               ELSE IF (ly.LE.lmyeps.AND.lz.LE.lmyeps) THEN
+                  adjwgt(j)=INT(lx/ghostsize(1))
+               ELSE IF (lx.LE.lmyeps) THEN
+                  adjwgt(j)=INT(ly*lz/(ghostsize(2)*ghostsize(3)))
                ELSE IF (ly.LE.lmyeps) THEN
-                  adjwgt(j)=INT(lx*lz/(len_phys(1)*len_phys(3))*kk)
+                  adjwgt(j)=INT(lx*lz/(ghostsize(1)*ghostsize(3)))
                ELSE IF (lz.LE.lmyeps) THEN
-                  adjwgt(j)=INT(lx*ly/(len_phys(1)*len_phys(2))*kk)
+                  adjwgt(j)=INT(lx*ly/(ghostsize(1)*ghostsize(2)))
+               ELSE
+                  fail("St is wrong!!!",ppm_error=ppm_error_fatal)
                ENDIF
 
                vsize(isub)=vsize(isub)+adjwgt(j)
