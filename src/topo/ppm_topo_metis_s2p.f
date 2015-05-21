@@ -320,7 +320,10 @@
             ENDDO
          ENDDO
       ELSE
-         tmp=1.0_ppm_kind_single/REAL(nparts,ppm_kind_single)
+         tmp=0.0_ppm_kind_single
+         DO i=0,nparts-1
+            tmp=tmp+REAL(ppm_proc_speed(i),ppm_kind_single)/REAL(nparts,ppm_kind_single)
+         ENDDO
          FORALL (i=1:ldc(1)) tpwgts(i)=tmp
       ENDIF
 
@@ -421,11 +424,23 @@
                j=j+1
 
                IF (lx.LE.lmyeps.AND.ly.LE.lmyeps) THEN
-                  adjwgt(j)=1
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=1
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
                ELSE IF (lx.LE.lmyeps) THEN
-                  adjwgt(j)=INT(ly/ghostsize(2))
+                  IF (ghostsize(2).GT.lmyeps) THEN
+                     adjwgt(j)=INT(ly/ghostsize(2))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
                ELSE IF (ly.LE.lmyeps) THEN
-                  adjwgt(j)=INT(lx/ghostsize(1))
+                  IF (ghostsize(1).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx/ghostsize(1))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
                ELSE
                   fail("St is wrong!!!",ppm_error=ppm_error_fatal)
                ENDIF
@@ -494,19 +509,47 @@
 
                j=j+1
                IF (lx.LE.lmyeps.AND.ly.LE.lmyeps.AND.lz.LE.lmyeps) THEN
-                  adjwgt(j)=1
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=1
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
                ELSE IF (lx.LE.lmyeps.AND.ly.LE.lmyeps) THEN
-                  adjwgt(j)=INT(lz/ghostsize(3))
+                  IF (ghostsize(3).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lz/ghostsize(3))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
                ELSE IF (lx.LE.lmyeps.AND.lz.LE.lmyeps) THEN
-                  adjwgt(j)=INT(ly/ghostsize(2))
+                  IF (ghostsize(2).GT.lmyeps) THEN
+                     adjwgt(j)=INT(ly/ghostsize(2))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
                ELSE IF (ly.LE.lmyeps.AND.lz.LE.lmyeps) THEN
-                  adjwgt(j)=INT(lx/ghostsize(1))
+                  IF (ghostsize(1).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx/ghostsize(1))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
                ELSE IF (lx.LE.lmyeps) THEN
-                  adjwgt(j)=INT(ly*lz/(ghostsize(2)*ghostsize(3)))
+                  IF (ghostsize(2).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                     adjwgt(j)=INT(ly*lz/(ghostsize(2)*ghostsize(3)))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
                ELSE IF (ly.LE.lmyeps) THEN
-                  adjwgt(j)=INT(lx*lz/(ghostsize(1)*ghostsize(3)))
+                  IF (ghostsize(1).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx*lz/(ghostsize(1)*ghostsize(3)))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
                ELSE IF (lz.LE.lmyeps) THEN
-                  adjwgt(j)=INT(lx*ly/(ghostsize(1)*ghostsize(2)))
+                  IF (ghostsize(1).GT.lmyeps.AND.ghostsize(2).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx*ly/(ghostsize(1)*ghostsize(2)))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
                ELSE
                   fail("St is wrong!!!",ppm_error=ppm_error_fatal)
                ENDIF
