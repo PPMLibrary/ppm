@@ -182,18 +182,6 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  If there is nothing to be sent we are done
-      !-------------------------------------------------------------------------
-      IF (Ndata.EQ.0) THEN
-         IF (ppm_debug.GT.1) THEN
-            fail('There is no data to be sent. Skipping push.', &
-            & ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
-            info=0
-         ENDIF
-         GOTO 9999
-      ENDIF
-
-      !-------------------------------------------------------------------------
       !  Increment the buffer set
       !-------------------------------------------------------------------------
       ppm_buffer_set = ppm_buffer_set + 1
@@ -232,6 +220,19 @@
 #elif __KIND == __LOGICAL
       ppm_buffer_type(ppm_buffer_set) = ppm_logical
 #endif
+
+      !-------------------------------------------------------------------------
+      !  If there is nothing to be sent we are done
+      !-------------------------------------------------------------------------
+      IF (Ndata.EQ.0) THEN
+         IF (ppm_debug.GT.1) THEN
+            fail('There is no data to be sent. Skipping push.', &
+            & ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
+            info=0
+         ENDIF
+         GOTO 9999
+      ENDIF
+
       IF (ppm_debug.GT.2) THEN
          !-------------------------------------------------------------------------
          !  Build the inverse sub list to find local sub indeices based on
