@@ -630,6 +630,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! TODO: Optionally, check for discretizations at different time points
           !!! (like n-1, n-2, etc...).
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -660,15 +661,17 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           IF (ASSOCIATED(this%discr_info)) THEN
              dinfo => this%discr_info%begin()
              DO WHILE(ASSOCIATED(dinfo))
-                IF (ASSOCIATED(dinfo%discr_ptr,discr_kind)) THEN
-                   res = .TRUE.
-                   IF (PRESENT(discr_info)) THEN
-                      discr_info => dinfo
+                IF (ASSOCIATED(dinfo%discr_ptr)) THEN
+                   IF (ASSOCIATED(dinfo%discr_ptr,discr_kind)) THEN
+                      res = .TRUE.
+                      IF (PRESENT(discr_info)) THEN
+                         discr_info => dinfo
 
-                      check_associated(discr_info, &
-                      & "Field seems to not be distretized on this set")
+                         check_associated(discr_info, &
+                         & "Field seems to not be distretized on this set")
+                      ENDIF
+                      RETURN
                    ENDIF
-                   RETURN
                 ENDIF
                 dinfo => this%discr_info%next()
              ENDDO

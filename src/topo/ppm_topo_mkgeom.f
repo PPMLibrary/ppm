@@ -381,9 +381,8 @@
       !  Find the cost of each subdomain
       !-------------------------------------------------------------------------
       IF (decomp .NE. ppm_param_decomp_user_defined) THEN
-          CALL ppm_topo_cost(xpdummy,0,min_sub,max_sub, &
-          &    nsubs,nnodes,cost,info)
-          or_fail("Computing costs failed")
+         CALL ppm_topo_cost(xpdummy,0,min_sub,max_sub,nsubs,nnodes,cost,info)
+         or_fail("Computing costs failed")
       ENDIF
 
       !-------------------------------------------------------------------------

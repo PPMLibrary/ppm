@@ -246,9 +246,8 @@ minclude ppm_get_field_template(4,l)
 
           ! Determine allocation size of the data array
           IF (MINVAL(sp%nnodes(1:ppm_dim)).LE.0) THEN
-             or_fail("invalid size for patch data. This patch should be deleted")
+             fail("invalid size for patch data. This patch should be deleted",ppm_error=ppm_error_fatal)
           ENDIF
-
 
           ndim = ppm_dim
           IF (discr_data%lda.LT.2) THEN
@@ -280,12 +279,11 @@ minclude ppm_get_field_template(4,l)
               CASE (ppm_type_logical)
                   alloc_pointer_with_bounds2("this%data_2d_l",lo,hi)
               CASE DEFAULT
-                  stdout("datatype = ",datatype)
-                  stdout("ndim = ",ndim)
-                  info = ppm_error_fatal
-                  CALL ppm_error(ppm_err_argument,caller,   &
-                  &    'invalid type for mesh patch data',__LINE__,info)
+                  WRITE(cbuf,'(A,2(A,I0))')'Invalid type (for mesh patch data) of ', &
+                  & "datatype = ",datatype," & ndim = ",ndim
+                  fail(cbuf,ppm_error=ppm_error_fatal)
               END SELECT
+
           CASE (3)
               SELECT CASE (datatype)
               CASE (ppm_type_int)
@@ -303,14 +301,11 @@ minclude ppm_get_field_template(4,l)
               CASE (ppm_type_logical)
                   alloc_pointer_with_bounds3("this%data_3d_l",lo,hi)
               CASE DEFAULT
-                  stdout("datatype = ")
-                  stdout(datatype)
-                  stdout("ndim = ")
-                  stdout(ndim)
-                  info = ppm_error_fatal
-                  CALL ppm_error(ppm_err_argument,caller,   &
-                  &    'invalid type for mesh patch data',__LINE__,info)
+                  WRITE(cbuf,'(A,2(A,I0))')'Invalid type (for mesh patch data) of ', &
+                  & "datatype = ",datatype," & ndim = ",ndim
+                  fail(cbuf,ppm_error=ppm_error_fatal)
               END SELECT
+
           CASE (4)
               SELECT CASE (datatype)
               CASE (ppm_type_int)
@@ -328,11 +323,9 @@ minclude ppm_get_field_template(4,l)
               CASE (ppm_type_logical)
                   alloc_pointer_with_bounds4("this%data_4d_l",lo,hi)
               CASE DEFAULT
-                  stdout("datatype = ")
-                  stdout(datatype)
-                  stdout("ndim = ")
-                  stdout(ndim)
-                  fail("invalid type for mesh patch data")
+                  WRITE(cbuf,'(A,2(A,I0))')'Invalid type (for mesh patch data) of ', &
+                  & "datatype = ",datatype," & ndim = ",ndim
+                  fail(cbuf,ppm_error=ppm_error_fatal)
               END SELECT
 
           END SELECT
@@ -434,52 +427,53 @@ minclude ppm_get_field_template(4,l)
           alloc_pointer("p%end_ext",ppm_dim)
           alloc_pointer("p%start_red",ppm_dim)
           alloc_pointer("p%end_red",ppm_dim)
-          alloc_pointer("p%istart_p",ppm_dim)
-          alloc_pointer("p%iend_p",ppm_dim)
+          alloc_pointer("p%bc",'2*ppm_dim')
+          alloc_pointer("p%nnodes",ppm_dim)
           alloc_pointer("p%lo_a",ppm_dim)
           alloc_pointer("p%hi_a",ppm_dim)
-          alloc_pointer("p%nnodes",ppm_dim)
+          alloc_pointer("p%istart_p",ppm_dim)
+          alloc_pointer("p%iend_p",ppm_dim)
           alloc_pointer("p%ghostsize",'2*ppm_dim')
-          alloc_pointer("p%bc",'2*ppm_dim')
-
-          p%meshID   = mesh%ID
-          p%mesh     => mesh
-          p%isub     = isub
-          p%istart   = istart
-          p%iend     = iend
-          p%start    = pstart
-          p%end      = pend
-          p%istart_p = istart_p
-          p%iend_p   = iend_p
-          p%nnodes(1:ppm_dim) = 1 + iend(1:ppm_dim) - istart(1:ppm_dim)
-          p%ghostsize(1:2*ppm_dim) = ghostsize(1:2*ppm_dim)
-          p%bc(1:2*ppm_dim) = bcdef(1:2*ppm_dim)
-
-          !Define allocated size of the subpatch
-          p%lo_a(1)     = 1 - ghostsize(1)
-          p%hi_a(1)     = p%nnodes(1) + ghostsize(2)
-          p%lo_a(2)     = 1 - ghostsize(3)
-          p%hi_a(2)     = p%nnodes(2) + ghostsize(4)
-          IF (ppm_dim.EQ.3) THEN
-             p%lo_a(3) = 1 - ghostsize(5)
-             p%hi_a(3) = p%nnodes(3) + ghostsize(6)
-          ENDIF
-
-          DO i=1,ppm_dim
-              !Extended subpatch (abs. coord)
-              p%start_ext(i) = pstart(i)- mesh%ghostsize(i) * mesh%h(i)
-              p%end_ext(i)   = pend(i)  + mesh%ghostsize(i) * mesh%h(i)
-
-              !Reduced subpatch (abs. coord)
-              p%start_red(i) = pstart(i)-(p%ghostsize(2*i-1)-mesh%ghostsize(i))*mesh%h(i)
-              p%end_red(i)   = pend(i)  -(mesh%ghostsize(i)-p%ghostsize(2*i)) * mesh%h(i)
-          ENDDO
-
 
           IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN
              ALLOCATE(ppm_c_subpatch_data::p%subpatch_data,STAT=info)
              or_fail_alloc("could not allocate p%subpatch_data")
           ENDIF
+
+          p%meshID = mesh%ID
+          p%isub   = isub
+          p%mesh   => mesh
+          p%istart = istart
+          p%iend   = iend
+          p%start  = pstart
+          p%end    = pend
+
+          DO i=1,ppm_dim
+             !Extended subpatch (abs. coord)
+             p%start_ext(i) = pstart(i)- mesh%ghostsize(i) * mesh%h(i)
+             p%end_ext(i)   = pend(i)  + mesh%ghostsize(i) * mesh%h(i)
+
+             !Reduced subpatch (abs. coord)
+             p%start_red(i) = pstart(i)-(ghostsize(2*i-1)-mesh%ghostsize(i))*mesh%h(i)
+             p%end_red(i)   = pend(i)  -(mesh%ghostsize(i)-ghostsize(2*i)) * mesh%h(i)
+          ENDDO
+
+          p%bc(1:2*ppm_dim) = bcdef(1:2*ppm_dim)
+          p%nnodes(1:ppm_dim) = 1 + iend(1:ppm_dim) - istart(1:ppm_dim)
+          !Define allocated size of the subpatch
+          p%lo_a(1)    = 1 - ghostsize(1)
+          p%hi_a(1)    = p%nnodes(1) + ghostsize(2)
+          p%lo_a(2)    = 1 - ghostsize(3)
+          p%hi_a(2)    = p%nnodes(2) + ghostsize(4)
+
+          IF (ppm_dim.EQ.3) THEN
+             p%lo_a(3) = 1 - ghostsize(5)
+             p%hi_a(3) = p%nnodes(3) + ghostsize(6)
+          ENDIF
+
+          p%istart_p = istart_p
+          p%iend_p   = iend_p
+          p%ghostsize(1:2*ppm_dim) = ghostsize(1:2*ppm_dim)
 
           end_subroutine()
 
@@ -500,9 +494,11 @@ minclude ppm_get_field_template(4,l)
 
           start_subroutine("subpatch_destroy")
 
+          p%meshID = 0
+          p%isub = 0
+          p%mesh => NULL()
+
           iopt = ppm_param_dealloc
-          CALL ppm_alloc(p%nnodes,ldc,iopt,info)
-          or_fail_dealloc("p%nnodes")
           CALL ppm_alloc(p%istart,ldc,iopt,info)
           or_fail_dealloc("p%istart")
           CALL ppm_alloc(p%iend,ldc,iopt,info)
@@ -519,6 +515,10 @@ minclude ppm_get_field_template(4,l)
           or_fail_dealloc("p%start_red")
           CALL ppm_alloc(p%end_red,ldc,iopt,info)
           or_fail_dealloc("p%end_red")
+          CALL ppm_alloc(p%bc,ldc,iopt,info)
+          or_fail_dealloc("p%bc")
+          CALL ppm_alloc(p%nnodes,ldc,iopt,info)
+          or_fail_dealloc("p%nnodes")
           CALL ppm_alloc(p%lo_a,ldc,iopt,info)
           or_fail_dealloc("p%lo_a")
           CALL ppm_alloc(p%hi_a,ldc,iopt,info)
@@ -529,10 +529,6 @@ minclude ppm_get_field_template(4,l)
           or_fail_dealloc("p%iend_p")
           CALL ppm_alloc(p%ghostsize,ldc,iopt,info)
           or_fail_dealloc("p%ghostsize")
-
-          p%meshID = 0
-          p%isub = 0
-          p%mesh => NULL()
 
           destroy_collection_ptr(p%subpatch_data)
 
@@ -1243,8 +1239,8 @@ minclude ppm_get_field_template(4,l)
           TYPE(ppm_t_ptr_subpatch), DIMENSION(:), POINTER :: tmp_array => NULL()
           TYPE(ppm_t_topo),                       POINTER :: topo
 
-          CLASS(ppm_t_subpatch_),                 POINTER :: p
-          CLASS(ppm_t_A_subpatch_),               POINTER :: A_p
+          CLASS(ppm_t_subpatch_),   POINTER :: p
+          CLASS(ppm_t_A_subpatch_), POINTER :: A_p
 
           REAL(ppm_kind_double), DIMENSION(1:ppm_dim) :: h,Offset
           REAL(ppm_kind_double), DIMENSION(1:ppm_dim) :: pstart,pend,pmid

@@ -320,11 +320,14 @@
             ENDDO
          ENDDO
       ELSE
-         tmp=0.0_ppm_kind_single
+         tmp=0.0_MK
          DO i=0,nparts-1
-            tmp=tmp+REAL(ppm_proc_speed(i),ppm_kind_single)/REAL(nparts,ppm_kind_single)
+            tmp=tmp+REAL(ppm_proc_speed(i),MK)
          ENDDO
-         FORALL (i=1:ldc(1)) tpwgts(i)=tmp
+
+         tmp=tmp/REAL(nparts,MK)
+
+         FORALL (i=1:ldc(1)) tpwgts(i)=REAL(tmp,ppm_kind_single)
       ENDIF
 
       !Array for load imbalance
@@ -378,6 +381,8 @@
       !  of all weights of the edge array of neighbour subdomains.
       !----------------------------------------------------------------
 
+      tmp=MAXVAL(ghostsize)
+
       SELECT CASE (ppm_dim)
       CASE (2)
          j=0
@@ -430,14 +435,18 @@
                      adjwgt(j)=0
                   ENDIF
                ELSE IF (lx.LE.lmyeps) THEN
-                  IF (ghostsize(2).GT.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
                      adjwgt(j)=INT(ly/ghostsize(2))
+                  ELSE IF (tmp.GT.lmyeps) THEN
+                     adjwgt(j)=INT(ly/tmp)
                   ELSE
                      adjwgt(j)=0
                   ENDIF
                ELSE IF (ly.LE.lmyeps) THEN
-                  IF (ghostsize(1).GT.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
                      adjwgt(j)=INT(lx/ghostsize(1))
+                  ELSE IF (tmp.GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx/tmp)
                   ELSE
                      adjwgt(j)=0
                   ENDIF
@@ -515,38 +524,56 @@
                      adjwgt(j)=0
                   ENDIF
                ELSE IF (lx.LE.lmyeps.AND.ly.LE.lmyeps) THEN
-                  IF (ghostsize(3).GT.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
                      adjwgt(j)=INT(lz/ghostsize(3))
+                  ELSE IF (ghostsize(1).GT.lmyeps.AND.ghostsize(2).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lz/MIN(ghostsize(1),ghostsize(2)))
                   ELSE
                      adjwgt(j)=0
                   ENDIF
                ELSE IF (lx.LE.lmyeps.AND.lz.LE.lmyeps) THEN
-                  IF (ghostsize(2).GT.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
                      adjwgt(j)=INT(ly/ghostsize(2))
+                  ELSE IF (ghostsize(1).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                     adjwgt(j)=INT(ly/MIN(ghostsize(1),ghostsize(3)))
                   ELSE
                      adjwgt(j)=0
                   ENDIF
                ELSE IF (ly.LE.lmyeps.AND.lz.LE.lmyeps) THEN
-                  IF (ghostsize(1).GT.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
                      adjwgt(j)=INT(lx/ghostsize(1))
+                  ELSE IF (ghostsize(2).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx/MIN(ghostsize(2),ghostsize(3)))
                   ELSE
                      adjwgt(j)=0
                   ENDIF
                ELSE IF (lx.LE.lmyeps) THEN
-                  IF (ghostsize(2).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
                      adjwgt(j)=INT(ly*lz/(ghostsize(2)*ghostsize(3)))
+                  ELSE IF (ghostsize(1).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                     adjwgt(j)=INT(ly*lz/MIN(ghostsize(1),ghostsize(3)))
+                  ELSE IF (ghostsize(1).GT.lmyeps.AND.ghostsize(2).GT.lmyeps) THEN
+                     adjwgt(j)=INT(ly*lz/MIN(ghostsize(1),ghostsize(2)))
                   ELSE
                      adjwgt(j)=0
                   ENDIF
                ELSE IF (ly.LE.lmyeps) THEN
-                  IF (ghostsize(1).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
                      adjwgt(j)=INT(lx*lz/(ghostsize(1)*ghostsize(3)))
+                  ELSE IF (ghostsize(2).GT.lmyeps.AND.ghostsize(1).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx*lz/MIN(ghostsize(2),ghostsize(1)))
+                  ELSE IF (ghostsize(2).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx*lz/MIN(ghostsize(2),ghostsize(3)))
                   ELSE
                      adjwgt(j)=0
                   ENDIF
                ELSE IF (lz.LE.lmyeps) THEN
-                  IF (ghostsize(1).GT.lmyeps.AND.ghostsize(2).GT.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
                      adjwgt(j)=INT(lx*ly/(ghostsize(1)*ghostsize(2)))
+                  ELSE IF (ghostsize(3).GT.lmyeps.AND.ghostsize(2).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx*ly/MIN(ghostsize(3),ghostsize(2)))
+                  ELSE IF (ghostsize(3).GT.lmyeps.AND.ghostsize(1).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx*ly/MIN(ghostsize(3),ghostsize(1)))
                   ELSE
                      adjwgt(j)=0
                   ENDIF
@@ -569,13 +596,11 @@
       options( 6)=MERGE(1,0,ppm_debug.GT.0) !(no debugging/progress information)
       options(18)=1 !Fortran-style numbering is assumed that starts from 1.
 
-      SELECT CASE (ppm_nproc)
-      CASE (2:8)
+      IF (nsubs.LT.4*ppm_nproc) THEN
          ubvec=1.001
          CALL METIS_PartGraphRecursive(nvtxs,ncon,xadj,adjncy,vwgt, &
          &    vsize,adjwgt,nparts,tpwgts,ubvec,options,objval,part)
-
-      CASE DEFAULT
+      ELSE
          !-------------------------------------------------------------------------
          !  Partition graph into nparts parts using METIS and the minimal
          !  edgecut objective, egdecut is the number of mesh edges that
@@ -593,8 +618,7 @@
          ubvec=1.03
          CALL METIS_PartGraphKway(nvtxs,ncon,xadj,adjncy,vwgt, &
          &    vsize,adjwgt,nparts,tpwgts,ubvec,options,objval,part)
-
-      END SELECT
+      ENDIF
 
       !----------------------------------------------------------------------
       !  Output diagnostics
