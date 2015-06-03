@@ -318,6 +318,8 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           IF (ASSOCIATED(this%vec)) DEALLOCATE(this%vec,STAT=info)
           or_fail_dealloc("Could not deallocate collection array")
 
+          NULLIFY(this%vec)
+
           this%iter_id = 0
           this%min_id = 0
           this%max_id = 0

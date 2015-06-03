@@ -640,8 +640,6 @@ minclude ppm_create_collection(A_subpatch_,A_subpatch_,generate="abstract")
           PROCEDURE(equi_mesh_prop_zero_),      DEFERRED :: zero
           PROCEDURE(equi_mesh_def_patch_),      DEFERRED :: def_patch
           PROCEDURE(equi_mesh_def_uniform_),    DEFERRED :: def_uniform
-          PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
-          &                                     DEFERRED :: new_subpatch_data_ptr
           PROCEDURE(equi_mesh_list_of_fields_), DEFERRED :: list_of_fields
           PROCEDURE(equi_mesh_block_intersect_),DEFERRED :: block_intersect
           PROCEDURE(equi_mesh_map_ghost_init_), DEFERRED :: map_ghost_init

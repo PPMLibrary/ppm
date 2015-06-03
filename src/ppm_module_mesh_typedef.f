@@ -98,7 +98,6 @@ minclude ppm_create_collection(A_subpatch,A_subpatch,generate="extend")
           PROCEDURE :: zero                  => equi_mesh_prop_zero
           PROCEDURE :: def_patch             => equi_mesh_def_patch
           PROCEDURE :: def_uniform           => equi_mesh_def_uniform
-          PROCEDURE :: new_subpatch_data_ptr => equi_mesh_new_subpatch_data_ptr
           PROCEDURE :: list_of_fields        => equi_mesh_list_of_fields
 
           PROCEDURE :: block_intersect       => equi_mesh_block_intersect
@@ -1099,8 +1098,8 @@ minclude ppm_get_field_template(4,l)
           p => this%subpatch%begin()
           DO WHILE (ASSOCIATED(p))
               ! create a new subpatch_data object
-              subpdat => this%new_subpatch_data_ptr(info)
-              or_fail_alloc("could not get a new ppm_t_subpatch_data pointer")
+              ALLOCATE(ppm_t_subpatch_data::subpdat,STAT=info)
+              or_fail_alloc("could not allocate ppm_t_subpatch_data pointer")
 
               CALL subpdat%create(mddata,p,info)
               or_fail("could not create new subpatch_data")
@@ -1623,31 +1622,6 @@ minclude ppm_get_field_template(4,l)
 
           end_subroutine()
       END SUBROUTINE equi_mesh_def_uniform
-
-
-      FUNCTION equi_mesh_new_subpatch_data_ptr(this,info) RESULT(sp)
-          !!! returns a pointer to a new subpatch_data object
-
-          IMPLICIT NONE
-          !-------------------------------------------------------------------------
-          !  Arguments
-          !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh)                     :: this
-          !!! cartesian mesh object
-          CLASS(ppm_t_subpatch_data_), POINTER       :: sp
-          INTEGER,                     INTENT(  OUT) :: info
-          !!! Returns status, 0 upon success
-          !-------------------------------------------------------------------------
-          !  Local variables
-          !-------------------------------------------------------------------------
-          INTEGER , DIMENSION(3)    :: ldc
-          start_subroutine("equi_mesh_new_subpatch_data_ptr")
-
-          ALLOCATE(ppm_t_subpatch_data::sp,STAT=info)
-          or_fail_alloc("could not allocate ppm_t_subpatch_data pointer")
-
-          end_subroutine()
-      END FUNCTION equi_mesh_new_subpatch_data_ptr
 
 
       FUNCTION equi_mesh_list_of_fields(this,info) RESULT(fids)

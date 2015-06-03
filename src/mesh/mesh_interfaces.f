@@ -201,18 +201,6 @@ minclude ppm_get_field_interface_template(4,l)
           INTEGER, OPTIONAL, INTENT(IN   ) :: patchid
       END SUBROUTINE
 
-      FUNCTION equi_mesh_new_subpatch_data_ptr_(this,info) RESULT(sp)
-          !!! returns a pointer to a new subpatch_data object
-          IMPORT :: ppm_t_equi_mesh_,ppm_t_subpatch_data_
-          IMPLICIT NONE
-          !-------------------------------------------------------------------------
-          !  Arguments
-          !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh_)                    :: this
-          CLASS(ppm_t_subpatch_data_), POINTER       :: sp
-          INTEGER,                     INTENT(  OUT) :: info
-      END FUNCTION
-
       !LIST OF DISCRETIZED FIELDS
       FUNCTION equi_mesh_list_of_fields_(this,info) RESULT(fids)
           IMPORT :: ppm_t_equi_mesh_
