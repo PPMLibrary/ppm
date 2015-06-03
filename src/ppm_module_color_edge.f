@@ -101,8 +101,6 @@
           MODULE PROCEDURE ppm_color_edge
       END INTERFACE
 
-      PUBLIC :: vertex
-      PUBLIC :: list
       PUBLIC :: ppm_color_edge
       !-------------------------------------------------------------------------
       !  Location of subroutine to be used for coloring

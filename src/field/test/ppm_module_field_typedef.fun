@@ -144,6 +144,8 @@ use ppm_module_interfaces
         class(ppm_t_subpatch_),POINTER   :: p => NULL()
 
         integer,dimension(:),pointer :: ilist => NULL()
+
+        start_subroutine("field_uniform_basics")
         !----------------
         ! make topology
         !----------------
@@ -234,10 +236,12 @@ use ppm_module_interfaces
 
         ilist => Mesh1%list_of_fields(info)
         if (associated(ilist)) then
-           write(*,*) 'mesh1%list: ', ilist
+           stdout("mesh1%list: ",ilist)
         endif
         ilist => Mesh2%list_of_fields(info)
-        write(*,*) 'mesh2%list: ', associated(ilist)
+        if (associated(ilist)) then
+           stdout("mesh2%list: ",ilist)
+        endif
 
         !--------------------
         ! Remove a patch
@@ -257,6 +261,7 @@ use ppm_module_interfaces
 
         p=>NULL()
 
+        end_subroutine()
     end test
 !------------------------------------------------------------------------------
     test field_basics

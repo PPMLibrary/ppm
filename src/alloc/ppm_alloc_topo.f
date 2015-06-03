@@ -115,8 +115,8 @@
          IF (ASSOCIATED(topo)) THEN
             ! first deallocate all content of topo
             IF (ASSOCIATED(topo%min_physs))  DEALLOCATE(topo%min_physs, STAT=info)
-            IF (ASSOCIATED(topo%max_physs))  DEALLOCATE(topo%min_physd, STAT=info)
-            IF (ASSOCIATED(topo%min_physd))  DEALLOCATE(topo%max_physs, STAT=info)
+            IF (ASSOCIATED(topo%max_physs))  DEALLOCATE(topo%max_physs, STAT=info)
+            IF (ASSOCIATED(topo%min_physd))  DEALLOCATE(topo%min_physd, STAT=info)
             IF (ASSOCIATED(topo%max_physd))  DEALLOCATE(topo%max_physd, STAT=info)
             IF (ASSOCIATED(topo%bcdef))      DEALLOCATE(topo%bcdef,     STAT=info)
             IF (ASSOCIATED(topo%min_subs))   DEALLOCATE(topo%min_subs,  STAT=info)
@@ -132,9 +132,11 @@
             IF (ASSOCIATED(topo%nneighsubs)) DEALLOCATE(topo%nneighsubs,STAT=info)
             IF (ASSOCIATED(topo%ineighproc)) DEALLOCATE(topo%ineighproc,STAT=info)
             IF (ASSOCIATED(topo%icommseq))   DEALLOCATE(topo%icommseq,  STAT=info)
+
             DEALLOCATE(topo,STAT=info)
-            NULLIFY(topo)
             or_fail_dealloc('Deallocating topo',exit_point=no)
+
+            NULLIFY(topo)
          ENDIF
       ENDIF
 

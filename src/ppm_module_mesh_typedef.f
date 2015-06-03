@@ -1044,6 +1044,12 @@ minclude ppm_get_field_template(4,l)
 
           destroy_collection_ptr(this%mdata)
 
+          IF (ASSOCIATED(this%subpatch_by_sub)) THEN
+             DO i=1,SIZE(this%subpatch_by_sub)
+                dealloc_pointer(<# this%subpatch_by_sub(i)%vec #>)
+             ENDDO
+          ENDIF
+
           dealloc_pointer(this%subpatch_by_sub)
 
           this%ID = 0
@@ -1069,7 +1075,10 @@ minclude ppm_get_field_template(4,l)
           INTEGER,OPTIONAL,                       INTENT(  OUT) :: p_idx
 
           CLASS(ppm_t_subpatch_),     POINTER :: p
-          CLASS(ppm_t_subpatch_data_),POINTER :: subpdat
+
+          CLASS(ppm_t_subpatch_data_), POINTER :: subpdat
+
+          INTEGER :: p_idx_
 
           start_subroutine("equi_mesh_create_prop")
 
@@ -1098,7 +1107,7 @@ minclude ppm_get_field_template(4,l)
               CALL discr_data%subpatch%push(subpdat,info)
               or_fail("could not add new subpatch_data to discr_data")
 
-              CALL p%subpatch_data%push(subpdat,info,p_idx)
+              CALL p%subpatch_data%push(subpdat,info,p_idx_)
               or_fail("could not add new subpatch_data to subpatch collection")
 
               p => this%subpatch%next()
@@ -1109,6 +1118,8 @@ minclude ppm_get_field_template(4,l)
 
           !check that the returned pointer makes sense
           check_associated(discr_data)
+
+          IF (PRESENT(p_idx)) p_idx=p_idx_
 
           end_subroutine()
       END SUBROUTINE equi_mesh_create_prop
@@ -1236,7 +1247,7 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          TYPE(ppm_t_ptr_subpatch), DIMENSION(:), POINTER :: tmp_array => NULL()
+          TYPE(ppm_t_ptr_subpatch), DIMENSION(:), POINTER :: tmp_array
           TYPE(ppm_t_topo),                       POINTER :: topo
 
           CLASS(ppm_t_subpatch_),   POINTER :: p
@@ -1348,6 +1359,8 @@ minclude ppm_get_field_template(4,l)
           ! keeping arrays.
           size_tmp=0
 
+          NULLIFY(tmp_array)
+
           DO isub=1,topo%nsubs
              !----------------------------------------------------------------
              ! check if the subdomain overlaps with the patch
@@ -1366,8 +1379,11 @@ minclude ppm_get_field_template(4,l)
 
                        IF (size_tmp.LT.size2) THEN
                           dealloc_pointer(tmp_array)
+
                           ALLOCATE(tmp_array(size2),STAT=info)
                           or_fail_alloc("tmp_array")
+
+                          size_tmp=size2
                        ENDIF
 
                        DO j=1,sarray%nsubpatch
@@ -1375,17 +1391,20 @@ minclude ppm_get_field_template(4,l)
                        ENDDO
 
                        dealloc_pointer(sarray%vec)
+
                        ALLOCATE(sarray%vec(size2),STAT=info)
                        or_fail_alloc("sarray%vec")
 
                        DO j=1,sarray%nsubpatch
                           sarray%vec(j)%t => tmp_array(j)%t
                        ENDDO
+
                        sarray%size = size2
                     ENDIF
                 END ASSOCIATE
              ENDIF
           ENDDO
+
           dealloc_pointer(tmp_array)
 
           nsubpatch = 0
@@ -1590,7 +1609,11 @@ minclude ppm_get_field_template(4,l)
           ! between this infinite patch and the (hopefully) finite
           ! computational domain)
           !----------------------------------------------------------------
-          CALL this%def_patch(patch,info,patchid,infinite=.TRUE.)
+          IF (PRESENT(patchid)) THEN
+             CALL this%def_patch(patch,info,patchid,infinite=.TRUE.)
+          ELSE
+             CALL this%def_patch(patch,info,infinite=.TRUE.)
+          ENDIF
           or_fail("failed to add patch")
 
           !TODO add some checks for the finiteness of the computational domain

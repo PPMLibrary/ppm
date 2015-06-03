@@ -69,6 +69,118 @@ minclude ppm_create_collection_procedures(field,field_)
 minclude ppm_create_collection_procedures(field,field_,vec=true)
 
       !CREATE
+      SUBROUTINE discr_info_create(this,discr,discr_data,lda,flags,info,p_idx)
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_discr_info)                                        :: this
+          CLASS(ppm_t_discr_kind),                         TARGET        :: discr
+          CLASS(ppm_t_discr_data),                         TARGET        :: discr_data
+          INTEGER,                                         INTENT(IN   ) :: lda
+          !!! number of components
+          LOGICAL, DIMENSION(ppm_param_length_mdataflags), INTENT(IN   ) :: flags
+          INTEGER,                                         INTENT(  OUT) :: info
+          INTEGER, OPTIONAL,                               INTENT(IN   ) :: p_idx
+
+          start_subroutine("discr_info_create")
+
+          this%discrID    = discr%ID
+          this%discr_ptr  => discr
+          this%discr_data => discr_data
+          this%lda        = lda
+          this%flags      = flags
+          IF (PRESENT(p_idx)) this%p_idx = p_idx
+
+          end_subroutine()
+      END SUBROUTINE discr_info_create
+      !DESTROY
+      SUBROUTINE discr_info_destroy(this,info)
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_discr_info) :: this
+
+          INTEGER,  INTENT(  OUT) :: info
+
+          CLASS(ppm_t_subpatch_data_), POINTER :: subpdat
+
+          start_subroutine("discr_info_destroy")
+
+          ! yaser: I think this was a major bug!
+          ! Without this all the allocated data still would be there
+          ! even though you destroy them.
+          SELECT TYPE (discr => this%discr_ptr)
+          CLASS IS (ppm_t_equi_mesh_)
+             !Ugly measure to make sure that we are destroying available data
+             !not the one that has been destroyed previously
+             !TODO find st nicer
+             IF (ASSOCIATED(discr%subpatch)) THEN
+                IF (ASSOCIATED(discr%subpatch%vec)) THEN
+                   SELECT TYPE (ddata => this%discr_data)
+                   CLASS IS (ppm_t_mesh_discr_data_)
+                      subpdat => ddata%subpatch%begin()
+                      DO WHILE (ASSOCIATED(subpdat))
+                         CALL subpdat%destroy(info)
+                         or_fail("subpdat%destroy")
+
+                         subpdat => ddata%subpatch%next()
+                      ENDDO
+
+                      CALL ddata%destroy(info)
+                      or_fail("mesh discr data destroy failed.")
+
+                   END SELECT
+                ENDIF
+             ENDIF
+
+          CLASS IS (ppm_t_particles_s_)
+             IF (ASSOCIATED(discr%props)) THEN
+                SELECT TYPE (ddata => this%discr_data)
+                CLASS IS (ppm_t_discr_data)
+                   CALL discr%destroy_prop(ddata,info)
+                   or_fail("particle discr data destroy failed.")
+
+                END SELECT
+             ELSE
+                SELECT TYPE (ddata => this%discr_data)
+                CLASS IS (ppm_t_part_prop_s_)
+                   CALL ddata%destroy(info)
+                   or_fail("discr data destroy failed.")
+
+                END SELECT
+             ENDIF
+
+          CLASS IS (ppm_t_particles_d_)
+             IF (ASSOCIATED(discr%props)) THEN
+                SELECT TYPE (ddata => this%discr_data)
+                CLASS IS (ppm_t_discr_data)
+                   CALL discr%destroy_prop(ddata,info)
+                   or_fail("particle discr data destroy failed.")
+
+                END SELECT
+             ELSE
+                SELECT TYPE (ddata => this%discr_data)
+                CLASS IS (ppm_t_part_prop_d_)
+                   CALL ddata%destroy(info)
+                   or_fail("discr data destroy failed.")
+
+                END SELECT
+             ENDIF
+
+          END SELECT
+
+          this%discrID    = 0
+          this%discr_ptr  => NULL()
+          this%discr_data => NULL()
+          this%lda        = 0
+          this%flags      = .FALSE.
+
+          end_subroutine()
+      END SUBROUTINE discr_info_destroy
+
+      !CREATE
       SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
           !!! Constructor for fields
           IMPLICIT NONE
@@ -125,11 +237,17 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_field)     :: this
+          CLASS(ppm_t_field), TARGET        :: this
 
-          INTEGER, INTENT(  OUT) :: info
+          INTEGER,            INTENT(  OUT) :: info
 
           CLASS(ppm_t_discr_info_), POINTER :: tdi
+
+          CLASS(ppm_t_mesh_discr_data_), POINTER :: mddata
+
+          CLASS(ppm_t_subpatch_), POINTER :: sbp
+
+          CLASS(ppm_t_subpatch_data_), POINTER :: sbpdat
 
           start_subroutine("field_destroy")
 
@@ -148,8 +266,37 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
                 CLASS IS (ppm_t_equi_mesh_)
                    IF (this%is_discretized_on(dp)) THEN
                       CALL dp%field_ptr%remove(info,this)
-                      or_fail("Failed to destroy the bookkeeping field entries in Mesh")
-                   ENDIF
+                      or_fail("Failed to remove the bookkeeping field entries in Mesh")
+
+                      IF (ASSOCIATED(dp%mdata)) THEN
+                         mddata => dp%mdata%begin()
+                         mddata_loop: DO WHILE (ASSOCIATED(mddata))
+                            IF (ASSOCIATED(mddata%field_ptr,this)) THEN
+                               CALL dp%mdata%remove(info,mddata)
+                               or_fail("Failed to remove the bookkeeping field entries in Mesh mdata")
+
+                               EXIT mddata_loop
+                            ENDIF
+                            mddata => dp%mdata%next()
+                         ENDDO mddata_loop
+                      ENDIF !(ASSOCIATED(dp%mdata))
+                      IF (ASSOCIATED(dp%subpatch)) THEN
+                         sbp => dp%subpatch%begin()
+                         sbp_loop: DO WHILE (ASSOCIATED(sbp))
+                            IF (ASSOCIATED(sbp%subpatch_data)) THEN
+                               sbpdat => sbp%subpatch_data%begin()
+                               sbpdat_loop: DO WHILE (ASSOCIATED(sbpdat))
+                                  IF (ASSOCIATED(sbpdat%discr_data%field_ptr,this)) THEN
+                                     CALL sbp%subpatch_data%remove(info,sbpdat)
+                                     or_fail("Failed to remove the bookkeeping discretized field entries in Mesh")
+                                  ENDIF
+                                  sbpdat => sbp%subpatch_data%next()
+                               ENDDO sbpdat_loop
+                            ENDIF !(ASSOCIATED(sbp%subpatch_data))
+                            sbp => dp%subpatch%next()
+                         ENDDO sbp_loop
+                      ENDIF !(ASSOCIATED(dp%subpatch))
+                   ENDIF !(this%is_discretized_on(dp))
 
                 CLASS IS (ppm_t_particles_d_)
                    IF (this%is_discretized_on(dp)) THEN
@@ -163,7 +310,8 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
                       or_fail("Failed to destroy the bookkeeping field entries in Particle")
                    ENDIF
 
-                END SELECT
+                END SELECT !TYPE (dp => tdi%discr_ptr)
+
                 tdi => this%discr_info%next()
              ENDDO
           ENDIF
@@ -172,121 +320,6 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
           end_subroutine()
       END SUBROUTINE field_destroy
-      !CREATE
-      !CREATE
-      SUBROUTINE discr_info_create(this,discr,discr_data,lda,flags,info,p_idx)
-          IMPLICIT NONE
-          !-------------------------------------------------------------------------
-          !  Arguments
-          !-------------------------------------------------------------------------
-          CLASS(ppm_t_discr_info)                                        :: this
-          CLASS(ppm_t_discr_kind),                         TARGET        :: discr
-          CLASS(ppm_t_discr_data),                         TARGET        :: discr_data
-          INTEGER,                                         INTENT(IN   ) :: lda
-          !!! number of components
-          LOGICAL, DIMENSION(ppm_param_length_mdataflags), INTENT(IN   ) :: flags
-          INTEGER,                                         INTENT(  OUT) :: info
-          INTEGER, OPTIONAL,                               INTENT(IN   ) :: p_idx
-
-          start_subroutine("discr_info_create")
-
-          this%discrID    = discr%ID
-          this%discr_ptr  => discr
-          this%discr_data => discr_data
-          this%lda        = lda
-          this%flags      = flags
-          IF (PRESENT(p_idx)) this%p_idx = p_idx
-
-          end_subroutine()
-      END SUBROUTINE discr_info_create
-      !DESTROY
-      SUBROUTINE discr_info_destroy(this,info)
-          IMPLICIT NONE
-          !-------------------------------------------------------------------------
-          !  Arguments
-          !-------------------------------------------------------------------------
-          CLASS(ppm_t_discr_info) :: this
-
-          INTEGER,  INTENT(  OUT) :: info
-
-          CLASS(ppm_t_subpatch_data_), POINTER :: subpdat
-
-          start_subroutine("discr_info_destroy")
-
-          ! yaser: I think this was a major bug!
-          ! Without this all the allocated data still would be there
-          ! even though you destroy them.
-          SELECT TYPE (discr => this%discr_ptr)
-          CLASS IS (ppm_t_equi_mesh_)
-
-             !Ugly measure to make sure that we are destroying available data
-             !not the one that has been destroyed previously
-             !TODO find st nicer
-             IF (ASSOCIATED(discr%subpatch)) THEN
-                IF (ASSOCIATED(discr%subpatch%vec)) THEN
-
-                   SELECT TYPE (ddata => this%discr_data)
-                   CLASS IS (ppm_t_mesh_discr_data_)
-                      subpdat => ddata%subpatch%begin()
-                      DO WHILE (ASSOCIATED(subpdat))
-                         CALL subpdat%destroy(info)
-                         or_fail("subpdat%destroy")
-
-                         subpdat => ddata%subpatch%next()
-                      ENDDO
-
-                      CALL ddata%destroy(info)
-                      or_fail("mesh discr data destroy failed.")
-
-                   END SELECT
-
-                ENDIF
-             ENDIF
-
-          CLASS IS (ppm_t_particles_s_)
-             IF (ASSOCIATED(discr%props)) THEN
-                SELECT TYPE (ddata => this%discr_data)
-                CLASS IS (ppm_t_discr_data)
-                   CALL discr%destroy_prop(ddata,info)
-                   or_fail("particle discr data destroy failed.")
-
-                END SELECT
-             ELSE
-                SELECT TYPE (ddata => this%discr_data)
-                CLASS IS (ppm_t_part_prop_s_)
-                   CALL ddata%destroy(info)
-                   or_fail("discr data destroy failed.")
-
-                END SELECT
-             ENDIF
-
-          CLASS IS (ppm_t_particles_d_)
-             IF (ASSOCIATED(discr%props)) THEN
-                SELECT TYPE (ddata => this%discr_data)
-                CLASS IS (ppm_t_discr_data)
-                   CALL discr%destroy_prop(ddata,info)
-                   or_fail("particle discr data destroy failed.")
-
-                END SELECT
-             ELSE
-                SELECT TYPE (ddata => this%discr_data)
-                CLASS IS (ppm_t_part_prop_d_)
-                   CALL ddata%destroy(info)
-                   or_fail("discr data destroy failed.")
-
-                END SELECT
-             ENDIF
-
-          END SELECT
-
-          this%discrID    = 0
-          this%discr_ptr  => NULL()
-          this%discr_data => NULL()
-          this%lda        = 0
-          this%flags      = .FALSE.
-
-          end_subroutine()
-      END SUBROUTINE discr_info_destroy
 
       SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts,discr_info)
           !!! Allocate field on a mesh
@@ -432,7 +465,11 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           ALLOCATE(ppm_t_discr_info::dinfo,STAT=info)
           or_fail_alloc("could not allocate new discr_info pointer")
 
-          CALL dinfo%create(discr,discr_data,this%lda,flags,info,p_idx)
+          IF (PRESENT(p_idx)) THEN
+             CALL dinfo%create(discr,discr_data,this%lda,flags,info,p_idx)
+          ELSE
+             CALL dinfo%create(discr,discr_data,this%lda,flags,info)
+          ENDIF
           or_fail("could not create new discr_info object")
 
           IF (.NOT.ASSOCIATED(this%discr_info)) THEN
