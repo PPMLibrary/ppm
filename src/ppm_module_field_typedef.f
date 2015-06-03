@@ -267,18 +267,6 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
                       CALL dp%field_ptr%remove(info,this)
                       or_fail("Failed to remove the bookkeeping field entries in Mesh")
 
-                      IF (ASSOCIATED(dp%mdata)) THEN
-                         mddata => dp%mdata%begin()
-                         mddata_loop: DO WHILE (ASSOCIATED(mddata))
-                            IF (ASSOCIATED(mddata%field_ptr,this)) THEN
-                               CALL dp%mdata%remove(info,mddata)
-                               or_fail("Failed to remove the bookkeeping field entries in Mesh mdata")
-
-                               EXIT mddata_loop
-                            ENDIF
-                            mddata => dp%mdata%next()
-                         ENDDO mddata_loop
-                      ENDIF !(ASSOCIATED(dp%mdata))
                       IF (ASSOCIATED(dp%subpatch)) THEN
                          sbp => dp%subpatch%begin()
                          sbp_loop: DO WHILE (ASSOCIATED(sbp))
@@ -299,6 +287,23 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
                             sbp => dp%subpatch%next()
                          ENDDO sbp_loop
                       ENDIF !(ASSOCIATED(dp%subpatch))
+
+                      IF (ASSOCIATED(dp%mdata)) THEN
+                         mddata => dp%mdata%begin()
+                         mddata_loop: DO WHILE (ASSOCIATED(mddata))
+                            IF (ASSOCIATED(mddata%field_ptr,this)) THEN
+                               CALL dp%mdata%remove(info,mddata)
+                               or_fail("Failed to remove the bookkeeping field entries in Mesh mdata")
+
+                               CALL mddata%destroy(info)
+                               or_fail("Failed to destroy mddata")
+
+                               DEALLOCATE(mddata,STAT=info)
+                               or_fail_dealloc("Failed to deallocate mddata")
+                            ENDIF
+                            mddata => dp%mdata%next()
+                         ENDDO mddata_loop
+                      ENDIF !(ASSOCIATED(dp%mdata))
                    ENDIF !(this%is_discretized_on(dp))
 
                 CLASS IS (ppm_t_particles_d_)

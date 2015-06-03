@@ -323,6 +323,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !sorted the delted particles and will get rid of them in
           !descending order so the order of particles will not
           !deteriorate the deletion of the rest
+          NULLIFY(index_del_parts)
           CALL ppm_util_qsort(list_del_parts,index_del_parts,info)
           or_fail("ppm_util_qsort")
 
@@ -393,7 +394,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !New number of particles, after deleting some
           Pc%Npart = Npart - del_part
 
-          CALL ppm_alloc(index_del_parts,(/0/),ppm_param_dealloc,info)
+          CALL ppm_alloc(index_del_parts,ldc,ppm_param_dealloc,info)
           or_fail_dealloc("index_del_parts")
 
           end_subroutine()
@@ -412,15 +413,23 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           DEFINE_MK()
 
           CLASS(DTYPE(ppm_t_part_prop))                               :: prop
+
           INTEGER,                                      INTENT(IN   ) :: datatype
+
           CLASS(ppm_t_discr_kind),     TARGET,          INTENT(IN   ) :: parts
+
           INTEGER,                                      INTENT(IN   ) :: npart
           INTEGER,                                      INTENT(IN   ) :: lda
+
           CHARACTER(LEN=*),                             INTENT(IN   ) :: name
           !!! name to this property
+
           LOGICAL, DIMENSION(ppm_param_length_pptflags),INTENT(IN   ) :: flags
+
           INTEGER,                                      INTENT(  OUT) :: info
+
           CLASS(ppm_t_field_),OPTIONAL,TARGET,          INTENT(IN   ) :: field
+
           LOGICAL,            OPTIONAL,                 INTENT(IN   ) :: zero
           !!! if true, then initialize the data to zero
 

@@ -1078,21 +1078,22 @@ minclude ppm_get_field_template(4,l)
 
           CLASS(ppm_t_subpatch_data_), POINTER :: subpdat
 
+          CLASS(ppm_t_mesh_discr_data_), POINTER :: mddata
+
           INTEGER :: p_idx_
 
           start_subroutine("equi_mesh_create_prop")
-
 
           IF (.NOT.ASSOCIATED(this%mdata)) THEN
              ALLOCATE(ppm_v_mesh_discr_data::this%mdata,STAT=info)
              or_fail_alloc("mdata")
           ENDIF
 
-          ALLOCATE(ppm_t_mesh_discr_data::discr_data,STAT=info)
-          or_fail_alloc("discr_data")
+          ALLOCATE(ppm_t_mesh_discr_data::mddata,STAT=info)
+          or_fail_alloc("mddata")
 
-          CALL discr_data%create(field,info)
-          or_fail("discr_data%create()")
+          CALL mddata%create(field,info)
+          or_fail("mddata%create()")
 
           !Create a new data array on the mesh to store this field
           p => this%subpatch%begin()
@@ -1101,11 +1102,11 @@ minclude ppm_get_field_template(4,l)
               subpdat => this%new_subpatch_data_ptr(info)
               or_fail_alloc("could not get a new ppm_t_subpatch_data pointer")
 
-              CALL subpdat%create(discr_data,p,info)
+              CALL subpdat%create(mddata,p,info)
               or_fail("could not create new subpatch_data")
 
-              CALL discr_data%subpatch%push(subpdat,info)
-              or_fail("could not add new subpatch_data to discr_data")
+              CALL mddata%subpatch%push(subpdat,info)
+              or_fail("could not add new subpatch_data to mddata")
 
               CALL p%subpatch_data%push(subpdat,info,p_idx_)
               or_fail("could not add new subpatch_data to subpatch collection")
@@ -1113,8 +1114,10 @@ minclude ppm_get_field_template(4,l)
               p => this%subpatch%next()
           ENDDO
 
-          CALL this%mdata%push(discr_data,info)
-          or_fail("could not add new discr_data to discr%mdata")
+          CALL this%mdata%push(mddata,info)
+          or_fail("could not add new mddata to discr%mdata")
+
+          discr_data => mddata
 
           !check that the returned pointer makes sense
           check_associated(discr_data)
@@ -1986,6 +1989,10 @@ minclude ppm_get_field_template(4,l)
           this%field_ptr => NULL()
           this%lda = 0
           this%name = ""
+
+          IF (ASSOCIATED(this%subpatch)) THEN
+
+          ENDIF
 
           end_subroutine()
       END SUBROUTINE
