@@ -468,7 +468,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
                 fail("invalid type for particle property")
 
              END SELECT
-             or_fail_alloc("allocating property failed")
+             or_fail_alloc("allocating property failed",ppm_error=ppm_error_fatal)
 
              IF (zero_data) THEN
                 SELECT CASE (datatype)
@@ -512,7 +512,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
                 fail("invalid type for particle property")
 
              END SELECT
-             or_fail_alloc("allocating property failed")
+             or_fail_alloc("allocating property failed",ppm_error=ppm_error_fatal)
 
              IF (zero_data) THEN
                 SELECT CASE (datatype)

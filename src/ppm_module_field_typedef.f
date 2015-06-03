@@ -241,13 +241,12 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
           INTEGER,            INTENT(  OUT) :: info
 
-          CLASS(ppm_t_discr_info_), POINTER :: tdi
-
+          CLASS(ppm_t_discr_info_),      POINTER :: tdi
+          CLASS(ppm_t_subpatch_),        POINTER :: sbp
+          CLASS(ppm_t_subpatch_data_),   POINTER :: sbpdat
           CLASS(ppm_t_mesh_discr_data_), POINTER :: mddata
-
-          CLASS(ppm_t_subpatch_), POINTER :: sbp
-
-          CLASS(ppm_t_subpatch_data_), POINTER :: sbpdat
+          CLASS(ppm_t_part_prop_d_),     POINTER :: pddata_d
+          CLASS(ppm_t_part_prop_s_),     POINTER :: pddata_s
 
           start_subroutine("field_destroy")
 
@@ -286,10 +285,14 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
                             IF (ASSOCIATED(sbp%subpatch_data)) THEN
                                sbpdat => sbp%subpatch_data%begin()
                                sbpdat_loop: DO WHILE (ASSOCIATED(sbpdat))
-                                  IF (ASSOCIATED(sbpdat%discr_data%field_ptr,this)) THEN
-                                     CALL sbp%subpatch_data%remove(info,sbpdat)
-                                     or_fail("Failed to remove the bookkeeping discretized field entries in Mesh")
-                                  ENDIF
+                                  IF (ASSOCIATED(sbpdat%discr_data)) THEN
+                                     IF (ASSOCIATED(sbpdat%discr_data%field_ptr)) THEN
+                                        IF (ASSOCIATED(sbpdat%discr_data%field_ptr,this)) THEN
+                                           CALL sbp%subpatch_data%remove(info,sbpdat)
+                                           or_fail("Failed to destroy and remove the discretized field entries in Mesh")
+                                        ENDIF !ASSOCIATED(sbpdat%discr_data%field_ptr,this)
+                                     ENDIF !ASSOCIATED(sbpdat%discr_data%field_ptr)
+                                  ENDIF !ASSOCIATED(sbpdat%discr_data)
                                   sbpdat => sbp%subpatch_data%next()
                                ENDDO sbpdat_loop
                             ENDIF !(ASSOCIATED(sbp%subpatch_data))
@@ -301,14 +304,36 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
                 CLASS IS (ppm_t_particles_d_)
                    IF (this%is_discretized_on(dp)) THEN
                       CALL dp%field_ptr%remove(info,this)
-                      or_fail("Failed to destroy the bookkeeping field entries in Particle")
-                   ENDIF
+                      or_fail("Failed to remove the bookkeeping field entries in Particle")
+
+                      IF (ASSOCIATED(dp%props)) THEN
+                         pddata_d => dp%props%begin()
+                         pddata_d_loop: DO WHILE (ASSOCIATED(pddata_d))
+                            IF (ASSOCIATED(pddata_d%field_ptr,this)) THEN
+                                CALL dp%props%remove(info,pddata_d)
+                                or_fail("Failed to remove and destroy the discretized field entries in Particle")
+                            ENDIF !(ASSOCIATED(sbp%subpatch_data))
+                            pddata_d => dp%props%next()
+                         ENDDO pddata_d_loop
+                      ENDIF !(ASSOCIATED(dp%props))
+                   ENDIF !(this%is_discretized_on(dp))
 
                 CLASS IS (ppm_t_particles_s_)
                    IF (this%is_discretized_on(dp)) THEN
                       CALL dp%field_ptr%remove(info,this)
-                      or_fail("Failed to destroy the bookkeeping field entries in Particle")
-                   ENDIF
+                      or_fail("Failed to remove the bookkeeping field entries in Particle")
+
+                      IF (ASSOCIATED(dp%props)) THEN
+                         pddata_s => dp%props%begin()
+                         pddata_s_loop: DO WHILE (ASSOCIATED(pddata_s))
+                            IF (ASSOCIATED(pddata_s%field_ptr,this)) THEN
+                                CALL dp%props%remove(info,pddata_s)
+                                or_fail("Failed to remove the discretized field entries in Particle")
+                            ENDIF !(ASSOCIATED(sbp%subpatch_data))
+                            pddata_s => dp%props%next()
+                         ENDDO pddata_s_loop
+                      ENDIF !(ASSOCIATED(dp%props))
+                   ENDIF !(this%is_discretized_on(dp))
 
                 END SELECT !TYPE (dp => tdi%discr_ptr)
 
