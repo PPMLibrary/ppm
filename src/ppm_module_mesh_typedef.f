@@ -1981,6 +1981,7 @@ minclude ppm_get_field_template(4,l)
           !  Arguments
           !-------------------------------------------------------------------------
           CLASS(ppm_t_mesh_discr_data) :: this
+
           INTEGER,       INTENT(  OUT) :: info
 
           start_subroutine("mesh_discr_data_destroy")
@@ -1991,8 +1992,15 @@ minclude ppm_get_field_template(4,l)
           this%name = ""
 
           IF (ASSOCIATED(this%subpatch)) THEN
-
+             IF (ASSOCIATED(this%subpatch%vec)) THEN
+                DEALLOCATE(this%subpatch%vec,STAT=info)
+                or_fail_dealloc("this%subpatch%vec")
+             ENDIF
+             DEALLOCATE(this%subpatch,STAT=info)
+             or_fail_dealloc("this%subpatch")
           ENDIF
+
+          this%subpatch => NULL()
 
           end_subroutine()
       END SUBROUTINE

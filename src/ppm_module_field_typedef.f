@@ -108,68 +108,70 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
           start_subroutine("discr_info_destroy")
 
-          ! yaser: I think this was a major bug!
-          ! Without this all the allocated data still would be there
-          ! even though you destroy them.
-          SELECT TYPE (discr => this%discr_ptr)
-          CLASS IS (ppm_t_equi_mesh_)
-             !Ugly measure to make sure that we are destroying available data
-             !not the one that has been destroyed previously
-             !TODO find st nicer
-             IF (ASSOCIATED(discr%subpatch)) THEN
-                IF (ASSOCIATED(discr%subpatch%vec)) THEN
+          IF (this%discrID.GT.0) THEN
+             ! yaser: I think this was a major bug!
+             ! Without this all the allocated data still would be there
+             ! even though you destroy them.
+             SELECT TYPE (discr => this%discr_ptr)
+             CLASS IS (ppm_t_equi_mesh_)
+                !Ugly measure to make sure that we are destroying available data
+                !not the one that has been destroyed previously
+                !TODO find st nicer
+                IF (ASSOCIATED(discr%subpatch)) THEN
+                   IF (ASSOCIATED(discr%subpatch%vec)) THEN
+                      SELECT TYPE (ddata => this%discr_data)
+                      CLASS IS (ppm_t_mesh_discr_data_)
+                         subpdat => ddata%subpatch%begin()
+                         DO WHILE (ASSOCIATED(subpdat))
+                            CALL subpdat%destroy(info)
+                            or_fail("subpdat%destroy")
+
+                            subpdat => ddata%subpatch%next()
+                         ENDDO
+
+                         CALL ddata%destroy(info)
+                         or_fail("mesh discr data destroy failed.")
+
+                      END SELECT
+                   ENDIF
+                ENDIF
+
+             CLASS IS (ppm_t_particles_s_)
+                IF (ASSOCIATED(discr%props)) THEN
                    SELECT TYPE (ddata => this%discr_data)
-                   CLASS IS (ppm_t_mesh_discr_data_)
-                      subpdat => ddata%subpatch%begin()
-                      DO WHILE (ASSOCIATED(subpdat))
-                         CALL subpdat%destroy(info)
-                         or_fail("subpdat%destroy")
+                   CLASS IS (ppm_t_discr_data)
+                      CALL discr%destroy_prop(ddata,info)
+                      or_fail("particle discr data destroy failed.")
 
-                         subpdat => ddata%subpatch%next()
-                      ENDDO
-
+                   END SELECT
+                ELSE
+                   SELECT TYPE (ddata => this%discr_data)
+                   CLASS IS (ppm_t_part_prop_s_)
                       CALL ddata%destroy(info)
-                      or_fail("mesh discr data destroy failed.")
+                      or_fail("discr data destroy failed.")
 
                    END SELECT
                 ENDIF
-             ENDIF
 
-          CLASS IS (ppm_t_particles_s_)
-             IF (ASSOCIATED(discr%props)) THEN
-                SELECT TYPE (ddata => this%discr_data)
-                CLASS IS (ppm_t_discr_data)
-                   CALL discr%destroy_prop(ddata,info)
-                   or_fail("particle discr data destroy failed.")
+             CLASS IS (ppm_t_particles_d_)
+                IF (ASSOCIATED(discr%props)) THEN
+                   SELECT TYPE (ddata => this%discr_data)
+                   CLASS IS (ppm_t_discr_data)
+                      CALL discr%destroy_prop(ddata,info)
+                      or_fail("particle discr data destroy failed.")
 
-                END SELECT
-             ELSE
-                SELECT TYPE (ddata => this%discr_data)
-                CLASS IS (ppm_t_part_prop_s_)
-                   CALL ddata%destroy(info)
-                   or_fail("discr data destroy failed.")
+                   END SELECT
+                ELSE
+                   SELECT TYPE (ddata => this%discr_data)
+                   CLASS IS (ppm_t_part_prop_d_)
+                      CALL ddata%destroy(info)
+                      or_fail("discr data destroy failed.")
 
-                END SELECT
-             ENDIF
+                   END SELECT
+                ENDIF
 
-          CLASS IS (ppm_t_particles_d_)
-             IF (ASSOCIATED(discr%props)) THEN
-                SELECT TYPE (ddata => this%discr_data)
-                CLASS IS (ppm_t_discr_data)
-                   CALL discr%destroy_prop(ddata,info)
-                   or_fail("particle discr data destroy failed.")
-
-                END SELECT
-             ELSE
-                SELECT TYPE (ddata => this%discr_data)
-                CLASS IS (ppm_t_part_prop_d_)
-                   CALL ddata%destroy(info)
-                   or_fail("discr data destroy failed.")
-
-                END SELECT
-             ENDIF
-
-          END SELECT
+             END SELECT
+          ENDIF !(this%discrID.GT.0)
 
           this%discrID    = 0
           this%discr_ptr  => NULL()
@@ -341,6 +343,8 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
                    ENDIF !(this%is_discretized_on(dp))
 
                 END SELECT !TYPE (dp => tdi%discr_ptr)
+
+                tdi%discrID=-1
 
                 tdi => this%discr_info%next()
              ENDDO
