@@ -108,8 +108,8 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_subpatch_),        POINTER :: sbp
-          CLASS(ppm_t_subpatch_data_),   POINTER :: sbpdat
+          CLASS(ppm_t_subpatch_),      POINTER :: sbp
+          CLASS(ppm_t_subpatch_data_), POINTER :: sbpdat
 
           start_subroutine("discr_info_destroy")
 
@@ -137,7 +137,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
                       CALL ddata%destroy(info)
                       or_fail("Failed to destroy ddata")
 
-                      DEALLOCATE(ddata,STAT=info)
+                      DEALLOCATE(this%discr_data,STAT=info)
                       or_fail_dealloc("Failed to deallocate ddata")
                    END SELECT
 
