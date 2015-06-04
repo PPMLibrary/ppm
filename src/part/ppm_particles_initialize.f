@@ -79,7 +79,7 @@
              min_phys = minphys
              max_phys = maxphys
           ELSE
-             fail("optional arguments needed to define the domain boundaries")
+             fail("optional arguments needed to define the domain boundaries",ppm_error=ppm_error_fatal)
           ENDIF
 
           len_phys=max_phys-min_phys
