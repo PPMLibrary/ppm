@@ -145,7 +145,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! Data structure containing the Pc
           INTEGER,        INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_main_abstr),  POINTER :: field
           CLASS(ppm_t_discr_info_), POINTER :: dinfo => NULL()
 
@@ -244,7 +246,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!! cutoff of the particles
           CHARACTER(LEN=*),             OPTIONAL, INTENT(IN   ) :: name
           !!! name for this set of particles
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("part_initialize")
 
           SELECT CASE (ppm_dim)
@@ -432,7 +436,9 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
 
           LOGICAL,            OPTIONAL,                 INTENT(IN   ) :: zero
           !!! if true, then initialize the data to zero
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER :: iopt
 
           LOGICAL :: zero_data
@@ -651,7 +657,9 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !!! if true, then initialise the data to zero
           LOGICAL,                        OPTIONAL, INTENT(IN   ) :: with_ghosts
           !!! if true, then allocate with Mpart instead of the default size of Npart
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
 
           INTEGER :: lda2,vec_size,npart,i,datatype
@@ -747,8 +755,11 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles))          :: this
           CLASS(ppm_t_discr_data), INTENT(INOUT) :: prop
-          INTEGER,                 INTENT(  OUT) :: info
 
+          INTEGER,                 INTENT(  OUT) :: info
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("part_prop_destroy")
 
           check_associated(<#this%props#>,&
@@ -785,7 +796,9 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           INTEGER, OPTIONAL,              INTENT(IN   ) :: lda
           !!! deallocate the old data array and allocate a new one,
           !!! possibly of a different dimension
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_field_), POINTER :: field
 
           INTEGER :: lda2,vec_size,npart,i,dtype
@@ -848,8 +861,11 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           CLASS(DTYPE(ppm_t_particles))          :: this
           CLASS(ppm_t_field_),     TARGET        :: Field
           CLASS(ppm_t_discr_data), POINTER       :: prop
-          INTEGER,                 INTENT(  OUT) :: info
 
+          INTEGER,                 INTENT(  OUT) :: info
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("part_get_discr")
 
           prop => this%props%begin()
@@ -876,8 +892,11 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles))      :: this
           CLASS(ppm_t_field_), TARGET        :: Field
-          INTEGER,             INTENT(  OUT) :: info
 
+          INTEGER,             INTENT(  OUT) :: info
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER :: lda
 
           start_subroutine("part_prop_zero")
@@ -952,7 +971,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           INTEGER                        :: request
 #endif
           !-------------------------------------------------------------------------
-          !  Initialise
+          !  Initialize
           !-------------------------------------------------------------------------
           start_subroutine("part_comp_global_index")
 
@@ -993,10 +1012,15 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
 
           DEFINE_MK()
           CLASS(DTYPE(ppm_t_particles))           :: this
-          REAL(MK), DIMENSION(:,:), POINTER       :: xp
-          INTEGER,                  INTENT(  OUT) :: info
-          LOGICAL,        OPTIONAL, INTENT(IN   ) :: with_ghosts
 
+          REAL(MK), DIMENSION(:,:), POINTER       :: xp
+
+          INTEGER,                  INTENT(  OUT) :: info
+
+          LOGICAL,        OPTIONAL, INTENT(IN   ) :: with_ghosts
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("get_xp")
 
           check_associated(<#this%xp#>)
@@ -1026,11 +1050,17 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
 
           DEFINE_MK()
           CLASS(DTYPE(ppm_t_particles))                    :: this
+
           REAL(MK), DIMENSION(:,:), POINTER                :: xp
+
           INTEGER,                           INTENT(  OUT) :: info
+
           LOGICAL,                 OPTIONAL, INTENT(IN   ) :: read_only
           LOGICAL,                 OPTIONAL, INTENT(IN   ) :: ghosts_ok
 
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
           CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nl
           CLASS(ppm_t_operator_discr_),   POINTER :: op
@@ -1463,7 +1493,9 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           LOGICAL,                        OPTIONAL, INTENT(IN   ) :: symmetry
           CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, POINTER       :: Nlist
           !!! returns a pointer to the newly created verlet list
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nl
 
 !           REAL(MK), DIMENSION(:), POINTER :: rcp => NULL()
@@ -1530,7 +1562,9 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           CLASS(DTYPE(ppm_t_neighlist)_), POINTER       :: Nlist
 
           INTEGER,                        INTENT(  OUT) :: info
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("part_neigh_destroy")
 
           CALL this%neighs%remove(info,Nlist)
@@ -1871,8 +1905,9 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           CLASS(DTYPE(ppm_t_particles)) :: this
           CLASS(ppm_t_field_), OPTIONAL :: Field
           LOGICAL                       :: res
-
-          !Local variables
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_discr_data), POINTER :: prop
 
           start_function("has_ghosts")
@@ -1902,13 +1937,17 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           !  Arguments
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles)) :: Pc
+
           INTEGER,        INTENT(  OUT) :: id
           INTEGER,        INTENT(IN   ) :: source_topoid
           INTEGER,        INTENT(IN   ) :: target_topoid
           INTEGER,        INTENT(  OUT) :: info
 
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           TYPE(DTYPE(ppm_t_ptr_part_mapping)), DIMENSION(:), POINTER:: vec_tmp
+
           CLASS(DTYPE(ppm_t_part_mapping)_), POINTER:: map
 
           INTEGER :: vec_size,npart,i
@@ -1986,9 +2025,12 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           !  Arguments
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles)) :: Pc
+
           INTEGER,        INTENT(INOUT) :: id
           INTEGER,        INTENT(  OUT) :: info
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("part_map_destroy")
 
           ASSOCIATE (cont => Pc%maps)
@@ -2058,7 +2100,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           INTEGER :: lda
 
           !-------------------------------------------------------------------------
-          !  Initialise
+          !  Initialize
           !-------------------------------------------------------------------------
           start_subroutine("map_part_push")
 
@@ -3891,7 +3933,9 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
           INTEGER,       INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER :: ldu(2)
 
           start_subroutine("neigh_destroy")
@@ -3905,6 +3949,8 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
              or_fail_dealloc("neigh%vlist")
           ENDIF
 
+          NULLIFY(neigh%nvlist)
+          NULLIFY(neigh%vlist)
           neigh%name=''
           NULLIFY(neigh%Part)
           neigh%uptodate = .FALSE.

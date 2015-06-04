@@ -234,7 +234,9 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_subpatch_),        INTENT(IN   ) :: sp
           !!! subpatch to which this subpatch_data belongs
           INTEGER,                       INTENT(  OUT) :: info
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER                       :: ndim, datatype
           INTEGER, DIMENSION(ppm_dim+1) :: hi,lo
 
@@ -341,8 +343,10 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch_data)         :: this
           INTEGER,               INTENT(OUT) :: info
-
-          INTEGER                            :: iopt
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
+          INTEGER :: iopt
 
           start_subroutine("patch_data_destroy")
 
@@ -412,7 +416,9 @@ minclude ppm_get_field_template(4,l)
           !!! boundary conditions
           INTEGER,               INTENT(OUT) :: info
           !!! return status. On success 0
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER :: iopt,i
 
           start_subroutine("subpatch_create")
@@ -488,8 +494,10 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch)              :: p
           INTEGER,               INTENT(OUT) :: info
-
-          INTEGER                            :: iopt
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
+          INTEGER :: iopt
 
           start_subroutine("subpatch_destroy")
 
@@ -547,7 +555,9 @@ minclude ppm_get_field_template(4,l)
           INTEGER,                    INTENT(IN   ) :: i
           INTEGER,                    INTENT(IN   ) :: j
           REAL(ppm_kind_double), DIMENSION(ppm_dim) :: pos
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           SELECT TYPE(mesh => p%mesh)
           TYPE IS (ppm_t_equi_mesh)
               !numbering of mesh nodes goes from 1 to N
@@ -568,7 +578,9 @@ minclude ppm_get_field_template(4,l)
           INTEGER,                   INTENT(IN   ) :: j
           INTEGER,                   INTENT(IN   ) :: k
           REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           SELECT TYPE(mesh => p%mesh)
           TYPE IS (ppm_t_equi_mesh)
               !numbering of mesh nodes goes from 1 to N
@@ -591,7 +603,9 @@ minclude ppm_get_field_template(4,l)
           INTEGER,           INTENT(   IN) :: vecsize
           INTEGER,           INTENT(  OUT) :: info
           INTEGER, OPTIONAL, INTENT(   IN) :: patchid
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("subpatch_A_create")
 
           IF (ASSOCIATED(this%subpatch)) THEN
@@ -618,7 +632,9 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_A_subpatch) :: this
           INTEGER,  INTENT(  OUT) :: info
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("subpatch_A_destroy")
 
           this%patchid = 0
@@ -1072,11 +1088,11 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_mesh_discr_data_), POINTER, INTENT(  OUT) :: discr_data
           INTEGER,                                INTENT(  OUT) :: info
           INTEGER,OPTIONAL,                       INTENT(  OUT) :: p_idx
-
-          CLASS(ppm_t_subpatch_),     POINTER :: p
-
-          CLASS(ppm_t_subpatch_data_), POINTER :: subpdat
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_subpatch_),        POINTER :: p
+          CLASS(ppm_t_subpatch_data_),   POINTER :: subpdat
           CLASS(ppm_t_mesh_discr_data_), POINTER :: mddata
 
           INTEGER :: p_idx_
@@ -1135,8 +1151,11 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh)             :: this
           CLASS(ppm_t_field_), INTENT(IN   ) :: Field
-          INTEGER,             INTENT(  OUT) :: info
 
+          INTEGER,             INTENT(  OUT) :: info
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER :: lda
 
           start_subroutine("equi_mesh_prop_zero")
@@ -1635,7 +1654,9 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_equi_mesh)                :: this
           INTEGER,                INTENT(  OUT) :: info
           INTEGER, DIMENSION(:),  POINTER       :: fids
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_main_abstr), POINTER :: f
 
           INTEGER :: i,j
@@ -1683,8 +1704,11 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_equi_mesh)             :: this
           CLASS(ppm_t_field_), INTENT(IN   ) :: field
           !!! this field is discretized on that mesh
-          INTEGER,             INTENT(OUT) :: info
 
+          INTEGER,             INTENT(OUT) :: info
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER :: p_idx
 
           start_subroutine("equi_mesh_map_push")
@@ -1777,9 +1801,12 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_equi_mesh)             :: this
           CLASS(ppm_t_field_), INTENT(INOUT) :: field
           !!! this field is discretized on that mesh
+
           INTEGER,             INTENT(  OUT) :: info
           INTEGER,   OPTIONAL, INTENT(IN   ) :: poptype
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER :: p_idx
 
           start_subroutine("equi_mesh_map_pop")
@@ -1933,8 +1960,11 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_mesh_discr_data)               :: this
           CLASS(ppm_t_field_), TARGET, INTENT(IN   ) :: field
-          INTEGER,                     INTENT(  OUT) :: info
 
+          INTEGER,                     INTENT(  OUT) :: info
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("mesh_discr_data_create")
 
           this%data_type = field%data_type
@@ -1957,7 +1987,9 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_mesh_discr_data) :: this
 
           INTEGER,       INTENT(  OUT) :: info
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("mesh_discr_data_destroy")
 
           this%data_type = 0
@@ -1965,16 +1997,7 @@ minclude ppm_get_field_template(4,l)
           this%lda = 0
           this%name = ""
 
-          IF (ASSOCIATED(this%subpatch)) THEN
-             IF (ASSOCIATED(this%subpatch%vec)) THEN
-                DEALLOCATE(this%subpatch%vec,STAT=info)
-                or_fail_dealloc("this%subpatch%vec")
-             ENDIF
-             DEALLOCATE(this%subpatch,STAT=info)
-             or_fail_dealloc("this%subpatch")
-          ENDIF
-
-          this%subpatch => NULL()
+          destroy_collection_ptr(this%subpatch)
 
           end_subroutine()
       END SUBROUTINE
@@ -1994,7 +2017,9 @@ minclude ppm_get_field_template(4,l)
           INTEGER,                       INTENT(  OUT) :: info
 
           CLASS(ppm_t_field_), OPTIONAL, TARGET        :: Field
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("equi_mesh_print_vtk")
 
           IF (ppm_dim.EQ.2) THEN

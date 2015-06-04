@@ -296,7 +296,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           INTEGER,        INTENT(  OUT) :: info
 
           !-------------------------------------------------------------------------
-          ! local variables
+          !  Local variables
           !-------------------------------------------------------------------------
           CLASS(<%= element_type %>), POINTER :: p
 
@@ -348,11 +348,10 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !!! Return status, on success 0.
 
           !-------------------------------------------------------------------------
-          ! local variables
+          !  Local variables
           !-------------------------------------------------------------------------
-
           !-------------------------------------------------------------------------
-          ! Check arguments
+          !  Check arguments
           !-------------------------------------------------------------------------
           IF (id.LE.0 .OR. id.LT.this%min_id .OR. id.GT.this%max_id) THEN
              exists = .FALSE.
@@ -392,7 +391,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !!! true if this element belongs to the collection
 
           !-------------------------------------------------------------------------
-          ! local variables
+          !  Local variables
           !-------------------------------------------------------------------------
           CLASS(<%= element_type %>), POINTER :: p
 
@@ -429,7 +428,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !!! id where the data is stored
 
           !-------------------------------------------------------------------------
-          ! local variables
+          !  Local variables
           !-------------------------------------------------------------------------
           CLASS(<%= element_type %>), POINTER :: p
 
@@ -465,7 +464,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !!! index of the element in the collection
 
           !-------------------------------------------------------------------------
-          ! local variables
+          !  Local variables
           !-------------------------------------------------------------------------
           start_subroutine("<%= "#{collection_type}" %>_push")
 
@@ -514,7 +513,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           CLASS(<%= element_type %>), OPTIONAL, TARGET       :: element
 
           !-------------------------------------------------------------------------
-          ! local variables
+          !  Local variables
           !-------------------------------------------------------------------------
           INTEGER :: del_id
           INTEGER :: iter_id_save
