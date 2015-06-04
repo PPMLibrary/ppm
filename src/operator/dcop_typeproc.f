@@ -151,7 +151,10 @@
              SELECT TYPE(Part_src => this%discr_src)
              CLASS IS (DTYPE(ppm_t_particles)_)
                 CALL Part_src%props%remove(info,this%nn_sq)
-                or_fail("failed to remove property")
+                or_fail("Failed to remove property")
+
+                DEALLOCATE(this%nn_sq,STAT=info)
+                or_fail_dealloc("Failed to destroy property")
 
                 this%nn_sq => NULL()
 

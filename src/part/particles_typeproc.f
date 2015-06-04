@@ -149,7 +149,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           ! local variables
           !-------------------------------------------------------------------------
           CLASS(ppm_t_main_abstr),  POINTER :: field
-          CLASS(ppm_t_discr_info_), POINTER :: dinfo => NULL()
+          CLASS(ppm_t_discr_info_), POINTER :: dinfo
 
           INTEGER :: i
 
@@ -178,6 +178,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
              field_loop: DO WHILE (ASSOCIATED(field))
                 SELECT TYPE(field)
                 CLASS IS (ppm_t_field_)
+                   NULLIFY(dinfo)
                    IF (field%is_discretized_on(Pc,dinfo)) THEN
                       CALL field%discr_info%remove(info,dinfo)
                       or_fail("field%discr_info%remove")
@@ -2040,6 +2041,9 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
              CALL cont%vec(id)%t%destroy(info)
              or_fail("Pc%maps%vec(id)%t%destroy")
+
+             DEALLOCATE(cont%vec(id)%t,STAT=info)
+             or_fail_dealloc("Failed to deallocate property")
              NULLIFY(cont%vec(id)%t)
 
              cont%nb = cont%nb - 1
