@@ -38,7 +38,7 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data, ONLY : ppm_char,ppm_debug,ppm_initialized,          &
       &   ppm_stdout,ppm_stderr,ppm_logfile,ppm_error_error,ppm_param_dealloc, &
-      &   ppm_proc_speed,ppm_rank
+      &   ppm_proc_speed,ppm_rank,ppm_kind_double
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error

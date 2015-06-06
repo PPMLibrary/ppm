@@ -26,7 +26,6 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE alloc_2dl_s(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 2D real single arrays
@@ -62,6 +61,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -113,8 +113,10 @@
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:,:), POINTER :: work
 #endif
+
       INTEGER, DIMENSION(2) :: lda,ldb,ldc,ldd,ldl_new,ldu_new
       INTEGER               :: i,j
+
       LOGICAL               :: lcopy,lalloc,lrealloc
 
 #ifdef __DEBUG
