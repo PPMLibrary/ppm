@@ -54,6 +54,7 @@
       USE ppm_module_error
       USE ppm_module_write
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -107,7 +108,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
       lcontinue = .TRUE.
@@ -125,8 +126,7 @@
       !-------------------------------------------------------------------------
       IF (nsubs .LT. 1) THEN
          lcontinue = .FALSE. ! no boxes = nothing to subdivide !
-         CALL ppm_write(ppm_rank,caller,   &
-         &    'No non-empty boxes present. Done.',info)
+         stdout("No non-empty boxes present. Done.")
          GOTO 9999
       ENDIF
 
@@ -142,10 +142,8 @@
          !  TREE !!!
          !---------------------------------------------------------------------
          IF (nsubs .LT. minboxes) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_few_subs,caller, &
-            &    'Could not create the minimum number of non-empty boxes!', &
-            &    __LINE__,info)
+            fail("Could not create the minimum number of non-empty boxes!", &
+            & ppm_err_few_subs,exit_point=no)
          ENDIF
          GOTO 9999
       ENDIF
@@ -154,14 +152,13 @@
       !  If the max tree depth has been reached, we stop
       !-------------------------------------------------------------------------
       IF (maxlevels .GT. 0) THEN
-          IF (nlevel .GE. maxlevels) THEN
-              lcontinue = .FALSE.
-              IF (ppm_debug .GT. 1) THEN
-                  CALL ppm_write(ppm_rank,caller,     &
-     &                'Max number of levels reached. Done.',info)
-              ENDIF
-              GOTO 9999
-          ENDIF
+         IF (nlevel .GE. maxlevels) THEN
+            lcontinue = .FALSE.
+            IF (ppm_debug .GT. 1) THEN
+               stdout("Max number of levels reached. Done.")
+            ENDIF
+            GOTO 9999
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -176,21 +173,22 @@
       meancost = 0.0_MK
       maxcost  = -HUGE(maxcost)
       DO i=1,nboxlist
-          j = iboxlist(i)
-          dm = boxcost(j)
-          meancost = meancost + dm
-          IF (dm .GT. maxcost) THEN
-              maxcost = dm
-          ENDIF
+         j = iboxlist(i)
+         dm = boxcost(j)
+         meancost = meancost + dm
+         IF (dm .GT. maxcost) THEN
+            maxcost = dm
+         ENDIF
       ENDDO
+
       IF (nboxlist .GT. 1) THEN
-          meancost = meancost/REAL(nboxlist,MK)
-          DO i=1,nboxlist
-              j = iboxlist(i)
-              diffcost = boxcost(j) - meancost
-              varcost  = varcost + (diffcost*diffcost)
-          ENDDO
-          varcost  = varcost/REAL(nboxlist-1,MK)
+         meancost = meancost/REAL(nboxlist,MK)
+         DO i=1,nboxlist
+            j = iboxlist(i)
+            diffcost = boxcost(j) - meancost
+            varcost  = varcost + (diffcost*diffcost)
+         ENDDO
+         varcost  = varcost/REAL(nboxlist-1,MK)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -206,30 +204,21 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (nsubs .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,     &
-     &          'Number of non-empty boxes must be >= 0',__LINE__,info)
-            GOTO 8888
+            fail("Number of non-empty boxes must be >= 0",exit_point=8888)
          ENDIF
          IF (nlevel .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,     &
-     &          'Number of levels must be >= 0',__LINE__,info)
-            GOTO 8888
+            fail("Number of levels must be >= 0",exit_point=8888)
          ENDIF
          IF (nboxlist .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,     &
-     &          'Number of boxes in list must be >= 0',__LINE__,info)
-            GOTO 8888
+            fail("Number of boxes in list must be >= 0",exit_point=8888)
          ENDIF
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_tree_done_s

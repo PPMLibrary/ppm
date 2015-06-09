@@ -245,7 +245,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           CHARACTER(LEN=*),      OPTIONAL, INTENT(IN   ) :: name
           !!!
           REAL(ppm_kind_double), OPTIONAL, POINTER, EXTERNAL :: init_func
-          !!! support for initialisation function not finished (need to think
+          !!! support for initialization function not finished (need to think
           !!! about data types...)
           !-------------------------------------------------------------------------
           !  Local variables
@@ -500,6 +500,28 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
              or_fail("failed to log the relationship between this mesh and that field")
 
           CLASS IS (ppm_t_particles_d_)
+             lghosts =MERGE(with_ghosts,discr%flags(ppm_part_ghosts),PRESENT(with_ghosts))
+
+             NULLIFY(pddata)
+             !Create a new property data structure in the particle set to store this field
+             CALL discr%create_prop(info,this,discr_data=pddata,with_ghosts=lghosts)
+             or_fail("discr%create_prop")
+
+             !Update the bookkeeping table to store the relationship between
+             ! the particle and the field.
+             CALL this%set_rel_discr(discr,pddata,info)
+             or_fail("failed to log the relationship between this field and that particle set")
+             !CALL this%set_rel(discr,p_idx,info)
+
+             IF (PRESENT(discr_info)) THEN
+                discr_info => this%discr_info%last()
+             ENDIF
+
+             el => this
+             CALL discr%field_ptr%push(el,info)
+             or_fail("failed to log the relationship between this particle set and that field")
+
+          CLASS IS (ppm_t_particles_s_)
              lghosts =MERGE(with_ghosts,discr%flags(ppm_part_ghosts),PRESENT(with_ghosts))
 
              NULLIFY(pddata)

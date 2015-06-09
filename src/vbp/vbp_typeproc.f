@@ -151,16 +151,19 @@
           ! Arguments
           !-------------------------------------------------------------------------
           DEFINE_MK()
+
           CLASS(DTYPE(ppm_t_vbp))                                 :: Pc
+
           REAL(MK), DIMENSION(:),                   INTENT(IN   ) :: cutoff
           !!! cutoff radius (same number of elements as we have particles)
+
           INTEGER,                                  INTENT(  OUT) :: info
           !!! return status. On success, 0
+
           CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, INTENT(INOUT) :: NList
           !!! Neighbor list for which this cutoff radius
           !!! applies. By default, this is the "standard" Verlet list, with neighbours
           !!! sought within the particle set itself.
-
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
@@ -169,7 +172,7 @@
           REAL(MK), DIMENSION(:), POINTER :: rcp
           REAL(MK)                        :: max_cutoff
 
-          INTEGER :: ip
+          INTEGER :: ip,datatype
 
           start_subroutine("vbp_set_varying_cutoff")
 
@@ -177,7 +180,9 @@
           !  Set new cutoff
           !-------------------------------------------------------------------------
           IF (.NOT.ASSOCIATED(Pc%rcp)) THEN
-             CALL Pc%create_prop(info,part_prop=Pc%rcp,dtype=ppm_type_real,name='rcp')
+             datatype=MERGE(ppm_type_real,ppm_type_real_single,MK.EQ.ppm_kind_double)
+
+             CALL Pc%create_prop(info,part_prop=Pc%rcp,dtype=datatype,name='rcp')
              or_fail("could not create property for varying cutoff radius rcp")
           ENDIF
 
@@ -234,19 +239,26 @@
       &          name,skin,symmetry,cutoff,Nlist)
           !!! Create a data structure to store a neighbour list
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
           CLASS(DTYPE(ppm_t_vbp))                                 :: this
+
           CLASS(DTYPE(ppm_t_particles)_),           TARGET        :: Part_src
           !!! Particle set to which the neighbours belong (can be the same as this)
+
           INTEGER,                                  INTENT(  OUT) :: info
+
           CHARACTER(LEN=*),               OPTIONAL, INTENT(IN   ) :: name
           !!! name of this neighbour list
+
           REAL(MK),                       OPTIONAL, INTENT(IN   ) :: skin
           REAL(MK),                       OPTIONAL, INTENT(IN   ) :: cutoff
+
           LOGICAL,                        OPTIONAL, INTENT(IN   ) :: symmetry
+
           CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, POINTER       :: Nlist
           !!! returns a pointer to the newly created verlet list
 
@@ -254,7 +266,7 @@
 
           REAL(MK), DIMENSION(:), POINTER :: rcp
 
-          INTEGER :: vec_size,i
+          INTEGER :: vec_size,i,datatype
 
           start_subroutine("vbp_neigh_create")
 
@@ -275,13 +287,14 @@
 
           ASSOCIATE (ghosts => this%flags(ppm_part_ghosts))
              IF (.NOT.ASSOCIATED(this%rcp)) THEN
+                datatype=MERGE(ppm_type_real,ppm_type_real_single,MK.EQ.ppm_kind_double)
+
                 CALL this%create_prop(info,part_prop=this%rcp, &
-                &    dtype=ppm_type_real,name='rcp',with_ghosts=ghosts)
+                &    dtype=datatype,name='rcp',with_ghosts=ghosts)
                 or_fail("Creating property for rcp failed")
              ENDIF
 
              NULLIFY(rcp)
-
              !yaser I resolved the bug, by if conditional
              !TOCHECK
              IF (PRESENT(cutoff)) THEN

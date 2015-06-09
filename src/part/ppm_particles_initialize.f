@@ -5,14 +5,12 @@
       SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info, &
       &          distrib,topoid,minphys,maxphys,cutoff,name)
 #endif
-          !!!-----------------------------------------------------------------------
-          !!! Set initial particle positions
-          !!!-----------------------------------------------------------------------
+          !!!Set initial particle positions
 
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
           CLASS(DTYPE(ppm_t_particles))                        :: Pc
           !!! Data structure containing the Particle set
           INTEGER,                               INTENT(INOUT) :: Npart_global
@@ -88,7 +86,7 @@
           & "Domain length is <= 0 along one dimension. Check input parameters")
 
 
-          h = (PRODUCT(len_phys)/REAL(Npart_global))**(1./REAL(ppm_dim))
+          h = (PRODUCT(len_phys)/REAL(Npart_global,MK))**(1./REAL(ppm_dim))
           nijk_global = FLOOR(len_phys/h)
           Npart_global = PRODUCT(nijk_global)
           remaining_rows = MOD(nijk_global(ppm_dim),ppm_nproc)

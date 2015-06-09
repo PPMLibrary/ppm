@@ -50,6 +50,7 @@
       USE ppm_module_alloc
       USE ppm_module_write
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -101,32 +102,33 @@
       INTEGER                                 :: nnbox,cd,i,j,iopt,Np,ip
       INTEGER , DIMENSION(2)                  :: ldc
       INTEGER , DIMENSION(:), POINTER         :: pbox => NULL()
+
+      CHARACTER(LEN=ppm_char) :: caller="ppm_tree_boxcut"
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_tree_boxcut',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check input arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Exit if there is nothing to be cut
       !-------------------------------------------------------------------------
       IF (ncut .LT. 1) THEN
-          IF (ppm_debug .GT. 0) THEN
-              CALL ppm_write(ppm_rank,'ppm_tree_boxcut',    &
-     &            'Nothing to cut. Exiting.',info)
-          ENDIF
-          GOTO 9999
+         IF (ppm_debug .GT. 0) THEN
+            stdout("Nothing to cut. Exiting.")
+         ENDIF
+         GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -135,15 +137,10 @@
       nnbox = 2**ncut
       iopt  = ppm_param_alloc_grow
       IF (have_particles) THEN
-          Np = - tree_lhbx(1,cutbox) + tree_lhbx(2,cutbox) + 1
-          ldc(1) = Np
-          CALL ppm_alloc(lpdx,ldc,iopt,info)
-          IF (info.NE.0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_tree_boxcut',          &
-     &            'particle list pointers LPDX',__LINE__,info)
-              GOTO 9999
-          ENDIF
+         Np = - tree_lhbx(1,cutbox) + tree_lhbx(2,cutbox) + 1
+         ldc(1) = Np
+         CALL ppm_alloc(lpdx,ldc,iopt,info)
+         or_fail_alloc("particle list pointers LPDX",ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -308,10 +305,7 @@
       !  Unknown cutting mode
       !-------------------------------------------------------------------------
       ELSE
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_argument,'ppm_tree_boxcut',     &
-     &        'ncut must be < 4.',__LINE__,info)
-          GOTO 9999
+          fail("ncut must be < 4.")
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -325,12 +319,8 @@
           iopt = ppm_param_alloc_fit
           ldc(1) = Np
           CALL ppm_alloc(pbox,ldc,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_tree_boxcut',   &
-     &            'list of particle box IDs PBOX',__LINE__,info)
-              GOTO 9999
-          ENDIF
+          or_fail_alloc("list of particle box IDs PBOX",ppm_error=ppm_error_fatal)
+
           pbox = -1
           npbx = 0
 
@@ -342,12 +332,12 @@
               DO i=1,nnbox
                   DO j=1,Np
                       ip = tree_lpdx(tree_lhbx(1,cutbox)+j-1)
-                      IF (.NOT.(xp(1,ip) .LT. mincut(1,i)) .AND.    &
-     &                    (xp(1,ip) .LT. maxcut(1,i)) .AND.    &
-     &                    .NOT.(xp(2,ip) .LT. mincut(2,i)) .AND.    &
-     &                    (xp(2,ip) .LT. maxcut(2,i)) .AND.    &
-     &                    .NOT.(xp(3,ip) .LT. mincut(3,i)) .AND.    &
-     &                    (xp(3,ip) .LT. maxcut(3,i))) THEN
+                      IF (.NOT.(xp(1,ip) .LT. mincut(1,i)).AND. &
+                      &        (xp(1,ip) .LT. maxcut(1,i)).AND. &
+                      &   .NOT.(xp(2,ip) .LT. mincut(2,i)).AND. &
+                      &        (xp(2,ip) .LT. maxcut(2,i)).AND. &
+                      &   .NOT.(xp(3,ip) .LT. mincut(3,i)).AND. &
+                      &        (xp(3,ip) .LT. maxcut(3,i))) THEN
                           pbox(j) = i
                       ENDIF
                   ENDDO
@@ -356,10 +346,10 @@
               DO i=1,nnbox
                   DO j=1,Np
                       ip = tree_lpdx(tree_lhbx(1,cutbox)+j-1)
-                      IF (.NOT.(xp(1,ip) .LT. mincut(1,i)) .AND.    &
-     &                    (xp(1,ip) .LT. maxcut(1,i)) .AND.    &
-     &                    .NOT.(xp(2,ip) .LT. mincut(2,i)) .AND.    &
-     &                    (xp(2,ip) .LT. maxcut(2,i))) THEN
+                      IF (.NOT.(xp(1,ip) .LT. mincut(1,i)) .AND. &
+                      &        (xp(1,ip) .LT. maxcut(1,i)) .AND. &
+                      &   .NOT.(xp(2,ip) .LT. mincut(2,i)) .AND. &
+                      &   (xp(2,ip) .LT. maxcut(2,i))) THEN
                           pbox(j) = i
                       ENDIF
                   ENDDO
@@ -402,52 +392,36 @@
           !---------------------------------------------------------------------
           iopt = ppm_param_dealloc
           CALL ppm_alloc(pbox,ldc,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,'ppm_tree_boxcut',     &
-     &            'list of particle box IDs PBOX',__LINE__,info)
-          ENDIF
+          or_fail_dealloc("list of particle box IDs PBOX",ppm_error=ppm_error_fatal)
       ENDIF           ! have_particles
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_tree_boxcut',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (cutbox .LT. 1) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_tree_boxcut',     &
-     &          'cutbox must be >0 !',__LINE__,info)
-            GOTO 8888
+            fail("cutbox must be >0 !",exit_point=8888)
          ENDIF
          IF ((ppm_dim .LT. 3) .AND. (ncut .GT. 2)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_tree_boxcut',     &
-     &          'Cannot cut more than 2 times in 2D!',__LINE__,info)
-            GOTO 8888
+            fail("Cannot cut more than 2 times in 2D!",exit_point=8888)
          ENDIF
          DO i=1,ppm_dim
             IF (min_box(i) .GT. max_box(i)) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_tree_boxcut',     &
-     &             'min_box must be <= max_box !',__LINE__,info)
-               GOTO 8888
+               fail("min_box must be <= max_box !",exit_point=8888)
             ENDIF
          ENDDO
          DO i=1,ncut-1
             DO j=i+1,ncut
                IF (cutdir(i) .EQ. cutdir(j)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_tree_boxcut',     &
-     &                'cut directions must be distinct !',__LINE__,info)
-                  GOTO 8888
+                  fail("cut directions must be distinct !",exit_point=8888)
                ENDIF
             ENDDO
          ENDDO
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_tree_boxcut_s

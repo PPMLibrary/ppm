@@ -1251,6 +1251,7 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
 
           CLASS(ppm_t_equi_mesh)                                    :: this
+
           REAL(ppm_kind_double), DIMENSION(:),        INTENT(INOUT) :: patch
           !!! Positions of the corners of the patch
           !!! (x1,y1,z1,x2,y2,z2), where 1 is the lower-left-bottom corner
@@ -1287,7 +1288,7 @@ minclude ppm_get_field_template(4,l)
           INTEGER, DIMENSION(2*ppm_dim)      :: bc
           INTEGER, DIMENSION(:), ALLOCATABLE :: indsub
 
-          LOGICAL :: linfinite
+          LOGICAL :: linfinite,ldouble
 
           start_subroutine("mesh_def_patch")
 
@@ -1304,8 +1305,15 @@ minclude ppm_get_field_template(4,l)
           Offset = this%Offset
           topo => ppm_topo(this%topoid)%t
 
-          check_false(<#ASSOCIATED(topo%min_subs)#>,&
-          & "Mesh_def_patch is not yet implemented for single precision")
+          IF (ASSOCIATED(topo%min_subs)) THEN
+             ldouble=.FALSE.
+             check_false(<#ASSOCIATED(topo%min_subd)#>,&
+             & "Mesh_def_patch can not be for both single precision and double precision")
+          ELSE
+             ldouble=.TRUE.
+             check_false(<#ASSOCIATED(topo%min_subs)#>,&
+             & "Mesh_def_patch can not be for both single precision and double precision")
+          ENDIF
 
           !-------------------------------------------------------------------------
           ! Extent of the patch on the global mesh (before it is divided into
@@ -1334,12 +1342,21 @@ minclude ppm_get_field_template(4,l)
           patch(ppm_dim+1:2*ppm_dim) = (iend_p(1:ppm_dim)-1)*h(1:ppm_dim) &
           &                          + Offset(1:ppm_dim)
 
-          !Bounds for the mesh nodes that are inside the computational domain
-          istart_d(1:ppm_dim) = 1 + CEILING( (topo%min_physd(1:ppm_dim)     &
-          &                       -          Offset(1:ppm_dim))/h(1:ppm_dim) )
-          iend_d(1:ppm_dim)   = 1 + FLOOR( (topo%max_physd(1:ppm_dim)       &
-          &                       -        Offset(1:ppm_dim))/(h(1:ppm_dim) &
-          &                       -        EPSILON(h(1:ppm_dim))) )
+          IF (ldouble) THEN
+             !Bounds for the mesh nodes that are inside the computational domain
+             istart_d(1:ppm_dim) = 1 + CEILING( (topo%min_physd(1:ppm_dim)     &
+             &                       -          Offset(1:ppm_dim))/h(1:ppm_dim) )
+             iend_d(1:ppm_dim)   = 1 + FLOOR( (topo%max_physd(1:ppm_dim)       &
+             &                       -        Offset(1:ppm_dim))/(h(1:ppm_dim) &
+             &                       -        EPSILON(h(1:ppm_dim))) )
+          ELSE
+             !Bounds for the mesh nodes that are inside the computational domain
+             istart_d(1:ppm_dim) = 1 + CEILING( (REAL(topo%min_physs(1:ppm_dim),ppm_kind_double) &
+             &                       -          Offset(1:ppm_dim))/h(1:ppm_dim) )
+             iend_d(1:ppm_dim)   = 1 + FLOOR( (REAL(topo%max_physs(1:ppm_dim),ppm_kind_double)   &
+             &                       -        Offset(1:ppm_dim))/(h(1:ppm_dim) &
+             &                       -        EPSILON(h(1:ppm_dim))) )
+          ENDIF
 
           !-------------------------------------------------------------------------
           !  Allocate bookkeeping arrays (pointers between patches and subpatches)
@@ -1382,205 +1399,405 @@ minclude ppm_get_field_template(4,l)
 
           NULLIFY(tmp_array)
 
-          DO isub=1,topo%nsubs
-             !----------------------------------------------------------------
-             ! check if the subdomain overlaps with the patch
-             ! if so, then there might be a subpatch created for that subdomain.
-             ! Grow the size of the array of pointers this%subpach_by_sub.
-             ! (simpler to do it this way if we dont know how many patches
-             ! are going to be added)
-             !----------------------------------------------------------------
-             IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
-             &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
-                ! yaser: subpach_by_sub should contain global index
-                ! so I would use isub instead of i
-                ASSOCIATE (sarray => this%subpatch_by_sub(isub))
-                    IF (sarray%nsubpatch.GE.sarray%size) THEN
-                       size2 = MAX(2*sarray%size,5)
+          IF (ldouble) THEN
+             DO isub=1,topo%nsubs
+                !----------------------------------------------------------------
+                ! check if the subdomain overlaps with the patch
+                ! if so, then there might be a subpatch created for that subdomain.
+                ! Grow the size of the array of pointers this%subpach_by_sub.
+                ! (simpler to do it this way if we dont know how many patches
+                ! are going to be added)
+                !----------------------------------------------------------------
+                IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
+                &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
+                   ! yaser: subpach_by_sub should contain global index
+                   ! so I would use isub instead of i
+                   ASSOCIATE (sarray => this%subpatch_by_sub(isub))
+                       IF (sarray%nsubpatch.GE.sarray%size) THEN
+                          size2 = MAX(2*sarray%size,5)
 
-                       IF (size_tmp.LT.size2) THEN
-                          dealloc_pointer(tmp_array)
+                          IF (size_tmp.LT.size2) THEN
+                             dealloc_pointer(tmp_array)
 
-                          ALLOCATE(tmp_array(size2),STAT=info)
-                          or_fail_alloc("tmp_array")
+                             ALLOCATE(tmp_array(size2),STAT=info)
+                             or_fail_alloc("tmp_array")
 
-                          size_tmp=size2
-                       ENDIF
+                             size_tmp=size2
+                          ENDIF
 
-                       DO j=1,sarray%nsubpatch
-                          tmp_array(j)%t => sarray%vec(j)%t
-                       ENDDO
+                          DO j=1,sarray%nsubpatch
+                             tmp_array(j)%t => sarray%vec(j)%t
+                          ENDDO
 
-                       dealloc_pointer(sarray%vec)
+                          dealloc_pointer(sarray%vec)
 
-                       ALLOCATE(sarray%vec(size2),STAT=info)
-                       or_fail_alloc("sarray%vec")
+                          ALLOCATE(sarray%vec(size2),STAT=info)
+                          or_fail_alloc("sarray%vec")
 
-                       DO j=1,sarray%nsubpatch
-                          sarray%vec(j)%t => tmp_array(j)%t
-                       ENDDO
+                          DO j=1,sarray%nsubpatch
+                             sarray%vec(j)%t => tmp_array(j)%t
+                          ENDDO
 
-                       sarray%size = size2
-                    ENDIF
-                END ASSOCIATE
-             ENDIF
-          ENDDO
+                          sarray%size = size2
+                      ENDIF
+                   END ASSOCIATE
+                ENDIF
+             ENDDO
+          ELSE !(ldouble)
+             DO isub=1,topo%nsubs
+                !----------------------------------------------------------------
+                ! check if the subdomain overlaps with the patch
+                ! if so, then there might be a subpatch created for that subdomain.
+                ! Grow the size of the array of pointers this%subpach_by_sub.
+                ! (simpler to do it this way if we dont know how many patches
+                ! are going to be added)
+                !----------------------------------------------------------------
+                IF ( ALL(patch(1:ppm_dim).LT.REAL(topo%max_subs(1:ppm_dim,isub),ppm_kind_double)) .AND. &
+                &    ALL(patch(ppm_dim+1:2*ppm_dim).GE.REAL(topo%min_subs(1:ppm_dim,isub),ppm_kind_double)) ) THEN
+                   ! yaser: subpach_by_sub should contain global index
+                   ! so I would use isub instead of i
+                   ASSOCIATE (sarray => this%subpatch_by_sub(isub))
+                       IF (sarray%nsubpatch.GE.sarray%size) THEN
+                          size2 = MAX(2*sarray%size,5)
+
+                          IF (size_tmp.LT.size2) THEN
+                             dealloc_pointer(tmp_array)
+
+                             ALLOCATE(tmp_array(size2),STAT=info)
+                             or_fail_alloc("tmp_array")
+
+                             size_tmp=size2
+                          ENDIF
+
+                          DO j=1,sarray%nsubpatch
+                             tmp_array(j)%t => sarray%vec(j)%t
+                          ENDDO
+
+                          dealloc_pointer(sarray%vec)
+
+                          ALLOCATE(sarray%vec(size2),STAT=info)
+                          or_fail_alloc("sarray%vec")
+
+                          DO j=1,sarray%nsubpatch
+                             sarray%vec(j)%t => tmp_array(j)%t
+                          ENDDO
+
+                          sarray%size = size2
+                      ENDIF
+                   END ASSOCIATE
+                ENDIF
+             ENDDO
+          ENDIF ! ldouble
 
           dealloc_pointer(tmp_array)
 
           nsubpatch = 0
 !           ! loop through all subdomains on this processor
 !           sub: DO i = 1,topo%nsublist
-          ! loop through all subdomains on this topology
-          sub: DO isub=1,topo%nsubs
-              !isub = topo%isublist(i)
-              !how many subpatches do we already have here
-              ! yaser: subpach_by_sub should contain global index
-              ! so I would use isub instead of i
-              nsubpatchi = this%subpatch_by_sub(isub)%nsubpatch
-              !----------------------------------------------------------------
-              ! check if the subdomain overlaps with the patch
-              !----------------------------------------------------------------
-              IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
-              &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
-                  !----------------------------------------------------------------
-                  !Finds the mesh nodes which are contained in the overlap region
-                  !----------------------------------------------------------------
 
-                  !----------------------------------------------------------------
-                  !Absolute positions of the corners (stored for use
-                  !during m2p interpolation, where we need to check whether
-                  !a particle is within a given subpatch)
-                  !----------------------------------------------------------------
-                  pstart(1:ppm_dim) = MAX(patch(1:ppm_dim),&
-                  &   topo%min_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
-                  pend(1:ppm_dim)   = MIN(patch(ppm_dim+1:2*ppm_dim),&
-                  &   topo%max_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
+          IF (ldouble) THEN
+             ! loop through all subdomains on this topology
+             sub_d: DO isub=1,topo%nsubs
+                !isub = topo%isublist(i)
+                !how many subpatches do we already have here
+                ! yaser: subpach_by_sub should contain global index
+                ! so I would use isub instead of i
+                nsubpatchi = this%subpatch_by_sub(isub)%nsubpatch
+                !----------------------------------------------------------------
+                ! check if the subdomain overlaps with the patch
+                !----------------------------------------------------------------
+                IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
+                &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
+                    !----------------------------------------------------------------
+                    !Finds the mesh nodes which are contained in the overlap region
+                    !----------------------------------------------------------------
 
-                  !----------------------------------------------------------------
-                  !Coordinates on the grid
-                  !----------------------------------------------------------------
-                  istart(1:ppm_dim) = 1 + CEILING(pstart(1:ppm_dim)/h(1:ppm_dim))
-                  iend(1:ppm_dim) = 1 + FLOOR(pend(1:ppm_dim)/(h(1:ppm_dim)- &
-                  &                           EPSILON(h(1:ppm_dim))))
-                  !WARNING: this is a hack to resolve a round-off issue when
-                  !h is such that a node falls epsilon away from the subdomain
-                  !boundary
+                    !----------------------------------------------------------------
+                    !Absolute positions of the corners (stored for use
+                    !during m2p interpolation, where we need to check whether
+                    !a particle is within a given subpatch)
+                    !----------------------------------------------------------------
+                    pstart(1:ppm_dim) = MAX(patch(1:ppm_dim),&
+                    &   topo%min_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
+                    pend(1:ppm_dim)   = MIN(patch(ppm_dim+1:2*ppm_dim),&
+                    &   topo%max_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
 
-                  !----------------------------------------------------------------
-                  !Intersect these coordinates with those of the subdomain
-                  !(some nodes may have been removed from the subdomain, e.g. to
-                  !implement some boundary conditions and/or avoid node duplication.
-                  !----------------------------------------------------------------
-                  istart(1:ppm_dim) = MAX(istart(1:ppm_dim),this%istart(1:ppm_dim,isub))
-                  iend(1:ppm_dim)   = MIN(iend(1:ppm_dim),this%iend(1:ppm_dim,isub))
+                    !----------------------------------------------------------------
+                    !Coordinates on the grid
+                    !----------------------------------------------------------------
+                    istart(1:ppm_dim) = 1 + CEILING(pstart(1:ppm_dim)/h(1:ppm_dim))
+                    iend(1:ppm_dim) = 1 + FLOOR(pend(1:ppm_dim)/(h(1:ppm_dim)- &
+                    &                             EPSILON(h(1:ppm_dim))))
+                    !WARNING: this is a hack to resolve a round-off issue when
+                    !h is such that a node falls epsilon away from the subdomain
+                    !boundary
 
-                  !----------------------------------------------------------------
-                  ! Specify boundary conditions for the subpatch
-                  !----------------------------------------------------------------
-                  DO k=1,ppm_dim
-                     IF (istart(k).EQ.istart_d(k) ) THEN
-                        bc(2*k-1) = topo%bcdef(2*k-1)
-                     ELSE
-                        IF (istart(k).EQ.istart_p(k) ) THEN
-                           IF (PRESENT(bcdef)) THEN
-                              bc(2*k-1) = bcdef(2*k-1)
-                           ELSE
-                              bc(2*k-1) = ppm_param_bcdef_freespace
-                           ENDIF
-                        ELSE
-                           bc(2*k-1) = -1
-                        ENDIF
-                     ENDIF
-                     IF (iend(k).EQ.iend_d(k)) THEN
-                        bc(2*k) = topo%bcdef(2*k)
-                     ELSE
-                        IF (iend(k).EQ.iend_p(k) ) THEN
-                           IF (PRESENT(bcdef)) THEN
-                              bc(2*k) = bcdef(2*k)
-                           ELSE
-                              bc(2*k) = ppm_param_bcdef_freespace
-                           ENDIF
-                        ELSE
-                           bc(2*k) = -1
-                        ENDIF
-                     ENDIF
-                     ! For periodic boundary conditions, subpatches that touch
-                     ! the East, North, or Top domain boundary are
-                     ! reduced by 1 mesh node so that real mesh nodes are not
-                     ! duplicated.
-                     IF (bc(2*k).EQ.ppm_param_bcdef_periodic) THEN
-                        iend(k) = iend(k) -1
-                     ENDIF
-!                      IF (iend(k)+1.EQ.iend_d(k)) THEN
-!                         bc(2*k) = topo%bcdef(2*k)
-!                      ENDIF
-                  ENDDO
-                  !----------------------------------------------------------------
-                  !Check that the subpatch contains at least one mesh nodes
-                  !Otherwise, exit loop
-                  ! (a subpatch comprises all the mesh nodes that are WITHIN
-                  !  the patch. If a patch overlap with a subdomain by less than
-                  !  h, it could be that this overlap regions has actually
-                  !  no mesh nodes)
-                  !----------------------------------------------------------------
-                  IF (.NOT.ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))) THEN
-                     CYCLE sub
-                  ENDIF
+                    !----------------------------------------------------------------
+                    !Intersect these coordinates with those of the subdomain
+                    !(some nodes may have been removed from the subdomain, e.g. to
+                    !implement some boundary conditions and/or avoid node duplication.
+                    !----------------------------------------------------------------
+                    istart(1:ppm_dim) = MAX(istart(1:ppm_dim),this%istart(1:ppm_dim,isub))
+                    iend(1:ppm_dim)   = MIN(iend(1:ppm_dim),this%iend(1:ppm_dim,isub))
 
-                  !----------------------------------------------------------------
-                  ! determine ghostlayer size for this subpatch
-                  ! (there is a ghostlayer if and only if the border of the subpatch
-                  ! does not coincide with a border of the patch itself - in that
-                  ! case, the width of the ghostlayer is truncated by the "mesh-wide"
-                  ! ghostsize parameter)
-                  !----------------------------------------------------------------
-                  ghostsize(1) = MIN(istart(1)-istart_p(1),this%ghostsize(1))
-                  ghostsize(2) = MIN(iend_p(1)-iend(1)    ,this%ghostsize(1))
-                  ghostsize(3) = MIN(istart(2)-istart_p(2),this%ghostsize(2))
-                  ghostsize(4) = MIN(iend_p(2)-iend(2)    ,this%ghostsize(2))
-                  IF (ppm_dim.EQ.3) THEN
-                     ghostsize(5) = MIN(istart(3)-istart_p(3),this%ghostsize(3))
-                     ghostsize(6) = MIN(iend_p(3)-iend(3)    ,this%ghostsize(3))
-                  ENDIF
+                    !----------------------------------------------------------------
+                    ! Specify boundary conditions for the subpatch
+                    !----------------------------------------------------------------
+                    DO k=1,ppm_dim
+                       IF (istart(k).EQ.istart_d(k) ) THEN
+                          bc(2*k-1) = topo%bcdef(2*k-1)
+                       ELSE
+                          IF (istart(k).EQ.istart_p(k) ) THEN
+                             IF (PRESENT(bcdef)) THEN
+                                bc(2*k-1) = bcdef(2*k-1)
+                             ELSE
+                                bc(2*k-1) = ppm_param_bcdef_freespace
+                             ENDIF
+                          ELSE
+                             bc(2*k-1) = -1
+                          ENDIF
+                       ENDIF
+                       IF (iend(k).EQ.iend_d(k)) THEN
+                          bc(2*k) = topo%bcdef(2*k)
+                       ELSE
+                          IF (iend(k).EQ.iend_p(k) ) THEN
+                             IF (PRESENT(bcdef)) THEN
+                                bc(2*k) = bcdef(2*k)
+                             ELSE
+                                bc(2*k) = ppm_param_bcdef_freespace
+                             ENDIF
+                          ELSE
+                             bc(2*k) = -1
+                          ENDIF
+                       ENDIF
+                       ! For periodic boundary conditions, subpatches that touch
+                       ! the East, North, or Top domain boundary are
+                       ! reduced by 1 mesh node so that real mesh nodes are not
+                       ! duplicated.
+                       IF (bc(2*k).EQ.ppm_param_bcdef_periodic) THEN
+                          iend(k) = iend(k) -1
+                       ENDIF
+!                        IF (iend(k)+1.EQ.iend_d(k)) THEN
+!                           bc(2*k) = topo%bcdef(2*k)
+!                        ENDIF
+                    ENDDO
+                    !----------------------------------------------------------------
+                    !Check that the subpatch contains at least one mesh nodes
+                    !Otherwise, exit loop
+                    ! (a subpatch comprises all the mesh nodes that are WITHIN
+                    !  the patch. If a patch overlap with a subdomain by less than
+                    !  h, it could be that this overlap regions has actually
+                    !  no mesh nodes)
+                    !----------------------------------------------------------------
+                    IF (.NOT.ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))) THEN
+                       CYCLE sub_d
+                    ENDIF
 
-                  !----------------------------------------------------------------
-                  ! create a new subpatch object
-                  !----------------------------------------------------------------
-                  ALLOCATE(ppm_t_subpatch::p,STAT=info)
-                  or_fail_alloc("could not allocate ppm_t_subpatch pointer")
+                    !----------------------------------------------------------------
+                    ! determine ghostlayer size for this subpatch
+                    ! (there is a ghostlayer if and only if the border of the subpatch
+                    ! does not coincide with a border of the patch itself - in that
+                    ! case, the width of the ghostlayer is truncated by the "mesh-wide"
+                    ! ghostsize parameter)
+                    !----------------------------------------------------------------
+                    ghostsize(1) = MIN(istart(1)-istart_p(1),this%ghostsize(1))
+                    ghostsize(2) = MIN(iend_p(1)-iend(1)    ,this%ghostsize(1))
+                    ghostsize(3) = MIN(istart(2)-istart_p(2),this%ghostsize(2))
+                    ghostsize(4) = MIN(iend_p(2)-iend(2)    ,this%ghostsize(2))
+                    IF (ppm_dim.EQ.3) THEN
+                       ghostsize(5) = MIN(istart(3)-istart_p(3),this%ghostsize(3))
+                       ghostsize(6) = MIN(iend_p(3)-iend(3)    ,this%ghostsize(3))
+                    ENDIF
 
-                  CALL p%create(this,isub,istart,iend,pstart,pend,&
-                  &    istart_p,iend_p,ghostsize,bc,info)
-                  or_fail("could not create new subpatch")
+                    !----------------------------------------------------------------
+                    ! create a new subpatch object
+                    !----------------------------------------------------------------
+                    ALLOCATE(ppm_t_subpatch::p,STAT=info)
+                    or_fail_alloc("could not allocate ppm_t_subpatch pointer")
 
-                  !----------------------------------------------------------------
-                  !add a pointer to this subpatch
-                  !----------------------------------------------------------------
-                  nsubpatchi = nsubpatchi + 1
-                  ! yaser: subpach_by_sub should contain global index
-                  ! so I would use isub instead of i
-                  this%subpatch_by_sub(isub)%vec(nsubpatchi)%t => p
-                  this%subpatch_by_sub(isub)%nsubpatch = nsubpatchi
+                    CALL p%create(this,isub,istart,iend,pstart,pend,&
+                    &    istart_p,iend_p,ghostsize,bc,info)
+                    or_fail("could not create new subpatch")
 
-                  SELECT CASE (indsub(isub))
-                  CASE (1)
-                     ! subdomains on this processor
-                     nsubpatch = nsubpatch+1
-                     A_p%subpatch(nsubpatch)%t => p
+                    !----------------------------------------------------------------
+                    !add a pointer to this subpatch
+                    !----------------------------------------------------------------
+                    nsubpatchi = nsubpatchi + 1
+                    ! yaser: subpach_by_sub should contain global index
+                    ! so I would use isub instead of i
+                    this%subpatch_by_sub(isub)%vec(nsubpatchi)%t => p
+                    this%subpatch_by_sub(isub)%nsubpatch = nsubpatchi
 
-                     !----------------------------------------------------------------
-                     ! put the subpatch object in the collection of subpatches on this mesh
-                     !----------------------------------------------------------------
-                     CALL this%subpatch%push(p,info)
-                     or_fail("could not add new subpatch to mesh")
+                    SELECT CASE (indsub(isub))
+                    CASE (1)
+                       ! subdomains on this processor
+                       nsubpatch = nsubpatch+1
+                       A_p%subpatch(nsubpatch)%t => p
 
-                  CASE(-1)
-                     p => NULL()
+                       !----------------------------------------------------------------
+                       ! put the subpatch object in the collection of subpatches on this mesh
+                       !----------------------------------------------------------------
+                       CALL this%subpatch%push(p,info)
+                       or_fail("could not add new subpatch to mesh")
 
-                  END SELECT
-              ENDIF
-          ENDDO sub
+                    CASE(-1)
+                       p => NULL()
+
+                    END SELECT
+                ENDIF
+             ENDDO sub_d
+          ELSE
+             ! loop through all subdomains on this topology
+             sub_s: DO isub=1,topo%nsubs
+                !isub = topo%isublist(i)
+                !how many subpatches do we already have here
+                ! yaser: subpach_by_sub should contain global index
+                ! so I would use isub instead of i
+                nsubpatchi = this%subpatch_by_sub(isub)%nsubpatch
+                !----------------------------------------------------------------
+                ! check if the subdomain overlaps with the patch
+                !----------------------------------------------------------------
+                IF ( ALL(patch(1:ppm_dim).LT.REAL(topo%max_subs(1:ppm_dim,isub),ppm_kind_double)) .AND. &
+                &    ALL(patch(ppm_dim+1:2*ppm_dim).GE.REAL(topo%min_subs(1:ppm_dim,isub),ppm_kind_double)) ) THEN
+                    !----------------------------------------------------------------
+                    !Finds the mesh nodes which are contained in the overlap region
+                    !----------------------------------------------------------------
+
+                    !----------------------------------------------------------------
+                    !Absolute positions of the corners (stored for use
+                    !during m2p interpolation, where we need to check whether
+                    !a particle is within a given subpatch)
+                    !----------------------------------------------------------------
+                    pstart(1:ppm_dim) = MAX(patch(1:ppm_dim), &
+                    & REAL(topo%min_subs(1:ppm_dim,isub),ppm_kind_double))-Offset(1:ppm_dim)
+                    pend(1:ppm_dim)   = MIN(patch(ppm_dim+1:2*ppm_dim), &
+                    & REAL(topo%max_subs(1:ppm_dim,isub),ppm_kind_double))-Offset(1:ppm_dim)
+
+                    !----------------------------------------------------------------
+                    !Coordinates on the grid
+                    !----------------------------------------------------------------
+                    istart(1:ppm_dim) = 1 + CEILING(pstart(1:ppm_dim)/h(1:ppm_dim))
+                    iend(1:ppm_dim) = 1 + FLOOR(pend(1:ppm_dim)/(h(1:ppm_dim)- &
+                    &                             EPSILON(h(1:ppm_dim))))
+                    !WARNING: this is a hack to resolve a round-off issue when
+                    !h is such that a node falls epsilon away from the subdomain
+                    !boundary
+
+                    !----------------------------------------------------------------
+                    !Intersect these coordinates with those of the subdomain
+                    !(some nodes may have been removed from the subdomain, e.g. to
+                    !implement some boundary conditions and/or avoid node duplication.
+                    !----------------------------------------------------------------
+                    istart(1:ppm_dim) = MAX(istart(1:ppm_dim),this%istart(1:ppm_dim,isub))
+                    iend(1:ppm_dim)   = MIN(iend(1:ppm_dim),this%iend(1:ppm_dim,isub))
+
+                    !----------------------------------------------------------------
+                    ! Specify boundary conditions for the subpatch
+                    !----------------------------------------------------------------
+                    DO k=1,ppm_dim
+                       IF (istart(k).EQ.istart_d(k) ) THEN
+                          bc(2*k-1) = topo%bcdef(2*k-1)
+                       ELSE
+                          IF (istart(k).EQ.istart_p(k) ) THEN
+                             IF (PRESENT(bcdef)) THEN
+                                bc(2*k-1) = bcdef(2*k-1)
+                             ELSE
+                                bc(2*k-1) = ppm_param_bcdef_freespace
+                             ENDIF
+                          ELSE
+                             bc(2*k-1) = -1
+                          ENDIF
+                       ENDIF
+                       IF (iend(k).EQ.iend_d(k)) THEN
+                          bc(2*k) = topo%bcdef(2*k)
+                       ELSE
+                          IF (iend(k).EQ.iend_p(k) ) THEN
+                             IF (PRESENT(bcdef)) THEN
+                                bc(2*k) = bcdef(2*k)
+                             ELSE
+                                bc(2*k) = ppm_param_bcdef_freespace
+                             ENDIF
+                          ELSE
+                             bc(2*k) = -1
+                          ENDIF
+                       ENDIF
+                       ! For periodic boundary conditions, subpatches that touch
+                       ! the East, North, or Top domain boundary are
+                       ! reduced by 1 mesh node so that real mesh nodes are not
+                       ! duplicated.
+                       IF (bc(2*k).EQ.ppm_param_bcdef_periodic) THEN
+                          iend(k) = iend(k) -1
+                       ENDIF
+!                        IF (iend(k)+1.EQ.iend_d(k)) THEN
+!                           bc(2*k) = topo%bcdef(2*k)
+!                        ENDIF
+                    ENDDO
+                    !----------------------------------------------------------------
+                    !Check that the subpatch contains at least one mesh nodes
+                    !Otherwise, exit loop
+                    ! (a subpatch comprises all the mesh nodes that are WITHIN
+                    !  the patch. If a patch overlap with a subdomain by less than
+                    !  h, it could be that this overlap regions has actually
+                    !  no mesh nodes)
+                    !----------------------------------------------------------------
+                    IF (.NOT.ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))) THEN
+                       CYCLE sub_s
+                    ENDIF
+
+                    !----------------------------------------------------------------
+                    ! determine ghostlayer size for this subpatch
+                    ! (there is a ghostlayer if and only if the border of the subpatch
+                    ! does not coincide with a border of the patch itself - in that
+                    ! case, the width of the ghostlayer is truncated by the "mesh-wide"
+                    ! ghostsize parameter)
+                    !----------------------------------------------------------------
+                    ghostsize(1) = MIN(istart(1)-istart_p(1),this%ghostsize(1))
+                    ghostsize(2) = MIN(iend_p(1)-iend(1)    ,this%ghostsize(1))
+                    ghostsize(3) = MIN(istart(2)-istart_p(2),this%ghostsize(2))
+                    ghostsize(4) = MIN(iend_p(2)-iend(2)    ,this%ghostsize(2))
+                    IF (ppm_dim.EQ.3) THEN
+                       ghostsize(5) = MIN(istart(3)-istart_p(3),this%ghostsize(3))
+                       ghostsize(6) = MIN(iend_p(3)-iend(3)    ,this%ghostsize(3))
+                    ENDIF
+
+                    !----------------------------------------------------------------
+                    ! create a new subpatch object
+                    !----------------------------------------------------------------
+                    ALLOCATE(ppm_t_subpatch::p,STAT=info)
+                    or_fail_alloc("could not allocate ppm_t_subpatch pointer")
+
+                    CALL p%create(this,isub,istart,iend,pstart,pend,&
+                    &    istart_p,iend_p,ghostsize,bc,info)
+                    or_fail("could not create new subpatch")
+
+                    !----------------------------------------------------------------
+                    !add a pointer to this subpatch
+                    !----------------------------------------------------------------
+                    nsubpatchi = nsubpatchi + 1
+                    ! yaser: subpach_by_sub should contain global index
+                    ! so I would use isub instead of i
+                    this%subpatch_by_sub(isub)%vec(nsubpatchi)%t => p
+                    this%subpatch_by_sub(isub)%nsubpatch = nsubpatchi
+
+                    SELECT CASE (indsub(isub))
+                    CASE (1)
+                       ! subdomains on this processor
+                       nsubpatch = nsubpatch+1
+                       A_p%subpatch(nsubpatch)%t => p
+
+                       !----------------------------------------------------------------
+                       ! put the subpatch object in the collection of subpatches on this mesh
+                       !----------------------------------------------------------------
+                       CALL this%subpatch%push(p,info)
+                       or_fail("could not add new subpatch to mesh")
+
+                    CASE(-1)
+                       p => NULL()
+
+                    END SELECT
+                ENDIF
+             ENDDO sub_s
+          ENDIF ! ldouble
 
           CALL this%patch%push(A_p,info,id)
           or_fail("could not add new subpatch_ptr_array to mesh%patch")
@@ -1607,6 +1824,7 @@ minclude ppm_get_field_template(4,l)
           !  Arguments
           !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh)                :: this
+
           INTEGER,                INTENT(  OUT) :: info
           !!! Returns status, 0 upon success
           INTEGER, OPTIONAL,      INTENT(IN   ) :: patchid
@@ -1615,15 +1833,13 @@ minclude ppm_get_field_template(4,l)
           !  Local variables
           !-------------------------------------------------------------------------
           REAL(ppm_kind_double), DIMENSION(2*ppm_dim) :: patch
-          REAL(ppm_kind_double), PARAMETER :: big=HUGE(1._ppm_kind_double)
 
           start_subroutine("mesh_def_uniform")
 
           !----------------------------------------------------------------
           ! Create a huge patch
           !----------------------------------------------------------------
-          patch(1:ppm_dim)           = -big
-          patch(ppm_dim+1:2*ppm_dim) =  big
+          !Choosing infinite=.TRUE. we do not need to provide patch
 
           !----------------------------------------------------------------
           !and add it to the mesh (it will compute the intersection

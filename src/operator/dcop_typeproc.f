@@ -30,8 +30,6 @@
           !!! Order of approximation for each term of the differential operator
           CLASS(ppm_t_discr_data), OPTIONAL,               TARGET        :: prop
 
-
-
           REAL(MK), DIMENSION(:),   POINTER :: nn2
           REAL(MK), DIMENSION(:,:), POINTER :: xp => NULL()
           REAL(MK)                          :: dist2
@@ -40,6 +38,7 @@
           INTEGER, DIMENSION(:),   POINTER :: nvlist
           INTEGER, DIMENSION(:,:), POINTER :: vlist
           INTEGER                          :: ip,iq,ineigh
+          INTEGER                          :: datatype
 
           !nearest-neighbor distance, for interpolating operators. Either they
           !were computed already, or this has to be done now.
@@ -84,9 +83,11 @@
              IF (.NOT.PRESENT(prop)) THEN
                 SELECT TYPE(Part_src)
                 CLASS IS (DTYPE(ppm_t_particles)_)
+                   datatype=MERGE(ppm_type_real,ppm_type_real_single,MK.EQ.ppm_kind_double)
+
                    !Create a new property and make this%nn_sq point to it
                    CALL Part_src%create_prop(info,part_prop=this%nn_sq,&
-                   &    dtype=ppm_type_real,name='nearest_neighb_squared')
+                   &    dtype=datatype,name='nearest_neighb_squared')
                    or_fail("could not create property for nn_sq")
 
                    NULLIFY(nvlist,vlist,nn2)

@@ -62,7 +62,7 @@
         CHARACTER(LEN=ppm_char) :: caller = 'sop_approx_wp_2d'
 #endif
         !!---------------------------------------------------------------------!
-        !! Initialise
+        !! Initialize
         !!---------------------------------------------------------------------!
 #if debug_verbosity > 0
         CALL substart(caller,t0,info)

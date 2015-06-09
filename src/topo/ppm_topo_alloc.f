@@ -91,7 +91,7 @@
       CHARACTER(LEN=ppm_char) :: caller="ppm_topo_alloc"
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 

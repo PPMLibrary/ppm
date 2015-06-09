@@ -116,14 +116,16 @@
       INTEGER                                 :: MPTYPE
 #endif
 
+      CHARACTER(LEN=ppm_char) :: caller="ppm_tree_cutdir"
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_tree_cutdir',t0,info)
+      CALL substart(caller,t0,info)
+
 #if   __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif __KIND == __DOUBLE_PRECISION
@@ -142,23 +144,22 @@
       !  If we have less than 1 direction to cut, we are done
       !-------------------------------------------------------------------------
       IF (ncut .LT. 1) THEN
-          IF (ppm_debug .GT. 0) THEN
-              CALL ppm_write(ppm_rank,'ppm_tree_cutdir',   &
-     &            'No cut directions present. Exiting.',info)
-          ENDIF
-          GOTO 9999
+         IF (ppm_debug .GT. 0) THEN
+            stdout("No cut directions present. Exiting.")
+         ENDIF
+         GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Compute the extension of the box
       !-------------------------------------------------------------------------
       IF (ppm_dim .GT. 2) THEN
-          len_box(1) = max_box(1,cutbox)-min_box(1,cutbox)
-          len_box(2) = max_box(2,cutbox)-min_box(2,cutbox)
-          len_box(3) = max_box(3,cutbox)-min_box(3,cutbox)
+         len_box(1) = max_box(1,cutbox)-min_box(1,cutbox)
+         len_box(2) = max_box(2,cutbox)-min_box(2,cutbox)
+         len_box(3) = max_box(3,cutbox)-min_box(3,cutbox)
       ELSE
-          len_box(1) = max_box(1,cutbox)-min_box(1,cutbox)
-          len_box(2) = max_box(2,cutbox)-min_box(2,cutbox)
+         len_box(1) = max_box(1,cutbox)-min_box(1,cutbox)
+         len_box(2) = max_box(2,cutbox)-min_box(2,cutbox)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -167,22 +168,20 @@
       cutable = .FALSE.
       ip = 0
       DO i=1,ppm_dim
-          IF ((.NOT.fixed(i)) .AND. (len_box(i)-(2.0_MK*minboxsize(i))   &
-     &        .GT.lmyeps*len_box(i))) THEN
-              ip = ip + 1
-              cutable(i) = .TRUE.
-          ENDIF
+         IF ((.NOT.fixed(i)).AND.(len_box(i)-(2.0_MK*minboxsize(i)).GT.lmyeps*len_box(i))) THEN
+            ip = ip + 1
+            cutable(i) = .TRUE.
+         ENDIF
       ENDDO
 
       !-------------------------------------------------------------------------
       !  Exit if box has not enough cuttable directions
       !-------------------------------------------------------------------------
       IF (ip .LT. ncut) THEN
-          IF (ppm_debug .GT. 0) THEN
-              CALL ppm_write(ppm_rank,'ppm_tree_cutdir',   &
-     &            'Not enough cutable directions! Exiting.',info)
-          ENDIF
-          GOTO 9999
+         IF (ppm_debug .GT. 0) THEN
+            stdout("Not enough cutable directions! Exiting.")
+         ENDIF
+         GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -330,14 +329,9 @@
           !---------------------------------------------------------------------
           !  Allreduce of particle costs
           !---------------------------------------------------------------------
-          CALL MPI_Allreduce(cpart,cpart_tot,ppm_dim,MPTYPE,MPI_SUM,    &
-     &        ppm_comm,info)
-          IF (info.NE.0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_mpi_fail,'ppm_tree_cutdir',   &
-     &            'MPI_Allreduce of inertia tensor failed!',__LINE__,info)
-              GOTO 9999
-          ENDIF
+          CALL MPI_Allreduce(cpart,cpart_tot,ppm_dim,MPTYPE,MPI_SUM,ppm_comm,info)
+          or_fail_MPI("MPI_Allreduce of inertia tensor failed!",ppm_error=ppm_error_fatal)
+
           cpart = cpart_tot
 #endif
 
@@ -401,38 +395,26 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_tree_cutdir',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (cutbox .LE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_tree_cutdir',     &
-     &          'cutbox must be > 0 !',__LINE__,info)
-            GOTO 8888
+            fail("cutbox must be > 0 !",exit_point=8888)
          ENDIF
          IF (SIZE(min_box,2) .LT. cutbox) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_tree_cutdir',     &
-     &          'size of min_box must be at least cutbox !',__LINE__,info)
-            GOTO 8888
+            fail("size of min_box must be at least cutbox !",exit_point=8888)
          ENDIF
          IF (SIZE(max_box,2) .LT. cutbox) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_tree_cutdir',     &
-     &          'size of max_box must be at least cutbox !',__LINE__,info)
-            GOTO 8888
+            fail("size of max_box must be at least cutbox !",exit_point=8888)
          ENDIF
          DO i=1,ppm_dim
             IF (min_box(i,cutbox) .GT. max_box(i,cutbox)) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_tree_cutdir',     &
-     &             'min_box must be <= max_box !',__LINE__,info)
-               GOTO 8888
+               fail("min_box must be <= max_box !",exit_point=8888)
             ENDIF
          ENDDO
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_tree_cutdir_s

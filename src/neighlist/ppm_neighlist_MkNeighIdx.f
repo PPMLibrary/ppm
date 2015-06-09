@@ -90,7 +90,7 @@
       CHARACTER(LEN=ppm_char) :: caller='ppm_neighlist_MkNeighIdx'
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 

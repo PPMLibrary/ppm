@@ -846,7 +846,7 @@
           CHARACTER(LEN=*), PARAMETER :: caller='apply_defaults'
 
           !-------------------------------------------------------------------------
-          !  Initialise
+          !  Initialize
           !-------------------------------------------------------------------------
           CALL substart(caller,t0,info)
           ! scalar

@@ -60,7 +60,7 @@
           CHARACTER(LEN=ppm_char) :: filename
           CHARACTER(LEN=ppm_char) :: caller = 'sop_interpolate'
           !!-------------------------------------------------------------------------!
-          !! Initialise
+          !! Initialize
           !!-------------------------------------------------------------------------!
 #if debug_verbosity > 0
           CALL substart(caller,t0,info)

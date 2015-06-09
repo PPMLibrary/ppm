@@ -105,20 +105,22 @@
 #ifdef __MPI
       INTEGER                :: MPTYPE
 #endif
+
+      CHARACTER(LEN=ppm_char) :: caller="ppm_tree_cutpos"
       !------------------------------------------------------------------------
       ! Externals
       !------------------------------------------------------------------------
 
       !------------------------------------------------------------------------
-      ! Initialise
+      ! Initialize
       !------------------------------------------------------------------------
-      CALL substart('ppm_tree_cutpos',t0,info)
+      CALL substart(caller,t0,info)
       !------------------------------------------------------------------------
       ! Check input arguments
       !------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !------------------------------------------------------------------------
@@ -126,8 +128,7 @@
       !------------------------------------------------------------------------
       IF (ncut .LT. 1) THEN
          IF (ppm_debug .GT. 0) THEN
-            CALL ppm_write(ppm_rank,'ppm_tree_cutpos',   &
-            & 'No cut directions present. Exiting. ',info)
+            stdout("No cut directions present. Exiting.")
          ENDIF
          GOTO 9999
       ENDIF
@@ -162,30 +163,30 @@
       ncp1 = ncut+1
       IF (have_particles .AND. weights(1) .NE. 0) THEN
 #ifdef __VECTOR
-          DO i=1,ncut
-             cutdir = icut(i)
-             DO j=tree_lhbx(1,cutbox),tree_lhbx(2,cutbox)
-                 ip = tree_lpdx(j)
-                 dm = 1.0_MK
-                 IF (PRESENT(pcost)) dm = pcost(ip)
-                 pc(i) = pc(i) + (xp(cutdir,ip)*dm)
-                 pc(ncp1) = pc(ncp1) + dm
-             ENDDO
-          ENDDO
-          ! replace this by something more clever in the future. Try counting
-          ! in a way that avoids the division here
-          pc(ncp1) = pc(ncp1)/REAL(ncut,MK)
+         DO i=1,ncut
+            cutdir = icut(i)
+            DO j=tree_lhbx(1,cutbox),tree_lhbx(2,cutbox)
+               ip = tree_lpdx(j)
+               dm = 1.0_MK
+               IF (PRESENT(pcost)) dm = pcost(ip)
+               pc(i) = pc(i) + (xp(cutdir,ip)*dm)
+               pc(ncp1) = pc(ncp1) + dm
+            ENDDO
+         ENDDO
+         ! replace this by something more clever in the future. Try counting
+         ! in a way that avoids the division here
+         pc(ncp1) = pc(ncp1)/REAL(ncut,MK)
 #else
-          DO j=tree_lhbx(1,cutbox),tree_lhbx(2,cutbox)
-              ip = tree_lpdx(j)
-              dm = 1.0_MK
-              IF (PRESENT(pcost)) dm = pcost(ip)
-              DO i=1,ncut
-                  cutdir = icut(i)
-                  pc(i) = pc(i) + (xp(cutdir,ip)*dm)
-              ENDDO
-              pc(ncp1) = pc(ncp1) + dm
-          ENDDO
+         DO j=tree_lhbx(1,cutbox),tree_lhbx(2,cutbox)
+            ip = tree_lpdx(j)
+            dm = 1.0_MK
+            IF (PRESENT(pcost)) dm = pcost(ip)
+            DO i=1,ncut
+               cutdir = icut(i)
+               pc(i) = pc(i) + (xp(cutdir,ip)*dm)
+            ENDDO
+            pc(ncp1) = pc(ncp1) + dm
+         ENDDO
 #endif
 
 #ifdef __MPI
@@ -193,12 +194,8 @@
           ! Allreduce of particles sums
           !---------------------------------------------------------------------
           CALL MPI_Allreduce(pc,pcsum,ncp1,MPTYPE,MPI_SUM,ppm_comm,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_mpi_fail,'ppm_tree_cutpos',   &
-                   'MPI_Allreduce of projected particles',__LINE__,info)
-              GOTO 9999
-          ENDIF
+          or_fail_MPI("MPI_Allreduce of projected particles",ppm_error=ppm_error_fatal)
+
           pc = pcsum
 #endif
       ENDIF !have_particles
@@ -230,72 +227,57 @@
       gmass = geomtotal*weights(3)
       tmass = pmass+mmass+gmass
       IF (tmass .EQ. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_argument,'ppm_tree_cutpos',   &
-               'Total cost is 0! Are all weights 0?',__LINE__,info)
-          GOTO 9999
+         fail("Total cost is 0! Are all weights 0?",ppm_error=ppm_error_fatal)
       ENDIF
 
       !------------------------------------------------------------------------
       ! The optimal cut position is in the weighted center of mass
       !------------------------------------------------------------------------
       DO i=1,ncut
-          cutdir = icut(i)
-          IF (have_particles .AND. ABS(weights(1)).GT.0.0_MK) THEN
-             partpos = pc(i)/pc(ncp1)
-          ELSE
-             partpos = 0.0_MK
-          ENDIF
-          midpos  = min_box(cutdir,cutbox) + (0.5_MK*len_box(cutdir))
-          cpos(i) = partpos*pmass + midpos*(mmass+gmass)
-          cpos(i) = cpos(i)/tmass
+         cutdir = icut(i)
+         IF (have_particles .AND. ABS(weights(1)).GT.0.0_MK) THEN
+            partpos = pc(i)/pc(ncp1)
+         ELSE
+            partpos = 0.0_MK
+         ENDIF
+         midpos  = min_box(cutdir,cutbox) + (0.5_MK*len_box(cutdir))
+         cpos(i) = partpos*pmass + midpos*(mmass+gmass)
+         cpos(i) = cpos(i)/tmass
 
-          !--------------------------------------------------------------------
-          ! Enforce that minboxsize is respected.
-          !--------------------------------------------------------------------
-          IF (cpos(i)-min_box(cutdir,cutbox) .LT. minboxsize(cutdir)) THEN
-             cpos(i) = min_box(cutdir,cutbox)+minboxsize(cutdir)
-          ENDIF
-          IF (max_box(cutdir,cutbox)-cpos(i) .LT. minboxsize(cutdir)) THEN
-             cpos(i) = max_box(cutdir,cutbox)-minboxsize(cutdir)
-          ENDIF
+         !--------------------------------------------------------------------
+         ! Enforce that minboxsize is respected.
+         !--------------------------------------------------------------------
+         IF (cpos(i)-min_box(cutdir,cutbox) .LT. minboxsize(cutdir)) THEN
+            cpos(i) = min_box(cutdir,cutbox)+minboxsize(cutdir)
+         ENDIF
+         IF (max_box(cutdir,cutbox)-cpos(i) .LT. minboxsize(cutdir)) THEN
+            cpos(i) = max_box(cutdir,cutbox)-minboxsize(cutdir)
+         ENDIF
       ENDDO
 
       !------------------------------------------------------------------------
       ! Return
       !------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_tree_cutpos',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (cutbox .LE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_tree_cutpos',      &
-                 'cutbox must be > 0 !',__LINE__,info)
-            GOTO 8888
+            fail("cutbox must be > 0 !",exit_point=8888)
          ENDIF
          IF (SIZE(min_box,2) .LT. cutbox) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_tree_cutpos',      &
-                 'size of min_box must be at least cutbox !',__LINE__,info)
-            GOTO 8888
+            fail("size of min_box must be at least cutbox !",exit_point=8888)
          ENDIF
          IF (SIZE(max_box,2) .LT. cutbox) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_tree_cutpos',     &
-                  'size of max_box must be at least cutbox !',__LINE__,info)
-             GOTO 8888
+            fail("size of max_box must be at least cutbox !",exit_point=8888)
          ENDIF
          DO i=1,ppm_dim
             IF (min_box(i,cutbox) .GT. max_box(i,cutbox)) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_tree_cutpos',   &
-                    'min_box must be <= max_box !',__LINE__,info)
-               GOTO 8888
+               fail("min_box must be <= max_box !",exit_point=8888)
             ENDIF
          ENDDO
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_tree_cutpos_s

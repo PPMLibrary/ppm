@@ -178,7 +178,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -333,9 +333,8 @@
          !  cuboid octasection using the general ppm_tree
          !-------------------------------------------------------------------
          ! build an oct tree in 3d
-         treetype         = ppm_param_tree_oct
          ! and a quad tree in 2d
-         IF (ppm_dim .EQ. 2) treetype = ppm_param_tree_quad
+         treetype = MERGE(ppm_param_tree_quad,ppm_param_tree_oct,ppm_dim.EQ.2)
          ! no particles and no mesh
          weights(1,1:2)   = 0.0_MK
          weights(2,1:2)   = 0.0_MK

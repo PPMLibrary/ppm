@@ -57,7 +57,7 @@
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_map_part_cancel'
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 

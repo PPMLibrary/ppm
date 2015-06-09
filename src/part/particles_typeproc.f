@@ -120,7 +120,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           Pc%time =0.0_MK
           Pc%itime=0
 
-          ! Particles have not been initialised yet
+          ! Particles have not been Initialized yet
           Pc%h_avg=-1.0_MK
           Pc%h_min=-1.0_MK
 
@@ -655,7 +655,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           INTEGER,                        OPTIONAL, INTENT(IN   ) :: lda
           !!! name to this property
           LOGICAL,                        OPTIONAL, INTENT(IN   ) :: zero
-          !!! if true, then initialise the data to zero
+          !!! if true, then Initialize the data to zero
           LOGICAL,                        OPTIONAL, INTENT(IN   ) :: with_ghosts
           !!! if true, then allocate with Mpart instead of the default size of Npart
           !-------------------------------------------------------------------------
@@ -663,6 +663,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
 
+          DEFINE_MK()
           INTEGER :: lda2,vec_size,npart,i,datatype
 
           CHARACTER(LEN=ppm_char) :: name2
@@ -717,7 +718,11 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              ELSE
                 name2="default_ppt_name"
              ENDIF
-             datatype=MERGE(dtype,ppm_type_real,PRESENT(dtype))
+             IF (PRESENT(dtype)) THEN
+                datatype=dtype
+             ELSE
+                datatype=MERGE(ppm_type_real,ppm_type_real_single,MK.EQ.ppm_kind_double)
+             ENDIF
 
              SELECT CASE (PRESENT(zero))
              CASE (.TRUE.)
@@ -770,6 +775,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           CLASS IS (DTYPE(ppm_t_part_prop))
               CALL this%props%remove(info,prop)
               or_fail("could not remove property from its container")
+
           CLASS DEFAULT
               fail("discretization data has to be of class ppm_t_part_prop")
           END SELECT
@@ -960,6 +966,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           ! Arguments
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles)) :: Pc
+
           INTEGER,       INTENT(   OUT) :: info
           !!! return status. On success, 0
 
@@ -1031,9 +1038,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
                 IF (this%flags(ppm_part_ghosts)) THEN
                    xp => this%xp(1:ppm_dim,1:this%Mpart)
                 ELSE
-                   WRITE(cbuf,*) 'WARNING: tried to get xp with ghosts ', &
-                   & 'when ghosts are not up-to-date'
-                   CALL ppm_write(ppm_rank,'get_xp',cbuf,info)
+                   stdout("WARNING: tried to get xp with ghosts when ghosts are not up-to-date")
 
                    xp => NULL()
                 ENDIF
@@ -1132,14 +1137,17 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles))           :: Pc
           !!! Data structure containing the particles
+
           REAL(MK), DIMENSION(:,:), TARGET       :: disp
           !!! Data structure containing the particles
+
           INTEGER,                  INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
+
           CLASS(ppm_t_operator_discr_),   POINTER :: op
 
           REAL(MK), DIMENSION(:,:), POINTER :: xp => NULL()
@@ -1458,6 +1466,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              !Else, we find the new maximum cutoff radius amongst
              !all existing neighbor lists on this Particle set
              Pc%ghostlayer = 0._MK
+
              nl => Pc%neighs%begin()
              DO WHILE (ASSOCIATED(nl))
                 IF (nl%cutoff .GT. Pc%ghostlayer) THEN

@@ -107,21 +107,23 @@
       REAL(MK), DIMENSION(:), POINTER         :: pcsum
       INTEGER                                 :: MPTYPE
 #endif
+
+      CHARACTER(LEN=ppm_char) :: caller="ppm_tree_boxcost"
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_tree_boxcost',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check input arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -143,12 +145,11 @@
       !-------------------------------------------------------------------------
       !  If we have less than 1 box to compute, exit
       !-------------------------------------------------------------------------
-      IF (nbox .LT. 1) THEN
-          IF (ppm_debug .GT. 0) THEN
-              CALL ppm_write(ppm_rank,'ppm_tree_boxcost',   &
-     &            'No boxes to be computed. Exiting.',info)
-          ENDIF
-          GOTO 9999
+      IF (nbox.LT.1) THEN
+         IF (ppm_debug .GT. 0) THEN
+            stdout("No boxes to be computed. Exiting.")
+         ENDIF
+         GOTO 9999
       ENDIF
 
 #ifdef __MPI
@@ -184,14 +185,10 @@
           !  Allreduce of all particle sums
           !---------------------------------------------------------------------
           CALL MPI_Allreduce(pcst,pcsum,nbox,MPTYPE,MPI_SUM,ppm_comm,info)
-          IF (info.NE.0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_mpi_fail,'ppm_tree_boxcost',   &
-     &            'MPI_Allreduce of particle costs',__LINE__,info)
-              GOTO 9999
-          ENDIF
+          or_fail_MPI("MPI_Allreduce of particle costs",ppm_error=ppm_error_fatal)
+
           DO i=1,nbox
-              pcst(i) = pcsum(i)
+             pcst(i) = pcsum(i)
           ENDDO
 #endif
       ENDIF   ! have_particles
@@ -200,54 +197,55 @@
       !  Add up all cost contributions to total cost.
       !-------------------------------------------------------------------------
       IF (ppm_dim .EQ. 2) THEN
-          DO i=1,nbox
-              !-----------------------------------------------------------------
-              !  Mesh and geometry based costs
-              !-----------------------------------------------------------------
-              meshtotal = 0.0_MK
-              len_box(1) = max_box(1,i)-min_box(1,i)
-              len_box(2) = max_box(2,i)-min_box(2,i)
-              IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
-                  meshtotal = REAL(Nm(1,i),MK)*REAL(Nm(2,i),MK)
-              ENDIF
-              geomtotal = len_box(1)*len_box(2)
-              !-----------------------------------------------------------------
-              !  Compute weighted sum of costs and store it
-              !-----------------------------------------------------------------
-              IF(have_particles) THEN
-                 boxcost(i) = pcst(i)*weights(1) + meshtotal*weights(2) + geomtotal*weights(3)
-              ELSE
-                 boxcost(i) = meshtotal*weights(2) + geomtotal*weights(3)
-              END IF
-          ENDDO
+         DO i=1,nbox
+            !-----------------------------------------------------------------
+            !  Mesh and geometry based costs
+            !-----------------------------------------------------------------
+            meshtotal = 0.0_MK
+            len_box(1) = max_box(1,i)-min_box(1,i)
+            len_box(2) = max_box(2,i)-min_box(2,i)
+            IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
+               meshtotal = REAL(Nm(1,i),MK)*REAL(Nm(2,i),MK)
+            ENDIF
+            geomtotal = len_box(1)*len_box(2)
+            !-----------------------------------------------------------------
+            !  Compute weighted sum of costs and store it
+            !-----------------------------------------------------------------
+            IF (have_particles) THEN
+               boxcost(i) = pcst(i)*weights(1) + meshtotal*weights(2) + geomtotal*weights(3)
+            ELSE
+               boxcost(i) = meshtotal*weights(2) + geomtotal*weights(3)
+            ENDIF
+         ENDDO
       ELSE
-          DO i=1,nbox
-              !-----------------------------------------------------------------
-              !  Mesh and geometry based costs
-              !-----------------------------------------------------------------
-              meshtotal = 0.0_MK
-              len_box(1) = max_box(1,i)-min_box(1,i)
-              len_box(2) = max_box(2,i)-min_box(2,i)
-              len_box(3) = max_box(3,i)-min_box(3,i)
-              IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
-                  meshtotal = REAL(Nm(1,i),MK)*REAL(Nm(2,i),MK)*REAL(Nm(3,i),MK)
-              ENDIF
-              geomtotal = len_box(1)*len_box(2)*len_box(3)
-              !-----------------------------------------------------------------
-              !  Compute weighted sum of costs and store it
-              !-----------------------------------------------------------------
-              IF(have_particles) THEN
-                 boxcost(i) = pcst(i)*weights(1) + meshtotal*weights(2) +geomtotal*weights(3)
-              ELSE
-                 boxcost(i) = meshtotal*weights(2) + geomtotal*weights(3)
-              END IF
-          ENDDO
+         DO i=1,nbox
+            !-----------------------------------------------------------------
+            !  Mesh and geometry based costs
+            !-----------------------------------------------------------------
+            meshtotal = 0.0_MK
+            len_box(1) = max_box(1,i)-min_box(1,i)
+            len_box(2) = max_box(2,i)-min_box(2,i)
+            len_box(3) = max_box(3,i)-min_box(3,i)
+            IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
+               meshtotal = REAL(Nm(1,i),MK)*REAL(Nm(2,i),MK)*REAL(Nm(3,i),MK)
+            ENDIF
+            geomtotal = len_box(1)*len_box(2)*len_box(3)
+            !-----------------------------------------------------------------
+            !  Compute weighted sum of costs and store it
+            !-----------------------------------------------------------------
+            IF (have_particles) THEN
+               boxcost(i) = pcst(i)*weights(1) + meshtotal*weights(2) +geomtotal*weights(3)
+            ELSE
+               boxcost(i) = meshtotal*weights(2) + geomtotal*weights(3)
+            ENDIF
+         ENDDO
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Free local memory
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
+
       NULLIFY(pcst)
 #ifdef   __MPI
       NULLIFY(pcsum)
@@ -255,21 +253,18 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
-      CALL substop('ppm_tree_boxcost',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          DO ip=1,nbox
             DO i=1,ppm_dim
                IF (min_box(i,ip) .GT. max_box(i,ip)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_tree_boxcost',     &
-     &                'min_box must be <= max_box !',__LINE__,info)
-                  GOTO 8888
+                  fail("min_box must be <= max_box !",exit_point=8888)
                ENDIF
             ENDDO
          ENDDO
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_tree_boxcost_s

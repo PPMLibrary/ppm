@@ -300,8 +300,7 @@
         !-------------------------------------------------------------------------!
 
         if_D_needs_grad: IF (opts%D_needs_gradients) THEN
-            check_false(<#opts%level_set#>,&
-                    "D_needs_gradients with level_sets: not supported")
+            check_false(<#opts%level_set#>,"D_needs_gradients with level_sets: not supported")
 
             IF (.NOT.PRESENT(wp_grad_fun)) THEN
                 !Compute gradients

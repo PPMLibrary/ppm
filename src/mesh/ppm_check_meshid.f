@@ -70,7 +70,7 @@
       CHARACTER(LEN=ppm_char) :: caller="ppm_check_meshid"
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 

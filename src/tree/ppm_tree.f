@@ -254,7 +254,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -288,8 +288,7 @@
       IF (Np .GT. 0) have_particles = .TRUE.
       IF (SIZE(Nm,1) .GE. ppm_dim) THEN
          IF (ppm_dim .GT. 2) THEN
-            IF ((Nm(1).GT.1).AND.(Nm(2).GT.1).AND.(Nm(3).GT.1)) &
-            &  have_mesh = .TRUE.
+            IF ((Nm(1).GT.1).AND.(Nm(2).GT.1).AND.(Nm(3).GT.1)) have_mesh = .TRUE.
          ELSE
             IF ((Nm(1).GT.1).AND.(Nm(2).GT.1)) have_mesh = .TRUE.
          ENDIF
@@ -579,6 +578,7 @@
       IF (info .NE. ppm_param_success) GOTO 9999
       IF ((.NOT.lcontinue) .AND. (ppm_debug .GT. 0)) THEN
          stdout("Nothing to be done. Exiting.")
+         GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -587,6 +587,7 @@
       CALL ppm_tree_divcheck(min_box,max_box,1,minboxsize,fixed,     &
       &    boxcost,ndiv,info)
       IF (info .NE. 0) GOTO 9999
+
       IF (ndiv(1) .LT. ncut) THEN
          lcontinue = .FALSE.
          IF (ppm_debug .GT. 0) THEN
@@ -603,6 +604,7 @@
       or_fail_alloc('list of cut directions ICUT')
 
       icut = ppm_param_undefined
+
       CALL ppm_alloc(cpos,ldc,iopt,info)
       or_fail_alloc('list of cut positions CPOS')
 
