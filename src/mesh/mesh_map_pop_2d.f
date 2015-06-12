@@ -1786,35 +1786,147 @@
                !----------------------------------------------------------------
                jsub = ppm_mesh_irecvtosub(j)
                !----------------------------------------------------------------
+               !  Get the patch ID for this mesh block
+               !----------------------------------------------------------------
+               patchid(1:2) = ppm_mesh_irecvpatchid(1:2,j)
+               !----------------------------------------------------------------
                !  Translate to local sub ID for storing the data
                !----------------------------------------------------------------
                isub = invsublist(jsub)
                !----------------------------------------------------------------
-               !  Mesh offset for this sub
+               !  Get pointer to the data for this sub, this field and this block
+               ! TODO: room for improvement!...
                !----------------------------------------------------------------
-               mofs(1) = this%istart(1,jsub)-1
-               mofs(2) = this%istart(2,jsub)-1
-               !----------------------------------------------------------------
-               !  Get boundaries of mesh block to be received in local sub
-               !  coordinates
-               !----------------------------------------------------------------
-               xlo = ppm_mesh_irecvblkstart(1,j)-mofs(1)
-               ylo = ppm_mesh_irecvblkstart(2,j)-mofs(2)
-               xhi = xlo+ppm_mesh_irecvblksize(1,j)-1
-               yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
-               IF (ppm_debug.GT.1) THEN
-                  stdout_f('(A,2I4)',"start: ",'ppm_mesh_irecvblkstart(1:2,j)')
-                  stdout_f('(A,2I4)',"size: ",'ppm_mesh_irecvblksize(1:2,j)')
-                  stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
-                  stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
-                  stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
-                  stdout_f('(A,I1)',"buffer dim: ",edim)
-#if   __DIM == __VFIELD
-                  stdout_f('(A,2I4)',"SIZE(fdata): ",'SIZE(fdata,2)','SIZE(fdata,3)')
-#elif __DIM == __SFIELD
-                  stdout_f('(A,2I4)',"SIZE(fdata): ",'SIZE(fdata,1)','SIZE(fdata,2)')
+               !something like that may be nice?
+               !CALL this%get_field_on_patch(fdata,isub,info)
+               !or_fail("could not get_field_on_patch for this sub")
+               !(lazy) search for the subpatch that has the right global id
+               found_patch = .FALSE.
+               patches_s: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
+                  fdata => NULL()
+                  SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
+                  TYPE IS (ppm_t_subpatch)
+                     IF (ALL(p%istart_p.EQ.patchid)) THEN
+                        found_patch = .TRUE.
+                        !------------------------------------------------
+                        !  Determine size of field data array needed
+                        !------------------------------------------------
+                        xhi = p%nnodes(1)
+                        yhi = p%nnodes(2)
+
+                        !------------------------------------------------
+                        !  Reallocate array if needed
+                        !------------------------------------------------
+                        !TODO: with the current data structure, the
+                        !subpatches are already allocated with a given size,
+                        !which include the ghost layers. There should be no
+                        !need to re-allocate here.
+                        IF ((ppm_map_type .EQ. ppm_param_map_ghost_get) &
+                        & .OR.   &
+                        &   (ppm_map_type .EQ. ppm_param_map_ghost_put) &
+                        & .OR.   &
+                        &    (rtype .EQ. ppm_param_pop_add)) THEN
+                        !------------------------------------------------
+                        !  Preserve old fields if this is to receive ghosts
+                        !  or to add contributions
+                        !------------------------------------------------
+                           iopt = ppm_param_alloc_fit_preserve
+                        ELSE
+                           iopt = ppm_param_alloc_fit
+                        ENDIF
+
+                        check_associated(<#p%subpatch_data#>)
+
+                        check_true(<#p%subpatch_data%exists(p_idx)#>,"does not exist")
+
+#if   __DIM == __SFIELD
+#if   __KIND == __SINGLE_PRECISION
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_rs
+#elif __KIND == __DOUBLE_PRECISION
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_rd
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_cs
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_cd
+#elif __KIND == __INTEGER
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_i
+#elif __KIND == __LOGICAL
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_l
 #endif
+#elif __DIM == __VFIELD
+#if   __KIND == __SINGLE_PRECISION
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rs
+#elif __KIND == __DOUBLE_PRECISION
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_cs
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_cd
+#elif __KIND == __INTEGER
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_i
+#elif __KIND == __LOGICAL
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_l
+#endif
+#endif
+
+                        !------------------------------------------------------
+                        !  Mesh offset for this subpatch
+                        !------------------------------------------------------
+                        mofs(1) = p%istart(1)-1
+                        mofs(2) = p%istart(2)-1
+                        !------------------------------------------------------
+                        !  Get boundaries of mesh block to be received
+                        !  in local sub  coordinates
+                        !------------------------------------------------------
+                        xlo = ppm_mesh_irecvblkstart(1,j)-mofs(1)
+                        ylo = ppm_mesh_irecvblkstart(2,j)-mofs(2)
+                        xhi = xlo+ppm_mesh_irecvblksize(1,j)-1
+                        yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
+                        IF (ppm_debug.GT.1) THEN
+                           stdout("isub = ",isub," jsub = ",jsub)
+                           stdout("p%istart_p",'p%istart_p')
+                           stdout("p%iend_p",'p%iend_p')
+                           stdout("p%istart",'p%istart')
+                           stdout("p%iend",'p%iend')
+                           stdout("patchid = ",patchid)
+                           stdout_f('(A,2I4)',"start: ",'ppm_mesh_irecvblkstart(1:2,j)')
+                           stdout_f('(A,2I4)',"size: ",'ppm_mesh_irecvblksize(1:2,j)')
+                           stdout_f('(A,2I4)',"size_b: ",'xhi-xlo+1','yhi-ylo+1')
+                           stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
+                           stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                           stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                           stdout_f('(A,I1)',"buffer dim: ",edim)
+                        ENDIF
+                        !For ghost_get:
+                        !check that real mesh nodes are not touched
+                        check_false(<#ppm_map_type .EQ. ppm_param_map_ghost_get .AND. (xhi.GE.1 .AND. xlo.LE.p%nnodes(1) .AND. yhi.GE.1 .AND. ylo.LE.p%nnodes(2))#>)
+                        !for ghost_put:
+                        !check that ghost mesh nodes are not touched
+                        check_false(<#ppm_map_type .EQ. ppm_param_map_ghost_put .AND. (xhi.LT.1 .OR. xlo.GT.p%nnodes(1) .OR. yhi.LT.1 .OR. ylo.GT.p%nnodes(2))#>)
+                        !check that we dont access out-of-bounds elements
+                        check_true(<#(xlo.GE.p%lo_a(1))#>)
+                        check_true(<#(xhi.LE.p%hi_a(1))#>)
+                        check_true(<#(ylo.GE.p%lo_a(2))#>)
+                        check_true(<#(yhi.LE.p%hi_a(2))#>)
+                        check_associated(fdata)
+
+                        EXIT patches_s
+                     ENDIF !(ALL(p%istart_p.EQ.patchid))
+                  END SELECT
+               ENDDO patches_s
+
+               IF (.NOT. found_patch) THEN
+                   stdout("isub = ",isub," jsub = ",jsub," ipatch = ",ipatch)
+                   stdout("patchid = ",patchid)
+                   stdout("patchid/h = ",'(patchid-1._mk)*this%h(1:ppm_dim)')
+                   stdout("h = ",'this%h(1:ppm_dim)')
+                   stdout("this%subpatch_by_sub(jsub)%nsubpatch = ",&
+                   &      'this%subpatch_by_sub(jsub)%nsubpatch')
+                   stdout("min_sub(jsub)=",'target_topo%min_subs(1:ppm_dim,jsub)')
+                   stdout("max_sub(jsub)=",'target_topo%max_subs(1:ppm_dim,jsub)')
+                   fail("could not find a patch on this sub with the right global id")
                ENDIF
+
 #if   __DIM == __VFIELD
                !----------------------------------------------------------------
                !  Without mask: This will vectorize
@@ -1847,8 +1959,8 @@
      &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-                              fdata(1,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(1,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                               IF (ppm_recvbuffers(ibuffer).GT.    &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -1887,8 +1999,8 @@
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh) =    &
-     &                           fdata(1,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(1,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                               IF (ppm_recvbuffers(ibuffer).GT.    &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -1943,11 +2055,11 @@
      &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-                              fdata(1,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(1,imesh,jmesh) =  TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
-                              fdata(2,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(2,imesh,jmesh) =  TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                               IF (ppm_recvbuffers(ibuffer).GT.    &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -2011,12 +2123,12 @@
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh) =    &
-     &                           fdata(1,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(1,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
                               fdata(2,imesh,jmesh) =    &
-     &                           fdata(2,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(2,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                               IF (ppm_recvbuffers(ibuffer).GT.    &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -2094,14 +2206,14 @@
      &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-                              fdata(1,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(1,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
-                              fdata(2,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(2,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
-                              fdata(3,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(3,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                               IF (ppm_recvbuffers(ibuffer).GT.    &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -2190,16 +2302,16 @@
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh) =    &
-     &                           fdata(1,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(1,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
                               fdata(2,imesh,jmesh) =    &
-     &                           fdata(2,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(2,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
                               fdata(3,imesh,jmesh) =    &
-     &                           fdata(3,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(3,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                               IF (ppm_recvbuffers(ibuffer).GT.    &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -2300,17 +2412,17 @@
      &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-                              fdata(1,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(1,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
-                              fdata(2,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(2,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
-                              fdata(3,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(3,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
-                              fdata(4,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(4,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                               IF (ppm_recvbuffers(ibuffer).GT.    &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -2424,20 +2536,20 @@
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh) =    &
-     &                           fdata(1,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(1,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
                               fdata(2,imesh,jmesh) =    &
-     &                           fdata(2,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(2,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
                               fdata(3,imesh,jmesh) =    &
-     &                           fdata(3,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(3,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
                               fdata(4,imesh,jmesh) =    &
-     &                           fdata(4,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(4,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                               IF (ppm_recvbuffers(ibuffer).GT.    &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -2561,20 +2673,20 @@
      &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-                              fdata(1,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(1,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
-                              fdata(2,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(2,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
-                              fdata(3,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(3,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
-                              fdata(4,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(4,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
-                              fdata(5,imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(5,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                               IF (ppm_recvbuffers(ibuffer).GT.    &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -2713,24 +2825,24 @@
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh) =    &
-     &                           fdata(1,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(1,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
                               fdata(2,imesh,jmesh) =    &
-     &                           fdata(2,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(2,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
                               fdata(3,imesh,jmesh) =    &
-     &                           fdata(3,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(3,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
                               fdata(4,imesh,jmesh) =    &
-     &                           fdata(4,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(4,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
                               ibuffer = ibuffer + 1
                               fdata(5,imesh,jmesh) =    &
-     &                           fdata(5,imesh,jmesh) + &
-     &                           INT(ppm_recvbuffers(ibuffer))
+     &                           fdata(5,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                               IF (ppm_recvbuffers(ibuffer).GT.    &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -2808,8 +2920,8 @@
      &                              CMPLX(ppm_recvbuffers(ibuffer-1),  &
      &                              ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-                                 fdata(k,imesh,jmesh) =     &
-     &                              INT(ppm_recvbuffers(ibuffer))
+                                 fdata(k,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                              INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                                  IF (ppm_recvbuffers(ibuffer).GT.    &
      &                              (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -2850,8 +2962,8 @@
      &                              ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                                  fdata(k,imesh,jmesh) =    &
-     &                              fdata(k,imesh,jmesh) + &
-     &                              INT(ppm_recvbuffers(ibuffer))
+     &                              fdata(k,imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                              INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                                  IF (ppm_recvbuffers(ibuffer).GT.    &
      &                              (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -2896,8 +3008,8 @@
      &                              CMPLX(ppm_recvbuffers(ibuffer-1),  &
      &                              ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-                                 fdata(k,imesh,jmesh) =     &
-     &                              INT(ppm_recvbuffers(ibuffer))
+                                 fdata(k,imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                              INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                                  IF (ppm_recvbuffers(ibuffer).GT.    &
      &                              (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -2976,8 +3088,8 @@
      &                        CMPLX(ppm_recvbuffers(ibuffer-1),  &
      &                        ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-                           fdata(imesh,jmesh) =     &
-     &                        INT(ppm_recvbuffers(ibuffer))
+                           fdata(imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                        INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                            IF (ppm_recvbuffers(ibuffer).GT.    &
      &                        (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -3016,8 +3128,8 @@
      &                        ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                            fdata(imesh,jmesh) =    &
-     &                        fdata(imesh,jmesh) + &
-     &                        INT(ppm_recvbuffers(ibuffer))
+     &                        fdata(imesh,jmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                        INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                            IF (ppm_recvbuffers(ibuffer).GT.    &
      &                        (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -3056,8 +3168,8 @@
      &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-                              fdata(imesh,jmesh) =     &
-     &                           INT(ppm_recvbuffers(ibuffer))
+                              fdata(imesh,jmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
+!      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                               IF (ppm_recvbuffers(ibuffer).GT.    &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN

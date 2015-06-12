@@ -91,7 +91,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                        :: t0,ll,kk
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)              ::ll,kk
 #ifdef __MPI
       REAL(MK), DIMENSION(:), ALLOCATABLE :: costsum
 #endif

@@ -84,7 +84,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0,Etmp,lmyeps,inv,t,sqeps
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)                                :: Etmp,lmyeps,inv,t,sqeps
       REAL(MK)                                :: root_lmyeps
       REAL(MK), DIMENSION(3,3)                :: Udet,As
       REAL(MK), DIMENSION(3  )                :: row

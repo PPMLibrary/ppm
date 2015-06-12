@@ -84,7 +84,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0,dis,a0,a1,a2,lmyeps,stol
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)                                :: dis,a0,a1,a2,lmyeps,stol
       REAL(MK)                                :: SpT,SpTi2,sqrt3,Q,R
       REAL(MK)                                :: Lf,ota2,rootstmp
       REAL(MK), DIMENSION(4  )                :: res

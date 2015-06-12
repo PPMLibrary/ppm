@@ -92,7 +92,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)               :: t0,maxcost
+      REAL(ppm_kind_double)  :: t0
+      REAL(MK)               :: maxcost
       REAL(ppm_kind_double)  :: alpha,beta
       CHARACTER(LEN=ppm_char):: mesg
 #ifdef __MPI

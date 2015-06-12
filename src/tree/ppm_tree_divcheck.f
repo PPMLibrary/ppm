@@ -83,10 +83,11 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0,lmyeps,boxlen
-      REAL(MK), DIMENSION(ppm_dim)            :: ms2
-      INTEGER                                 :: iopt,i,j
-      INTEGER, DIMENSION(2)                   :: ldc
+      REAL(ppm_kind_double)        :: t0
+      REAL(MK)                     :: lmyeps,boxlen
+      REAL(MK), DIMENSION(ppm_dim) :: ms2
+      INTEGER                      :: iopt,i,j
+      INTEGER, DIMENSION(2)        :: ldc
 
       CHARACTER(LEN=ppm_char) :: caller="ppm_tree_divcheck"
       !-------------------------------------------------------------------------

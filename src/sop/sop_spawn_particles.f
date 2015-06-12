@@ -67,7 +67,7 @@
           INTEGER                                :: ip,iq,ineigh,i,di
           CHARACTER(LEN=256)                     :: cbuf
           CHARACTER(LEN=256)                     :: caller='sop_spawn_particles'
-          REAL(KIND(1.D0))                       :: t0
+          REAL(ppm_kind_double) :: t0
           REAL(MK)                               :: lev
           REAL(MK)                               :: theta1,theta2
           INTEGER                                :: nvlist_theoretical

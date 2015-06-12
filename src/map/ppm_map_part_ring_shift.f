@@ -79,7 +79,7 @@
       INTEGER, DIMENSION(1)       :: ldu
       INTEGER                     :: i
       INTEGER                     :: iopt,ibuffer,ipart
-      REAL(MK)                    :: t0
+      REAL(ppm_kind_double) :: t0
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

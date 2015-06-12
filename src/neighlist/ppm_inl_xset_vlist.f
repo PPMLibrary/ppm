@@ -108,7 +108,7 @@
       REAL(MK), DIMENSION(:,:), POINTER     :: blue_sub
       REAL(MK), DIMENSION(:)  , POINTER     :: rcred_sub
       REAL(MK), DIMENSION(:)  , POINTER     :: rcblue_sub
-      REAL(MK)                              :: t0
+      REAL(ppm_kind_double)                 :: t0
       REAL(MK), DIMENSION(:),   POINTER     :: rcred
       REAL(MK)                              :: max_sub_size
 #if   __MODE == __HNL
@@ -343,7 +343,7 @@
         ! Physical extent of whole domain including ghost layers.
         INTEGER                                    :: i
         INTEGER                                    :: j
-        REAL(MK)                                   :: t0
+        REAL(ppm_kind_double) :: t0
         LOGICAL                                    :: lst
 
         !---------------------------------------------------------------------
@@ -538,7 +538,7 @@
         INTEGER                               :: i
         INTEGER                               :: p_idx
 
-        REAL(MK)                              :: t0
+        REAL(ppm_kind_double) :: t0
 
         !-------------------------------------------------------------------------
         !  Variables and parameters for ppm_alloc

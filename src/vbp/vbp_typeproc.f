@@ -180,7 +180,7 @@
           !  Set new cutoff
           !-------------------------------------------------------------------------
           IF (.NOT.ASSOCIATED(Pc%rcp)) THEN
-             datatype=MERGE(ppm_type_real,ppm_type_real_single,MK.EQ.ppm_kind_double)
+             datatype=MERGE(ppm_type_real,ppm_type_real_single,ppm_kind.EQ.ppm_kind_double)
 
              CALL Pc%create_prop(info,part_prop=Pc%rcp,dtype=datatype,name='rcp')
              or_fail("could not create property for varying cutoff radius rcp")
@@ -287,7 +287,7 @@
 
           ASSOCIATE (ghosts => this%flags(ppm_part_ghosts))
              IF (.NOT.ASSOCIATED(this%rcp)) THEN
-                datatype=MERGE(ppm_type_real,ppm_type_real_single,MK.EQ.ppm_kind_double)
+                datatype=MERGE(ppm_type_real,ppm_type_real_single,ppm_kind.EQ.ppm_kind_double)
 
                 CALL this%create_prop(info,part_prop=this%rcp, &
                 &    dtype=datatype,name='rcp',with_ghosts=ghosts)

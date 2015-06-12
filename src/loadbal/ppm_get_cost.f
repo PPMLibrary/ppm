@@ -110,7 +110,8 @@
       REAL(MK), DIMENSION(:), ALLOCATABLE :: sendcost
       REAL(MK), DIMENSION(:), ALLOCATABLE :: proccost
 #endif
-      REAL(MK)                          :: t0,mincost,maxcost,comp_cost
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)                          :: mincost,maxcost,comp_cost
       REAL(MK)                          :: comm_cost
 
       INTEGER, DIMENSION(ppm_dim)       :: ldl,ldu

@@ -184,7 +184,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double) :: t0
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec
       REAL(MK), DIMENSION(:,:), POINTER :: min_box => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_box => NULL()

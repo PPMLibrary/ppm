@@ -97,7 +97,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK) :: t0,meancost,diffcost,varcost
+      REAL(ppm_kind_double) :: t0
+      REAL(MK) :: meancost,diffcost,varcost
       REAL(MK) :: maxcost,dm
 
       INTEGER :: i,j

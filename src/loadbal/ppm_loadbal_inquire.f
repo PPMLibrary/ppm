@@ -113,7 +113,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)               :: t0,maxtime,avgtime
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)               :: maxtime,avgtime
       REAL(ppm_kind_double)  :: Wn,delta,slp,estsol
       REAL(ppm_kind_double), SAVE :: deltaold = 0.0_ppm_kind_double
       REAL(ppm_kind_double), SAVE :: slpavg = 0.0_ppm_kind_double

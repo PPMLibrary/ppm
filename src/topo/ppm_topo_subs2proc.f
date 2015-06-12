@@ -82,7 +82,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK) :: costsum,totalcost,t0
+      REAL(ppm_kind_double) :: t0
+      REAL(MK) :: costsum,totalcost
 
       INTEGER, DIMENSION(:), POINTER :: list => NULL()
       INTEGER, DIMENSION(ppm_dim)    :: ldc

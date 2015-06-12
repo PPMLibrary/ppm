@@ -1655,7 +1655,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
           REAL(MK)                      :: lskin
           REAL(MK),DIMENSION(2*ppm_dim) :: ghostlayer
-          REAL(MK)                      :: t1,t2
+          REAL(ppm_kind_double)         :: t1,t2
           REAL(MK)                      :: cutoff_,skin_
 
           INTEGER :: topoid
@@ -2368,9 +2368,9 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           !-------------------------------------------------------------------------
           TYPE(ppm_t_topo), POINTER :: topo
 
-          REAL(MK) :: cutoff
+          REAL(MK)              :: cutoff
           !!! cutoff radius
-          REAL(MK) :: t1,t2
+          REAL(ppm_kind_double) :: t1,t2
 
           INTEGER :: topoid
           !!! index variable
@@ -2535,7 +2535,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           CLASS(ppm_t_discr_data), POINTER :: prop
 
           !!! cutoff radius
-          REAL(MK) :: t1,t2
+          REAL(ppm_kind_double) :: t1,t2
 
           start_subroutine("part_map_ghost_push")
 
@@ -2661,7 +2661,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          REAL(MK) :: t1,t2
+          REAL(ppm_kind_double) :: t1,t2
 
           INTEGER :: Mpart
 
@@ -2737,7 +2737,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          REAL(MK) :: t1,t2
+          REAL(ppm_kind_double) :: t1,t2
 
           INTEGER :: Mpart
 
@@ -3102,9 +3102,9 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
           TYPE(ppm_t_topo), POINTER :: topo
 
-          REAL(MK) :: cutoff
+          REAL(MK)              :: cutoff
           !!! cutoff radius
-          REAL(MK) :: t1,t2
+          REAL(ppm_kind_double) :: t1,t2
 
           INTEGER :: topoid
           !!! index variable
@@ -3301,7 +3301,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: nl
           CLASS(ppm_t_operator_discr_),   POINTER :: op
 
-          REAL(MK) :: t1,t2
+          REAL(ppm_kind_double) :: t1,t2
 
           INTEGER :: Npart_new
           !!! new number of particles on this processor

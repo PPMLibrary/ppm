@@ -193,7 +193,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double)             :: t0
       REAL(MK)                          :: parea,sarea,larea,lmyeps
       REAL(MK), DIMENSION(3,2)          :: weights
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec

@@ -75,7 +75,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK) :: t0,Adet,Adetinv,lmyeps
+      REAL(ppm_kind_double) :: t0
+      REAL(MK) :: Adet,Adetinv,lmyeps
 
       LOGICAL :: correct
 

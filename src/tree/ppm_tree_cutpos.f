@@ -96,7 +96,8 @@
       !------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim) :: len_box
       REAL(MK), DIMENSION(ncut+1)  :: pc,pcsum
-      REAL(MK)                     :: t0,dm,meshtotal,geomtotal
+      REAL(ppm_kind_double)        :: t0
+      REAL(MK)                     :: dm,meshtotal,geomtotal
       REAL(MK)                     :: pmass,mmass,gmass,tmass
       REAL(MK)                     :: partpos,midpos
 

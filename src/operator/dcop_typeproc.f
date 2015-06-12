@@ -83,7 +83,7 @@
              IF (.NOT.PRESENT(prop)) THEN
                 SELECT TYPE(Part_src)
                 CLASS IS (DTYPE(ppm_t_particles)_)
-                   datatype=MERGE(ppm_type_real,ppm_type_real_single,MK.EQ.ppm_kind_double)
+                   datatype=MERGE(ppm_type_real,ppm_type_real_single,ppm_kind.EQ.ppm_kind_double)
 
                    !Create a new property and make this%nn_sq point to it
                    CALL Part_src%create_prop(info,part_prop=this%nn_sq,&

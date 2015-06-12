@@ -74,7 +74,7 @@
           !---------------------------------------------------------------------
           !  Local variables, arrays and counters
           !---------------------------------------------------------------------
-          REAL(MK)                       :: t0
+          REAL(ppm_kind_double)          :: t0
           REAL(MK), DIMENSION(2*ppm_dim) :: whole_subdomain
           !!! Physical extent of whole domain including ghost layers.
           INTEGER               :: i

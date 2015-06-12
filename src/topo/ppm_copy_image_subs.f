@@ -90,7 +90,7 @@
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim) :: len_phys
-      REAL(MK)                     :: t0
+      REAL(ppm_kind_double)        :: t0
       REAL(MK)                     :: ppm_myeps
 
       INTEGER , DIMENSION(ppm_dim) :: ldc

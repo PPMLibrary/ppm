@@ -92,7 +92,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                         :: t0
+      REAL(ppm_kind_double) :: t0
       INTEGER                          :: reclen
 #if __KIND == __INTEGER
       CHARACTER(LEN=SIZE(adata,1)), POINTER :: cbuf

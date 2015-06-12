@@ -82,7 +82,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                   :: t0,lmyeps,bsum,split
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)                                   :: lmyeps,bsum,split
       REAL(MK), DIMENSION(3)                     :: xmin,xmax,bsize,aspct
       INTEGER , DIMENSION(3)                     :: Nm
       INTEGER , DIMENSION(6)                     :: Ngl

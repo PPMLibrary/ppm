@@ -23,7 +23,7 @@
           ! local variables
           INTEGER                               :: ip,iq,ineigh,iunit,di
           REAL(MK)                              :: rr,meanD,rd,rc
-          REAL(KIND(1.D0))                      :: t0
+          REAL(ppm_kind_double) :: t0
           CHARACTER (LEN=256)                   :: caller='sop_potential_psi'
           CHARACTER (LEN=256)                   :: filename,cbuf
           REAL(MK)                              :: Psi_part,attractive_radius

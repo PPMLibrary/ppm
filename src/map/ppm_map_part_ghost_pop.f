@@ -125,7 +125,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(3) :: ldu
       INTEGER               :: k,ipart,bdim,ibuffer,btype
@@ -755,7 +755,8 @@
                   pdata(1,ipart) = pdata(1,ipart) + CMPLX(ppm_recvbuffers(ibuffer-1),    &
      &                ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                  pdata(1,ipart) = pdata(1,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(1,ipart) = pdata(1,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                   IF (ppm_recvbuffers(ibuffer) .GT.      &
      &               (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -803,9 +804,11 @@
                   pdata(2,ipart) = pdata(2,ipart) + CMPLX(ppm_recvbuffers(ibuffer-1),    &
      &                ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                  pdata(1,ipart) = pdata(2,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(1,ipart) = pdata(2,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
                   ibuffer = ibuffer + 1
-                  pdata(2,ipart) = pdata(2,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(2,ipart) = pdata(2,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                   IF (ppm_recvbuffers(ibuffer) .GT.      &
      &               (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -870,11 +873,14 @@
                   pdata(3,ipart) = pdata(3,ipart) + CMPLX(ppm_recvbuffers(ibuffer-1),    &
      &                ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                  pdata(1,ipart) = pdata(1,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(1,ipart) = pdata(1,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
                   ibuffer = ibuffer + 1
-                  pdata(2,ipart) = pdata(2,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(2,ipart) = pdata(2,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
                   ibuffer = ibuffer + 1
-                  pdata(3,ipart) = pdata(3,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(3,ipart) = pdata(3,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                   IF (ppm_recvbuffers(ibuffer) .GT.      &
      &               (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -956,13 +962,17 @@
                   pdata(4,ipart) = pdata(4,ipart) + CMPLX(ppm_recvbuffers(ibuffer-1),    &
      &                ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                  pdata(1,ipart) = pdata(1,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(1,ipart) = pdata(1,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
                   ibuffer = ibuffer + 1
-                  pdata(2,ipart) = pdata(2,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(2,ipart) = pdata(2,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
                   ibuffer = ibuffer + 1
-                  pdata(3,ipart) = pdata(3,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(3,ipart) = pdata(3,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
                   ibuffer = ibuffer + 1
-                  pdata(4,ipart) = pdata(4,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(4,ipart) = pdata(4,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                   IF (ppm_recvbuffers(ibuffer) .GT.      &
      &               (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -1061,15 +1071,20 @@
                   pdata(5,ipart) = pdata(5,ipart) + CMPLX(ppm_recvbuffers(ibuffer-1),    &
      &                ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                  pdata(1,ipart) = pdata(1,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(1,ipart) = pdata(1,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
                   ibuffer = ibuffer + 1
-                  pdata(2,ipart) = pdata(2,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(2,ipart) = pdata(2,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
                   ibuffer = ibuffer + 1
-                  pdata(3,ipart) = pdata(3,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(3,ipart) = pdata(3,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
                   ibuffer = ibuffer + 1
-                  pdata(4,ipart) = pdata(4,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(4,ipart) = pdata(4,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
                   ibuffer = ibuffer + 1
-                  pdata(5,ipart) = pdata(5,ipart) + INT(ppm_recvbuffers(ibuffer))
+                  pdata(5,ipart) = pdata(5,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                   INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                   IF (ppm_recvbuffers(ibuffer) .GT.      &
      &               (1.0_ppm_kind_single-ppm_myepss)) THEN
@@ -1138,7 +1153,8 @@
                      pdata(i,ipart) = pdata(i,ipart) + &
                      & CMPLX(ppm_recvbuffers(ibuffer-1),ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                     pdata(i,ipart) = pdata(i,ipart) + INT(ppm_recvbuffers(ibuffer))
+                     pdata(i,ipart) = pdata(i,ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                      INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                      IF (ppm_recvbuffers(ibuffer).GT.(1._ppm_kind_single-ppm_myepss)) THEN
                         pdata(i,ipart) = .TRUE.
@@ -1179,7 +1195,8 @@
                pdata(ipart) = pdata(ipart) + &
                & CMPLX(ppm_recvbuffers(ibuffer-1),ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
-               pdata(ipart) = pdata(ipart) + INT(ppm_recvbuffers(ibuffer))
+               pdata(ipart) = pdata(ipart) + TRANSFER(ppm_recvbuffers(ibuffer),1)
+!                INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                IF (ppm_recvbuffers(ibuffer).GT.(1._ppm_kind_single-ppm_myepss)) THEN
                   pdata(ipart) = .TRUE.

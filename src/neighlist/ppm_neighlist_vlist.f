@@ -132,7 +132,7 @@
       TYPE(ppm_t_topo), POINTER :: topo
 
       ! timer
-      REAL(MK)               :: t0
+      REAL(ppm_kind_double)  :: t0
       ! coordinate difference
       REAL(MK)               :: dx,dy,dz
       ! inter particle distance

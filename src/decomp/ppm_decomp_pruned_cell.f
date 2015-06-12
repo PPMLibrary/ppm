@@ -87,8 +87,9 @@
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim) :: dmx
-      REAL(MK):: rdx,rdy,rdz,x0,y0,z0,rmean_npbx
-      REAL(MK):: t0
+      REAL(MK)                     :: rdx,rdy,rdz
+      REAL(MK)                     :: x0,y0,z0,rmean_npbx
+      REAL(ppm_kind_double)        :: t0
 
       INTEGER, DIMENSION(ppm_dim) :: Nm
       INTEGER, DIMENSION(3)       :: ldc

@@ -83,7 +83,7 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER  :: topo
 
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(3)          :: ldu
       INTEGER, DIMENSION(:), POINTER :: bcdef

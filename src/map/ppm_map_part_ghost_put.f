@@ -99,7 +99,7 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(2) :: ldu
       INTEGER               :: i,j,k

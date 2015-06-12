@@ -81,7 +81,7 @@
       CLASS(ppm_t_part_mapping_d), POINTER :: map
 #endif
 
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(3) :: ldu
       INTEGER               :: i,j,k,ipart

@@ -77,7 +77,7 @@
       !---------------------------------------------------------------------
       !  Local variables and parameters
       !---------------------------------------------------------------------
-      REAL(MK)                       :: t0
+      REAL(ppm_kind_double)          :: t0
       REAL(MK)                       :: max_size
       REAL(MK)                       :: size_diff
       REAL(MK), DIMENSION(2*ppm_dim) :: whole_domain
@@ -507,7 +507,7 @@
       ! Max. extent of cell
       INTEGER                                         :: childNum
       ! Rank of the child
-      REAL(MK)                                        :: t0
+      REAL(ppm_kind_double)                           :: t0
 
       CHARACTER(LEN=ppm_char) :: caller='GetCellCoor_Depth'
 
@@ -754,7 +754,7 @@
       REAL(MK), DIMENSION(ppm_dim) :: mid_coor
       REAL(MK), DIMENSION(ppm_dim) :: start_coor
       REAL(MK), DIMENSION(ppm_dim) :: end_coor
-      REAL(MK)                     :: t0
+      REAL(ppm_kind_double)        :: t0
 
       INTEGER :: i,j
 
@@ -1521,9 +1521,9 @@
       !---------------------------------------------------------------------
       !  Local variables and counters
       !---------------------------------------------------------------------
-      REAL(MK) :: rc_limit
-      REAL(MK) :: minSideLength
-      REAL(MK) :: t0
+      REAL(MK)              :: rc_limit
+      REAL(MK)              :: minSideLength
+      REAL(ppm_kind_double) :: t0
 
       INTEGER :: i
       INTEGER :: rc_border

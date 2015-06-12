@@ -148,7 +148,7 @@
       !  Local variables
       !-------------------------------------------------------------------------
       INTEGER                          :: reclen
-      REAL(MK)                         :: t0
+      REAL(ppm_kind_double)            :: t0
       LOGICAL                          :: lopen
       INTEGER                          :: ifmt,imode
       INTEGER                          :: info2,info3

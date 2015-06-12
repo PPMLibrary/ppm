@@ -49,7 +49,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double) :: t0
       INTEGER                           :: i,j,k,dim
       LOGICAL                           :: valid
       TYPE(ppm_t_topo), POINTER :: topo

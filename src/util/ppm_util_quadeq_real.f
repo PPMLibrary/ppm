@@ -80,7 +80,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0,dis,lmyeps,Lf,stol
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)                                :: dis,lmyeps,Lf,stol
       REAL(MK), DIMENSION(3  )                :: res
 
       INTEGER                                 :: i

@@ -83,7 +83,7 @@
           INTEGER                             :: iunit
           CHARACTER(LEN = 256)                :: filename,cbuf
           CHARACTER(LEN = 256)                :: caller='sop_gradient_descent'
-          REAL(KIND(1.D0))                    :: t0
+          REAL(ppm_kind_double) :: t0
 
           REAL(MK)                            :: step,step_previous,alpha1,alpha2
           REAL(MK)                            :: step_min,step_max,step_stall
@@ -1228,7 +1228,7 @@
           INTEGER                             :: iunit
           CHARACTER(LEN = 256)                :: filename,cbuf
           CHARACTER(LEN = 256)                :: caller='sop_gradient_descent_ls'
-          REAL(KIND(1.D0))                    :: t0
+          REAL(ppm_kind_double) :: t0
 
           REAL(MK)                            :: step,step_previous,alpha1,alpha2
           REAL(MK)                            :: step_min,step_max,step_stall

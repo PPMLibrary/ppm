@@ -100,7 +100,7 @@
       TYPE(ppm_t_topo), POINTER         :: topo
       INTEGER                           :: i
       INTEGER                           :: iunit
-      REAL(mk)                          :: t0
+      REAL(ppm_kind_double) :: t0
       INTEGER                           :: mpart
 #ifdef __MPI
       INTEGER, DIMENSION(:),    POINTER :: allnp   => NULL()

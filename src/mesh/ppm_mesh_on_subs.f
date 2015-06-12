@@ -85,7 +85,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                     :: t0
+      REAL(ppm_kind_double)        :: t0
       REAL(MK), DIMENSION(ppm_dim) :: len_phys,dx
       REAL(MK), DIMENSION(ppm_dim) :: Offst
 

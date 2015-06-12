@@ -84,7 +84,8 @@
 #ifdef __MPI
       REAL(MK), DIMENSION(:), ALLOCATABLE :: sendtim
 #endif
-      REAL(MK)                        :: t0,lmyeps,tim,tim1,cutoff2
+      REAL(ppm_kind_double)           :: t0
+      REAL(MK)                        :: lmyeps,tim,tim1,cutoff2
       REAL(MK)                        :: xmax,ymax,zmax,r2,r2i,r6i,fs,en
       REAL(MK)                        :: tmin,tmax
       REAL(MK), DIMENSION(3)          :: rx,ri,rj,fi,fj

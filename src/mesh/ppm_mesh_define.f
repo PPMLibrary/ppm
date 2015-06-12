@@ -68,8 +68,8 @@
       !-------------------------------------------------------------------------
       CLASS(ppm_t_equi_mesh_), POINTER :: mesh
 
-      REAL(MK)                       :: t0
-      REAL(MK), DIMENSION(1:ppm_dim) :: Offst
+      REAL(ppm_kind_double)                       :: t0
+      REAL(ppm_kind_double), DIMENSION(1:ppm_dim) :: Offst
 
       INTEGER, DIMENSION(1:ppm_dim) :: ighostsize
 
@@ -93,9 +93,9 @@
       ENDIF
 
       IF (PRESENT(Offset)) THEN
-         Offst=Offset
+         Offst=REAL(Offset,ppm_kind_double)
       ELSE
-         Offst=0.0_MK
+         Offst=0.0_ppm_kind_double
       ENDIF
 
       IF (PRESENT(ghostsize)) THEN

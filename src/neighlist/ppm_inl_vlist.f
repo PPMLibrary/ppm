@@ -86,7 +86,7 @@
       REAL(MK), DIMENSION(2*ppm_dim)    :: actual_subdomain
       REAL(MK), DIMENSION(:,:), POINTER :: xp_sub
       REAL(MK), DIMENSION(:)  , POINTER :: cutoff_sub
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double)             :: t0
 
       INTEGER,  DIMENSION(:,:), POINTER :: vlist_sub
       INTEGER,  DIMENSION(:)  , POINTER :: nvlist_sub
@@ -296,7 +296,7 @@
         !---------------------------------------------------------------------
         REAL(MK), DIMENSION(2*ppm_dim) :: whole_domain
         ! Physical extent of whole domain including ghost layers.
-        REAL(MK)                       :: t0,t1,t2
+        REAL(ppm_kind_double)          :: t0,t1,t2
         REAL(MK)                       :: max_size
         REAL(MK)                       :: size_diff
 
@@ -500,7 +500,7 @@
         !-------------------------------------------------------------------------
         !  Local variables and counters
         !-------------------------------------------------------------------------
-        REAL(MK) :: t0
+        REAL(ppm_kind_double) :: t0
 
         INTEGER               :: p_idx
         !-------------------------------------------------------------------------

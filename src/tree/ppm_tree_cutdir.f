@@ -108,7 +108,8 @@
       LOGICAL , DIMENSION(ppm_dim)            :: cutable
       INTEGER , DIMENSION(ppm_dim)            :: isort
       REAL(MK), DIMENSION(ncut+1)             :: pc,pcsum
-      REAL(MK)                                :: t0,dm
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)                                :: dm
       REAL(MK)                                :: csum,csuminv,lmyeps
       REAL(MK)                                :: x,y,z,x2,y2,z2
       INTEGER                                 :: i,j,k,ip,cutdir,ncp1

@@ -293,7 +293,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                         :: t0
+      REAL(ppm_kind_double) :: t0
       INTEGER                          :: info,iactn,idist,iprec
       INTEGER                          :: i,j,k,l,m
       CHARACTER(LEN=9)                 :: subname

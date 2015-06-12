@@ -111,7 +111,8 @@
       REAL(MK),              DIMENSION(ppm_dim)          :: len_phys
       ! physical extent of comput. domain
       REAL(MK),              DIMENSION(:,:), ALLOCATABLE :: len_subs
-      REAL(MK)                                           :: t0,lmyeps,tmp
+      REAL(ppm_kind_double)                              :: t0
+      REAL(MK)                                           :: lmyeps,tmp
       REAL(MK)                                           :: minsp,maxsp,meansp
       REAL(MK)                                           :: sx,sy,sz
       REAL(MK)                                           :: ex,ey,ez

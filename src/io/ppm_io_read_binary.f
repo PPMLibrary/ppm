@@ -99,7 +99,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                         :: t0
+      REAL(ppm_kind_double) :: t0
       INTEGER                          :: ndata,iopt
       CHARACTER(LEN=ppm_char)          :: mesg
       INTEGER, DIMENSION(1)            :: ldl

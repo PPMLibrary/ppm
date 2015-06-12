@@ -124,7 +124,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(3) :: ldu
       INTEGER               :: i,j,k,ipart,ibuffer,icount
@@ -258,8 +258,7 @@
                   ibuffer = ibuffer + 1
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(1,ipart))
 #elif  __KIND == __INTEGER
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
@@ -311,11 +310,9 @@
                   ibuffer = ibuffer + 1
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(2,ipart))
 #elif  __KIND == __INTEGER
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
                   ibuffer = ibuffer + 1
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
@@ -389,14 +386,11 @@
                   ibuffer = ibuffer + 1
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(3,ipart))
 #elif  __KIND == __INTEGER
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
                   ibuffer = ibuffer + 1
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
                   ibuffer = ibuffer + 1
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
@@ -492,17 +486,13 @@
                   ibuffer = ibuffer + 1
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(4,ipart))
 #elif  __KIND == __INTEGER
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
                   ibuffer = ibuffer + 1
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
                   ibuffer = ibuffer + 1
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),ppm_kind_double)
                   ibuffer = ibuffer + 1
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(4,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(4,ipart),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
@@ -620,20 +610,15 @@
                   ibuffer = ibuffer + 1
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(5,ipart))
 #elif  __KIND == __INTEGER
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
                   ibuffer = ibuffer + 1
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
                   ibuffer = ibuffer + 1
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),ppm_kind_double)
                   ibuffer = ibuffer + 1
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(4,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(4,ipart),ppm_kind_double)
                   ibuffer = ibuffer + 1
-                  ppm_sendbufferd(ibuffer) = REAL(pdata(5,ipart),    &
-     &                ppm_kind_double)
+                  ppm_sendbufferd(ibuffer) = REAL(pdata(5,ipart),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
@@ -694,8 +679,7 @@
                      ibuffer = ibuffer + 1
                      ppm_sendbufferd(ibuffer) = AIMAG(pdata(k,ipart))
 #elif  __KIND == __INTEGER
-                     ppm_sendbufferd(ibuffer) = REAL(pdata(k,ipart),    &
-     &                   ppm_kind_double)
+                     ppm_sendbufferd(ibuffer) = REAL(pdata(k,ipart),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                      IF (pdata(k,ipart)) THEN
                         ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
@@ -795,8 +779,8 @@
                   ibuffer = ibuffer + 1
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(1,ipart))
 #elif  __KIND == __INTEGER
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(1,ipart),1.0_ppm_kind_single)
+!                   & REAL(pdata(1,ipart),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -848,11 +832,11 @@
                   ibuffer = ibuffer + 1
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(2,ipart))
 #elif  __KIND == __INTEGER
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(1,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(1,ipart),ppm_kind_single)
                   ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(2,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(2,ipart),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -926,14 +910,14 @@
                   ibuffer = ibuffer + 1
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(3,ipart))
 #elif  __KIND == __INTEGER
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(1,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(1,ipart),ppm_kind_single)
                   ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(2,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(2,ipart),ppm_kind_single)
                   ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(3,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(3,ipart),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1029,17 +1013,17 @@
                   ibuffer = ibuffer + 1
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(4,ipart))
 #elif  __KIND == __INTEGER
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(1,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(1,ipart),ppm_kind_single)
                   ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(2,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(2,ipart),ppm_kind_single)
                   ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(3,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(3,ipart),ppm_kind_single)
                   ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(4,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(4,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(4,ipart),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1157,20 +1141,20 @@
                   ibuffer = ibuffer + 1
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(5,ipart))
 #elif  __KIND == __INTEGER
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(1,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(1,ipart),ppm_kind_single)
                   ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(2,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(2,ipart),ppm_kind_single)
                   ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(3,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(3,ipart),ppm_kind_single)
                   ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(4,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(4,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(4,ipart),ppm_kind_single)
                   ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(5,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = TRANSFER(pdata(5,ipart),1.0_ppm_kind_single)
+!                   REAL(pdata(5,ipart),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1232,8 +1216,8 @@
                      ibuffer = ibuffer + 1
                      ppm_sendbuffers(ibuffer) = AIMAG(pdata(k,ipart))
 #elif  __KIND == __INTEGER
-                     ppm_sendbuffers(ibuffer) = REAL(pdata(k,ipart),   &
-     &                   ppm_kind_single)
+                     ppm_sendbuffers(ibuffer) = TRANSFER(pdata(k,ipart),1.0_ppm_kind_single)
+!                      REAL(pdata(k,ipart),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                      IF (pdata(k,ipart)) THEN
                         ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1269,7 +1253,8 @@
                ibuffer = ibuffer + 1
                ppm_sendbuffers(ibuffer) = AIMAG(pdata(ipart))
 #elif  __KIND == __INTEGER
-               ppm_sendbuffers(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
+               ppm_sendbuffers(ibuffer) = TRANSFER(pdata(ipart),1.0_ppm_kind_single)
+!                REAL(pdata(ipart),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                IF (pdata(ipart)) THEN
                   ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single

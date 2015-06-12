@@ -87,7 +87,7 @@
 
       REAL(MK), DIMENSION(ppm_dim)    :: len_phys
       REAL(MK), DIMENSION(:), POINTER :: max_phys,min_phys
-      REAL(MK)                        :: t0
+      REAL(ppm_kind_double)           :: t0
 
       INTEGER :: i
 

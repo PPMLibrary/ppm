@@ -137,7 +137,7 @@
       INTEGER                                 :: isize,ip,jp,cbox,istart
       INTEGER                                 :: jstart,jend,ibox,jbox
       INTEGER                                 :: imx,jmx,kmx
-      REAL(MK)                                :: t0
+      REAL(ppm_kind_double) :: t0
       LOGICAL                                 :: isin,pbdrx,pbdry,pbdrz
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_find_neigh'

@@ -49,7 +49,7 @@
         INTEGER,                              INTENT(  OUT)   :: info
 
         ! local variables
-        REAL(KIND(1.d0)) :: t0
+        REAL(ppm_kind_double) :: t0
         REAL(MK)         :: weight,weight_sum
         REAL(MK)         :: almostzero,h_local
 

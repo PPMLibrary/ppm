@@ -98,7 +98,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0
+      REAL(ppm_kind_double)  :: t0
       INTEGER                                 :: nnbox,cd,i,j,iopt,Np,ip
       INTEGER , DIMENSION(2)                  :: ldc
       INTEGER , DIMENSION(:), POINTER         :: pbox => NULL()

@@ -490,8 +490,8 @@
       !-------------------------------------------------------------------------
       TYPE(DTYPE(tree_search_record)), POINTER :: sr
 
-      REAL(MK)            :: t0
-      REAL(MK), PARAMETER :: big=REAL(HUGE(1.0),MK)
+      REAL(ppm_kind_double) :: t0
+      REAL(MK),   PARAMETER :: big=REAL(HUGE(1.0),MK)
 
       CHARACTER(LEN=ppm_char) :: caller='kdtree_n_nearest'
 
@@ -567,8 +567,8 @@
       !-------------------------------------------------------------------------
       TYPE(DTYPE(tree_search_record)), POINTER :: sr
 
-      REAL(MK)            :: t0
-      REAL(MK), PARAMETER :: big=REAL(HUGE(1.0),MK)
+      REAL(ppm_kind_double) :: t0
+      REAL(MK), PARAMETER   :: big=REAL(HUGE(1.0),MK)
 
       INTEGER :: iopt,ldu(1)
 
@@ -652,7 +652,7 @@
       !-------------------------------------------------------------------------
       TYPE(DTYPE(tree_search_record)), POINTER :: sr
 
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER :: iopt,ldu(1)
 
@@ -742,7 +742,7 @@
       !-------------------------------------------------------------------------
       TYPE(DTYPE(tree_search_record)), POINTER :: sr
 
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER :: iopt,ldu(1)
 
@@ -821,7 +821,7 @@
       !-------------------------------------------------------------------------
       TYPE(DTYPE(tree_search_record)), POINTER :: sr
 
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER :: iopt,ldu(1)
 
@@ -890,7 +890,7 @@
       !-------------------------------------------------------------------------
       TYPE(DTYPE(tree_search_record)), POINTER :: sr
 
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER :: iopt,ldu(1)
 
@@ -958,7 +958,7 @@
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
       !-------------------------------------------------------------------------
-      REAL(MK)                            :: t0
+      REAL(ppm_kind_double)               :: t0
       REAL(MK), PARAMETER                 :: big=REAL(HUGE(1.0),MK)
       REAL(MK), DIMENSION(:), ALLOCATABLE :: all_distances
 
@@ -1031,7 +1031,7 @@
       !-------------------------------------------------------------------------
       TYPE(DTYPE(tree_search_record)), POINTER :: sr
 
-      REAL(MK)                            :: t0
+      REAL(ppm_kind_double)               :: t0
       REAL(MK), DIMENSION(:), ALLOCATABLE :: all_distances
 
       INTEGER :: iopt,ldu(1),i,d,nalloc

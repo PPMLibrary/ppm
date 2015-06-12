@@ -18,7 +18,7 @@
           ! local variables
           INTEGER                               :: ip,iq,ineigh,iunit,di,j
           REAL(MK)                              :: rr,meanD,rd,rc
-          REAL(KIND(1.D0))                      :: t0
+          REAL(ppm_kind_double) :: t0
           CHARACTER (LEN=256)                   :: caller='sop_voronoi_MC'
           CHARACTER (LEN=256)                   :: filename,cbuf
           REAL(MK),DIMENSION(:,:),POINTER       :: xp

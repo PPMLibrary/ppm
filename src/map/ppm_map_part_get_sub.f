@@ -79,7 +79,7 @@
 
       REAL(MK), DIMENSION(:,:), POINTER :: min_sub
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double)             :: t0
 
       INTEGER, DIMENSION(:),      POINTER :: bcdef
       INTEGER, DIMENSION(3)               :: ldu

@@ -89,7 +89,7 @@
       INTEGER                               :: idir,icpu,iangle,jangle,lrank
       INTEGER                               :: idirect,lidir
       !-----------------------------------------------------
-      REAL(MK)                              :: t0
+      REAL(ppm_kind_double) :: t0
       INTEGER, DIMENSION(2)                 :: ldu
       INTEGER                               :: iopt
       ! number of neighborhood relations in total

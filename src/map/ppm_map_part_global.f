@@ -87,7 +87,7 @@
       TYPE(ppm_t_topo), POINTER :: topo
 !       TYPE(ppm_t_topo), POINTER      :: target_topo => NULL()
 
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(3) :: ldu
 !       INTEGER, DIMENSION(:), POINTER :: bcdef

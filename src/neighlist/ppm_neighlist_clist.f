@@ -124,7 +124,7 @@
       ! number of ghostlayers
       INTEGER, DIMENSION(2*ppm_dim)     :: ngl
       ! timer
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double)             :: t0
       REAL(MK)                          :: eps
 
       ! parameter for alloc

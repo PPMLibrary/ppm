@@ -269,8 +269,9 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
              check_true(<#dtype.GT.0#>,"dtype must be > 0")
              this%data_type = dtype
           ELSE
-             this%data_type = ppm_type_real
+             this%data_type = MERGE(ppm_type_real,ppm_type_real_single,ppm_kind.EQ.ppm_kind_double)
           ENDIF
+
           check_false(<#ASSOCIATED(this%discr_info)#>,&
           & "Seems like this field was already allocated - Call destroy() first?")
 

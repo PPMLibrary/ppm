@@ -27,7 +27,7 @@
 
           ! local variables
           INTEGER                               :: ip,iq,ineigh,iunit,di
-          REAL(KIND(1.D0))                      :: t0
+          REAL(ppm_kind_double) :: t0
           REAL(MK)                              :: rr,meanD,nn,rd,rc
           REAL(MK),DIMENSION(ppm_dim)           :: dist
           REAL(MK)                              :: Psi_part,gradPsi,attractive_radius

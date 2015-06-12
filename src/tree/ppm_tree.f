@@ -225,7 +225,8 @@
 
       REAL(MK), DIMENSION(:,:), POINTER :: minc  => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: maxc  => NULL()
-      REAL(MK)                          :: t0,lmyeps,r0,r1,maxcost
+      REAL(ppm_kind_double)             :: t0
+      REAL(MK)                          :: lmyeps,r0,r1,maxcost
 #if   __TYPE == __DECOMP
       REAL(MK), DIMENSION(:  ), POINTER :: boxcost => NULL()
 

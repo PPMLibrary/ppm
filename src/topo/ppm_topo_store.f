@@ -114,7 +114,7 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(3) :: ldc, ldl
       INTEGER               :: i,j,k,kk

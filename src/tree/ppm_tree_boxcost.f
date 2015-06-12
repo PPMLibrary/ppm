@@ -100,7 +100,8 @@
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim)            :: len_box
       INTEGER , DIMENSION(2)                  :: ldc
-      REAL(MK)                                :: t0,meshtotal,geomtotal,dm
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)                                :: meshtotal,geomtotal,dm
       INTEGER                                 :: i,ip,iopt,j
       REAL(MK), DIMENSION(:), POINTER         :: pcst
 #ifdef __MPI

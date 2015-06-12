@@ -104,7 +104,7 @@
       ! mean number of particles per cell
       REAL(MK) :: mean
       ! timer
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
       ! local info level
       INTEGER               :: info2
       ! counters

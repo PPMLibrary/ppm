@@ -92,7 +92,7 @@
       REAL(MK), DIMENSION(ppm_dim)      :: len_phys
       REAL(MK), DIMENSION(2)            :: vector_in,vector_out
       REAL(MK)                          :: mean_npbx,var_npbx
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double)             :: t0
       REAL(MK), DIMENSION(:,:), POINTER :: min_box
       REAL(MK), DIMENSION(:,:), POINTER :: max_box
       REAL(MK), DIMENSION(:,:), POINTER :: work

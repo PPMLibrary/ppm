@@ -78,7 +78,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                     :: t0
+      REAL(ppm_kind_double)        :: t0
       REAL(MK), DIMENSION(ppm_dim) :: cen_box
 
       INTEGER , DIMENSION(:), ALLOCATABLE :: npbx_temp

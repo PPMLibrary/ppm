@@ -146,7 +146,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                          :: t0,lmyeps
+      REAL(ppm_kind_double)             :: t0
+      REAL(MK)                          :: lmyeps
       REAL(MK)                          :: parea,sarea,larea
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec
       REAL(MK), DIMENSION(1,1)          :: xpdummy

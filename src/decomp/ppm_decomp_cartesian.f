@@ -109,7 +109,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                     :: t0,minsv,lc
+      REAL(ppm_kind_double)        :: t0
+      REAL(MK)                     :: minsv,lc
       REAL(MK)                     :: lx,ux,ly,uy,lz,uz
       REAL(MK), DIMENSION(ppm_dim) :: dx
       REAL(MK), DIMENSION(ppm_dim) :: len_phys

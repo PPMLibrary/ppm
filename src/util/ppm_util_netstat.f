@@ -66,7 +66,7 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      REAL(MK)                        :: t0
+      REAL(ppm_kind_double)           :: t0
       REAL(MK)                        :: tstart,tend
       REAL(MK), DIMENSION(:), POINTER :: latencies
       REAL(MK), DIMENSION(:), POINTER :: bandwidths
