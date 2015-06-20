@@ -38,12 +38,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
              or_fail("Pc%destroy")
           ENDIF
 
-          !dumb way of creating a global ID for this particle
-          !TODO find something better? (needed if one creates and destroy
-          ! many particles)
-          ppm_nb_part_sets = ppm_nb_part_sets + 1
-          Pc%ID = ppm_nb_part_sets
-
           ! Give a default name to this Particle set
           IF (PRESENT(name)) THEN
              Pc%name = ADJUSTL(TRIM(name))
@@ -127,6 +121,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           CALL DTYPE(ppm_part)%vpush(Pc,info)
           or_fail("Failed to push the new Particle inside the Particle collection")
 
+          !Creating a global ID for this particle
+          Pc%ID = DTYPE(ppm_part)%nb
+
           end_subroutine()
       END SUBROUTINE DTYPE(part_create)
 
@@ -157,7 +154,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           start_subroutine("part_destroy")
 
-          Pc%ID = 0
           ! first deallocate all content of Pc
           dealloc_pointer(Pc%xp)
 
@@ -197,6 +193,8 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           CALL DTYPE(ppm_part)%vremove(info,Pc)
           or_fail("could not remove a detroyed object from a collection")
+
+          Pc%ID = 0
 
           !-------------------------------------------------------------------------
           !  Finalize

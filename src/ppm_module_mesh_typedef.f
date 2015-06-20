@@ -710,12 +710,6 @@ minclude ppm_get_field_template(4,l)
           !This mesh is defined for a given topology
           this%topoid = topoid
 
-          !dumb way of creating a global ID for this mesh
-          !TODO find something better? (needed if one creates and destroy
-          ! many meshes)
-          ppm_nb_meshes = ppm_nb_meshes + 1
-          this%ID = ppm_nb_meshes
-
           !By default, there are no patches defined on this mesh yet.
           this%npatch = 0
 
@@ -924,6 +918,9 @@ minclude ppm_get_field_template(4,l)
 
           CALL ppm_mesh%vpush(this,info)
           or_fail("Failed to push the new Mesh inside the Mesh collection")
+
+          !Creating a global ID for this mesh
+          this%ID = ppm_mesh%nb
 
           !-------------------------------------------------------------------------
           !  Return
@@ -3845,6 +3842,8 @@ minclude ppm_get_field_template(4,l)
           !swap with the last non-empty element of the collection
           IF (this%max_id.GT.this%min_id) THEN
              this%vec(del_id)%t => this%vec(this%max_id)%t
+             !meshid is changing to the real ID
+             this%vec(del_id)%t%ID=del_id
              this%vec(this%max_id)%t => NULL()
           ELSE
              this%vec(del_id)%t => NULL()

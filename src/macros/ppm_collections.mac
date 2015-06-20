@@ -39,7 +39,7 @@ include macro ppm_create_collection(coll_type,el_type,generate="concrete",vec=fa
       !
       TYPE,EXTENDS(ppm_t_container) :: <%= collection_type %>
           TYPE(<%= element_ptr_type %>), DIMENSION(:), POINTER :: vec => NULL()
-          CLASS(<%= element_type %>),                  POINTER :: iterator => NULL()
+          !CLASS(<%= element_type %>),                  POINTER :: iterator => NULL()
       CONTAINS
 %proc_list.each do |func_name|
           PROCEDURE :: <%=func_name%>  => <%= collection_type %>_<%=func_name%>
@@ -62,7 +62,7 @@ include macro ppm_create_collection(coll_type,el_type,generate="concrete",vec=fa
       !
       TYPE,ABSTRACT,EXTENDS(ppm_t_container) :: <%= collection_type %>
           TYPE(<%= element_ptr_type %>), DIMENSION(:), POINTER :: vec => NULL()
-          CLASS(<%= element_type %>),                  POINTER :: iterator => NULL()
+          !CLASS(<%= element_type %>),                  POINTER :: iterator => NULL()
       CONTAINS
 %proc_list.each do |func_name|
           PROCEDURE(<%= collection_type %>_<%=func_name%>), DEFERRED :: <%=func_name%>
