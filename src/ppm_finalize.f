@@ -38,7 +38,7 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data, ONLY : ppm_char,ppm_debug,ppm_initialized,          &
       &   ppm_stdout,ppm_stderr,ppm_logfile,ppm_error_error,ppm_param_dealloc, &
-      &   ppm_proc_speed,ppm_rank,ppm_kind_double
+      &   ppm_proc_speed,ppm_rank,ppm_kind_double,ppm_comm
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
@@ -46,6 +46,9 @@
       USE ppm_module_write
       USE ppm_module_log
       USE ppm_module_mapping_typedef
+#ifdef __MPI3
+      USE ppm_module_mpi
+#endif
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
@@ -60,6 +63,9 @@
       INTEGER, DIMENSION(1) :: lda
       INTEGER               :: iopt
       INTEGER               :: istat
+#ifdef __MPI3
+      INTEGER               :: request
+#endif
 
       REAL(ppm_kind_double) :: t0
 
@@ -75,7 +81,10 @@
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
-      lda(1)=0
+#ifdef __MPI3
+      CALL MPI_Ibarrier(ppm_comm,request,info)
+      or_fail_MPI("MPI_Ibarrier")
+#endif
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -154,6 +163,12 @@
          stdout_f('(A)',"***********************************************************")
          CALL ppm_log(caller,cbuf,info)
       ENDIF
+
+#ifdef  __MPI3
+      !wait for everyone to call the barrier
+      CALL MPI_Wait(request,MPI_STATUS_IGNORE,info)
+      or_fail_MPI("MPI_Wait")
+#endif
 
       !-------------------------------------------------------------------------
       !  Return

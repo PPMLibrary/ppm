@@ -114,7 +114,6 @@
       INTEGER,               DIMENSION(:),   POINTER :: ppm_isendlist => NULL()
       INTEGER,               DIMENSION(:),   POINTER :: ppm_irecvlist => NULL()
 
-
       !----------------------------------------------------------------------
       !!! Holds mesh mapping, receive buffers and
       !!! mesh ghost layer mapping buffers.
@@ -147,11 +146,15 @@
       INTEGER,               DIMENSION(:,:), POINTER :: ppm_mesh_irecvblksize  => NULL()
       ! size (in grid points) of blocks to be recvd
 
+#ifdef __MPI
+      INTEGER,               DIMENSION(:), ALLOCATABLE :: ppm_request
+      INTEGER                                          :: ppm_nrequest
+#endif
+
       PUBLIC :: ppm_sendbuffers
       PUBLIC :: ppm_sendbufferd
       PUBLIC :: ppm_recvbuffers
       PUBLIC :: ppm_recvbufferd
-
 
       PUBLIC :: ppm_ghosthack
       PUBLIC :: ppm_psendbuffer
@@ -174,7 +177,6 @@
       PUBLIC :: ppm_isendlist
       PUBLIC :: ppm_irecvlist
 
-
       PUBLIC :: ppm_mesh_isendfromsub
       PUBLIC :: ppm_mesh_isendblkstart
       PUBLIC :: ppm_mesh_isendpatchid
@@ -184,7 +186,10 @@
       PUBLIC :: ppm_mesh_irecvpatchid
       PUBLIC :: ppm_mesh_irecvblksize
 
-
+#ifdef __MPI
+      PUBLIC :: ppm_request
+      PUBLIC :: ppm_nrequest
+#endif
       !----------------------------------------------------------------------
       !  Type declaration
       !----------------------------------------------------------------------

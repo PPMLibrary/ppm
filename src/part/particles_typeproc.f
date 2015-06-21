@@ -3214,8 +3214,6 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
              ENDDO
 
              IF (.NOT.skip_send) THEN
-!                 CALL ppm_map_part_send(Pc%Npart,Pc%Mpart,info)
-!                 or_fail("ppm_map_part_send")
                 CALL ppm_map_part_isend(Pc%Npart,Pc%Mpart,info)
                 or_fail("ppm_map_part_isend")
 
@@ -3361,8 +3359,6 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
                 prop => Pc%props%next()
              ENDDO
 
-!              CALL ppm_map_part_send(Pc%Npart,Npart_new,info)
-!              or_fail("ppm_map_part_send")
              CALL ppm_map_part_isend(Pc%Npart,Npart_new,info)
              or_fail("ppm_map_part_isend")
 

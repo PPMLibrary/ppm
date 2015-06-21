@@ -60,7 +60,7 @@
       INTEGER, DIMENSION(ppm_dim) :: Offset
       INTEGER, DIMENSION(2)       :: ldu
       INTEGER                     :: i,j,isub,sendrank,recvrank
-      INTEGER                     :: iopt,iset,ibuffer,pdim
+      INTEGER                     :: iopt,iset,ibuffer
       INTEGER                     :: nsendlist
       INTEGER                     :: nrecvlist
 
@@ -76,7 +76,6 @@
       !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
-      pdim = ppm_dim
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -120,7 +119,7 @@
       CALL ppm_alloc(isendtosub,ldu,iopt,info)
       or_fail_alloc('local send destination sub list ISENDTOSUB')
 
-      ldu(1) = pdim
+      ldu(1) = ppm_dim
       ldu(2) = topo%nsublist
       CALL ppm_alloc(isendpatchid,ldu,iopt,info)
       or_fail_alloc("isendpatchid,ldu")
@@ -161,7 +160,7 @@
       CALL ppm_alloc(irecvtosub,ldu,iopt,info)
       or_fail_alloc('local recv destination sub list IRECVTOSUB')
 
-      ldu(1) = pdim
+      ldu(1) = ppm_dim
       ldu(2) = target_topo%nsublist
       CALL ppm_alloc(irecvpatchid,ldu,iopt,info)
       or_fail_alloc("isendpatchid,ldu")
@@ -197,7 +196,7 @@
       CALL ppm_alloc(ppm_mesh_isendfromsub,ldu,iopt,info)
       or_fail_alloc('source send sub list PPM_MESH_ISENDFROMSUB')
 
-      ldu(1) = pdim
+      ldu(1) = ppm_dim
       ldu(2) = nsendlist
       CALL ppm_alloc(ppm_mesh_isendblkstart,ldu,iopt,info)
       or_fail_alloc('send block start list PPM_MESH_ISENDBLKSTART')
@@ -215,7 +214,7 @@
       CALL ppm_alloc(ppm_mesh_irecvtosub,ldu,iopt,info)
       or_fail_alloc('destination recv sub list PPM_MESH_IRECVTOSUB')
 
-      ldu(1) = pdim
+      ldu(1) = ppm_dim
       ldu(2) = nrecvlist
       CALL ppm_alloc(ppm_mesh_irecvblkstart,ldu,iopt,info)
       or_fail_alloc('recv block start list PPM_MESH_IRECVBLKSTART')
@@ -303,9 +302,9 @@
                ppm_psendbuffer(ibuffer) = ppm_psendbuffer(ibuffer) + 1
                iset = ppm_psendbuffer(ibuffer) - 1
                ppm_mesh_isendfromsub(iset)         = isendfromsub(j)
-               ppm_mesh_isendblkstart(1:pdim,iset) = isendblkstart(1:pdim,j)
-               ppm_mesh_isendblksize(1:pdim,iset)  = isendblksize(1:pdim,j)
-               ppm_mesh_isendpatchid(1:pdim,iset)  = isendpatchid(1:pdim,j)
+               ppm_mesh_isendblkstart(1:ppm_dim,iset) = isendblkstart(1:ppm_dim,j)
+               ppm_mesh_isendblksize(1:ppm_dim,iset)  = isendblksize(1:ppm_dim,j)
+               ppm_mesh_isendpatchid(1:ppm_dim,iset)  = isendpatchid(1:ppm_dim,j)
 
                IF (ppm_debug .GT. 1) THEN
                   SELECT CASE (ppm_dim)
@@ -338,10 +337,10 @@
             IF (topo%sub2proc(irecvfromsub(j)) .EQ. recvrank) THEN
                ppm_precvbuffer(ibuffer) = ppm_precvbuffer(ibuffer) + 1
                iset = ppm_precvbuffer(ibuffer) - 1
-               ppm_mesh_irecvtosub(iset)           = irecvtosub(j)
-               ppm_mesh_irecvblkstart(1:pdim,iset) = irecvblkstart(1:pdim,j)
-               ppm_mesh_irecvblksize(1:pdim,iset)  = irecvblksize(1:pdim,j)
-               ppm_mesh_irecvpatchid(1:pdim,iset)  = irecvpatchid(1:pdim,j)
+               ppm_mesh_irecvtosub   (          iset) = irecvtosub   (          j)
+               ppm_mesh_irecvblkstart(1:ppm_dim,iset) = irecvblkstart(1:ppm_dim,j)
+               ppm_mesh_irecvblksize (1:ppm_dim,iset) = irecvblksize (1:ppm_dim,j)
+               ppm_mesh_irecvpatchid (1:ppm_dim,iset) = irecvpatchid (1:ppm_dim,j)
 
                IF (ppm_debug .GT. 1) THEN
                   SELECT CASE (ppm_dim)

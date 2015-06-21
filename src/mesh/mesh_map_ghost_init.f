@@ -40,6 +40,7 @@
       !  Arguments
       !-------------------------------------------------------------------------
       CLASS(ppm_t_equi_mesh)                         :: this
+
       INTEGER,                         INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: ghostsize
