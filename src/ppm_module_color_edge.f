@@ -92,8 +92,6 @@
       !!! degree of the graph
       INTEGER                                   :: ncolor
       !!! number of colors to be used
-      INTEGER                                   :: alloc_error
-      !!! flag for allocation error
 
       INTEGER, DIMENSION(1)                     :: ldc
 

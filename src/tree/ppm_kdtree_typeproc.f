@@ -108,7 +108,7 @@
 
         i = i_in
 
-        bigloop:  DO
+        bigloop: DO
            l = 2*i ! left(i)
            r = l+1 ! right(i)
            !

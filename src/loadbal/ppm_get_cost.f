@@ -56,6 +56,7 @@
       USE ppm_module_data_loadbal
       USE ppm_module_mesh_typedef
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -106,6 +107,8 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
+      CLASS(ppm_t_equi_mesh_), POINTER :: mesh
+
 #ifdef __MPI
       REAL(MK), DIMENSION(:), ALLOCATABLE :: sendcost
       REAL(MK), DIMENSION(:), ALLOCATABLE :: proccost
@@ -120,7 +123,6 @@
       INTEGER                           :: i,j,k,proc
       INTEGER                           :: iopt,minproc,maxproc
 
-      CHARACTER(LEN=ppm_char) :: mesg
       CHARACTER(LEN=ppm_char) :: caller='ppm_get_cost'
 
       LOGICAL :: valid
@@ -237,43 +239,41 @@
         !-------------------------------------------------------------------------
         !  set pointer for mesh
         !-------------------------------------------------------------------------
-        !TODO
-        !FIXME: we have to account for the data stored on the mesh, etc...
-        ! should be doable with the new DS
-        ndummy(1:3,1) = 0
-        !IF (meshid .GT. 0) THEN
-            !nnodes => topo%mesh(meshid)%nnodes
-        !ELSE
-        nnodes => ndummy
-        !ENDIF
+        ndummy = 0
+
+        IF (meshid.GT.0) THEN
+           mesh => ppm_mesh%at(meshid)
+           IF (ASSOCIATED(mesh)) THEN
+              nnodes => mesh%nnodes
+           ELSE
+              nnodes => ndummy
+           ENDIF
+        ELSE
+           nnodes => ndummy
+        ENDIF
         !-------------------------------------------------------------------------
         !  Determine the subdomain costs either based on particles or mesh
         !  points
         !-------------------------------------------------------------------------
         IF (PRESENT(pcost)) THEN
 #if   __KIND == __SINGLE_PRECISION
-            CALL ppm_topo_cost(xp,Np,topo%min_subs(:,:), &
-            &    topo%max_subs(:,:),topo%nsubs,          &
+            CALL ppm_topo_cost(xp,Np,topo%min_subs,topo%max_subs,topo%nsubs, &
             &    nnodes,cost,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
-            CALL ppm_topo_cost(xp,Np,topo%min_subd(:,:), &
-            &    topo%max_subd(:,:),topo%nsubs,          &
+            CALL ppm_topo_cost(xp,Np,topo%min_subd,topo%max_subd,topo%nsubs, &
             &    nnodes,cost,info,pcost)
 #endif
         ELSE
 #if   __KIND == __SINGLE_PRECISION
-            CALL ppm_topo_cost(xp,Np,topo%min_subs(:,:), &
-            &    topo%max_subs(:,:),topo%nsubs,          &
+            CALL ppm_topo_cost(xp,Np,topo%min_subs,topo%max_subs,topo%nsubs, &
             &    nnodes,cost,info)
 #elif __KIND == __DOUBLE_PRECISION
-            CALL ppm_topo_cost(xp,Np,topo%min_subd(:,:), &
-            &    topo%max_subd(:,:),topo%nsubs,          &
+            CALL ppm_topo_cost(xp,Np,topo%min_subd,topo%max_subd,topo%nsubs, &
             &    nnodes,cost,info)
 #endif
         ENDIF
         or_fail('Computing costs of subdomains failed')
 
-        NULLIFY(nnodes)
         !---------------------------------------------------------------------
         !  Advanced communication costs.
         !  One particle cost: comp_cost
@@ -326,11 +326,11 @@
 #if    __KIND == __SINGLE_PRECISION
       ppm_loadbal_subcosts => cost
       ppm_loadbal_proccosts= proc_cost(ppm_rank)
-      print*,ppm_rank,ppm_loadbal_subcosts,ppm_loadbal_proccosts
+!       print*,ppm_rank,ppm_loadbal_subcosts,ppm_loadbal_proccosts
 #else
       ppm_loadbal_subcostd => cost
       ppm_loadbal_proccostd= proc_cost(ppm_rank)
-      print*,ppm_rank,ppm_loadbal_subcostd,ppm_loadbal_proccostd
+!       print*,ppm_rank,ppm_loadbal_subcostd,ppm_loadbal_proccostd
 #endif
 
       !-------------------------------------------------------------------------
@@ -351,18 +351,14 @@
                   maxproc = i
               ENDIF
           ENDDO
-          WRITE(mesg,'(A,F15.3,A,I6)') 'min cost: ',mincost,' on processor ',minproc
-          CALL ppm_write(ppm_rank,caller,mesg,info)
-          WRITE(mesg,'(A,F15.3,A,I6)') 'max cost: ',maxcost,' on processor ',maxproc
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+          stdout_f('(A,F15.3,A,I6)',"min cost: ",mincost," on processor ",minproc)
+          stdout_f('(A,F15.3,A,I6)',"max cost: ",maxcost," on processor ",maxproc)
       ENDIF
       IF (ppm_debug .GT. 1) THEN
           DO i=0,ppm_nproc-1
-              WRITE(mesg,'(I4,A,F15.3)') i,' proc cost: ',proc_cost(i)
-              CALL ppm_write(ppm_rank,caller,mesg,info)
+             stdout_f('(I4,A,F15.3)',i," proc cost: ",'proc_cost(i)')
           ENDDO
-          CALL ppm_write(ppm_rank,caller,  &
-          &    '----------------------------------------------',info)
+          stdout("----------------------------------------------")
       ENDIF
 
       !-------------------------------------------------------------------------
