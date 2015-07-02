@@ -55,7 +55,7 @@
       !---------------------------------------------------------------------
       REAL(ppm_kind_double) :: t0
 
-      INTEGER :: i,iopt,j,k
+      INTEGER :: i,iopt
       INTEGER :: idx
 
       CHARACTER(LEN=ppm_char) :: caller="ppm_color_edge"
@@ -88,7 +88,8 @@
       !  binary heap lists as all of them has dsat-value 0 in the beginning
       !-------------------------------------------------------------------------
       DO i = 1,nedges
-         CALL insert_node(i)
+         CALL insert_node(i,info)
+         or_fail("insert_node")
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -98,19 +99,20 @@
       !-------------------------------------------------------------------------
       DO i = 1, nedges
          idx = next_node_to_color()
-         CALL color_edge(idx)
-         CALL update_neighbors(idx)
+         CALL color_edge(idx,info)
+         or_fail("color_edge")
+
+         CALL update_neighbors(idx,info)
+         or_fail("update_neighbors")
       ENDDO
 
       !-------------------------------------------------------------------------
       !  coloring array is modified such that it is of the form (p1,p2,c) ...
       !-------------------------------------------------------------------------
       DO i = 1, nedges
-         j=2*i
-         k=3*i
-         coloring(k-2) = edge_array(j-1)
-         coloring(k-1) = edge_array(j)
-         coloring(k)   = node(i)%color
+         coloring(3*i-2) = edge_array(2*i-1)
+         coloring(3*i-1) = edge_array(2*i)
+         coloring(3*i)   = node(i)%color
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -156,7 +158,8 @@
           !-------------------------------------------------------------------------
           CALL substart(caller,t0,info)
 
-          CALL order_vertices(input_array)
+          CALL order_vertices(input_array,info)
+          or_fail("order_vertices")
 
           CALL allocate_processor_lists(input_array,info)
           or_fail("allocate_processor_lists")
@@ -173,7 +176,8 @@
           CALL assign_edge_lists(info)
           or_fail("assign_edge_lists")
 
-          CALL get_maximum_degree()
+          CALL get_maximum_degree(info)
+          or_fail("get_maximum_degree")
 
           DEALLOCATE(nelem,offset,STAT=info)
           or_fail_dealloc("nelem & offset")
@@ -197,26 +201,28 @@
           !  Given an array of edges, sorts pairs such that first value is
           !  smaller than the second, to guarantee e1<e2 at all times
           !---------------------------------------------------------------------
-          SUBROUTINE order_vertices(input_array)
+          SUBROUTINE order_vertices(input_array,info)
 
           IMPLICIT NONE
 
           INTEGER, DIMENSION(:), INTENT(INOUT) :: input_array
+          INTEGER,               INTENT(  OUT) :: info
 
-          INTEGER :: i,l,r
+          INTEGER :: i
           INTEGER :: dummy
 
-          nedges = SIZE(input_array)/2
+          start_subroutine("order_vertices")
+
+          nedges = size(input_array)/2
           DO i = 1,nedges
-             r=2*i
-             l=r-1
-             IF (input_array(l).GT.input_array(r)) THEN !swap vertices
-                dummy = input_array(l)
-                input_array(l) = input_array(r)
-                input_array(r) = dummy
+             IF (input_array(2*i-1).GT.input_array(2*i)) THEN !swap vertices
+                dummy = input_array(2*i-1)
+                input_array(2*i-1) = input_array(2*i)
+                input_array(2*i) = dummy
              ENDIF
           ENDDO
 
+          end_subroutine()
           END SUBROUTINE order_vertices
 
           !---------------------------------------------------------------------
@@ -230,24 +236,22 @@
           INTEGER, DIMENSION(:), INTENT(IN   ) :: input_array
           INTEGER,               INTENT(  OUT) :: info
 
-          INTEGER :: i,iopt,l,r
+          INTEGER :: i,iopt
 
           start_subroutine("allocate_processor_lists")
 
           ALLOCATE(nelem(1:nvertices),STAT=info)
           or_fail_alloc("Could not allocate nelem")
 
+          ALLOCATE(edges_per_node(1:nvertices),STAT=info)
+          or_fail_alloc("Could not allocate edges_per_node")
+
           nelem = 0
           !count number of processors that are connected
           DO i = 1,nedges
-             r=2*i
-             l=r-1
-             nelem(input_array(l)) = nelem(input_array(l)) + 1
-             nelem(input_array(r)) = nelem(input_array(r)) + 1
+             nelem(input_array(2*i-1)) = nelem(input_array(2*i-1)) + 1
+             nelem(input_array(2*i))   = nelem(input_array(2*i)) + 1
           ENDDO
-
-          ALLOCATE(edges_per_node(1:nvertices),STAT=info)
-          or_fail_alloc("Could not allocate edges_per_node")
 
           iopt=ppm_param_alloc_fit
           DO i = 1,nvertices
@@ -369,6 +373,7 @@
              node2 = input_array(2*i)
 
              size1 = SIZE(edges_per_node(node1)%adj_edge)
+
              DO j = 1, size1
                 idx = edges_per_node(node1)%adj_edge(j)
                 v1 = input_array(2*idx-1)
@@ -423,11 +428,15 @@
           ! Sets max_degree to delta + 1 as this is the number of colors
           ! that will be used
           !---------------------------------------------------------------------
-          SUBROUTINE get_maximum_degree()
+          SUBROUTINE get_maximum_degree(info)
 
           IMPLICIT NONE
 
+          INTEGER, INTENT(  OUT) :: info
+
           INTEGER :: i
+
+          start_subroutine("get_maximum_degree")
 
           max_degree = 0
           DO i = 1, nedges
@@ -438,6 +447,7 @@
 
           max_degree = max_degree + 1
 
+          end_subroutine()
           END SUBROUTINE get_maximum_degree
 
           !---------------------------------------------------------------------
@@ -479,11 +489,11 @@
           ncolor = max_degree                       ! colors is max_degree
 
           DO i=1,nedges
-             node(i)%degree    = SIZE(node(i)%list) ! number of adjacent elements
              node(i)%color     = 0                  ! no color
-             node(i)%dsat      = 0                  ! dsat-value is 0 for all
-             node(i)%loc_heap  = 0                  ! location on heap list is 0
              node(i)%iscolored = .FALSE.            ! noone is colored yet
+             node(i)%degree    = SIZE(node(i)%list) ! number of adjacent elements
+             node(i)%loc_heap  = 0                  ! location on heap list is 0
+             node(i)%dsat      = 0                  ! dsat-value is 0 for all
           ENDDO
 
           ALLOCATE(used_color(0:ncolor),STAT=info)
@@ -498,17 +508,20 @@
           ! Given the index of the node, this subroutine inserts the node in the
           ! corresponding row of binary heap lists
           !---------------------------------------------------------------------
-          SUBROUTINE insert_node(idx)
+          SUBROUTINE insert_node(idx,info)
 
           IMPLICIT NONE
 
           INTEGER, INTENT(IN   ) :: idx
+          INTEGER, INTENT(  OUT) :: info
 
           INTEGER :: loc_parent
           INTEGER :: dsat_value
           INTEGER :: degree_own
           INTEGER :: degree_parent
           INTEGER :: loc_own
+
+          start_subroutine("insert_node")
 
           dsat_value                                 = node(idx)%dsat
           size_heap(dsat_value)                      = size_heap(dsat_value) + 1
@@ -517,47 +530,50 @@
           degree_own                                 = node(idx)%degree
           loc_own                                    = node(idx)%loc_heap
 
-     !    after inserting, heapification must be done
+     !    after inserting, heapIFication must be done
           DO WHILE(loc_own.GT.1)
              loc_parent = loc_own/2
              degree_parent = node(node_sat(dsat_value,loc_parent))%degree
 
              IF (degree_own .GT. degree_parent) THEN
-                CALL swap_nodes(node_sat(dsat_value,loc_parent),node_sat(dsat_value,loc_own))
+                CALL swap_nodes(node_sat(dsat_value,loc_parent),node_sat(dsat_value,loc_own),info)
+                or_fail("swap_nodes")
              ELSE
                 RETURN
              ENDIF
-
              loc_own = node(idx)%loc_heap
           ENDDO
 
+          end_subroutine()
           END SUBROUTINE insert_node
 
           !---------------------------------------------------------------------
           !  swaps nodes given their IDs
           !---------------------------------------------------------------------
-          SUBROUTINE swap_nodes(idx1,idx2)
+          SUBROUTINE swap_nodes(idx1,idx2,info)
 
           IMPLICIT NONE
 
           INTEGER, INTENT(IN   ) :: idx1
           INTEGER, INTENT(IN   ) :: idx2
+          INTEGER, INTENT(  OUT) :: info
 
           INTEGER :: temp
-          INTEGER :: dsat_value,loc_heap1,loc_heap2
+          INTEGER :: dsat_value
+
+          start_subroutine("swap_nodes")
 
           dsat_value = node(idx1)%dsat
-          loc_heap1=node(idx1)%loc_heap
-          loc_heap2=node(idx2)%loc_heap
-
           !swap elements
-          temp = node_sat(dsat_value,loc_heap1)
-          node_sat(dsat_value,loc_heap1) = node_sat(dsat_value,loc_heap2)
-          node_sat(dsat_value,loc_heap2) = temp
+          temp = node_sat(dsat_value,node(idx1)%loc_heap)
+          node_sat(dsat_value,node(idx1)%loc_heap) = node_sat(dsat_value,node(idx2)%loc_heap)
+          node_sat(dsat_value,node(idx2)%loc_heap) = temp
 
-          node(idx1)%loc_heap = loc_heap2
-          node(idx2)%loc_heap = loc_heap1
+          temp = node(idx1)%loc_heap
+          node(idx1)%loc_heap = node(idx2)%loc_heap
+          node(idx2)%loc_heap = temp
 
+          end_subroutine()
           END SUBROUTINE swap_nodes
 
           !---------------------------------------------------------------------
@@ -573,29 +589,35 @@
 
           INTEGER :: i
 
+          start_function("next_node_to_color")
+
           ! Look from top to bottom, and return the first node of the greatest
           ! dsat-value row in binary heap lists
           DO i = max_degree, 0, -1
              IF (size_heap(i) .GT. 0) THEN
                 idx = node_sat(i, 1)
-                EXIT
+                GOTO 9999
              ENDIF
           ENDDO
 
+          end_function()
           END FUNCTION next_node_to_color
 
           !---------------------------------------------------------------------
           !  Given the index number of the node, colors the node with
           !  minimum available color
           !---------------------------------------------------------------------
-          SUBROUTINE color_edge(idx)
+          SUBROUTINE color_edge(idx,info)
 
           IMPLICIT NONE
 
           INTEGER, INTENT(IN   ) :: idx
+          INTEGER, INTENT(  OUT) :: info
 
           INTEGER :: color_idx
           INTEGER :: i
+
+          start_subroutine("color_edge")
 
           ! initialize used_color array to FALSE
           DO i = 1,ncolor
@@ -613,10 +635,11 @@
              IF (.NOT.used_color(i)) THEN
                 node(idx)%color = i
                 node(idx)%iscolored = .TRUE.
-                EXIT
+                GOTO 9999
              ENDIF
           ENDDO
 
+          end_subroutine()
           END SUBROUTINE color_edge
 
           !---------------------------------------------------------------------
@@ -625,50 +648,62 @@
           !  has changed, it is removed from the heaplist and inserted in
           !  the new list
           !---------------------------------------------------------------------
-          SUBROUTINE update_neighbors(idx)
+          SUBROUTINE update_neighbors(idx,info)
 
           IMPLICIT NONE
 
           INTEGER, INTENT(IN   ) :: idx !index
+          INTEGER, INTENT(  OUT) :: info
 
           INTEGER :: i
           INTEGER :: neighbor
 
+          start_subroutine("update_neighbors")
+
           ! delete the node as it was already colored
-          CALL delete_node(idx)
+          CALL delete_node(idx,info)
+          or_fail("delete_node")
 
           DO i = 1,SIZE(node(idx)%list)
              neighbor = node(idx)%list(i) ! get index of neighbor
-             CALL compute_dsat(neighbor)  ! compute neighbors dsat-values
+             CALL compute_dsat(neighbor,info)  ! compute neighbors dsat-values
+             or_fail("compute_dsat")
           ENDDO
 
+          end_subroutine()
           END SUBROUTINE update_neighbors
 
           !---------------------------------------------------------------------
           !  Given the index of the node, removes it from the binary list
           !---------------------------------------------------------------------
-          SUBROUTINE delete_node(idx)
+          SUBROUTINE delete_node(idx,info)
 
           IMPLICIT NONE
 
           INTEGER, INTENT(IN   ) :: idx !index
+          INTEGER, INTENT(  OUT) :: info
 
           INTEGER :: dsat_value
           INTEGER :: idx_last
+
+          start_subroutine("delete_node")
 
           dsat_value = node(idx)%dsat     !sat value of node
 
           IF (size_heap(dsat_value).GT.0) THEN
              node(idx)%degree = -1   !degree is set to -1 to minimize
              idx_last = node_sat(dsat_value, size_heap(dsat_value))
-             CALL swap_nodes(idx,idx_last)
+             CALL swap_nodes(idx,idx_last,info)
+             or_fail("swap_nodes")
 
-             CALL max_heapify(idx)   !the node is pushed back
+             CALL max_heapify(idx,info)   !the node is pushed back
+             or_fail("max_heapify")
 
              size_heap(dsat_value) = size_heap(dsat_value) - 1 !size decreases
              node(idx)%degree = SIZE(node(idx)%list)
           ENDIF
 
+          end_subroutine()
           END SUBROUTINE delete_node
 
           !---------------------------------------------------------------------
@@ -676,15 +711,18 @@
           !  and if dsat-value has changed, removes it from binary heap list
           !  then, inserts it back in the new row that it is supposed to be
           !---------------------------------------------------------------------
-          SUBROUTINE compute_dsat(idx)
+          SUBROUTINE compute_dsat(idx,info)
 
           IMPLICIT NONE
 
           INTEGER, INTENT(IN   ) :: idx !index
+          INTEGER, INTENT(  OUT) :: info
 
           INTEGER :: i
           INTEGER :: neighbor
           INTEGER :: dsat_new
+
+          start_subroutine("compute_dsat")
 
           used_color = .FALSE.
 
@@ -711,64 +749,64 @@
 
              ! if the computed dsat-value is greater than previous value
              IF (dsat_new .GT. node(idx)%dsat) THEN
-                CALL delete_node(idx)     ! remove node from binary heap list
+                CALL delete_node(idx,info)     ! remove node from binary heap list
+                or_fail("delete_node")
 
                 node(idx)%dsat = dsat_new ! set dsat-value to computed one
-
-                CALL insert_node(idx)     ! insert the node back in the list
+                CALL insert_node(idx,info)     ! insert the node back in the list
+                or_fail("insert_node")
              ENDIF
           ENDIF
 
+          end_subroutine()
           END SUBROUTINE compute_dsat
 
           !---------------------------------------------------------------------
-          ! heapifies the heap list such that top node is max.
+          ! Recursively heapifies the heap list such that top node is max.
           !---------------------------------------------------------------------
-          SUBROUTINE max_heapify(idx_)
+          RECURSIVE SUBROUTINE max_heapify(idx,info)
 
           IMPLICIT NONE
 
-          INTEGER, INTENT(IN   ) :: idx_
+          INTEGER, INTENT(IN   ) :: idx
+          INTEGER, INTENT(  OUT) :: info
 
           INTEGER :: loc_largest
           INTEGER :: dsat_value
-          INTEGER :: loc,idx
+          INTEGER :: loc
 
-          idx=idx_
+          start_subroutine("max_heapify")
 
-          bigloop: DO
-             dsat_value  = node(idx)%dsat
-             loc         = node(idx)%loc_heap
-             loc_largest = loc
+          dsat_value  = node(idx)%dsat
+          loc         = node(idx)%loc_heap
+          loc_largest = loc
 
-             IF (size_heap(dsat_value).GE.(2*loc)) THEN
-                IF (node(node_sat(dsat_value,2*loc))%degree.GT. &
-                &   node(node_sat(dsat_value,loc))%degree) THEN
-                   loc_largest = 2*loc
-                ELSE
-                   loc_largest = loc
-                ENDIF
-             ENDIF
-
-             IF (size_heap(dsat_value).GE.(2*loc+1)) THEN
-                IF (node(node_sat(dsat_value,2*loc+1))%degree.GT. &
-                &   node(node_sat(dsat_value,loc_largest))%degree) THEN
-                   loc_largest = 2*loc + 1
-                ENDIF
-             ENDIF
-
-             IF (loc_largest.NE.loc) THEN !IF swapping necessary
-                CALL swap_nodes(node_sat(dsat_value,loc_largest),node_sat(dsat_value,loc))
-
-                !propogating max_heap property
-                idx=node_sat(dsat_value,loc_largest)
-
-                CYCLE bigloop
+          IF (size_heap(dsat_value).GE.(2*loc)) THEN
+             IF (node(node_sat(dsat_value,2*loc))%degree.GT. &
+             &   node(node_sat(dsat_value,loc))%degree) THEN
+                loc_largest = 2*loc
              ELSE
-                EXIT bigloop
+                loc_largest = loc
              ENDIF
-          ENDDO bigloop
+          ENDIF
 
+          IF (size_heap(dsat_value).GE.(2*loc+1)) THEN
+             IF (node(node_sat(dsat_value,2*loc+1))%degree.GT. &
+             &   node(node_sat(dsat_value,loc_largest))%degree) THEN
+                loc_largest = 2*loc + 1
+             ENDIF
+          ENDIF
+
+          IF (loc_largest.NE.loc) THEN !IF swapping necessary
+             CALL swap_nodes(node_sat(dsat_value,loc_largest),node_sat(dsat_value,loc),info)
+             or_fail("swap_nodes")
+
+             !propogating max_heap property
+             CALL max_heapify(node_sat(dsat_value,loc_largest),info)
+             or_fail("max_heapify")
+          ENDIF
+
+          end_subroutine()
           END SUBROUTINE max_heapify
 
       END SUBROUTINE ppm_color_edge
