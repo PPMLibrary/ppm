@@ -177,12 +177,12 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double) :: t0
+      REAL(ppm_kind_double)                     :: t0
       REAL(MK)                                  :: parea,sarea,larea
       REAL(MK)                                  :: lmyeps,maxvar
       REAL(MK),              DIMENSION(ppm_dim) :: gsvec
       REAL(ppm_kind_double), DIMENSION(ppm_dim) :: h,Offst,righostsize
-      REAL(MK),              DIMENSION(3,2)          :: weights
+      REAL(MK),              DIMENSION(3,2)     :: weights
       REAL(MK),              DIMENSION(:,:), POINTER :: min_box => NULL()
       REAL(MK),              DIMENSION(:,:), POINTER :: max_box => NULL()
       REAL(MK),              DIMENSION(:,:), POINTER :: min_sub  => NULL()
@@ -203,7 +203,6 @@
       INTEGER                          :: nsubs
       INTEGER                          :: nsublist
 
-      CHARACTER(LEN=ppm_char) :: msg
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_topo_mkfield'
 
       LOGICAL, DIMENSION(ppm_dim) :: fixed
@@ -262,19 +261,24 @@
       !-------------------------------------------------------------------------
       !  Compute grid spacing
       !-------------------------------------------------------------------------
-      h(1) = (max_phys(1)-min_phys(1))/REAL(Nm(1)-1,ppm_kind_double)
-      h(2) = (max_phys(2)-min_phys(2))/REAL(Nm(2)-1,ppm_kind_double)
+      h(1) = REAL(max_phys(1)-min_phys(1),ppm_kind_double)/REAL(Nm(1)-1,ppm_kind_double)
+      h(2) = REAL(max_phys(2)-min_phys(2),ppm_kind_double)/REAL(Nm(2)-1,ppm_kind_double)
       IF (ppm_dim.GT.2) THEN
-         h(3) = (max_phys(3)-min_phys(3))/REAL(Nm(3)-1,ppm_kind_double)
+         h(3) = REAL(max_phys(3)-min_phys(3),ppm_kind_double)/REAL(Nm(3)-1,ppm_kind_double)
       ENDIF
 
       !check for round-off problems and fix them if necessary
       DO k=1,ppm_dim
-         DO WHILE (min_phys(k)+(Nm(k)-1)*h(k).LT.max_phys(k))
+         DO WHILE (REAL(min_phys(k),ppm_kind_double)+REAL(Nm(k)-1,ppm_kind_double)*h(k).LT.REAL(max_phys(k),ppm_kind_double))
             h(k)=h(k)+EPSILON(h(k))
          ENDDO
       ENDDO
-      check_true(<#ALL(min_phys(1:ppm_dim)+(Nm(1:ppm_dim)-1)*h(1:ppm_dim).GE.max_phys(1:ppm_dim))#>,"round-off problem in mesh creation")
+      check_true(<#ALL(REAL(min_phys(1:ppm_dim),ppm_kind_double)+REAL(Nm(1:ppm_dim)-1,ppm_kind_double)*h(1:ppm_dim).GE.REAL(max_phys(1:ppm_dim),ppm_kind_double))#>, &
+      & "round-off problem in mesh creation")
+
+      gsvec(1)       = REAL(righostsize(1)*h(1),MK)
+      gsvec(2)       = REAL(righostsize(2)*h(2),MK)
+      gsvec(ppm_dim) = REAL(righostsize(ppm_dim)*h(ppm_dim),MK)
 
       !-------------------------------------------------------------------------
       !  Cartesian (mesh-only) domain decomposition
@@ -310,18 +314,17 @@
          weights(3,1:2)     = 0.0_MK
          ! all directions can be cut
          fixed(1:ppm_dim) = .FALSE.
-         gsvec(1:ppm_dim) = REAL(righostsize(1:ppm_dim)*h(1:ppm_dim),MK)
 
          minbox = ppm_nproc
          IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)
          ! build tree
          IF (PRESENT(pcost)) THEN
-            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-            &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,   &
+            &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights, &
             &    min_box,max_box,nbox,nchld,info,pcost)
          ELSE
-            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-            &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,   &
+            &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights, &
             &    min_box,max_box,nbox,nchld,info)
          ENDIF
          or_fail('Bisection decomposition failed')
@@ -342,14 +345,13 @@
              !  No particles: cartesian pencil decomposition
              !------------------------------------------------------------------
              IF (PRESENT(ndom)) THEN
-                 CALL ppm_decomp_cartesian(Nm,min_phys,max_phys,  &
+                 CALL ppm_decomp_cartesian(Nm,min_phys,max_phys, &
                  &    decomp,min_sub,max_sub,nsubs,info,ndom)
              ELSE
-                 CALL ppm_decomp_cartesian(Nm,min_phys,max_phys,         &
+                 CALL ppm_decomp_cartesian(Nm,min_phys,max_phys, &
                  &    decomp,min_sub,max_sub,nsubs,info)
              ENDIF
              or_fail('Cartesian pencil decomposition failed')
-
          ELSE
              !------------------------------------------------------------------
              !  With particles: pencil quadrisection using ppm_tree
@@ -371,21 +373,17 @@
              IF (decomp .EQ. ppm_param_decomp_xpencil) fixed(1) = .TRUE.
              IF (decomp .EQ. ppm_param_decomp_ypencil) fixed(2) = .TRUE.
              IF (decomp .EQ. ppm_param_decomp_zpencil) fixed(3) = .TRUE.
-             gsvec(1) = REAL(righostsize(1)*h(1),MK)
-             gsvec(2) = REAL(righostsize(2)*h(2),MK)
-             IF (ppm_dim .GT. 2) THEN
-                gsvec(3)= REAL(righostsize(3)*h(3),MK)
-             ENDIF
+
              minbox = ppm_nproc
              IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)
              ! build tree
              IF (PRESENT(pcost)) THEN
                  CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,   &
-                 &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,  &
+                 &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights, &
                  &    min_box,max_box,nbox,nchld,info,pcost)
              ELSE
                  CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,   &
-                 &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,  &
+                 &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights, &
                  &    min_box,max_box,nbox,nchld,info)
              ENDIF
              or_fail('Pencil decomposition failed')
@@ -430,27 +428,23 @@
              fixed(2) = .TRUE.
              fixed(3) = .TRUE.
          ENDIF
-         gsvec(1)    = REAL(righostsize(1)*h(1),MK)
-         gsvec(2)    = REAL(righostsize(2)*h(2),MK)
-         IF (ppm_dim .GT. 2) THEN
-             gsvec(3)= REAL(righostsize(3)*h(3),MK)
-         ENDIF
+
          minbox = ppm_nproc
          IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)
          ! build tree
          IF (PRESENT(pcost)) THEN
-             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,    &
-             &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,   &
+             &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights, &
              &    min_box,max_box,nbox,nchld,info,pcost)
          ELSE
-             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,    &
-             &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,   &
+             &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights, &
              &    min_box,max_box,nbox,nchld,info)
          ENDIF
          or_fail('Slab decomposition failed')
 
          ! convert tree to subs
-         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
+         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub, &
          &    max_sub,nsubs,info)
          IF (info .NE. 0) GOTO 9999
       !-------------------------------------------------------------------------
@@ -475,27 +469,23 @@
          weights(3,1:2)     = 0.0_MK
          ! all directions can be cut
          fixed(1:ppm_dim) = .FALSE.
-         gsvec(1)     = REAL(righostsize(1)*h(1),MK)
-         gsvec(2)     = REAL(righostsize(2)*h(2),MK)
-         IF (ppm_dim .GT. 2) THEN
-             gsvec(3) = REAL(righostsize(3)*h(3),MK)
-         ENDIF
+
          minbox = ppm_nproc
          IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)
          ! build tree
          IF (PRESENT(pcost)) THEN
-             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,    &
-             &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,   &
+             &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights, &
              &    min_box,max_box,nbox,nchld,info,pcost)
          ELSE
-             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,    &
-             &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,   &
+             &    minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights, &
              &    min_box,max_box,nbox,nchld,info)
          ENDIF
          or_fail('Cuboid decomposition failed')
 
          ! convert tree to subs
-         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
+         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub, &
          &    max_sub,nsubs,info)
          IF (info .NE. 0) GOTO 9999
 
@@ -555,8 +545,6 @@
 
       CASE (ppm_param_assign_metis_cut,  &
       &     ppm_param_assign_metis_comm)
-         gsvec(1:ppm_dim) = REAL(righostsize(1:ppm_dim)*h(1:ppm_dim),MK)
-
          !-------------------------------------------------------------------
          !  use METIS library to do assignment
          !-------------------------------------------------------------------
@@ -701,7 +689,7 @@
            IF (Nm(i).LT.2) THEN
               fail('Nm must be > 1 in all dimensions',exit_point=8888)
            ENDIF
-           IF (ighostsize(i).LT. 0) THEN
+           IF (ighostsize(i).LT.0) THEN
               fail('ighostsize must be >= 0',exit_point=8888)
            ENDIF
         ENDDO

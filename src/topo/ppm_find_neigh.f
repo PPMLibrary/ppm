@@ -96,51 +96,53 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: min_phys
+      REAL(MK), DIMENSION(:)  ,     INTENT(IN   ) :: min_phys
       !!! Min. extent of the physical domain
-      REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: max_phys
+      REAL(MK), DIMENSION(:)  ,     INTENT(IN   ) :: max_phys
       !!! Max. extent of the physical domain
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: bcdef
+      INTEGER , DIMENSION(:  ),     INTENT(IN   ) :: bcdef
       !!! Boundary condition definition
-      REAL(MK), DIMENSION(:,:), POINTER       :: min_sub
+      REAL(MK), DIMENSION(:,:),     POINTER       :: min_sub
       !!! Min. extent of the sub domain
-      REAL(MK), DIMENSION(:,:), POINTER       :: max_sub
+      REAL(MK), DIMENSION(:,:),     POINTER       :: max_sub
       !!! Max. extent of the sub domain
-      INTEGER , DIMENSION(:,:), POINTER       :: ineigh
+      INTEGER , DIMENSION(:,:),     POINTER       :: ineigh
       !!! Points to the `nneigh(:)` subs of isub
-      INTEGER , DIMENSION(:  ), POINTER       :: nneigh
+      INTEGER , DIMENSION(:  ),     POINTER       :: nneigh
       !!! `nneigh(isub)` returns the total number
       !!! of neighbouring subs of isub
-      INTEGER                 , INTENT(IN   ) :: nsubs
+      INTEGER,                      INTENT(IN   ) :: nsubs
       !!! Total number of (real) sub domains
-      REAL(MK), DIMENSION(ppm_dim),INTENT(IN) :: ghostsize
+      REAL(MK), DIMENSION(ppm_dim), INTENT(IN   ) :: ghostsize
       !!! The ghostlayer size in each dimension
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER                 ,     INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(ppm_dim)            :: bsize,len_sub
+      REAL(ppm_kind_double)                 :: t0
+      REAL(MK), DIMENSION(ppm_dim)          :: bsize,len_sub
       REAL(MK), DIMENSION(:,:), ALLOCATABLE :: ctrs
       REAL(MK)                                :: mx1,mx2,mx3
       REAL(MK)                                :: mn1,mn2,mn3
-      INTEGER , DIMENSION(:  ), POINTER       :: subid => NULL()
-      INTEGER , DIMENSION(:  ), POINTER       :: lhbx  => NULL()
-      INTEGER , DIMENSION(:  ), POINTER       :: lpdx  => NULL()
-      INTEGER , DIMENSION(:,:), POINTER       :: inp   => NULL()
-      INTEGER , DIMENSION(:,:), POINTER       :: jnp   => NULL()
-      INTEGER , DIMENSION(ppm_dim)            :: ldc,Nm,Nmtot
-      INTEGER , DIMENSION(2*ppm_dim)          :: Ngl
-      INTEGER                                 :: nsubsplus,nnp
-      INTEGER                                 :: i,j,ii,jj,k,kk,iopt,iend
-      INTEGER                                 :: ipart,jpart,n1,n2,iinter
-      INTEGER                                 :: isize,ip,jp,cbox,istart
-      INTEGER                                 :: jstart,jend,ibox,jbox
-      INTEGER                                 :: imx,jmx,kmx
-      REAL(ppm_kind_double) :: t0
-      LOGICAL                                 :: isin,pbdrx,pbdry,pbdrz
+
+      INTEGER , DIMENSION(:  ), POINTER :: subid => NULL()
+      INTEGER , DIMENSION(:  ), POINTER :: lhbx  => NULL()
+      INTEGER , DIMENSION(:  ), POINTER :: lpdx  => NULL()
+      INTEGER , DIMENSION(:,:), POINTER :: inp   => NULL()
+      INTEGER , DIMENSION(:,:), POINTER :: jnp   => NULL()
+      INTEGER , DIMENSION(ppm_dim)      :: ldc,Nm,Nmtot
+      INTEGER , DIMENSION(2*ppm_dim)    :: Ngl
+      INTEGER                           :: nsubsplus,nnp
+      INTEGER                           :: i,j,ii,jj,k,kk,iopt,iend
+      INTEGER                           :: ipart,jpart,n1,n2,iinter
+      INTEGER                           :: isize,ip,jp,cbox,istart
+      INTEGER                           :: jstart,jend,ibox,jbox
+      INTEGER                           :: imx,jmx,kmx
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_find_neigh'
+
+      LOGICAL :: isin,pbdrx,pbdry,pbdrz
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

@@ -769,25 +769,25 @@ minclude ppm_get_field_template(4,l)
           IF (PRESENT(h)) THEN
              this%h(1:ppm_dim) = h(1:ppm_dim)
              IF (ASSOCIATED(topo%max_physs)) THEN
-                this%Nm(1:ppm_dim) = FLOOR((topo%max_physs(1:ppm_dim) - &
-                &                    topo%min_physs(1:ppm_dim))/(h(1:ppm_dim))) + 1
+                this%Nm(1:ppm_dim) = FLOOR(REAL(topo%max_physs(1:ppm_dim)-topo%min_physs(1:ppm_dim),ppm_kind_double)/h(1:ppm_dim)) + 1
              ELSE
-                this%Nm(1:ppm_dim) = FLOOR((topo%max_physd(1:ppm_dim) - &
-                &                    topo%min_physd(1:ppm_dim))/(h(1:ppm_dim))) + 1
+                this%Nm(1:ppm_dim) = FLOOR((topo%max_physd(1:ppm_dim)-topo%min_physd(1:ppm_dim))/h(1:ppm_dim)) + 1
              ENDIF
           ELSE
              this%Nm(1:ppm_dim) = Nm(1:ppm_dim)
              IF (ASSOCIATED(topo%max_physs)) THEN
-                this%h(1:ppm_dim) = (topo%max_physs(1:ppm_dim) &
-                &                 - topo%min_physs(1:ppm_dim)) &
+                this%h(1:ppm_dim) = REAL(topo%max_physs(1:ppm_dim)-                 &
+                &                        topo%min_physs(1:ppm_dim),ppm_kind_double) &
                 &                 / REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
                 !check for round-off problems and fix them if necessary
                 DO k=1,ppm_dim
-                   DO WHILE (topo%min_physs(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physs(k))
+                   DO WHILE (REAL(topo%min_physs(k),ppm_kind_double)+     &
+                   &         REAL(this%Nm(k)-1,ppm_kind_double)*this%h(k) &
+                   &     .LT.REAL(topo%max_physs(k),ppm_kind_double))
                       this%h(k)=this%h(k)+EPSILON(this%h(k))
                    ENDDO
                 ENDDO
-                check_true(<#ALL(topo%min_physs(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physs(1:ppm_dim))#>, &
+                check_true(<#ALL(REAL(topo%min_physs(1:ppm_dim),ppm_kind_double)+REAL(Nm(1:ppm_dim)-1,ppm_kind_double)*this%h(1:ppm_dim).GE.REAL(topo%max_physs(1:ppm_dim),ppm_kind_double))#>, &
                 & "round-off problem in mesh creation")
              ELSE
                 this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) &
@@ -795,11 +795,11 @@ minclude ppm_get_field_template(4,l)
                 &                 / REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
                 !check for round-off problems and fix them if necessary
                 DO k=1,ppm_dim
-                   DO WHILE (topo%min_physd(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physd(k))
+                   DO WHILE (topo%min_physd(k)+REAL(this%Nm(k)-1,ppm_kind_double)*this%h(k).LT.topo%max_physd(k))
                       this%h(k)=this%h(k)+EPSILON(this%h(k))
                    ENDDO
                 ENDDO
-                check_true(<#ALL(topo%min_physd(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>, &
+                check_true(<#ALL(topo%min_physd(1:ppm_dim)+REAL(Nm(1:ppm_dim)-1,ppm_kind_double)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>, &
                 & "round-off problem in mesh creation")
              ENDIF
           ENDIF
@@ -856,7 +856,7 @@ minclude ppm_get_field_template(4,l)
                    ! node right on the East, North, or Top domain boundary are
                    ! reduced by 1 mesh node so that real mesh nodes are not
                    ! duplicated.
-                   IF ((this%iend(k,i)-1).GE.(topo%max_subd(k,i)-Offset(k))/this%h(k)) THEN
+                   IF (REAL(this%iend(k,i)-1,ppm_kind_double).GE.(topo%max_subd(k,i)-Offset(k))/this%h(k)) THEN
                       IF (topo%subs_bc(2*k,i).NE.1  .OR.  &
                       &   (topo%subs_bc(2*k,i).EQ.1 .AND. &
                       &   topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
@@ -867,18 +867,18 @@ minclude ppm_get_field_template(4,l)
 
                 !Check that this subdomain is large enough and thus
                 !compatible with this mesh and its resolution h.
-                check_true(<#ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepsd))#>,&
-                "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
+                check_true(<#ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*REAL(this%ghostsize(1:ppm_dim),ppm_kind_double)+ppm_myepsd))#>,&
+                & "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
 !                 stdout("#isub = ",i," AFTER CHOP")
 !                 stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
 !                 stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
              ENDDO
           ELSE
              DO i=1,nsubs
-                this%istart(1:ppm_dim,i) = 1 + CEILING((topo%min_subs(1:ppm_dim,i) &
+                this%istart(1:ppm_dim,i) = 1 + CEILING((REAL(topo%min_subs(1:ppm_dim,i),ppm_kind_double) &
                 &                        - Offset(1:ppm_dim))/this%h(1:ppm_dim))
-                this%iend(1:ppm_dim,i)   = 1 + FLOOR((topo%max_subs(1:ppm_dim,i)   &
-                &                        - Offset(1:ppm_dim))/(this%h(1:ppm_dim)   &
+                this%iend(1:ppm_dim,i)   = 1 + FLOOR((REAL(topo%max_subs(1:ppm_dim,i),ppm_kind_double)   &
+                &                        - Offset(1:ppm_dim))/(this%h(1:ppm_dim)                         &
                 &                        - EPSILON(this%h(1:ppm_dim))))
                 !WARNING: this is a hack to resolve a round-off issue when h is such
                 !that a node falls epsilon away from the subdomain boundary
@@ -897,7 +897,7 @@ minclude ppm_get_field_template(4,l)
                    ! node right on the East, North, or Top domain boundary are
                    ! reduced by 1 mesh node so that real mesh nodes are not
                    ! duplicated.
-                   IF ((this%iend(k,i)-1).GE.(topo%max_subs(k,i)-Offset(k))/this%h(k)) THEN
+                   IF (REAL(this%iend(k,i)-1,ppm_kind_double).GE.(REAL(topo%max_subs(k,i),ppm_kind_double)-Offset(k))/this%h(k)) THEN
                       IF (topo%subs_bc(2*k,i).NE.1  .OR.  &
                       &   (topo%subs_bc(2*k,i).EQ.1 .AND. &
                       &   topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
@@ -908,7 +908,7 @@ minclude ppm_get_field_template(4,l)
 
                 !Check that this subdomain is large enough and thus
                 !compatible with this mesh and its resolution h.
-                check_true(<#ALL((topo%max_subs(1:ppm_dim,i)-topo%min_subs(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepss))#>,&
+                check_true(<#ALL(REAL(topo%max_subs(1:ppm_dim,i)-topo%min_subs(1:ppm_dim,i),ppm_kind_double).GT.(this%h(1:ppm_dim)*REAL(this%ghostsize(1:ppm_dim),ppm_kind_double)+REAL(ppm_myepss,ppm_kind_double)))#>,&
                 & "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
                 !stdout("#isub = ",i," AFTER CHOP")
                 !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
@@ -2556,9 +2556,9 @@ minclude ppm_get_field_template(4,l)
           ENDIF
 
           !Re-define the patch boundaries so that its corners fall on mesh nodes
-          patch(1:ppm_dim)           = (istart_p(1:ppm_dim)-1)*h(1:ppm_dim) &
+          patch(1:ppm_dim)           = REAL(istart_p(1:ppm_dim)-1,ppm_kind_double)*h(1:ppm_dim) &
           &                          + Offset(1:ppm_dim)
-          patch(ppm_dim+1:2*ppm_dim) = (iend_p(1:ppm_dim)-1)*h(1:ppm_dim) &
+          patch(ppm_dim+1:2*ppm_dim) = REAL(iend_p(1:ppm_dim)-1,ppm_kind_double)*h(1:ppm_dim) &
           &                          + Offset(1:ppm_dim)
 
           IF (ldouble) THEN
