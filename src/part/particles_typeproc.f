@@ -2704,7 +2704,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_ghost_send)
 
-      SUBROUTINE DTYPE(part_map_ghost_isend)(Pc,info)
+      SUBROUTINE DTYPE(part_map_ghost_isend)(Pc,info,sendrecv)
 
           !!!  Send buffers during ghost mapping for particles
           !!!  Assumptions:
@@ -2724,11 +2724,12 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles)) :: Pc
+          CLASS(DTYPE(ppm_t_particles))    :: Pc
 
           !!! Data structure containing the particles
-          INTEGER,        INTENT(  OUT) :: info
+          INTEGER,           INTENT(  OUT) :: info
           !!! Return status, on success 0.
+          LOGICAL, OPTIONAL, INTENT(IN   ) :: sendrecv
           !-------------------------------------------------------------------------
           !  Optional Arguments
           !-------------------------------------------------------------------------
@@ -2744,39 +2745,92 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           !-----------------------------------------------------------------
           !  Checks
           !-----------------------------------------------------------------
-          !check that particles are allocated
-          check_associated(<#Pc%xp#>, &
-          & "Particles structure had not been defined. Call allocate first")
-          !check that particles are mapped onto this topology
-          check_true(<#Pc%flags(ppm_part_partial)#>, &
-          & "Do a partial/global mapping before doing a ghost mapping")
+          IF (PRESENT(sendrecv)) THEN
+             IF (sendrecv) THEN
+                !check that particles are allocated
+                check_associated(<#Pc%xp#>, &
+                & "Particles structure had not been defined. Call allocate first")
+                !check that particles are mapped onto this topology
+                check_true(<#Pc%flags(ppm_part_partial)#>, &
+                & "Do a partial/global mapping before doing a ghost mapping")
 
-          Pc%stats%nb_ghost_send = Pc%stats%nb_ghost_send + 1
+                Pc%stats%nb_ghost_send = Pc%stats%nb_ghost_send + 1
 
-          IF (ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
+                IF (ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
 
-             CALL ppm_time(t1,info)
+                   CALL ppm_time(t1,info)
+                   !-----------------------------------------------------------------
+                   !  Send the buffer
+                   !-----------------------------------------------------------------
+                   CALL ppm_map_part_isend(Pc%Npart,Pc%Mpart,info,sendrecv=.TRUE.)
+                   or_fail("ppm_map_part_isend")
 
-             !-----------------------------------------------------------------
-             !  Send the buffer
-             !-----------------------------------------------------------------
-             CALL ppm_map_part_isend(Pc%Npart,Pc%Mpart,info)
-             or_fail("ppm_map_part_isend")
+                   CALL ppm_time(t2,info)
+                ELSE IF (ppm_map_type_isactive(ppm_param_map_ghost_put)) THEN
 
-             CALL ppm_time(t2,info)
+                   CALL ppm_time(t1,info)
+                   !-----------------------------------------------------------------
+                   !  Send the buffer
+                   !-----------------------------------------------------------------
+                   CALL ppm_map_part_isend(Pc%Npart,Mpart,info,sendrecv=.TRUE.)
+                   or_fail("ppm_map_part_isend")
 
-          ELSE IF (ppm_map_type_isactive(ppm_param_map_ghost_put)) THEN
+                   CALL ppm_time(t2,info)
+                ENDIF
+             ELSE
+                IF (ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
 
-             CALL ppm_time(t1,info)
+                   CALL ppm_time(t1,info)
+                   !-----------------------------------------------------------------
+                   !  Send the buffer
+                   !-----------------------------------------------------------------
+                   CALL ppm_map_part_isend(Pc%Npart,Pc%Mpart,info,sendrecv=.FALSE.)
+                   or_fail("ppm_map_part_isend")
 
-             !-----------------------------------------------------------------
-             !  Send the buffer
-             !-----------------------------------------------------------------
-             CALL ppm_map_part_isend(Pc%Npart,Mpart,info)
-             or_fail("ppm_map_part_isend")
+                   CALL ppm_time(t2,info)
+                ELSE IF (ppm_map_type_isactive(ppm_param_map_ghost_put)) THEN
 
-             CALL ppm_time(t2,info)
+                   CALL ppm_time(t1,info)
+                   !-----------------------------------------------------------------
+                   !  Send the buffer
+                   !-----------------------------------------------------------------
+                   CALL ppm_map_part_isend(Pc%Npart,Mpart,info,sendrecv=.FALSE.)
+                   or_fail("ppm_map_part_isend")
 
+                   CALL ppm_time(t2,info)
+                ENDIF
+             ENDIF
+          ELSE
+             !check that particles are allocated
+             check_associated(<#Pc%xp#>, &
+             & "Particles structure had not been defined. Call allocate first")
+             !check that particles are mapped onto this topology
+             check_true(<#Pc%flags(ppm_part_partial)#>, &
+             & "Do a partial/global mapping before doing a ghost mapping")
+
+             Pc%stats%nb_ghost_send = Pc%stats%nb_ghost_send + 1
+
+             IF (ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
+
+                CALL ppm_time(t1,info)
+                !-----------------------------------------------------------------
+                !  Send the buffer
+                !-----------------------------------------------------------------
+                CALL ppm_map_part_isend(Pc%Npart,Pc%Mpart,info)
+                or_fail("ppm_map_part_isend")
+
+                CALL ppm_time(t2,info)
+             ELSE IF (ppm_map_type_isactive(ppm_param_map_ghost_put)) THEN
+
+                CALL ppm_time(t1,info)
+                !-----------------------------------------------------------------
+                !  Send the buffer
+                !-----------------------------------------------------------------
+                CALL ppm_map_part_isend(Pc%Npart,Mpart,info)
+                or_fail("ppm_map_part_isend")
+
+                CALL ppm_time(t2,info)
+             ENDIF
           ENDIF
 
           Pc%stats%t_ghost_send = Pc%stats%t_ghost_send + (t2-t1)
@@ -3645,7 +3699,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_send)
 
-      SUBROUTINE DTYPE(part_map_isend)(Pc,info)
+      SUBROUTINE DTYPE(part_map_isend)(Pc,info,sendrecv)
           !!!  Send buffer during partial mappings
           !!!  Assumptions:
           !!! * Particles positions need to have been mapped onto the topology
@@ -3660,26 +3714,51 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles)) :: Pc
+          CLASS(DTYPE(ppm_t_particles))    :: Pc
 
           !!! Data structure containing the particles
-          INTEGER,        INTENT(  OUT) :: info
+          INTEGER,           INTENT(  OUT) :: info
           !!! Return status, on success 0.
+
+          LOGICAL, OPTIONAL, INTENT(IN   ) :: sendrecv
 
           start_subroutine("part_map_isend")
 
-          !-----------------------------------------------------------------
-          !  Checks
-          !-----------------------------------------------------------------
-          !check that particles are allocated
-          check_associated(<#Pc%xp#>,&
-          & "Particles structure had not been defined. Call allocate first")
+          IF (PRESENT(sendrecv)) THEN
+             IF (sendrecv) THEN
+                !-----------------------------------------------------------------
+                !  Checks
+                !-----------------------------------------------------------------
+                !check that particles are allocated
+                check_associated(<#Pc%xp#>,&
+                & "Particles structure had not been defined. Call allocate first")
 
-          !-----------------------------------------------------------------
-          !  Send the buffer
-          !-----------------------------------------------------------------
-          CALL ppm_map_part_isend(Pc%Npart,Pc%NewNpart,info)
-          or_fail("ppm_map_part_isend")
+                !-----------------------------------------------------------------
+                !  Send the buffer
+                !-----------------------------------------------------------------
+                CALL ppm_map_part_isend(Pc%Npart,Pc%NewNpart,info,sendrecv=.TRUE.)
+                or_fail("ppm_map_part_isend")
+             ELSE
+                !-----------------------------------------------------------------
+                !  Send the buffer
+                !-----------------------------------------------------------------
+                CALL ppm_map_part_isend(Pc%Npart,Pc%NewNpart,info,sendrecv=.FALSE.)
+                or_fail("ppm_map_part_isend")
+             ENDIF
+          ELSE
+             !-----------------------------------------------------------------
+             !  Checks
+             !-----------------------------------------------------------------
+             !check that particles are allocated
+             check_associated(<#Pc%xp#>,&
+             & "Particles structure had not been defined. Call allocate first")
+
+             !-----------------------------------------------------------------
+             !  Send the buffer
+             !-----------------------------------------------------------------
+             CALL ppm_map_part_isend(Pc%Npart,Pc%NewNpart,info)
+             or_fail("ppm_map_part_isend")
+          ENDIF
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_isend)

@@ -4,6 +4,7 @@
 #if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
         &          min, max,                            &
 #elif defined(__STRING)
+        &          min, max,                            &
 #endif
 #if defined(__LOGICAL) && !defined(ARRAY)
         &          vtype,                               &
@@ -129,10 +130,10 @@
           REAL(ppm_kind_double),                  OPTIONAL, INTENT(IN   ) :: max
           !!! Maximum value of arg.
 #elif defined(__STRING)
-  !      INTEGER,                                OPTIONAL, INTENT(IN   ) :: min
-  !         !!! Minimum length of string.
-  !      INTEGER,                                OPTIONAL, INTENT(IN   ) :: max
-  !         !!! Maximum length of string.
+          INTEGER,                                OPTIONAL, INTENT(IN   ) :: min
+          !!! Minimum length of string.
+          INTEGER,                                OPTIONAL, INTENT(IN   ) :: max
+          !!! Maximum length of string.
 #endif
 
 #if defined(__LOGICAL) && !defined(ARRAY)
