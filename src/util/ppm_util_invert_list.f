@@ -63,7 +63,6 @@
       INTEGER, DIMENSION(1) :: ldl,ldu
       INTEGER               :: iopt
       INTEGER               :: i,j,inmin,inmax,outmin,outmax
-      INTEGER, PARAMETER    :: big=HUGE(1)
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_util_invert_list'
       !-------------------------------------------------------------------------
@@ -119,7 +118,7 @@
           !-------------------------------------------------------------------------
           !  Initialize outlist
           !-------------------------------------------------------------------------
-          FORALL (i=outmin:outmax) outlist(i)=-big
+          FORALL (i=outmin:outmax) outlist(i)=-ppm_big_i
 
           !-------------------------------------------------------------------------
           !  Build inverse list

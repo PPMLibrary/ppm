@@ -93,7 +93,7 @@
                   nb_neigh_max_thresh = 15
               ENDIF
           ELSE
-              nb_neigh_max_thresh = HUGE(1)
+              nb_neigh_max_thresh = ppm_big_i
           ENDIF
 
 #if debug_verbosity > 0

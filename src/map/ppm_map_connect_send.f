@@ -77,7 +77,6 @@
       INTEGER               :: i,j,k,l,msend,mrecv,iopt,ipos,part,qpart,icon
       INTEGER               :: tag,cd_size,ncons_local
       INTEGER               :: hops
-      INTEGER, PARAMETER    :: big=HUGE(1)
       INTEGER               :: min_,max_
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_map_connect_send'
@@ -311,7 +310,7 @@
              DO i = 1,lda
                 IF ((cd_local(i,j) .GE. min_) .AND.  &
                 &   (cd_local(i,j) .LE. max_)) THEN
-                   IF (id_inv(cd_local(i,j)) .GT. -big) THEN
+                   IF (id_inv(cd_local(i,j)) .GT. -ppm_big_i) THEN
                       l = l + 1
                    ENDIF
                 ELSE

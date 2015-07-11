@@ -261,8 +261,8 @@
          !---------------------------------------------------------------------
          !  Determine smallest and largest assigned color
          !---------------------------------------------------------------------
-         mincolor = HUGE(1)
-         maxcolor = -HUGE(1)
+         mincolor =  ppm_big_i
+         maxcolor = -ppm_big_i
          DO i=3,3*nlinks,3
             IF (optres(i).LT.mincolor) mincolor = optres(i)
             IF (optres(i).GT.maxcolor) maxcolor = optres(i)

@@ -78,7 +78,6 @@
       INTEGER               :: ncons_local,itarget,isource
       INTEGER               :: hops,ilda
       INTEGER               :: min_,max_
-      INTEGER, PARAMETER    :: big=HUGE(1)
 
       CHARACTER(LEN=ppm_char) ::  caller='ppm_map_connect_distrib'
       !-------------------------------------------------------------------------
@@ -133,7 +132,7 @@
                 !---------------------------------------------------------------
                 !  If any local particle is in the current connection, keep it
                 !---------------------------------------------------------------
-                IF (id_inv(cd(i,j)).GT.-big) THEN
+                IF (id_inv(cd(i,j)).GT.-ppm_big_i) THEN
                     ncons_local = ncons_local + 1
 
                     !-----------------------------------------------------------
@@ -236,7 +235,7 @@
             DO i = 1,lda
                IF ((recvbuffer(j+(i-1)) .GE. min_) .AND.  &
                &   (recvbuffer(j+(i-1)) .LE. max_)) THEN
-                  IF (id_inv(recvbuffer(j+(i-1))) .GT. -big) THEN   !HUGE(recvbuffer(j+(i-1)))) THEN
+                  IF (id_inv(recvbuffer(j+(i-1))) .GT. -ppm_big_i) THEN   !HUGE(recvbuffer(j+(i-1)))) THEN
                      ncons_local = ncons_local + 1
 
                      IF (ncons_local .GT. cd_size) THEN

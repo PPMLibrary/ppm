@@ -337,7 +337,7 @@
       !  Diagnostics
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-          mincost = HUGE(cost(1))
+          mincost = HUGE(1.0_MK)
           maxcost = 0.0_MK
           minproc = -1
           maxproc = -1

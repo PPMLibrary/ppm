@@ -28,11 +28,11 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_tree_boxcost_s(Nm,weights,min_box,max_box,   &
-     &    nbox,lhbx,lpdx,boxcost,info,pcost)
+      SUBROUTINE ppm_tree_boxcost_s(Nm,weights,min_box,max_box, &
+      &          nbox,lhbx,lpdx,boxcost,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_tree_boxcost_d(Nm,weights,min_box,max_box,   &
-     &    nbox,lhbx,lpdx,boxcost,info,pcost)
+      SUBROUTINE ppm_tree_boxcost_d(Nm,weights,min_box,max_box, &
+      &          nbox,lhbx,lpdx,boxcost,info,pcost)
 #endif
       !!! This routine computes the cost of a set of boxes.
       !!!
@@ -65,49 +65,44 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: min_box
+      INTEGER,               DIMENSION(:,:),         INTENT(IN   ) :: Nm
+      !!! Number of grid points in each box.
+      REAL(MK),              DIMENSION(3),           INTENT(IN   ) :: weights
+      !!! Weights for the three cost contributions: particles, mesh,
+      !!! geometry for defining the total cost of a box.
+      REAL(ppm_kind_double), DIMENSION(:,:),         INTENT(IN   ) :: min_box
       !!! The minimum coordinate of the boxes.
       !!!
       !!! 1st index: x,y[,z]                                                   +
       !!! 2nd: box ID
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: max_box
+      REAL(ppm_kind_double), DIMENSION(:,:),         INTENT(IN   ) :: max_box
       !!! The maximum coordinate of the boxes.
       !!!
       !!! 1st index: x,y[,z]                                                   +
       !!! 2nd: box ID
-      REAL(MK), DIMENSION(3  ), INTENT(IN   ) :: weights
-      !!! Weights for the three cost contributions: particles, mesh,
-      !!! geometry for defining the total cost of a box.
-      REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN) :: pcost
-      !!! Argument of length Npart, specifying the
-      !!! computational cost of each particle.
-      INTEGER                 , INTENT(IN   ) :: nbox
+      INTEGER,                                       INTENT(IN   ) :: nbox
       !!! Number of boxes to compute cost for.
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: lhbx
+      INTEGER,               DIMENSION(:),           INTENT(IN   ) :: lhbx
       !!! Pointer to first particle in each box to determine cost for.
       !!! This only needs to be present if there are any particles.
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: lpdx
+      INTEGER,               DIMENSION(:),           INTENT(IN   ) :: lpdx
       !!! Index list of points in each box to determine cost for.
       !!! This only needs to be present if there are any particles.
-      INTEGER , DIMENSION(:,:), INTENT(IN   ) :: Nm
-      !!! Number of grid points in each box.
-      REAL(MK), DIMENSION(:  ), POINTER       :: boxcost
+      REAL(ppm_kind_double), DIMENSION(:),           POINTER       :: boxcost
       !!! Costs of the boxes 1..nbox. boxcost(i) is the cost of box  boxes(i).
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,                                       INTENT(  OUT) :: info
       !!! Return status, 0 on success
+      REAL(MK),              DIMENSION(:), OPTIONAL, INTENT(IN   ) :: pcost
+      !!! Argument of length Npart, specifying the
+      !!! computational cost of each particle.
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(ppm_dim)            :: len_box
-      INTEGER , DIMENSION(2)                  :: ldc
-      REAL(ppm_kind_double) :: t0
-      REAL(MK)                                :: meshtotal,geomtotal,dm
-      INTEGER                                 :: i,ip,iopt,j
-      REAL(MK), DIMENSION(:), POINTER         :: pcst
-#ifdef __MPI
-      REAL(MK), DIMENSION(:), POINTER         :: pcsum
-      INTEGER                                 :: MPTYPE
-#endif
+      REAL(ppm_kind_double)                     :: t0
+      REAL(ppm_kind_double), DIMENSION(ppm_dim) :: len_box
+      REAL(ppm_kind_double)                     :: meshtotal,geomtotal,dm
+
+      INTEGER :: i,ip,j
 
       CHARACTER(LEN=ppm_char) :: caller="ppm_tree_boxcost"
       !-------------------------------------------------------------------------
@@ -122,100 +117,82 @@
       !-------------------------------------------------------------------------
       !  Check input arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL check
          IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Set pointer to work memory
-      !-------------------------------------------------------------------------
-#if   __KIND == __SINGLE_PRECISION
-      pcst => pcst_s
-#else
-      pcst => pcst_d
-#endif
-#ifdef   __MPI
-#if   __KIND == __SINGLE_PRECISION
-      pcsum => pcsum_s
-#else
-      pcsum => pcsum_d
-#endif
-#endif
-
-      !-------------------------------------------------------------------------
       !  If we have less than 1 box to compute, exit
       !-------------------------------------------------------------------------
       IF (nbox.LT.1) THEN
-         IF (ppm_debug .GT. 0) THEN
+         IF (ppm_debug.GT.0) THEN
             stdout("No boxes to be computed. Exiting.")
          ENDIF
          GOTO 9999
       ENDIF
 
-#ifdef __MPI
-      !-------------------------------------------------------------------------
-      !  Determine MPI data type
-      !-------------------------------------------------------------------------
-#if   __KIND == __SINGLE_PRECISION
-      MPTYPE = MPI_REAL
-#elif __KIND == __DOUBLE_PRECISION
-      MPTYPE = MPI_DOUBLE_PRECISION
-#endif
-#endif
-
       !-------------------------------------------------------------------------
       !  Computation of particle contributions to box costs
       !-------------------------------------------------------------------------
-      IF (have_particles .AND. ABS(weights(1)).GT.0.0_MK) THEN
-          DO i=1,nbox
-              pcst(i)  = 0.0_MK
-#ifdef __MPI
-              pcsum(i) = 0.0_MK
-#endif
-              DO j=lhbx(i),lhbx(i+1)-1
+      IF (have_particles.AND.ABS(weights(1)).GT.0.0_MK) THEN
+         pcst =0.0_ppm_kind_double
+
+         IF (PRESENT(pcost)) THEN
+            DO i=1,nbox
+               DO j=lhbx(i),lhbx(i+1)-1
                   ip = lpdx(j)
-                  dm = 1.0_MK
-                  IF (PRESENT(pcost)) dm = pcost(ip)
+                  dm = REAL(pcost(ip),ppm_kind_double)
                   pcst(i) = pcst(i) + dm
-              ENDDO
-          ENDDO
+               ENDDO
+            ENDDO
+         ELSE
+            DO i=1,nbox
+               DO j=lhbx(i),lhbx(i+1)-1
+                  pcst(i) = pcst(i) + 1.0_ppm_kind_double
+               ENDDO
+            ENDDO
+         ENDIF
 
 #ifdef __MPI
-          !---------------------------------------------------------------------
-          !  Allreduce of all particle sums
-          !---------------------------------------------------------------------
-          CALL MPI_Allreduce(pcst,pcsum,nbox,MPTYPE,MPI_SUM,ppm_comm,info)
-          or_fail_MPI("MPI_Allreduce of particle costs",ppm_error=ppm_error_fatal)
+         pcsum=0.0_ppm_kind_double
+         !---------------------------------------------------------------------
+         !  Allreduce of all particle sums
+         !---------------------------------------------------------------------
+         CALL MPI_Allreduce(pcst,pcsum,nbox,MPI_DOUBLE_PRECISION,MPI_SUM,ppm_comm,info)
+         or_fail_MPI("MPI_Allreduce of particle costs",ppm_error=ppm_error_fatal)
 
-          DO i=1,nbox
-             pcst(i) = pcsum(i)
-          ENDDO
+         pcst = pcsum
 #endif
-      ENDIF   ! have_particles
+      ENDIF  ! have_particles
 
       !-------------------------------------------------------------------------
       !  Add up all cost contributions to total cost.
       !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 2) THEN
+      IF (ppm_dim.EQ.2) THEN
          DO i=1,nbox
             !-----------------------------------------------------------------
             !  Mesh and geometry based costs
             !-----------------------------------------------------------------
-            meshtotal = 0.0_MK
+            meshtotal = 0.0_ppm_kind_double
+            IF (have_mesh.AND.ABS(weights(2)).GT.0.0_MK) THEN
+               meshtotal = REAL(Nm(1,i),ppm_kind_double)*REAL(Nm(2,i),ppm_kind_double)
+            ENDIF
+
             len_box(1) = max_box(1,i)-min_box(1,i)
             len_box(2) = max_box(2,i)-min_box(2,i)
-            IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
-               meshtotal = REAL(Nm(1,i),MK)*REAL(Nm(2,i),MK)
-            ENDIF
-            geomtotal = len_box(1)*len_box(2)
+            geomtotal  = len_box(1)*len_box(2)
+
             !-----------------------------------------------------------------
             !  Compute weighted sum of costs and store it
             !-----------------------------------------------------------------
             IF (have_particles) THEN
-               boxcost(i) = pcst(i)*weights(1) + meshtotal*weights(2) + geomtotal*weights(3)
+               boxcost(i) =   pcst(i)*REAL(weights(1),ppm_kind_double) + &
+               &            meshtotal*REAL(weights(2),ppm_kind_double) + &
+               &            geomtotal*REAL(weights(3),ppm_kind_double)
             ELSE
-               boxcost(i) = meshtotal*weights(2) + geomtotal*weights(3)
+               boxcost(i) = meshtotal*REAL(weights(2),ppm_kind_double) + &
+               &            geomtotal*REAL(weights(3),ppm_kind_double)
             ENDIF
          ENDDO
       ELSE
@@ -223,21 +200,26 @@
             !-----------------------------------------------------------------
             !  Mesh and geometry based costs
             !-----------------------------------------------------------------
-            meshtotal = 0.0_MK
+            meshtotal = 0.0_ppm_kind_double
+            IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
+               meshtotal = REAL(Nm(1,i),ppm_kind_double)*REAL(Nm(2,i),ppm_kind_double)*REAL(Nm(3,i),ppm_kind_double)
+            ENDIF
+
             len_box(1) = max_box(1,i)-min_box(1,i)
             len_box(2) = max_box(2,i)-min_box(2,i)
             len_box(3) = max_box(3,i)-min_box(3,i)
-            IF (have_mesh .AND. ABS(weights(2)).GT.0.0_MK) THEN
-               meshtotal = REAL(Nm(1,i),MK)*REAL(Nm(2,i),MK)*REAL(Nm(3,i),MK)
-            ENDIF
-            geomtotal = len_box(1)*len_box(2)*len_box(3)
+            geomtotal  = len_box(1)*len_box(2)*len_box(3)
+
             !-----------------------------------------------------------------
             !  Compute weighted sum of costs and store it
             !-----------------------------------------------------------------
             IF (have_particles) THEN
-               boxcost(i) = pcst(i)*weights(1) + meshtotal*weights(2) +geomtotal*weights(3)
+               boxcost(i) =   pcst(i)*REAL(weights(1),ppm_kind_double) + &
+               &            meshtotal*REAL(weights(2),ppm_kind_double) + &
+               &            geomtotal*REAL(weights(3),ppm_kind_double)
             ELSE
-               boxcost(i) = meshtotal*weights(2) + geomtotal*weights(3)
+               boxcost(i) = meshtotal*REAL(weights(2),ppm_kind_double) + &
+               &            geomtotal*REAL(weights(3),ppm_kind_double)
             ENDIF
          ENDDO
       ENDIF
@@ -246,11 +228,6 @@
       !  Free local memory
       !-------------------------------------------------------------------------
       9999 CONTINUE
-
-      NULLIFY(pcst)
-#ifdef   __MPI
-      NULLIFY(pcsum)
-#endif
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
@@ -260,7 +237,7 @@
       SUBROUTINE check
          DO ip=1,nbox
             DO i=1,ppm_dim
-               IF (min_box(i,ip) .GT. max_box(i,ip)) THEN
+               IF (min_box(i,ip).GT.max_box(i,ip)) THEN
                   fail("min_box must be <= max_box !",exit_point=8888)
                ENDIF
             ENDDO

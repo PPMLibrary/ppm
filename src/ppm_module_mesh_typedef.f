@@ -2546,8 +2546,8 @@ minclude ppm_get_field_template(4,l)
 
           !Bounds for the mesh nodes that are inside the patch
           IF (linfinite) THEN
-             istart_p(1:ppm_dim) = -HUGE(1)/2
-             iend_p(1:ppm_dim)   =  HUGE(1)/2
+             istart_p(1:ppm_dim) = -ppm_big_i/2
+             iend_p(1:ppm_dim)   =  ppm_big_i/2
           ELSE
              istart_p(1:ppm_dim) = 1 + &
              & CEILING((   patch(1:ppm_dim)     - Offset(1:ppm_dim))/h(1:ppm_dim))

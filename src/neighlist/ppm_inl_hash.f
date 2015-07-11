@@ -582,7 +582,7 @@
 
       nsize=table%nrow*2
 
-      IF (nsize.GE.HUGE(1)-1) THEN
+      IF (nsize.GE.ppm_big_i-1) THEN
          !TOCHCECK
          fail("hashtable with more than 2^31-1 elements will fail",ppm_error=ppm_error_fatal)
       ENDIF

@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_tree_divcheck_s(min_box,max_box,nbox,minboxsize,   &
-     &    fixed,boxcost,ndiv,info)
+      &          fixed,boxcost,ndiv,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_tree_divcheck_d(min_box,max_box,nbox,minboxsize,   &
-     &    fixed,boxcost,ndiv,info)
+      &          fixed,boxcost,ndiv,info)
 #endif
       !!! This routine checks how many dimensions of a box are divisible.
       !!!
@@ -58,36 +58,37 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: min_box
+      REAL(ppm_kind_double), DIMENSION(:,:), INTENT(IN   ) :: min_box
       !!! Lower coordinates of the boxes.
       !!!
       !!! 1st index: x,y[,z]                                                   +
       !!! 2nd: box ID
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: max_box
+      REAL(ppm_kind_double), DIMENSION(:,:), INTENT(IN   ) :: max_box
       !!! Upper coordinates of the boxes.
       !!!
       !!! 1st index: x,y[,z]                                                   +
       !!! 2nd: box ID
-      INTEGER                 , INTENT(IN   ) :: nbox
+      INTEGER,                               INTENT(IN   ) :: nbox
       !!! Number of boxes to check
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: minboxsize
+      REAL(MK),              DIMENSION(:  ), INTENT(IN   ) :: minboxsize
       !!! Minimum box size in all dimensions.
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: boxcost
-      !!! Costs associated with boxes
-      LOGICAL , DIMENSION(:  ), INTENT(IN   ) :: fixed
+      LOGICAL,               DIMENSION(:  ), INTENT(IN   ) :: fixed
       !!! Flags telling which dimensions are fixed (i.e. must not be divided).
-      INTEGER , DIMENSION(:  ), POINTER       :: ndiv
+      REAL(ppm_kind_double), DIMENSION(:  ), INTENT(IN   ) :: boxcost
+      !!! Costs associated with boxes
+      INTEGER,               DIMENSION(:  ), POINTER       :: ndiv
       !!! Number of divisible directions of each box (1..nbox).
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,                               INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double)        :: t0
-      REAL(MK)                     :: lmyeps,boxlen
-      REAL(MK), DIMENSION(ppm_dim) :: ms2
-      INTEGER                      :: iopt,i,j
-      INTEGER, DIMENSION(2)        :: ldc
+      REAL(ppm_kind_double)                     :: t0
+      REAL(ppm_kind_double)                     :: boxlen
+      REAL(ppm_kind_double), DIMENSION(ppm_dim) :: ms2
+
+      INTEGER               :: iopt,i,j
+      INTEGER, DIMENSION(2) :: ldc
 
       CHARACTER(LEN=ppm_char) :: caller="ppm_tree_divcheck"
       !-------------------------------------------------------------------------
@@ -99,24 +100,18 @@
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
-#if   __KIND == __SINGLE_PRECISION
-      lmyeps = ppm_myepss
-#elif __KIND == __DOUBLE_PRECISION
-      lmyeps = ppm_myepsd
-#endif
-
       !-------------------------------------------------------------------------
       !  Check input arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL check
-         IF (info .NE. 0) GOTO 9999
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
       !  If there are no boxes to check, we quit
       !-------------------------------------------------------------------------
-      IF (nbox .LT. 1) THEN
+      IF (nbox.LT.1) THEN
          stdout("No boxes to be checked. Exiting.")
          GOTO 9999
       ENDIF
@@ -125,15 +120,15 @@
       !  Count and determine divisible dimensions
       !-------------------------------------------------------------------------
       DO i=1,ppm_dim
-         ms2(i) = 2.0_MK*minboxsize(i)
+         ms2(i) = 2.0_ppm_kind_double*REAL(minboxsize(i),ppm_kind_double)
       ENDDO
 
       DO i=1,nbox
          ndiv(i) = 0
-         IF (boxcost(i) .GT. lmyeps) THEN
+         IF (boxcost(i).GT.ppm_myepsd) THEN
             DO j=1,ppm_dim
                boxlen = max_box(j,i)-min_box(j,i)
-               IF (((boxlen-ms2(j)).GT.lmyeps*boxlen).AND.(.NOT.fixed(j))) THEN
+               IF (((boxlen-ms2(j)).GT.ppm_myepsd*boxlen).AND.(.NOT.fixed(j))) THEN
                   ndiv(i) = ndiv(i) + 1
                ENDIF
             ENDDO
@@ -148,15 +143,15 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-         IF (nbox .LT. 0) THEN
+         IF (nbox.LT.0) THEN
             fail("Number of boxes must be >= 0",exit_point=8888)
          ENDIF
          DO i=1,ppm_dim
-            IF (minboxsize(i) .LT. 0.0_MK) THEN
+            IF (minboxsize(i).LT.0.0_MK) THEN
                fail("the minimum box size must be > 0 !",exit_point=8888)
             ENDIF
             DO j=1,nbox
-               IF (min_box(i,j) .GT. max_box(i,j)) THEN
+               IF (min_box(i,j).GT.max_box(i,j)) THEN
                   fail("min_box must be <= max_box !",exit_point=8888)
                ENDIF
             ENDDO

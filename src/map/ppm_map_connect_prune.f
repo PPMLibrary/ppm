@@ -74,7 +74,6 @@
       INTEGER, DIMENSION(2) :: ldu
       INTEGER               :: i,j,k,iopt,icon,part,prunemode
       INTEGER               :: ncons_local
-      INTEGER, PARAMETER    :: big=HUGE(1)
       INTEGER               :: min_,max_
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_map_connect_prune'
@@ -166,7 +165,7 @@
             !  Check if we have this particle
             !------------------------------------------------------------------
             IF ((part.GE.min_).AND.(part.LE.max_)) THEN
-               IF (id_inv(part).EQ.-big) THEN
+               IF (id_inv(part).EQ.-ppm_big_i) THEN
                   cd_local(1,j) = -1
                   icon = icon + 1
                ENDIF
@@ -190,7 +189,7 @@
             DO i = 1,lda
                IF ((cd_local(i,j) .GE. min_) .AND. &
                &   (cd_local(i,j) .LE. max_)) THEN
-                  IF (id_inv(cd_local(i,j)).EQ.-big) THEN
+                  IF (id_inv(cd_local(i,j)).EQ.-ppm_big_i) THEN
                      k = k + 1
                   ENDIF
                ELSE

@@ -121,7 +121,6 @@
       INTEGER, DIMENSION(1)              :: ldc
       INTEGER                            :: iopt
 
-      CHARACTER(LEN=ppm_char) :: msg
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_util_rank'
 
       !-------------------------------------------------------------------------
@@ -148,6 +147,13 @@
       !-------------------------------------------------------------------------
       nmtot(1) = nm(1) + ngl(1) + ngl(3)
       nmtot(2) = nm(2) + ngl(2) + ngl(4)
+      !TODO
+      !One should fix all the INTEGER numbers!
+      IF (REAL(nmtot(1),MK)*REAL(nmtot(2),MK).GE.REAL(ppm_big_i-1,MK)) THEN
+         stdout("INTEGER Overflow!")
+         fail("INTEGER Overflow!",ppm_error=ppm_error_fatal)
+      ENDIF
+
       nbox  = nmtot(1)*nmtot(2)
 
       !-------------------------------------------------------------------------
@@ -212,8 +218,8 @@
          !  and cell lists are built per sub.
          !----------------------------------------------------------------------
          IF (icount.GT.0) THEN
-            WRITE(msg,'(I8,A)')icount,' particles'
-            fail(msg,ppm_err_part_range,exit_point=no,ppm_error=ppm_error_warning)
+            WRITE(cbuf,'(I8,A)')icount,' particles'
+            fail(cbuf,ppm_err_part_range,exit_point=no,ppm_error=ppm_error_warning)
          ENDIF
       ENDIF
 
@@ -276,8 +282,8 @@
 
 
       IF (icorr.GT.0) THEN
-         WRITE(msg,'(I8,A)')icorr,' particle indices corrected'
-         fail(msg,ppm_err_index_corr,exit_point=no,ppm_error=ppm_error_notice)
+         WRITE(cbuf,'(I8,A)')icorr,' particle indices corrected'
+         fail(cbuf,ppm_err_index_corr,exit_point=no,ppm_error=ppm_error_notice)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -347,8 +353,8 @@
          !  Should add up to icount (number of particles in the mesh area)
          !----------------------------------------------------------------------
          IF (i.NE.icount) THEN
-            WRITE(msg,'(2(A,I10))') 'icount=',icount,' Sum(npbx)=',i
-            fail(msg,ppm_error=ppm_error_error)
+            WRITE(cbuf,'(2(A,I10))') 'icount=',icount,' Sum(npbx)=',i
+            fail(cbuf,ppm_error=ppm_error_error)
          ENDIF
       ENDIF
 

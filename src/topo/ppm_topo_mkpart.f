@@ -373,18 +373,18 @@
          Nm(1:ppm_dim)    = 0
          ! build tree
          IF (PRESENT(pcost)) THEN
-            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-            &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
+            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,      &
+            &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
             &    min_box,max_box,nbox,nchld,info,pcost)
          ELSE
-            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-            &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
+            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,      &
+            &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
             &    min_box,max_box,nbox,nchld,info)
          ENDIF
          or_fail('Pencil decomposition failed')
 
          ! convert tree to subs
-         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
+         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub, &
          &    max_sub,nsubs,info)
          IF (info .NE. 0) GOTO 9999
 

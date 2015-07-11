@@ -2064,7 +2064,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
                 ENDIF
              ENDIF
              IF (cont%nb.EQ.0) THEN
-                cont%min_id = HUGE(1)
+                cont%min_id = ppm_big_i
              ELSE IF (id .EQ. cont%min_id) THEN
                 cont%min_id = cont%min_id + 1
                 IF (cont%min_id .LE. cont%vec_size) THEN

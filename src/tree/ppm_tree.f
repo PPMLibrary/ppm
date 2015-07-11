@@ -187,7 +187,7 @@
       !!! this is reached. The root box is counted as level 1. Set to <= 0
       !!! for unlimited levels. This input is only present in the
       !!! __TREE version, not in the __DECOMP version.
-      REAL(MK), DIMENSION(:  ), POINTER       :: boxcost
+      REAL(ppm_kind_double), DIMENSION(:  ), POINTER       :: boxcost
       !!! Costs of all boxes 1..nbox.
       INTEGER , DIMENSION(:  ), POINTER       :: parent
       !!! Index of the parent box of each box. ppm_param_undefined if no
@@ -218,17 +218,25 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(1:ppm_dim)    :: mins,maxs
-      REAL(MK), DIMENSION(1:ppm_dim)    :: meshdx,meshdxinv
-      REAL(MK), DIMENSION(:  ), POINTER :: cpos  => NULL()
-      REAL(MK), DIMENSION(:  ), POINTER :: costc => NULL()
+      REAL(ppm_kind_double), PARAMETER               :: big=HUGE(1._ppm_kind_double)
+      REAL(ppm_kind_double), DIMENSION(1:ppm_dim)    :: meshdx,meshdxinv
+      REAL(ppm_kind_double), DIMENSION(1:ppm_dim)    :: mins,maxs
 
-      REAL(MK), DIMENSION(:,:), POINTER :: minc  => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: maxc  => NULL()
-      REAL(ppm_kind_double)             :: t0
-      REAL(MK)                          :: lmyeps,r0,r1,maxcost
+      REAL(ppm_kind_double), DIMENSION(:  ), POINTER :: cpos  => NULL()
+      REAL(ppm_kind_double), DIMENSION(:  ), POINTER :: costc => NULL()
+
+      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: minc  => NULL()
+      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: maxc  => NULL()
+
+      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: min_box_ => NULL()
+      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: max_box_ => NULL()
+
+      REAL(ppm_kind_double)                          :: t0
+      REAL(ppm_kind_double)                          :: r0,r1,r2
+      REAL(ppm_kind_double)                          :: maxcost
+      REAL(MK)                                       :: lmyeps
 #if   __TYPE == __DECOMP
-      REAL(MK), DIMENSION(:  ), POINTER :: boxcost => NULL()
+      REAL(ppm_kind_double), DIMENSION(:  ), POINTER :: boxcost => NULL()
 
       INTEGER , DIMENSION(:  ), POINTER :: blevel  => NULL()
       INTEGER                           :: nlevel
@@ -243,11 +251,13 @@
       INTEGER                           :: ibox,nsubs
       INTEGER                           :: inextboxlist,lctr
       INTEGER                           :: nboxlistalloc
-      INTEGER                           :: info2,mxlev,bpc,istart,iend
+      INTEGER                           :: mxlev,bpc,istart,iend
 
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_tree'
 
-      LOGICAL :: up,nofixed,simpleweights
+      LOGICAL :: up
+      LOGICAL :: nofixed
+      LOGICAL :: simpleweights
       LOGICAL :: lcontinue
 
       !-------------------------------------------------------------------------
@@ -276,7 +286,7 @@
       !-------------------------------------------------------------------------
       !  Check input arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL check
          IF (info .NE. 0) GOTO 9999
       ENDIF
@@ -286,9 +296,9 @@
       !-------------------------------------------------------------------------
       have_particles = .FALSE.
       have_mesh      = .FALSE.
-      IF (Np .GT. 0) have_particles = .TRUE.
-      IF (SIZE(Nm,1) .GE. ppm_dim) THEN
-         IF (ppm_dim .GT. 2) THEN
+      IF (Np.GT.0) have_particles = .TRUE.
+      IF (SIZE(Nm,1).GE.ppm_dim) THEN
+         IF (ppm_dim.GT.2) THEN
             IF ((Nm(1).GT.1).AND.(Nm(2).GT.1).AND.(Nm(3).GT.1)) have_mesh = .TRUE.
          ELSE
             IF ((Nm(1).GT.1).AND.(Nm(2).GT.1)) have_mesh = .TRUE.
@@ -313,28 +323,28 @@
       IF (ABS(weights(2,2))       .LE.lmyeps) simpleweights = .FALSE.
       IF (ABS(weights(3,2)-1.0_MK).LE.lmyeps) simpleweights = .FALSE.
 
-     ! IF ((itype .EQ. ppm_param_tree_quad) .AND. (.NOT.have_mesh) .AND.  &
-     !&    (have_particles) .AND. (.NOT.pruneboxes) .AND. (nofixed) .AND. &
-     !&    (simpleweights) .AND. (ppm_dim .EQ. 2)) THEN
+     ! IF ((itype.EQ.ppm_param_tree_quad).AND.(.NOT.have_mesh).AND. &
+     !&    (have_particles).AND.(.NOT.pruneboxes).AND.(nofixed).AND.&
+     !&    (simpleweights).AND.(ppm_dim.EQ.2)) THEN
      !   IF (PRESENT(pcost)) THEN
      !       CALL ppm_decomp_tree(xp,Np,min_dom,max_dom,MAX(minboxsize(1), &
-     !&           minboxsize(2)),maxvariance,min_box,max_box,nbox,info,pcost)
+     !&           minboxsize(2)),maxvariance,min_box_,max_box_,nbox,info,pcost)
      !   ELSE
      !       CALL ppm_decomp_tree(xp,Np,min_dom,max_dom,MAX(minboxsize(1), &
-     !&           minboxsize(2)),maxvariance,min_box,max_box,nbox,info)
+     !&           minboxsize(2)),maxvariance,min_box_,max_box_,nbox,info)
      !   ENDIF
      !   GOTO 8000
      ! ENDIF
-     ! IF ((itype .EQ. ppm_param_tree_oct) .AND. (.NOT.have_mesh) .AND.   &
-     !&    (have_particles) .AND. (.NOT.pruneboxes) .AND. (nofixed) .AND. &
-     !&    (simpleweights) .AND. (ppm_dim .EQ. 3)) THEN
+     ! IF ((itype.EQ.ppm_param_tree_oct).AND.(.NOT.have_mesh).AND.  &
+     !&    (have_particles).AND.(.NOT.pruneboxes).AND.(nofixed).AND.&
+     !&    (simpleweights).AND.(ppm_dim.EQ.3)) THEN
      !   IF (PRESENT(pcost)) THEN
      !       CALL ppm_decomp_tree(xp,Np,min_dom,max_dom,MAX(minboxsize(1), &
-     !&           minboxsize(2),minboxsize(3)),maxvariance,min_box,max_box,   &
+     !&           minboxsize(2),minboxsize(3)),maxvariance,min_box_,max_box_,   &
      !&           nbox,info,pcost)
      !   ELSE
      !       CALL ppm_decomp_tree(xp,Np,min_dom,max_dom,MAX(minboxsize(1), &
-     !&           minboxsize(2),minboxsize(3)),maxvariance,min_box,max_box,   &
+     !&           minboxsize(2),minboxsize(3)),maxvariance,min_box_,max_box_,   &
      !&           nbox,info)
      !   ENDIF
      !   GOTO 8000
@@ -344,18 +354,18 @@
       !  Store the mesh spacings (if needed)
       !-------------------------------------------------------------------------
       IF (have_mesh) THEN
-         meshdx(1:ppm_dim) = (max_dom(1:ppm_dim) - &
-         &                    min_dom(1:ppm_dim))/ &
-         &                    REAL(Nm(1:ppm_dim)-1,MK)
+         meshdx = REAL(max_dom(1:ppm_dim)-min_dom(1:ppm_dim),ppm_kind_double)/ &
+         &        REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
          !check for round-off problems and fix them if necessary
          DO k=1,ppm_dim
-            DO WHILE (min_dom(k)+(Nm(k)-1)*meshdx(k).LT.max_dom(k))
+            DO WHILE (REAL(min_dom(k),ppm_kind_double)+REAL(Nm(k)-1,ppm_kind_double)*meshdx(k).LT.REAL(max_dom(k),ppm_kind_double))
                meshdx(k)=meshdx(k)+EPSILON(meshdx(k))
             ENDDO
          ENDDO
-         check_true(<#ALL(min_dom(1:ppm_dim)+(Nm(1:ppm_dim)-1)*meshdx(1:ppm_dim).GE.max_dom(1:ppm_dim))#>,"round-off problem in mesh creation")
+         check_true(<#ALL(REAL(min_dom(1:ppm_dim),ppm_kind_double)+REAL(Nm(1:ppm_dim)-1,ppm_kind_double)*meshdx(1:ppm_dim).GE.REAL(max_dom(1:ppm_dim),ppm_kind_double))#>, &
+         & "round-off problem in mesh creation")
 
-         meshdxinv(1:ppm_dim) = 1.0_MK/meshdx(1:ppm_dim)
+         meshdxinv = 1.0_ppm_kind_double/meshdx
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -363,25 +373,25 @@
       !-------------------------------------------------------------------------
       SELECT CASE (itype)
       CASE (ppm_param_tree_bin)
-          nbpd = 2
-          ncut = 1
-          IF (ppm_debug .GT. 0) THEN
-             stdout("Creating binary tree.")
-          ENDIF
+         nbpd = 2
+         ncut = 1
+         IF (ppm_debug.GT.0) THEN
+            stdout("Creating binary tree.")
+         ENDIF
       CASE (ppm_param_tree_quad)
-          nbpd = 4
-          ncut = 2
-          IF (ppm_debug .GT. 0) THEN
-             stdout("Creating quad-tree.")
-          ENDIF
+         nbpd = 4
+         ncut = 2
+         IF (ppm_debug.GT.0) THEN
+            stdout("Creating quad-tree.")
+         ENDIF
       CASE (ppm_param_tree_oct)
-          nbpd = 8
-          ncut = 3
-          IF (ppm_debug .GT. 0) THEN
-             stdout("Creating oct-tree.")
-          ENDIF
+         nbpd = 8
+         ncut = 3
+         IF (ppm_debug.GT.0) THEN
+            stdout("Creating oct-tree.")
+         ENDIF
       CASE DEFAULT
-          fail('unknown tree type specified !')
+         fail('unknown tree type specified !')
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -391,56 +401,57 @@
       NULLIFY(tree_lpdx)
 
       !-------------------------------------------------------------------------
-      !  Allocate tree data structures
-      !-------------------------------------------------------------------------
-      iopt = ppm_param_alloc_fit
-      !-------------------------------------------------------------------------
       !  Guess tree size based on assumed uniform distribution
       !-------------------------------------------------------------------------
       nbox   = 1
       nlevel = 1
-      IF (Np .GT. 0) THEN
-          IF (maxboxcost .GT. 0.0_MK) THEN
-              ! the number of levels needed under uniform particle
-              ! distribution
-              nlevelalloc = CEILING(LOG(REAL(Np,MK)/maxboxcost)/LOG(REAL(nbpd,MK)))
+
+      IF (Np.GT.0) THEN
+         IF (maxboxcost.GT.0.0_MK) THEN
+            ! the number of levels needed under uniform particle
+            ! distribution
+            nlevelalloc = CEILING(LOG(REAL(Np,MK)/maxboxcost)/LOG(REAL(nbpd,MK)))
 #if __TYPE ==  __TREE
-          ELSEIF (maxlevels .GT. 0) THEN
-              ! assume we hit maxlevels
-              nlevelalloc = maxlevels
+         ELSEIF (maxlevels.GT.0) THEN
+            ! assume we hit maxlevels
+            nlevelalloc = maxlevels
 #endif
-          ELSE
-              ! default assumption
-              nlevelalloc = 3
-              ! nlevelalloc = MAX(NINT(LOG(REAL(Np,MK))/LOG(2.0_MK)),3)
-              ! JHW 20061108
-          ENDIF
+         ELSE
+            ! default assumption
+            nlevelalloc = 3
+            ! nlevelalloc = MAX(NINT(LOG(REAL(Np,MK))/LOG(2.0_MK)),3)
+            ! JHW 20061108
+         ENDIF
       ELSE
-          ! Assume 3 levels if no particles are present
-          nlevelalloc = 3
-          ! nlevelalloc = MAX(NINT(LOG(REAL(Np,MK))/LOG(2.0_MK)),3)
-          ! JHW 20061108
+         ! Assume 3 levels if no particles are present
+         nlevelalloc = 3
+         ! nlevelalloc = MAX(NINT(LOG(REAL(Np,MK))/LOG(2.0_MK)),3)
+         ! JHW 20061108
       ENDIF
       ! the number of boxes (not only leafs) is the geometric series sum
       nlevelalloc = nlevelalloc + 1   ! we start counting levels at 1
-      IF (nlevelalloc .LT. 1) nlevelalloc = 1
+      IF (nlevelalloc.LT.1) nlevelalloc = 1
       nboxalloc   = (1-(nbpd**nlevelalloc))/(1-nbpd)
-      IF (nboxalloc .LT. 1) nboxalloc = 1
-      IF (ppm_debug .GT. 0) THEN
+      IF (nboxalloc.LT.1) nboxalloc = 1
+      IF (ppm_debug.GT.0) THEN
 #if   __TYPE == __TREE
-          stdout_f('(A,I3,A,I6,A)',"Allocating ",nlevelalloc," levels and ",nboxalloc," boxes.")
+         stdout_f('(A,I3,A,I6,A)',"Allocating ",nlevelalloc," levels and ",nboxalloc," boxes.")
 #else
-          stdout_f('(A,I3,A)',"Allocating ",nboxalloc," boxes.")
+         stdout_f('(A,I3,A)',"Allocating ",nboxalloc," boxes.")
 #endif
       ENDIF
+      !-------------------------------------------------------------------------
+      !  Allocate tree data structures
+      !-------------------------------------------------------------------------
+      iopt = ppm_param_alloc_fit
 #if   __TYPE == __TREE
-      CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,nlevelalloc,min_box,max_box, &
+      CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,nlevelalloc,min_box_,max_box_, &
       &    boxcost,parent,nchld,child,blevel,nbpl,info)
 #elif __TYPE == __DECOMP
-      CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,min_box,max_box, &
+      CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,min_box_,max_box_, &
       &    boxcost,nchld,blevel,info)
 #endif
-      IF (info .NE. ppm_param_success) GOTO 9999
+      or_fail("ppm_tree_alloc failed to (re)allocates the tree data structures!")
 
       !-------------------------------------------------------------------------
       !  Allocate memory for box cut
@@ -464,6 +475,7 @@
       or_fail_alloc('list of divisible boxes BOXLIST')
 
       boxlist(1) = 1
+
       IF (have_mesh) THEN
          ldc(1) = ppm_dim
          ldc(2) = nbpd
@@ -482,19 +494,31 @@
       !-------------------------------------------------------------------------
       !  The domain itself is the root box. Get the tree started!
       !-------------------------------------------------------------------------
-      IF (ppm_dim .GT. 2) THEN
-         min_box(1:3,1) = min_dom(1:3)
-         max_box(1:3,1) = max_dom(1:3)
+      IF (ppm_dim.GT.2) THEN
+         min_box_(1,1) = REAL(min_dom(1),ppm_kind_double)
+         min_box_(2,1) = REAL(min_dom(2),ppm_kind_double)
+         min_box_(3,1) = REAL(min_dom(3),ppm_kind_double)
+         max_box_(1,1) = REAL(max_dom(1),ppm_kind_double)
+         max_box_(2,1) = REAL(max_dom(2),ppm_kind_double)
+         max_box_(3,1) = REAL(max_dom(3),ppm_kind_double)
+
          IF (have_mesh) THEN
-            Nm_box(1:3,1) = Nm(1:3)
+            Nm_box(1,1) = Nm(1)
+            Nm_box(2,1) = Nm(2)
+            Nm_box(3,1) = Nm(3)
          ENDIF
       ELSE
-         min_box(1:2,1) = min_dom(1:2)
-         max_box(1:2,1) = max_dom(1:2)
+         min_box_(1,1) = REAL(min_dom(1),ppm_kind_double)
+         min_box_(2,1) = REAL(min_dom(2),ppm_kind_double)
+         max_box_(1,1) = REAL(max_dom(1),ppm_kind_double)
+         max_box_(2,1) = REAL(max_dom(2),ppm_kind_double)
+
          IF (have_mesh) THEN
-            Nm_box(1:2,1) = Nm(1:2)
+            Nm_box(1,1) = Nm(1)
+            Nm_box(2,1) = Nm(2)
          ENDIF
       ENDIF
+
       nsubs     = 1
       nchld     = 0
       blevel(1) = 1
@@ -510,14 +534,15 @@
       IF (have_particles) THEN
          thisNm  = 1
          ghostNm = 0
-         IF (ppm_dim .EQ. 2) THEN
-            CALL ppm_util_rank2d(xp,Np,min_dom,max_dom,thisNm,ghostNm,     &
+         IF (ppm_dim.EQ.2) THEN
+            CALL ppm_util_rank2d(xp,Np,min_dom,max_dom,thisNm,ghostNm, &
             &    tree_lpdx,lhbx_cut,info)
          ELSE
-            CALL ppm_util_rank3d(xp,Np,min_dom,max_dom,thisNm,ghostNm,     &
+            CALL ppm_util_rank3d(xp,Np,min_dom,max_dom,thisNm,ghostNm, &
             &    tree_lpdx,lhbx_cut,info)
          ENDIF
-         IF (info .NE. ppm_param_success) GOTO 9999
+         or_fail("ppm_util_rank failed to rank the particles in the root box!")
+
          tree_lhbx(1,1) = lhbx_cut(1)
          tree_lhbx(2,1) = lhbx_cut(2) - 1
       ENDIF
@@ -532,19 +557,11 @@
       CALL ppm_alloc(costc,ldc,iopt,info)
       or_fail_alloc('box costs COSTC')
 
-#if   __KIND == __SINGLE_PRECISION
-      CALL ppm_alloc(pcst_s,ldc,iopt,info)
-#else
-      CALL ppm_alloc(pcst_d,ldc,iopt,info)
-#endif
+      CALL ppm_alloc(pcst,ldc,iopt,info)
       or_fail_alloc('particle cost part PCOST')
 
 #ifdef __MPI
-#if   __KIND == __SINGLE_PRECISION
-      CALL ppm_alloc(pcsum_s,ldc,iopt,info)
-#else
-      CALL ppm_alloc(pcsum_d,ldc,iopt,info)
-#endif
+      CALL ppm_alloc(pcsum,ldc,iopt,info)
       or_fail_alloc('particle cost sums PCSUM')
 #endif
 
@@ -552,13 +569,13 @@
       !  Compute cost of root box
       !-------------------------------------------------------------------------
       IF (PRESENT(pcost)) THEN
-         CALL ppm_tree_boxcost(Nm_box,weights(:,1),min_box,max_box,  &
+         CALL ppm_tree_boxcost(Nm_box,weights(:,1),min_box_,max_box_, &
          &    1,lhbx_cut,tree_lpdx,boxcost,info,pcost)
       ELSE
-         CALL ppm_tree_boxcost(Nm_box,weights(:,1),min_box,max_box,  &
+         CALL ppm_tree_boxcost(Nm_box,weights(:,1),min_box_,max_box_, &
          &    1,lhbx_cut,tree_lpdx,boxcost,info)
       ENDIF
-      IF (info .NE. ppm_param_success) GOTO 9999
+      or_fail("Failed to compute cost of root box")
 
       !-------------------------------------------------------------------------
       !  Grow the list to the proper size as util_rank has only allocated
@@ -574,10 +591,11 @@
       !-------------------------------------------------------------------------
       !  Check if there is anything to be done at all
       !-------------------------------------------------------------------------
-      CALL ppm_tree_done(minboxes,nsubs,boxcost,boxlist,nboxlist,   &
+      CALL ppm_tree_done(minboxes,nsubs,boxcost,boxlist,nboxlist, &
       &    nlevel,maxvariance,maxboxcost,mxlev,lcontinue,info)
-      IF (info .NE. ppm_param_success) GOTO 9999
-      IF ((.NOT.lcontinue) .AND. (ppm_debug .GT. 0)) THEN
+      or_fail("ppm_tree_done failed!")
+
+      IF ((.NOT.lcontinue).AND.(ppm_debug.GT.0)) THEN
          stdout("Nothing to be done. Exiting.")
          GOTO 9999
       ENDIF
@@ -585,13 +603,13 @@
       !-------------------------------------------------------------------------
       !  Check that root box is divisible
       !-------------------------------------------------------------------------
-      CALL ppm_tree_divcheck(min_box,max_box,1,minboxsize,fixed,     &
+      CALL ppm_tree_divcheck(min_box_,max_box_,1,minboxsize,fixed, &
       &    boxcost,ndiv,info)
-      IF (info .NE. 0) GOTO 9999
+      or_fail("ppm_tree_divcheck failed to check how many dimensions of a box are divisible!")
 
-      IF (ndiv(1) .LT. ncut) THEN
+      IF (ndiv(1).LT.ncut) THEN
          lcontinue = .FALSE.
-         IF (ppm_debug .GT. 0) THEN
+         IF (ppm_debug.GT.0) THEN
             stdout("Initial domain is not divisible. Done.")
          ENDIF
       ENDIF
@@ -609,339 +627,341 @@
       CALL ppm_alloc(cpos,ldc,iopt,info)
       or_fail_alloc('list of cut positions CPOS')
 
-      cpos = -HUGE(cpos(1))
+      cpos = -big
 
       !-------------------------------------------------------------------------
       !  Subdivide until done
       !-------------------------------------------------------------------------
       lctr = 0
       lcontinue_do: DO WHILE (lcontinue)
-          lctr = lctr + 1
+         lctr = lctr + 1
 
-          !---------------------------------------------------------------------
-          !  Choose next subdomain to refine. This is always the one with
-          !  maximum cost. In the case of particle, cost is number of
-          !  particles, for meshes the number of mesh points and for
-          !  geometric decompositions the sub volume.
-          !---------------------------------------------------------------------
-          maxcost = -HUGE(maxcost)
-          inextboxlist = -1
-          inext = -1
-          DO i=1,nboxlist
-              j = boxlist(i)
-              r0 = boxcost(j)
-              IF (r0 .GT. maxcost) THEN
-                  maxcost = r0
-                  inextboxlist = i
-                  inext = j
-              ENDIF
-          ENDDO
-          IF (ppm_dim .GT. 2) THEN
-              mins(1)   = min_box(1,inext)
-              mins(2)   = min_box(2,inext)
-              mins(3)   = min_box(3,inext)
-              maxs(1)   = max_box(1,inext)
-              maxs(2)   = max_box(2,inext)
-              maxs(3)   = max_box(3,inext)
-              IF (have_mesh) THEN
-                  thisNm(1) = Nm_box(1,inext)
-                  thisNm(2) = Nm_box(2,inext)
-                  thisNm(3) = Nm_box(3,inext)
-              ENDIF
-          ELSE
-              mins(1)   = min_box(1,inext)
-              mins(2)   = min_box(2,inext)
-              maxs(1)   = max_box(1,inext)
-              maxs(2)   = max_box(2,inext)
-              IF (have_mesh) THEN
-                  thisNm(1) = Nm_box(1,inext)
-                  thisNm(2) = Nm_box(2,inext)
-              ENDIF
-          ENDIF
+         !---------------------------------------------------------------------
+         !  Choose next subdomain to refine. This is always the one with
+         !  maximum cost. In the case of particle, cost is number of
+         !  particles, for meshes the number of mesh points and for
+         !  geometric decompositions the sub volume.
+         !---------------------------------------------------------------------
+         maxcost = -big
+         inextboxlist = -1
+         inext = -1
+         DO i=1,nboxlist
+            j  = boxlist(i)
+            r0 = boxcost(j)
+            IF (r0.GT.maxcost) THEN
+               maxcost      = r0
+               inextboxlist = i
+               inext        = j
+            ENDIF
+         ENDDO
+         IF (ppm_dim.GT.2) THEN
+            mins(1) = min_box_(1,inext)
+            mins(2) = min_box_(2,inext)
+            mins(3) = min_box_(3,inext)
+            maxs(1) = max_box_(1,inext)
+            maxs(2) = max_box_(2,inext)
+            maxs(3) = max_box_(3,inext)
+            IF (have_mesh) THEN
+               thisNm(1) = Nm_box(1,inext)
+               thisNm(2) = Nm_box(2,inext)
+               thisNm(3) = Nm_box(3,inext)
+            ENDIF
+         ELSE
+            mins(1) = min_box_(1,inext)
+            mins(2) = min_box_(2,inext)
+            maxs(1) = max_box_(1,inext)
+            maxs(2) = max_box_(2,inext)
+            IF (have_mesh) THEN
+               thisNm(1) = Nm_box(1,inext)
+               thisNm(2) = Nm_box(2,inext)
+            ENDIF
+         ENDIF
 
-          !---------------------------------------------------------------------
-          !  Determine best cut direction(s)
-          !---------------------------------------------------------------------
-          IF (PRESENT(pcost)) THEN
-             CALL ppm_tree_cutdir(xp,Np,weights(:,1),min_box,max_box, &
-             & inext,ncut,fixed,minboxsize,icut,info,pcost)
-          ELSE
-             CALL ppm_tree_cutdir(xp,Np,weights(:,1),min_box,max_box, &
-             & inext,ncut,fixed,minboxsize,icut,info)
-          ENDIF
-          IF (info .NE. ppm_param_success) GOTO 9999
+         !---------------------------------------------------------------------
+         !  Determine best cut direction(s)
+         !---------------------------------------------------------------------
+         IF (PRESENT(pcost)) THEN
+            CALL ppm_tree_cutdir(xp,Np,weights(:,1),min_box_,max_box_, &
+            &    inext,ncut,fixed,minboxsize,icut,info,pcost)
+         ELSE
+            CALL ppm_tree_cutdir(xp,Np,weights(:,1),min_box_,max_box_, &
+            &    inext,ncut,fixed,minboxsize,icut,info)
+         ENDIF
+         or_fail("ppm_tree_cutdir failed to find the best cutting directions!")
 
-          !---------------------------------------------------------------------
-          !  Determine best cut position(s)
-          !---------------------------------------------------------------------
-          IF (PRESENT(pcost)) THEN
-             CALL ppm_tree_cutpos(xp,Np,weights(:,2),min_box,max_box, &
-             & inext,ncut,minboxsize,icut,cpos,info,pcost)
-          ELSE
-             CALL ppm_tree_cutpos(xp,Np,weights(:,2),min_box,max_box, &
-             & inext,ncut,minboxsize,icut,cpos,info)
-          ENDIF
-          IF (info .NE. ppm_param_success) GOTO 9999
+         !---------------------------------------------------------------------
+         !  Determine best cut position(s)
+         !---------------------------------------------------------------------
+         IF (PRESENT(pcost)) THEN
+            CALL ppm_tree_cutpos(xp,Np,weights(:,2),min_box_,max_box_, &
+            &    inext,ncut,minboxsize,icut,cpos,info,pcost)
+         ELSE
+            CALL ppm_tree_cutpos(xp,Np,weights(:,2),min_box_,max_box_, &
+            &    inext,ncut,minboxsize,icut,cpos,info)
+         ENDIF
+         or_fail("ppm_tree_cutpos failed to find the best cuting positions!")
 
-          !---------------------------------------------------------------------
-          !  Align positions with mesh planes if needed
-          !---------------------------------------------------------------------
-          IF (have_mesh) THEN
-             DO i=1,ncut
-                j  = icut(i)
-                r0 = (cpos(i)-mins(j))*meshdxinv(j)
-                k  = NINT(r0)
-                r1 = REAL(k,MK)*meshdx(j)
-                cpos(i) = mins(j) + r1
-                up = .TRUE.
-                IF ((r1-r0) .LT. 0.0_MK) up = .FALSE.
-                !-------------------------------------------------------------
-                !  Check if minboxsizes are respected
-                !-------------------------------------------------------------
-                IF (((cpos(i)-mins(j)) .LT. minboxsize(j)) .OR.   &
-                &   ((maxs(j)-cpos(i)) .LT. minboxsize(j))) THEN
-                   IF (up) THEN
-                      !-----------------------------------------------------
-                      !  If we moved up, try down now
-                      !-----------------------------------------------------
-                      k = k - 1
-                      cpos(i) = mins(j) + REAL(k,MK)*meshdx(j)
-                   ELSE
-                      !-----------------------------------------------------
-                      !  If we moved down, try up
-                      !-----------------------------------------------------
-                      k = k + 1
-                      cpos(i) = mins(j) + REAL(k,MK)*meshdx(j)
-                   ENDIF
-                   !---------------------------------------------------------
-                   !  Check if minboxsizes are respected now
-                   !---------------------------------------------------------
-                   IF (((cpos(i)-mins(j)) .LT. minboxsize(j)) .OR.   &
-                   &   ((maxs(j)-cpos(i)) .LT. minboxsize(j))) THEN
-                      !-----------------------------------------------------
-                      !  Cannot subdivide this box along grid lines.
-                      !  Remove it from the list of divisible boxes and
-                      !  loop.
-                      !-----------------------------------------------------
-                      DO l=inextboxlist,nboxlist-1
-                         boxlist(l) = boxlist(l+1)
-                      ENDDO
-                      nboxlist = nboxlist - 1
-                      GOTO 100
-                   ENDIF
-                ENDIF
-             ENDDO !i=1,ncut
-          ENDIF !(have_mesh)
-
-          !---------------------------------------------------------------------
-          !  Subdivide this box
-          !---------------------------------------------------------------------
-          CALL ppm_tree_boxcut(xp,inext,mins,maxs,ncut,icut,cpos,minc,maxc,  &
-          &    lhbx_cut,lpdx_cut,info)
-          IF (info .NE. ppm_param_success) GOTO 9999
-
-          !---------------------------------------------------------------------
-          !  Update the Nm of the sub-boxes. This needs to be done here for
-          !  all sub-boxes since tree_boxcost needs it.
-          !---------------------------------------------------------------------
-          IF (have_mesh) THEN
-             DO i=1,nbpd
-                Nmc(1,i) = NINT((maxc(1,i)-minc(1,i))*meshdxinv(1))+1
-                Nmc(2,i) = NINT((maxc(2,i)-minc(2,i))*meshdxinv(2))+1
-                IF (ppm_dim .GT. 2) THEN
-                   Nmc(3,i) = NINT((maxc(3,i)-minc(3,i))*meshdxinv(3))+1
-                ENDIF
-             ENDDO
-          ENDIF
-
-          !---------------------------------------------------------------------
-          !  Update the costs of the new boxes.
-          !  This also grows boxcost.
-          !---------------------------------------------------------------------
-          IF (PRESENT(pcost)) THEN
-             CALL ppm_tree_boxcost(Nmc,weights(:,1),minc,maxc,   &
-             & nbpd,lhbx_cut,lpdx_cut,costc,info,pcost)
-          ELSE
-             CALL ppm_tree_boxcost(Nmc,weights(:,1),minc,maxc,   &
-             & nbpd,lhbx_cut,lpdx_cut,costc,info,pcost)
-          ENDIF
-
-          !---------------------------------------------------------------------
-          !  Add the new boxes to the tree
-          !---------------------------------------------------------------------
-          IF (have_particles) istart = tree_lhbx(1,inext)
-          nadd = 0
-          DO i=1,nbpd
-              !-----------------------------------------------------------------
-              !  If pruneboxes is set, only add boxes of non-zero cost.
-              !-----------------------------------------------------------------
-              IF ((pruneboxes .AND. ABS(boxcost(i)) .GT. lmyeps) .OR.   &
-              &   (.NOT. pruneboxes)) THEN
-                  nbox = nbox + 1
-                  k    = blevel(inext) + 1
-                  IF (k .GT. nlevel) THEN
-                      nlevel = k
-                      up = .TRUE.
+         !---------------------------------------------------------------------
+         !  Align positions with mesh planes if needed
+         !---------------------------------------------------------------------
+         IF (have_mesh) THEN
+            DO i=1,ncut
+               j  = icut(i)
+               r1 = (cpos(i)-mins(j))*meshdxinv(j)
+               k  = NINT(r1)
+               r2 = REAL(k,ppm_kind_double)*meshdx(j)
+               cpos(i) = mins(j) + r2
+               up = .TRUE.
+               IF (r2-r1.LT.0.0_ppm_kind_double) up = .FALSE.
+               !-------------------------------------------------------------
+               !  Check if minboxsizes are respected
+               !-------------------------------------------------------------
+               IF ((cpos(i)-mins(j).LT.REAL(minboxsize(j),ppm_kind_double)).OR. &
+               &   (maxs(j)-cpos(i).LT.REAL(minboxsize(j),ppm_kind_double))) THEN
+                  IF (up) THEN
+                     !-----------------------------------------------------
+                     !  If we moved up, try down now
+                     !-----------------------------------------------------
+                     k = k - 1
+                     cpos(i) = mins(j) + REAL(k,ppm_kind_double)*meshdx(j)
                   ELSE
-                      up = .FALSE.
+                     !-----------------------------------------------------
+                     !  If we moved down, try up
+                     !-----------------------------------------------------
+                     k = k + 1
+                     cpos(i) = mins(j) + REAL(k,ppm_kind_double)*meshdx(j)
                   ENDIF
+                  !---------------------------------------------------------
+                  !  Check if minboxsizes are respected now
+                  !---------------------------------------------------------
+                  IF ((cpos(i)-mins(j).LT.REAL(minboxsize(j),ppm_kind_double)).OR. &
+                  &   (maxs(j)-cpos(i).LT.REAL(minboxsize(j),ppm_kind_double))) THEN
+                     !-----------------------------------------------------
+                     !  Cannot subdivide this box along grid lines.
+                     !  Remove it from the list of divisible boxes and
+                     !  loop.
+                     !-----------------------------------------------------
+                     DO l=inextboxlist,nboxlist-1
+                        boxlist(l) = boxlist(l+1)
+                     ENDDO
+                     nboxlist = nboxlist - 1
+                     GOTO 100
+                  ENDIF
+               ENDIF
+            ENDDO !i=1,ncut
+         ENDIF !(have_mesh)
 
-                  !-------------------------------------------------------------
-                  !  Grow the lists if needed
-                  !-------------------------------------------------------------
-                  iopt = ppm_param_alloc_grow_preserve
+         !---------------------------------------------------------------------
+         !  Subdivide this box
+         !---------------------------------------------------------------------
+         CALL ppm_tree_boxcut(xp,inext,mins,maxs,ncut,icut,cpos,minc,maxc, &
+         &    lhbx_cut,lpdx_cut,info)
+         or_fail("ppm_tree_boxcut failed to cut a box into 2, 4 or 8 pieces!")
+
+         !---------------------------------------------------------------------
+         !  Update the Nm of the sub-boxes. This needs to be done here for
+         !  all sub-boxes since tree_boxcost needs it.
+         !---------------------------------------------------------------------
+         IF (have_mesh) THEN
+            DO i=1,nbpd
+               Nmc(1,i) = NINT((maxc(1,i)-minc(1,i))*meshdxinv(1))+1
+               Nmc(2,i) = NINT((maxc(2,i)-minc(2,i))*meshdxinv(2))+1
+               IF (ppm_dim.GT.2) THEN
+                  Nmc(3,i) = NINT((maxc(3,i)-minc(3,i))*meshdxinv(3))+1
+               ENDIF
+            ENDDO
+         ENDIF
+
+         !---------------------------------------------------------------------
+         !  Update the costs of the new boxes.
+         !  This also grows boxcost.
+         !---------------------------------------------------------------------
+         IF (PRESENT(pcost)) THEN
+            CALL ppm_tree_boxcost(Nmc,weights(:,1),minc,maxc, &
+            &    nbpd,lhbx_cut,lpdx_cut,costc,info,pcost)
+         ELSE
+            CALL ppm_tree_boxcost(Nmc,weights(:,1),minc,maxc, &
+            &    nbpd,lhbx_cut,lpdx_cut,costc,info,pcost)
+         ENDIF
+         or_fail("ppm_tree_boxcost failed to compute cost of a set of boxes!")
+
+         !---------------------------------------------------------------------
+         !  Add the new boxes to the tree
+         !---------------------------------------------------------------------
+         IF (have_particles) istart = tree_lhbx(1,inext)
+
+         nadd = 0
+         DO i=1,nbpd
+            !-----------------------------------------------------------------
+            !  If pruneboxes is set, only add boxes of non-zero cost.
+            !-----------------------------------------------------------------
+            IF ((pruneboxes.AND.ABS(boxcost(i)).GT.ppm_myepsd).OR.(.NOT.pruneboxes)) THEN
+               nbox = nbox + 1
+               k    = blevel(inext) + 1
+               IF (k.GT.nlevel) THEN
+                  nlevel = k
+                  up = .TRUE.
+               ELSE
+                  up = .FALSE.
+               ENDIF
+
+               !-------------------------------------------------------------
+               !  Grow the lists if needed
+               !-------------------------------------------------------------
+               iopt = ppm_param_alloc_grow_preserve
 #if   __TYPE == __TREE
-                  IF (nbox .GT. nboxalloc .OR. nlevel .GT. nlevelalloc) THEN
-                      IF(nbox.GT.nboxalloc) nboxalloc=nboxalloc+   &
-                      &  (nbpd**(nlevel-1))
-                      IF(nlevel.GT.nlevelalloc) nlevelalloc=nlevelalloc+1
-                      IF (ppm_debug .GT. 0) THEN
-                         stdout_f('(A,I3,A,I6,A)',"Reallocating to ",nlevelalloc, &
-                         & " levels and ",nboxalloc," boxes.")
-                      ENDIF
-                      CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,nlevelalloc,  &
-                      &    min_box,max_box,boxcost,parent,nchld,child,&
-                      &    blevel,nbpl,info)
+               IF (nbox.GT.nboxalloc.OR.nlevel.GT.nlevelalloc) THEN
+                  IF (nbox.GT.nboxalloc) nboxalloc=nboxalloc+(nbpd**(nlevel-1))
+                  IF (nlevel.GT.nlevelalloc) nlevelalloc=nlevelalloc+1
+                  IF (ppm_debug.GT.0) THEN
+                     stdout_f('(A,I3,A,I6,A)',"Reallocating to ",nlevelalloc, &
+                     & " levels and ",nboxalloc," boxes.")
                   ENDIF
+                  CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,nlevelalloc, &
+                  &    min_box_,max_box_,boxcost,parent,nchld,child,     &
+                  &    blevel,nbpl,info)
+                  or_fail_alloc("ppm_tree_alloc")
+               ENDIF
 #elif __TYPE == __DECOMP
-                  IF (nbox .GT. nboxalloc) THEN
-                      nboxalloc = nboxalloc + (nbpd**(nlevel-1))
-                      IF (ppm_debug .GT. 0) THEN
-                          stdout_f('(A,I3,A)',"Reallocating to ",nboxalloc," boxes.")
-                      ENDIF
-                      CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,min_box,max_box,&
-                      &    boxcost,nchld,blevel,info)
+               IF (nbox.GT.nboxalloc) THEN
+                  nboxalloc = nboxalloc + (nbpd**(nlevel-1))
+                  IF (ppm_debug.GT.0) THEN
+                     stdout_f('(A,I3,A)',"Reallocating to ",nboxalloc," boxes.")
                   ENDIF
+                  CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,min_box_,max_box_, &
+                  &    boxcost,nchld,blevel,info)
+                  or_fail_alloc("ppm_tree_alloc")
+               ENDIF
 #endif
-                  IF (info .NE. ppm_param_success) GOTO 9999
 
-                  !-------------------------------------------------------------
-                  !  Store the new boxes
-                  !-------------------------------------------------------------
-                  IF (ppm_dim .GT. 2) THEN
-                      min_box(1,nbox)   = minc(1,i)
-                      min_box(2,nbox)   = minc(2,i)
-                      min_box(3,nbox)   = minc(3,i)
-                      max_box(1,nbox)   = maxc(1,i)
-                      max_box(2,nbox)   = maxc(2,i)
-                      max_box(3,nbox)   = maxc(3,i)
-                      IF (have_mesh) THEN
-                          Nm_box(1,nbox)= Nmc(1,i)
-                          Nm_box(2,nbox)= Nmc(2,i)
-                          Nm_box(3,nbox)= Nmc(3,i)
-                      ENDIF
-                  ELSE
-                      min_box(1,nbox)   = minc(1,i)
-                      min_box(2,nbox)   = minc(2,i)
-                      max_box(1,nbox)   = maxc(1,i)
-                      max_box(2,nbox)   = maxc(2,i)
-                      IF (have_mesh) THEN
-                          Nm_box(1,nbox)= Nmc(1,i)
-                          Nm_box(2,nbox)= Nmc(2,i)
-                      ENDIF
+               !-------------------------------------------------------------
+               !  Store the new boxes
+               !-------------------------------------------------------------
+               IF (ppm_dim.GT.2) THEN
+                  min_box_(1,nbox) = minc(1,i)
+                  min_box_(2,nbox) = minc(2,i)
+                  min_box_(3,nbox) = minc(3,i)
+                  max_box_(1,nbox) = maxc(1,i)
+                  max_box_(2,nbox) = maxc(2,i)
+                  max_box_(3,nbox) = maxc(3,i)
+                  IF (have_mesh) THEN
+                     Nm_box(1,nbox)= Nmc(1,i)
+                     Nm_box(2,nbox)= Nmc(2,i)
+                     Nm_box(3,nbox)= Nmc(3,i)
                   ENDIF
-                  boxcost(nbox)             = costc(i)
-                  nchld(nbox)               = 0
-                  nchld(inext)              = nchld(inext) + 1
-                  blevel(nbox)              = k
+               ELSE
+                  min_box_(1,nbox) = minc(1,i)
+                  min_box_(2,nbox) = minc(2,i)
+                  max_box_(1,nbox) = maxc(1,i)
+                  max_box_(2,nbox) = maxc(2,i)
+                  IF (have_mesh) THEN
+                     Nm_box(1,nbox)= Nmc(1,i)
+                     Nm_box(2,nbox)= Nmc(2,i)
+                  ENDIF
+               ENDIF
+
+               boxcost(nbox)             = costc(i)
+               nchld(nbox)               = 0
+               nchld(inext)              = nchld(inext) + 1
+               blevel(nbox)              = k
 #if   __TYPE == __TREE
-                  child(1:nbpd,nbox)        = ppm_param_undefined
-                  child(nchld(inext),inext) = nbox
-                  parent(nbox)              = inext
-                  IF (up) nbpl(k)           = 0
-                  nbpl(k)                   = nbpl(k) + 1
+               child(1:nbpd,nbox)        = ppm_param_undefined
+               child(nchld(inext),inext) = nbox
+               parent(nbox)              = inext
+               IF (up) nbpl(k)           = 0
+               nbpl(k)                   = nbpl(k) + 1
 #endif
-                  !-------------------------------------------------------------
-                  !  Update the particle index lists
-                  !-------------------------------------------------------------
-                  IF (have_particles) THEN
-                      bpc                   = lhbx_cut(i+1)-lhbx_cut(i)
-                      iend                  = istart+bpc-1
-                      tree_lpdx(istart:iend)= lpdx_cut(lhbx_cut(i):   &
-                      &                       (lhbx_cut(i+1)-1))
-                      tree_lhbx(1,nbox)     = istart
-                      tree_lhbx(2,nbox)     = iend
-                      istart                = iend+1
+               !-------------------------------------------------------------
+               !  Update the particle index lists
+               !-------------------------------------------------------------
+               IF (have_particles) THEN
+                  bpc                    = lhbx_cut(i+1)-lhbx_cut(i)
+                  iend                   = istart+bpc-1
+                  tree_lpdx(istart:iend) = lpdx_cut(lhbx_cut(i):lhbx_cut(i+1)-1)
+                  tree_lhbx(1,nbox)      = istart
+                  tree_lhbx(2,nbox)      = iend
+                  istart                 = iend+1
+               ENDIF
+               nadd                      = nadd + 1
+            ENDIF
+         ENDDO
+
+         !---------------------------------------------------------------------
+         !  Update the list of divisible boxes
+         !---------------------------------------------------------------------
+         IF (nadd.GT.0) THEN
+            !-----------------------------------------------------------------
+            !  Only do this if we added new boxes to the tree
+            !-----------------------------------------------------------------
+            ibox = nbox - nadd + 1
+            CALL ppm_tree_divcheck(min_box_(1:ppm_dim,ibox:nbox),     &
+            &    max_box_(1:ppm_dim,ibox:nbox),nbpd,minboxsize,fixed, &
+            &    boxcost(ibox:nbox),ndiv,info)
+            or_fail("ppm_tree_divcheck failed to check how many dimensions of a box are divisible!")
+
+            k  = 0    ! number of added boxes
+            k2 = 0    ! number of boxes of non-zero cost
+            DO i=1,nadd
+               IF (boxcost(ibox+i-1).GT.ppm_myepsd) k2 = k2 + 1
+               IF (ndiv(i).GE.ncut) THEN
+                  !---------------------------------------------------------
+                  !  If yes, add them to the list of divisible boxes
+                  !---------------------------------------------------------
+                  IF (k.EQ.0) THEN
+                     !-----------------------------------------------------
+                     !  First box to add replaces its parent
+                     !-----------------------------------------------------
+                     j = inextboxlist
+                  ELSE
+                     !-----------------------------------------------------
+                     !  Following ones are appended at the end of the list
+                     !-----------------------------------------------------
+                     nboxlist = nboxlist + 1
+                     j = nboxlist
                   ENDIF
-                  nadd                      = nadd + 1
-              ENDIF
-          ENDDO
-
-          !---------------------------------------------------------------------
-          !  Update the list of divisible boxes
-          !---------------------------------------------------------------------
-          IF (nadd .GT. 0) THEN
-              !-----------------------------------------------------------------
-              !  Only do this if we added new boxes to the tree
-              !-----------------------------------------------------------------
-              ibox = nbox - nadd + 1
-              CALL ppm_tree_divcheck(min_box(1:ppm_dim,ibox:nbox),    &
-              &    max_box(1:ppm_dim,ibox:nbox),nbpd,minboxsize,fixed, &
-              &    boxcost(ibox:nbox),ndiv,info)
-              IF (info .NE. 0) GOTO 9999
-              k  = 0    ! number of added boxes
-              k2 = 0    ! number of boxes of non-zero cost
-              DO i=1,nadd
-                  IF (boxcost(ibox+i-1) .GT. lmyeps) k2 = k2 + 1
-                  IF (ndiv(i) .GE. ncut) THEN
-                      !---------------------------------------------------------
-                      !  If yes, add them to the list of divisible boxes
-                      !---------------------------------------------------------
-                      IF (k .EQ. 0) THEN
-                          !-----------------------------------------------------
-                          !  First box to add replaces its parent
-                          !-----------------------------------------------------
-                          j = inextboxlist
-                      ELSE
-                          !-----------------------------------------------------
-                          !  Following ones are appended at the end of the list
-                          !-----------------------------------------------------
-                          nboxlist = nboxlist + 1
-                          j = nboxlist
-                      ENDIF
-                      IF (nboxlist .GT. nboxlistalloc) THEN
-                          iopt   = ppm_param_alloc_grow_preserve
-                          nboxlistalloc = nboxlistalloc + (nbpd**(nlevel-1))
-                          ldc(1) = nboxlistalloc
-                          CALL ppm_alloc(boxlist,ldc,iopt,info)
-                          or_fail_alloc('list of divisible boxes BOXLIST')
-                      ENDIF
-                      boxlist(j) = ibox+i-1
-                      k = k + 1
+                  IF (nboxlist.GT.nboxlistalloc) THEN
+                     iopt   = ppm_param_alloc_grow_preserve
+                     nboxlistalloc = nboxlistalloc + (nbpd**(nlevel-1))
+                     ldc(1) = nboxlistalloc
+                     CALL ppm_alloc(boxlist,ldc,iopt,info)
+                     or_fail_alloc('list of divisible boxes BOXLIST')
                   ENDIF
-              ENDDO
+                  boxlist(j) = ibox+i-1
+                  k = k + 1
+               ENDIF
+            ENDDO
 
-              !-----------------------------------------------------------------
-              !  Compress list if no replacement of parent could be made
-              !-----------------------------------------------------------------
-              IF (k .EQ. 0) THEN
-                  DO i=inextboxlist,nboxlist-1
-                      boxlist(i) = boxlist(i+1)
-                  ENDDO
-                  nboxlist = nboxlist - 1
-              ENDIF
+            !-----------------------------------------------------------------
+            !  Compress list if no replacement of parent could be made
+            !-----------------------------------------------------------------
+            IF (k.EQ.0) THEN
+               DO i=inextboxlist,nboxlist-1
+                  boxlist(i) = boxlist(i+1)
+               ENDDO
+               nboxlist = nboxlist - 1
+            ENDIF
 
-              !-----------------------------------------------------------------
-              !  Update the number of childless boxes of non-empty cost
-              !-----------------------------------------------------------------
-              nsubs = nsubs - 1 + k2
-          ENDIF           ! nadd.GT.0
+            !-----------------------------------------------------------------
+            !  Update the number of childless boxes of non-empty cost
+            !-----------------------------------------------------------------
+            nsubs = nsubs - 1 + k2
+         ENDIF ! nadd.GT.0
 
-          !---------------------------------------------------------------------
-          !  Determine if tree is finished
-          !---------------------------------------------------------------------
-      100 CALL ppm_tree_done(minboxes,nsubs,boxcost,boxlist,nboxlist,   &
-          &    nlevel,maxvariance,maxboxcost,mxlev,lcontinue,info)
-          IF (info .NE. ppm_param_success) GOTO 9999
+         !---------------------------------------------------------------------
+         !  Determine if tree is finished
+         !---------------------------------------------------------------------
+      100 CALL ppm_tree_done(minboxes,nsubs,boxcost,boxlist,nboxlist, &
+         &     nlevel,maxvariance,maxboxcost,mxlev,lcontinue,info)
+         or_fail("ppm_tree_done failed to decide if a decomposition is done or not!")
 
-          !---------------------------------------------------------------------
-          !  Debug output
-          !---------------------------------------------------------------------
-          IF (ppm_debug .GT. 1) THEN
-             stdout_f('(A,I8)',"Completed iteration ",lctr)
-             stdout_f('(A,I8)',"Total number of boxes: ",nbox)
-             stdout_f('(A,I8)',"Number of further divisible boxes: ",nboxlist)
-          ENDIF
+         !---------------------------------------------------------------------
+         !  Debug output
+         !---------------------------------------------------------------------
+         IF (ppm_debug.GT.1) THEN
+            stdout_f('(A,I8)',"Completed iteration ",lctr)
+            stdout_f('(A,I8)',"Total number of boxes: ",nbox)
+            stdout_f('(A,I8)',"Number of further divisible boxes: ",nboxlist)
+         ENDIF
       ENDDO lcontinue_do ! while lcontinue
 
 #if   __TYPE == __TREE
@@ -952,10 +972,26 @@
       NULLIFY(lpdx)
 
       IF (have_particles) THEN
-          lhbx => tree_lhbx
-          lpdx => tree_lpdx
+         lhbx => tree_lhbx
+         lpdx => tree_lpdx
       ENDIF
 #endif
+
+      iopt=ppm_param_alloc_fit
+      ldc(1)=SIZE(min_box_,1)
+      ldc(2)=SIZE(min_box_,2)
+      CALL ppm_alloc(min_box,ldc,iopt,info)
+      or_fail_alloc("Failed to allocate min_box")
+
+      CALL ppm_alloc(max_box,ldc,iopt,info)
+      or_fail_alloc("Failed to allocate max_box")
+
+      DO j=1,ldc(2)
+         DO i=1,ldc(1)
+            min_box(i,j)=REAL(min_box_(i,j),MK)
+            max_box(i,j)=REAL(max_box_(i,j),MK)
+         ENDDO
+      ENDDO
 
       !-------------------------------------------------------------------------
       !  Free memory
@@ -963,98 +999,77 @@
       9999 CONTINUE
 
       iopt = ppm_param_dealloc
-      CALL ppm_alloc(boxlist,ldc,iopt,info2)
-      IF (info2 .NE. 0) THEN
-         fail('list of divisible boxes BOXLIST',ppm_err_dealloc,exit_point=no)
-      ENDIF
-      CALL ppm_alloc(ndiv,ldc,iopt,info2)
-      IF (info2 .NE. 0) THEN
-         fail('number of divisible dimensions NDIV',ppm_err_dealloc,exit_point=no)
-      ENDIF
-      CALL ppm_alloc(icut,ldc,iopt,info2)
-      IF (info2 .NE. 0) THEN
-         fail('cut directions ICUT',ppm_err_dealloc,exit_point=no)
-      ENDIF
-      CALL ppm_alloc(cpos,ldc,iopt,info2)
-      IF (info2 .NE. 0) THEN
-         fail('cut positions CPOS',ppm_err_dealloc,exit_point=no)
-      ENDIF
-      CALL ppm_alloc(minc,ldc,iopt,info2)
-      IF (info2 .NE. 0) THEN
-         fail('minimum positions of newly cut boxes MINC',ppm_err_dealloc,exit_point=no)
-      ENDIF
-      CALL ppm_alloc(maxc,ldc,iopt,info2)
-      IF (info2 .NE. 0) THEN
-         fail('maximum positions of newly cut boxes MAXC',ppm_err_dealloc,exit_point=no)
-      ENDIF
-      CALL ppm_alloc(costc,ldc,iopt,info2)
-      IF (info2 .NE. 0) THEN
-         fail('costs of new boxes COSTC',ppm_err_dealloc,exit_point=no)
-      ENDIF
+
+      CALL ppm_alloc(min_box_,ldc,iopt,info)
+      or_fail_dealloc("min_box_",exit_point=8000)
+
+      CALL ppm_alloc(max_box_,ldc,iopt,info)
+      or_fail_dealloc("max_box_",exit_point=8000)
+
+      CALL ppm_alloc(boxlist,ldc,iopt,info)
+      or_fail_dealloc("list of divisible boxes BOXLIST",exit_point=8000)
+
+      CALL ppm_alloc(ndiv,ldc,iopt,info)
+      or_fail_dealloc("number of divisible dimensions NDIV",exit_point=8000)
+
+      CALL ppm_alloc(icut,ldc,iopt,info)
+      or_fail_dealloc("cut directions ICUT",exit_point=8000)
+
+      CALL ppm_alloc(cpos,ldc,iopt,info)
+      or_fail_dealloc("cut positions CPOS",exit_point=8000)
+
+      CALL ppm_alloc(minc,ldc,iopt,info)
+      or_fail_dealloc("minimum positions of newly cut boxes MINC",exit_point=8000)
+
+      CALL ppm_alloc(maxc,ldc,iopt,info)
+      or_fail_dealloc("maximum positions of newly cut boxes MAXC",exit_point=8000)
+
+      CALL ppm_alloc(costc,ldc,iopt,info)
+      or_fail_dealloc("costs of new boxes COSTC",exit_point=8000)
+
       IF (have_mesh) THEN
-         CALL ppm_alloc(Nm_box,ldc,iopt,info2)
-         IF (info2 .NE. 0) THEN
-            fail('number of mesh points per box NM_BOX',ppm_err_dealloc,exit_point=no)
-         ENDIF
-         CALL ppm_alloc(Nmc,ldc,iopt,info2)
-         IF (info2 .NE. 0) THEN
-            fail('number of mesh points of newly cut boxes NMC',ppm_err_dealloc,exit_point=no)
-         ENDIF
+         CALL ppm_alloc(Nm_box,ldc,iopt,info)
+         or_fail_dealloc("number of mesh points per box NM_BOX",exit_point=8000)
+
+         CALL ppm_alloc(Nmc,ldc,iopt,info)
+         or_fail_dealloc("number of mesh points of newly cut boxes NMC",exit_point=8000)
       ENDIF
-#if   __KIND == __SINGLE_PRECISION
-      CALL ppm_alloc(pcst_s,ldc,iopt,info2)
-#else
-      CALL ppm_alloc(pcst_d,ldc,iopt,info2)
-#endif
-      IF (info2 .NE. 0) THEN
-         fail('particle cost part PCOST',ppm_err_dealloc,exit_point=no)
-      ENDIF
+
+      CALL ppm_alloc(pcst,ldc,iopt,info)
+      or_fail_dealloc("particle cost part PCOST",exit_point=8000)
+
 #ifdef __MPI
-#if   __KIND == __SINGLE_PRECISION
-      CALL ppm_alloc(pcsum_s,ldc,iopt,info2)
-#else
-      CALL ppm_alloc(pcsum_d,ldc,iopt,info2)
+      CALL ppm_alloc(pcsum,ldc,iopt,info)
+      or_fail_dealloc("'particle cost sums PCSUM",exit_point=8000)
 #endif
-      IF (info2 .NE. 0) THEN
-         fail('particle cost sums PCSUM',ppm_err_dealloc,exit_point=no)
-      ENDIF
-#endif
+
       IF (have_particles) THEN
-         CALL ppm_alloc(lpdx_cut,ldc,iopt,info2)
-         IF (info2 .NE. 0) THEN
-            fail('particle index pointers LPDX_CUT',ppm_err_dealloc,exit_point=no)
-         ENDIF
-         CALL ppm_alloc(lhbx_cut,ldc,iopt,info2)
-         IF (info2 .NE. 0) THEN
-            fail('pointers to first particle in box LHBX_CUT',ppm_err_dealloc,exit_point=no)
-         ENDIF
+         CALL ppm_alloc(lpdx_cut,ldc,iopt,info)
+         or_fail_dealloc("particle index pointers LPDX_CUT",exit_point=8000)
+
+         CALL ppm_alloc(lhbx_cut,ldc,iopt,info)
+         or_fail_dealloc("pointers to first particle in box LHBX_CUT",exit_point=8000)
       ENDIF
+
 #if   __TYPE == __DECOMP
-      CALL ppm_alloc(boxcost,ldc,iopt,info2)
-      IF (info2 .NE. 0) THEN
-         fail('costs of all boxes BOXCOST',ppm_err_dealloc,exit_point=no)
-      ENDIF
-      CALL ppm_alloc(blevel,ldc,iopt,info2)
-      IF (info2 .NE. 0) THEN
-         fail('tree levels of boxes BLEVEL',ppm_err_dealloc,exit_point=no)
-      ENDIF
+      CALL ppm_alloc(boxcost,ldc,iopt,info)
+      or_fail_dealloc("costs of all boxes BOXCOST",exit_point=8000)
+
+      CALL ppm_alloc(blevel,ldc,iopt,info)
+      or_fail_dealloc("tree levels of boxes BLEVEL",exit_point=8000)
+
       IF (have_particles) THEN
-         CALL ppm_alloc(npbx,ldc,iopt,info2)
-         IF (info2 .NE. 0) THEN
-            fail('number of particles per box NPBX',ppm_err_dealloc,exit_point=no)
-         ENDIF
-         CALL ppm_alloc(cbox,ldc,iopt,info2)
-         IF (info2 .NE. 0) THEN
-            fail('temporary box pointers CBOX',ppm_err_dealloc,exit_point=no)
-         ENDIF
-         CALL ppm_alloc(tree_lhbx,ldc,iopt,info2)
-         IF (info2 .NE. 0) THEN
-            fail('Ranked particle lists TREE_LHBX',ppm_err_dealloc,exit_point=no)
-         ENDIF
-         CALL ppm_alloc(tree_lpdx,ldc,iopt,info2)
-         IF (info2 .NE. 0) THEN
-            fail('Ranked particle lists TREE_LPDX',ppm_err_dealloc,exit_point=no)
-         ENDIF
+         CALL ppm_alloc(npbx,ldc,iopt,info)
+         or_fail_dealloc("number of particles per box NPBX",exit_point=8000)
+
+         CALL ppm_alloc(cbox,ldc,iopt,info)
+         or_fail_dealloc("temporary box pointers CBOX",exit_point=8000)
+
+         CALL ppm_alloc(tree_lhbx,ldc,iopt,info)
+         or_fail_dealloc("Ranked particle lists TREE_LHBX",exit_point=8000)
+
+         CALL ppm_alloc(tree_lpdx,ldc,iopt,info)
+         or_fail_dealloc("Ranked particle lists TREE_LPDX",exit_point=8000)
       ENDIF
 #endif
 
@@ -1065,10 +1080,14 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-         IF (ABS(weights(1,1)).LE.lmyeps.AND.ABS(weights(2,1)).LE.lmyeps.AND.ABS(weights(3,1)).LE.lmyeps) THEN
+         IF (ABS(weights(1,1)).LE.lmyeps.AND. &
+         &   ABS(weights(2,1)).LE.lmyeps.AND. &
+         &   ABS(weights(3,1)).LE.lmyeps) THEN
             fail('At least one weights(:,1) must be non-zero!',exit_point=8888)
          ENDIF
-         IF (ABS(weights(1,2)).LE.lmyeps.AND.ABS(weights(2,2)).LE.lmyeps.AND.ABS(weights(3,2)).LE.lmyeps) THEN
+         IF (ABS(weights(1,2)).LE.lmyeps.AND. &
+         &   ABS(weights(2,2)).LE.lmyeps.AND. &
+         &   ABS(weights(3,2)).LE.lmyeps) THEN
             fail('At least one weights(:,2) must be non-zero!',exit_point=8888)
          ENDIF
          IF (treetype.EQ.ppm_param_tree_oct.AND.ppm_dim.EQ.2) THEN
@@ -1077,10 +1096,10 @@
             itype = ppm_param_tree_quad
          ENDIF
          DO i=1,ppm_dim
-            IF (minboxsize(i) .LT. 0.0_MK) THEN
+            IF (minboxsize(i).LT.0.0_MK) THEN
                fail('the minimum box size must be > 0 !',exit_point=8888)
             ENDIF
-            IF (min_dom(i) .GT. max_dom(i)) THEN
+            IF (min_dom(i).GT.max_dom(i)) THEN
                fail('min_dom must be <= max_dom !',exit_point=8888)
             ENDIF
          ENDDO

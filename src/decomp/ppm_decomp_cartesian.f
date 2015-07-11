@@ -328,7 +328,7 @@
             nblocks(i) = 2**nblocks(i)
             ! initialize surface and volume such that the
             ! surface-to-volume ratio is max.
-            surface(i) = HUGE(surface(i))
+            surface(i) = ppm_big_i
             volume(i)  = 1
          ENDDO
 

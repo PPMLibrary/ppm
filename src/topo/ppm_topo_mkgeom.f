@@ -169,7 +169,6 @@
       INTEGER, DIMENSION(  :), POINTER :: isublist => NULL()
       INTEGER, DIMENSION(:  ), POINTER :: sub2proc => NULL()
 
-      CHARACTER(LEN=ppm_char) :: msg
       CHARACTER(LEN=ppm_char) :: caller="ppm_topo_mkgeom"
 
       LOGICAL, DIMENSION(ppm_dim) :: fixed
@@ -215,6 +214,10 @@
       xpdummy(1,1)  = 0.0_MK
       Nmdummy(1)    = 0
       nnodes(1:3,1) = 0
+      !-------------------------------------------------------------------------
+      !  Dummy ghosts
+      !-------------------------------------------------------------------------
+      gsvec         = ghostsize
 
       !-------------------------------------------------------------------------
       !  Recursive bisection
@@ -222,19 +225,18 @@
       SELECT CASE (decomp)
       CASE (ppm_param_decomp_bisection)
          ! build a binary tree
-         treetype         = ppm_param_tree_bin
+         treetype       = ppm_param_tree_bin
          ! no particles and no mesh
-         weights(1,1:2)   = 0.0_MK
-         weights(2,1:2)   = 0.0_MK
+         weights(1,1:2) = 0.0_MK
+         weights(2,1:2) = 0.0_MK
          ! geometry has unit weight
-         weights(3,1:2)   = 1.0_MK
+         weights(3,1:2) = 1.0_MK
          ! all directions can be cut
-         fixed(1:ppm_dim) = .FALSE.
-         gsvec(1:ppm_dim) = ghostsize
+         fixed          = .FALSE.
          ! build tree
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype, &
          &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,  &
-         &    min_box, max_box,nbox,nchld,info)
+         &    min_box,max_box,nbox,nchld,info)
          or_fail("Bisection decomposition failed")
 
          ! convert tree to subs
@@ -254,23 +256,25 @@
          !  pencil quadrisection using the general ppm_tree
          !-------------------------------------------------------------------
          ! build a quad tree, binary in 2d
-         treetype         = ppm_param_tree_quad
-         IF (ppm_dim .EQ. 2) treetype = ppm_param_tree_bin
+         IF (ppm_dim.EQ.2) THEN
+            treetype = ppm_param_tree_bin
+         ELSE
+            treetype = ppm_param_tree_quad
+         ENDIF
          ! no particles and no mesh
-         weights(1,1:2)   = 0.0_MK
-         weights(2,1:2)   = 0.0_MK
+         weights(1,1:2) = 0.0_MK
+         weights(2,1:2) = 0.0_MK
          ! geometry has unit weight
-         weights(3,1:2)   = 1.0_MK
+         weights(3,1:2) = 1.0_MK
          ! fix the proper direction
-         fixed(1:ppm_dim) = .FALSE.
+         fixed          = .FALSE.
          IF (decomp .EQ. ppm_param_decomp_xpencil) fixed(1) = .TRUE.
          IF (decomp .EQ. ppm_param_decomp_ypencil) fixed(2) = .TRUE.
          IF (decomp .EQ. ppm_param_decomp_zpencil) fixed(3) = .TRUE.
-         gsvec(1:ppm_dim) = ghostsize
          ! build tree
-         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,   &
-         &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
-         &       min_box,max_box,nbox,nchld,info)
+         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype, &
+         &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,  &
+         &    min_box,max_box,nbox,nchld,info)
          or_fail("Pencil decomposition failed")
 
          ! convert tree to subs
@@ -285,23 +289,23 @@
       &     ppm_param_decomp_xz_slab, &
       &     ppm_param_decomp_yz_slab)
          IF (decomp.EQ.ppm_param_decomp_xz_slab.AND.ppm_dim.LT.3) THEN
-            fail("Cannot make x-z slabs in 2D!")
+            fail("Cannot make x-z slabs in 2D!",ppm_error=ppm_error_fatal)
          ENDIF
          IF (decomp.EQ.ppm_param_decomp_yz_slab.AND.ppm_dim.LT.3) THEN
-            fail("Cannot make y-z slabs in 2D!")
+            fail("Cannot make y-z slabs in 2D!",ppm_error=ppm_error_fatal)
          ENDIF
          !-------------------------------------------------------------------
          !  slab bisection using the general ppm_tree
          !-------------------------------------------------------------------
          ! build a binary tree
-         treetype         = ppm_param_tree_bin
+         treetype       = ppm_param_tree_bin
          ! no particles and no mesh
-         weights(1,1:2)   = 0.0_MK
-         weights(2,1:2)   = 0.0_MK
+         weights(1,1:2) = 0.0_MK
+         weights(2,1:2) = 0.0_MK
          ! geometry has unit weight
-         weights(3,1:2)   = 1.0_MK
+         weights(3,1:2) = 1.0_MK
          ! fix the proper directions
-         fixed(1:ppm_dim) = .FALSE.
+         fixed          = .FALSE.
          IF (decomp .EQ. ppm_param_decomp_xy_slab) THEN
              fixed(1) = .TRUE.
              fixed(2) = .TRUE.
@@ -314,7 +318,6 @@
              fixed(2) = .TRUE.
              fixed(3) = .TRUE.
          ENDIF
-         gsvec(1:ppm_dim) = ghostsize
          ! build tree
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype, &
          &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,  &
@@ -337,17 +340,16 @@
          ! and a quad tree in 2d
          treetype = MERGE(ppm_param_tree_quad,ppm_param_tree_oct,ppm_dim.EQ.2)
          ! no particles and no mesh
-         weights(1,1:2)   = 0.0_MK
-         weights(2,1:2)   = 0.0_MK
+         weights(1,1:2) = 0.0_MK
+         weights(2,1:2) = 0.0_MK
          ! geometry has unit weight
-         weights(3,1:2)   = 1.0_MK
+         weights(3,1:2) = 1.0_MK
          ! all directions can be cut
-         fixed(1:ppm_dim) = .FALSE.
-         gsvec(1:ppm_dim) = ghostsize
+         fixed          = .FALSE.
          ! build tree
-         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,   &
-         &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
-         &       min_box,max_box,nbox,nchld,info)
+         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype, &
+         &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,  &
+         &    min_box,max_box,nbox,nchld,info)
          or_fail("Cuboid decomposition failed")
 
          ! convert tree to subs
@@ -360,13 +362,12 @@
       !-------------------------------------------------------------------------
       CASE (ppm_param_decomp_user_defined)
          !Do nothing. Just take the stuff from the user and trust the guy.
-         gsvec(1:ppm_dim) = ghostsize
       !-------------------------------------------------------------------------
       !  Unknown decomposition type
       !-------------------------------------------------------------------------
       CASE DEFAULT
-         WRITE(msg,'(A,I5)') "Unknown decomposition type: ",decomp
-         fail(msg)
+         stdout_f('(A,I5)',"Unknown decomposition type: ",decomp)
+         fail(cbuf)
 
       END SELECT
 
@@ -399,9 +400,6 @@
 
       CASE (ppm_param_assign_metis_cut, &
       &     ppm_param_assign_metis_comm)
-
-         gsvec(1:ppm_dim) = ghostsize
-
          !-------------------------------------------------------------------
          !  use METIS library to do assignment
          !-------------------------------------------------------------------
@@ -432,8 +430,8 @@
          !-------------------------------------------------------------------
          !  unknown assignment scheme
          !-------------------------------------------------------------------
-         WRITE(msg,'(A,I5)') "Unknown assignment scheme: ",assig
-         fail(msg)
+         WRITE(cbuf,'(A,I5)') "Unknown assignment scheme: ",assig
+         fail(cbuf)
 
       END SELECT
 
@@ -457,8 +455,8 @@
       !  Dump out disgnostic files
       !-------------------------------------------------------------------------
       !IF (ppm_debug .GT. 0) THEN
-      !    WRITE(msg,'(A,I4.4)') 'part',ppm_rank
-      !    OPEN(10,FILE=msg)
+      !    WRITE(cbuf,'(A,I4.4)') 'part',ppm_rank
+      !    OPEN(10,FILE=TRIM(cbuf))
       !
       !    DO j=1,nsublist
       !        i = isublist(j)

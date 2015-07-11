@@ -107,4 +107,9 @@
          INTEGER                                        :: ppm_stderr = 0
          INTEGER                                        :: ppm_logfile = -1
 
+         !----------------------------------------------------------------------
+         !  Global parameter
+         !----------------------------------------------------------------------
+         INTEGER, PARAMETER                             :: ppm_big_i=HUGE(1)
+
       END MODULE ppm_module_data
