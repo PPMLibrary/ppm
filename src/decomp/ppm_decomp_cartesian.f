@@ -168,11 +168,11 @@
 
       !check for round-off problems and fix them if necessary
       DO k=1,ppm_dim
-         DO WHILE (min_phys(k)+Nc(k)*dx(k).LT.max_phys(k))
+         DO WHILE (REAL(min_phys(k),ppm_kind_double)+Nc(k)*dx(k).LT.REAL(max_phys(k),ppm_kind_double))
             dx(k)=dx(k)+EPSILON(dx(k))
          ENDDO
       ENDDO
-      check_true(<#ALL(min_phys(1:ppm_dim)+Nc(1:ppm_dim)*dx(1:ppm_dim).GE.max_phys(1:ppm_dim))#>,"round-off problem")
+      check_true(<#ALL(REAL(min_phys(1:ppm_dim),ppm_kind_double)+Nc(1:ppm_dim)*dx(1:ppm_dim).GE.REAL(max_phys(1:ppm_dim),ppm_kind_double))#>,"round-off problem")
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the subs if not already done so by the user

@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE decomp_tree_s(xp,Npart,min_phys,max_phys, &
-     &   minboxsize,tolerance,min_sub,max_sub,nsubs,info,pcost)
+      &   minboxsize,tolerance,min_sub,max_sub,nsubs,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE decomp_tree_d(xp,Npart,min_phys,max_phys, &
-     &   minboxsize,tolerance,min_sub,max_sub,nsubs,info,pcost)
+      &   minboxsize,tolerance,min_sub,max_sub,nsubs,info,pcost)
 #endif
       !!! Performs a tree-like decomposition.
       !!! It subdivides space until the number of leaves in the
@@ -51,6 +51,7 @@
       USE ppm_module_write
       USE ppm_module_mpi
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION

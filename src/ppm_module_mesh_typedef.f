@@ -693,8 +693,6 @@ minclude ppm_get_field_template(4,l)
           INTEGER, DIMENSION(ppm_dim) :: Nc
           INTEGER, DIMENSION(3)       :: ldc
 
-          CHARACTER(LEN=ppm_char) :: msg
-
           LOGICAL :: valid
 
           start_subroutine("equi_mesh_create")
@@ -787,8 +785,11 @@ minclude ppm_get_field_template(4,l)
                       this%h(k)=this%h(k)+EPSILON(this%h(k))
                    ENDDO
                 ENDDO
-                check_true(<#ALL(REAL(topo%min_physs(1:ppm_dim),ppm_kind_double)+REAL(Nm(1:ppm_dim)-1,ppm_kind_double)*this%h(1:ppm_dim).GE.REAL(topo%max_physs(1:ppm_dim),ppm_kind_double))#>, &
-                & "round-off problem in mesh creation")
+                valid=ALL(REAL(topo%min_physs(1:ppm_dim),ppm_kind_double)+            &
+                &         REAL(Nm(1:ppm_dim)-1,ppm_kind_double)*this%h(1:ppm_dim).GE. &
+                &         REAL(topo%max_physs(1:ppm_dim),ppm_kind_double))
+                check_true(<#valid#>, &
+                & "ALL(topo%min_physs+(Nm(1:ppm_dim)-1)*this%h.GE.topo%max_physs) is not true. round-off problem in mesh creation!")
              ELSE
                 this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) &
                 &                 - topo%min_physd(1:ppm_dim)) &
@@ -867,8 +868,10 @@ minclude ppm_get_field_template(4,l)
 
                 !Check that this subdomain is large enough and thus
                 !compatible with this mesh and its resolution h.
-                check_true(<#ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*REAL(this%ghostsize(1:ppm_dim),ppm_kind_double)+ppm_myepsd))#>,&
-                & "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
+                valid=ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i)).GT. &
+                &         (this%h(1:ppm_dim)*REAL(this%ghostsize(1:ppm_dim),ppm_kind_double)+ppm_myepsd))
+                check_true(<#valid#>,&
+                & "ALL((topo%max_subd-topo%min_subd).GT.(this%h*this%ghostsize+ppm_myepsd)) is not true. Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
 !                 stdout("#isub = ",i," AFTER CHOP")
 !                 stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
 !                 stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
@@ -908,8 +911,10 @@ minclude ppm_get_field_template(4,l)
 
                 !Check that this subdomain is large enough and thus
                 !compatible with this mesh and its resolution h.
-                check_true(<#ALL(REAL(topo%max_subs(1:ppm_dim,i)-topo%min_subs(1:ppm_dim,i),ppm_kind_double).GT.(this%h(1:ppm_dim)*REAL(this%ghostsize(1:ppm_dim),ppm_kind_double)+REAL(ppm_myepss,ppm_kind_double)))#>,&
-                & "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
+                valid=ALL(REAL(topo%max_subs(1:ppm_dim,i)-topo%min_subs(1:ppm_dim,i),ppm_kind_double).GT. &
+                &        (this%h(1:ppm_dim)*REAL(this%ghostsize(1:ppm_dim),ppm_kind_double)+REAL(ppm_myepss,ppm_kind_double)))
+                check_true(<#valid#>,&
+                & "ALL((topo%max_subs-topo%min_subs).GT.(this%h*this%ghostsize+ppm_myepss)) is not true. Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
                 !stdout("#isub = ",i," AFTER CHOP")
                 !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
                 !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')

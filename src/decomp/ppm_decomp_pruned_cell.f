@@ -86,10 +86,10 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(ppm_dim) :: dmx
-      REAL(MK)                     :: rdx,rdy,rdz
-      REAL(MK)                     :: x0,y0,z0,rmean_npbx
-      REAL(ppm_kind_double)        :: t0
+      REAL(ppm_kind_double), DIMENSION(ppm_dim) :: dmx
+      REAL(MK)                                  :: rdx,rdy,rdz
+      REAL(MK)                                  :: x0,y0,z0,rmean_npbx
+      REAL(ppm_kind_double)                     :: t0
 
       INTEGER, DIMENSION(ppm_dim) :: Nm
       INTEGER, DIMENSION(3)       :: ldc
@@ -122,15 +122,15 @@
       !-------------------------------------------------------------------------
       Mm = 1
       DO k=1,ppm_dim
-         Nm(k) =INT((max_phys(k) - min_phys(k))/ghostsize)
-         dmx(k)=(max_phys(k) - min_phys(k))/REAL(Nm(k),MK)
+         Nm(k) =INT(REAL(max_phys(k)-min_phys(k),ppm_kind_double)/REAL(ghostsize,ppm_kind_double))
+         dmx(k)=REAL(max_phys(k) - min_phys(k),ppm_kind_double)/REAL(Nm(k),ppm_kind_double)
 
          !check for round-off problems and fix them if necessary
-         DO WHILE (min_phys(k)+(Nm(k)-1)*dmx(k).LT.max_phys(k))
+         DO WHILE (REAL(min_phys(k),ppm_kind_double)+REAL(Nm(k)-1,ppm_kind_double)*dmx(k).LT.REAL(max_phys(k),ppm_kind_double))
             dmx(k)=dmx(k)+EPSILON(dmx(k))
          ENDDO
 
-         check_true(<#(min_phys(k)+(Nm(k)-1)*dmx(k).GE.max_phys(k))#>,"round-off problem")
+         check_true(<#(REAL(min_phys(k),ppm_kind_double)+REAL(Nm(k)-1,ppm_kind_double)*dmx(k).GE.REAL(max_phys(k),ppm_kind_double))#>,"round-off problem")
 
          Mm=Mm*Nm(k)
       ENDDO
@@ -172,8 +172,8 @@
       !-------------------------------------------------------------------------
       SELECT CASE (ppm_dim)
       CASE (2)
-         rdx = 1.0_MK/dmx(1)
-         rdy = 1.0_MK/dmx(2)
+         rdx = REAL(1.0_ppm_kind_double/dmx(1),MK)
+         rdy = REAL(1.0_ppm_kind_double/dmx(2),MK)
          x0  = min_phys(1)*rdx
          y0  = min_phys(2)*rdy
          n1  = Nm(1)
@@ -185,9 +185,9 @@
          ENDDO
 
       CASE (3)
-         rdx = 1.0_MK/dmx(1)
-         rdy = 1.0_MK/dmx(2)
-         rdz = 1.0_MK/dmx(3)
+         rdx = REAL(1.0_ppm_kind_double/dmx(1),MK)
+         rdy = REAL(1.0_ppm_kind_double/dmx(2),MK)
+         rdz = REAL(1.0_ppm_kind_double/dmx(3),MK)
          x0  = min_phys(1)*rdx
          y0  = min_phys(2)*rdy
          z0  = min_phys(3)*rdz
@@ -261,10 +261,10 @@
                ibox = i + (j - 1)*Nm(1)
                IF (npbx(ibox).GT.0) THEN
                   nsubs            = nsubs + 1
-                  min_sub(1,nsubs) = min_phys(1) + REAL(i-1,MK)*dmx(1)
-                  min_sub(2,nsubs) = min_phys(2) + REAL(j-1,MK)*dmx(2)
-                  max_sub(1,nsubs) = min_phys(1) + REAL(i  ,MK)*dmx(1)
-                  max_sub(2,nsubs) = min_phys(2) + REAL(j  ,MK)*dmx(2)
+                  min_sub(1,nsubs) = min_phys(1) + REAL(REAL(i-1,ppm_kind_double)*dmx(1),MK)
+                  min_sub(2,nsubs) = min_phys(2) + REAL(REAL(j-1,ppm_kind_double)*dmx(2),MK)
+                  max_sub(1,nsubs) = min_phys(1) + REAL(REAL(i  ,ppm_kind_double)*dmx(1),MK)
+                  max_sub(2,nsubs) = min_phys(2) + REAL(REAL(j  ,ppm_kind_double)*dmx(2),MK)
                ENDIF
             ENDDO
          ENDDO
@@ -279,12 +279,12 @@
                   ibox = i + (j - 1)*Nm(1) + (k - 1)*Nm(1)*Nm(2)
                   IF (npbx(ibox).GT.0) THEN
                      nsubs            = nsubs + 1
-                     min_sub(1,nsubs) = min_phys(1) + REAL(i-1,MK)*dmx(1)
-                     min_sub(2,nsubs) = min_phys(2) + REAL(j-1,MK)*dmx(2)
-                     min_sub(3,nsubs) = min_phys(3) + REAL(k-1,MK)*dmx(3)
-                     max_sub(1,nsubs) = min_phys(1) + REAL(i  ,MK)*dmx(1)
-                     max_sub(2,nsubs) = min_phys(2) + REAL(j  ,MK)*dmx(2)
-                     max_sub(3,nsubs) = min_phys(3) + REAL(k  ,MK)*dmx(3)
+                     min_sub(1,nsubs) = min_phys(1) + REAL(REAL(i-1,ppm_kind_double)*dmx(1),MK)
+                     min_sub(2,nsubs) = min_phys(2) + REAL(REAL(j-1,ppm_kind_double)*dmx(2),MK)
+                     min_sub(3,nsubs) = min_phys(3) + REAL(REAL(k-1,ppm_kind_double)*dmx(3),MK)
+                     max_sub(1,nsubs) = min_phys(1) + REAL(REAL(i  ,ppm_kind_double)*dmx(1),MK)
+                     max_sub(2,nsubs) = min_phys(2) + REAL(REAL(j  ,ppm_kind_double)*dmx(2),MK)
+                     max_sub(3,nsubs) = min_phys(3) + REAL(REAL(k  ,ppm_kind_double)*dmx(3),MK)
                   ENDIF
                ENDDO
             ENDDO

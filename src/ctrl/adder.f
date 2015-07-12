@@ -206,7 +206,10 @@
           def%long_flag = ''
           def%ctrl_name = ''
           def%help      = ''
-#if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
+#if defined(__INTEGER)
+          def%min       = -ppm_big_i
+          def%max       =  ppm_big_i
+#elif defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
           def%min       = -HUGE(min)
           def%max       =  HUGE(max)
 #endif

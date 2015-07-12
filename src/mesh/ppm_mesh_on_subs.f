@@ -85,9 +85,9 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double)        :: t0
-      REAL(MK), DIMENSION(ppm_dim) :: len_phys,dx
-      REAL(MK), DIMENSION(ppm_dim) :: Offst
+      REAL(ppm_kind_double)                     :: t0
+      REAL(ppm_kind_double), DIMENSION(ppm_dim) :: len_phys,dx
+      REAL(ppm_kind_double), DIMENSION(ppm_dim) :: Offst
 
       INTEGER, DIMENSION(ppm_dim) :: iend
       !!! Upper-right coordinates on the sub mesh
@@ -113,29 +113,26 @@
       ENDIF
 
       IF (PRESENT(Offset)) THEN
-#if   __KIND == __SINGLE_PRECISION
-         Offst(1:ppm_dim) = REAL(Offset(1:ppm_dim),MK)
-#elif __KIND == __DOUBLE_PRECISION
-         Offst(1:ppm_dim) = Offset(1:ppm_dim)
-#endif
+         Offst = Offset
       ELSE
-         Offst = 0.0_MK
+         Offst = 0.0_ppm_kind_double
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Mesh spacing
       !-------------------------------------------------------------------------
       Nc(1:ppm_dim)       = Nm(1:ppm_dim)-1
-      len_phys(1:ppm_dim) = max_phys(1:ppm_dim) - min_phys(1:ppm_dim)
-      dx(1:ppm_dim)       = len_phys(1:ppm_dim)/REAL(Nc(1:ppm_dim),MK)
+      len_phys(1:ppm_dim) = REAL(max_phys(1:ppm_dim)-min_phys(1:ppm_dim),ppm_kind_double)
+      dx(1:ppm_dim)       = len_phys(1:ppm_dim)/REAL(Nc(1:ppm_dim),ppm_kind_double)
 
       !check for round-off problems and fix them if necessary
       DO k=1,ppm_dim
-         DO WHILE (min_phys(k)+Nc(k)*dx(k).LT.max_phys(k))
+         DO WHILE (REAL(min_phys(k),ppm_kind_double)+REAL(Nc(k),ppm_kind_double)*dx(k).LT.REAL(max_phys(k),ppm_kind_double))
             dx(k)=dx(k)+EPSILON(dx(k))
          ENDDO
       ENDDO
-      check_true(<#ALL(min_phys(1:ppm_dim)+Nc(1:ppm_dim)*dx(1:ppm_dim).GE.max_phys(1:ppm_dim))#>,"round-off problem in mesh creation")
+      check_true(<#ALL(REAL(min_phys(1:ppm_dim),ppm_kind_double)+REAL(Nc(1:ppm_dim),ppm_kind_double)*dx(1:ppm_dim).GE.REAL(max_phys(1:ppm_dim),ppm_kind_double))#>, &
+      & "round-off problem in mesh creation")
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the meshes
@@ -153,8 +150,8 @@
       !  Determine number of mesh points.
       !-------------------------------------------------------------------------
       DO i=1,nsubs
-         istart(1:ppm_dim,i)=1+CEILING((min_sub(1:ppm_dim,i)-Offst(1:ppm_dim))/dx(1:ppm_dim))
-         iend(1:ppm_dim)    =1+FLOOR((  max_sub(1:ppm_dim,i)-Offst(1:ppm_dim))/(dx(1:ppm_dim)-EPSILON(dx(1:ppm_dim))))
+         istart(1:ppm_dim,i)=1+CEILING((REAL(min_sub(1:ppm_dim,i),ppm_kind_double)-Offst(1:ppm_dim))/dx(1:ppm_dim))
+         iend(1:ppm_dim)    =1+FLOOR((  REAL(max_sub(1:ppm_dim,i),ppm_kind_double)-Offst(1:ppm_dim))/(dx(1:ppm_dim)-EPSILON(dx(1:ppm_dim))))
          ndata(1:ppm_dim,i) =1+iend(1:ppm_dim)-istart(1:ppm_dim,i)
       ENDDO
 
