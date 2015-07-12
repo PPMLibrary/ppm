@@ -900,10 +900,10 @@ minclude ppm_get_field_template(4,l)
                    ! node right on the East, North, or Top domain boundary are
                    ! reduced by 1 mesh node so that real mesh nodes are not
                    ! duplicated.
-                   IF (REAL(this%iend(k,i)-1,ppm_kind_double).GE.(REAL(topo%max_subs(k,i),ppm_kind_double)-Offset(k))/this%h(k)) THEN
-                      IF (topo%subs_bc(2*k,i).NE.1  .OR.  &
-                      &   (topo%subs_bc(2*k,i).EQ.1 .AND. &
-                      &   topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
+                   IF (REAL(this%iend(k,i)-1,ppm_kind_double).GE. &
+                   &  (REAL(topo%max_subs(k,i),ppm_kind_double)-Offset(k))/this%h(k)) THEN
+                      IF (topo%subs_bc(2*k,i).NE.1.OR. &
+                      &  (topo%subs_bc(2*k,i).EQ.1.AND.topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
                          this%iend(k,i) = this%iend(k,i) -1
                       ENDIF
                    ENDIF
@@ -911,7 +911,7 @@ minclude ppm_get_field_template(4,l)
 
                 !Check that this subdomain is large enough and thus
                 !compatible with this mesh and its resolution h.
-                valid=ALL(REAL(topo%max_subs(1:ppm_dim,i)-topo%min_subs(1:ppm_dim,i),ppm_kind_double).GT. &
+                valid=ALL((REAL(topo%max_subs(1:ppm_dim,i),ppm_kind_double)-REAL(topo%min_subs(1:ppm_dim,i),ppm_kind_double)).GT. &
                 &        (this%h(1:ppm_dim)*REAL(this%ghostsize(1:ppm_dim),ppm_kind_double)+REAL(ppm_myepss,ppm_kind_double)))
                 check_true(<#valid#>,&
                 & "ALL((topo%max_subs-topo%min_subs).GT.(this%h*this%ghostsize+ppm_myepss)) is not true. Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")

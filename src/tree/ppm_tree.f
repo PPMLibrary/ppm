@@ -218,7 +218,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double), PARAMETER               :: big=HUGE(1._ppm_kind_double)
+      REAL(ppm_kind_double), PARAMETER               :: big=REAL(HUGE(1._ppm_kind_single),ppm_kind_double)
       REAL(ppm_kind_double), DIMENSION(1:ppm_dim)    :: meshdx,meshdxinv
       REAL(ppm_kind_double), DIMENSION(1:ppm_dim)    :: mins,maxs
 
@@ -978,8 +978,8 @@
 #endif
 
       iopt=ppm_param_alloc_fit
-      ldc(1)=SIZE(min_box_,1)
-      ldc(2)=SIZE(min_box_,2)
+      ldc(1)=ppm_dim
+      ldc(2)=nbox
       CALL ppm_alloc(min_box,ldc,iopt,info)
       or_fail_alloc("Failed to allocate min_box")
 
