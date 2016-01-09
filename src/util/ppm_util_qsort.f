@@ -153,13 +153,9 @@
       !-------------------------------------------------------------------------
       ! Allocate the stack of intervals
       !-------------------------------------------------------------------------
-      ldl(1) = 1
-      ldu(1) = stklength
-      ALLOCATE(lstk(ldl(1):ldu(1)),STAT=info)
-      or_fail_alloc('left indices list LSTK',ppm_error=ppm_error_fatal)
-
-      ALLOCATE(rstk(ldl(1):ldu(1)),STAT=info)
-      or_fail_alloc('right indices list RSTK',ppm_error=ppm_error_fatal)
+      ALLOCATE(lstk(stklength),rstk(stklength),STAT=info)
+      or_fail_alloc('Failed to allocate left indices list LSTK & right indices list RSTK!', &
+      & ppm_error=ppm_error_fatal)
 
       ! If array is short, skip QuickSort and go directly to
       ! the straight insertion sort.
@@ -361,13 +357,13 @@
       !  Pfotenhauerstr. 108, 01307 Dresden, Germany
       !-------------------------------------------------------------------------
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_util_qsort2_s(inlist,info)
+      SUBROUTINE ppm_util_qsort2_s(inlist,info,inlistSize)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_util_qsort2_d(inlist,info)
+      SUBROUTINE ppm_util_qsort2_d(inlist,info,inlistSize)
 #elif __KIND == __INTEGER
-      SUBROUTINE ppm_util_qsort2_i(inlist,info)
+      SUBROUTINE ppm_util_qsort2_i(inlist,info,inlistSize)
 #elif __KIND == __LONGINT
-      SUBROUTINE ppm_util_qsort2_li(inlist,info)
+      SUBROUTINE ppm_util_qsort2_li(inlist,info,inlistSize)
 #endif
       !!! From a list of values sorts them into ascending order.
       !!! [NOTE]
@@ -405,6 +401,7 @@
       !!! List to be sorted
       INTEGER,                INTENT(  OUT) :: info
       !!! Return status, 0 on success
+      INTEGER, OPTIONAL,      INTENT(IN   ) :: inlistSize
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -417,19 +414,17 @@
 #elif __KIND == __LONGINT
       INTEGER(ppm_kind_int64)            :: datap
 #endif
-      INTEGER, DIMENSION(1)              :: ldl,ldu
-      INTEGER                            :: iopt
       INTEGER, PARAMETER                 :: m = 9
       !   QuickSort Cutoff
       !   Quit QuickSort-ing when a subsequence contains M or fewer
       !   elements and finish off at end with straight insertion sort.
       !   According to Knuth, V.3, the optimum value of M is around 9.
-      INTEGER                            :: stklength, dn
+      INTEGER                            :: stklength,dn
       INTEGER, DIMENSION(:), ALLOCATABLE :: lstk
       INTEGER, DIMENSION(:), ALLOCATABLE :: rstk
       INTEGER                            :: i,j,n,l,r,p
       INTEGER                            :: istk
-      INTEGER                            :: inlistu,inlistl
+      INTEGER                            :: inlistu
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_util_qsort2'
       !-------------------------------------------------------------------------
@@ -441,9 +436,13 @@
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
-      inlistl = LBOUND(inlist,1)
-      inlistu = UBOUND(inlist,1)
-      n = inlistu-inlistl+1
+      IF (PRESENT(inlistSize)) THEN
+         IF (inlistSize.LT.1) GOTO 9999
+         inlistu = inlistSize
+      ELSE
+         inlistu = UBOUND(inlist,1)
+      ENDIF
+      n = inlistu
 
       !-------------------------------------------------------------------------
       ! Compute the log of the list length, it is in fact a bound for the length
@@ -461,13 +460,9 @@
       !-------------------------------------------------------------------------
       ! Allocate the stack of intervals
       !-------------------------------------------------------------------------
-      ldl(1) = 1
-      ldu(1) = stklength
-      ALLOCATE(lstk(ldl(1):ldu(1)),STAT=info)
-      or_fail_alloc('left indices list LSTK',ppm_error=ppm_error_fatal)
-
-      ALLOCATE(rstk(ldl(1):ldu(1)),STAT=info)
-      or_fail_alloc('right indices list RSTK',ppm_error=ppm_error_fatal)
+      ALLOCATE(lstk(1:stklength),rstk(1:stklength),STAT=info)
+      or_fail_alloc('Failed to allocate left indices list LSTK & right indices list RSTK!', &
+      & ppm_error=ppm_error_fatal)
 
       ! If array is short, skip QuickSort and go directly to
       ! the straight insertion sort.
@@ -485,7 +480,7 @@
 
       ! Q1 : Initialize
       istk = 0
-      l = inlistl
+      l = 1
       r = inlistu
 
       200 CONTINUE
@@ -600,7 +595,7 @@
 
       !-------------------------------------------------------------------------
       ! Q9: Straight Insertion sort
-      DO i=inlistl+1,inlistu
+      DO i=2,inlistu
          IF (inlist(i-1) .GT. inlist(i)) THEN
             datap=inlist(i)
             p=i-1
@@ -609,7 +604,7 @@
 
             inlist(p+1) = inlist(p)
             p=p-1
-            IF (p.GT.(inlistl-1)) THEN
+            IF (p.GT.0) THEN
                IF (inlist(p).GT.datap) GOTO 920
             ENDIF
             inlist(p+1)=datap
@@ -620,7 +615,7 @@
       ! Deallocate the stack of intervals
       !-------------------------------------------------------------------------
       DEALLOCATE(lstk,rstk,STAT=info)
-      or_fail_dealloc('left indices list LSTK & right indices list RSTK')
+      or_fail_dealloc('Failed to deallocate left indices list LSTK & right indices list RSTK!')
 
       !===================================================================
       !

@@ -87,7 +87,7 @@
       !  Set everything to NULL.
       !---------------------------------------------------------------------
       FORALL (i=1:lda(1))
-         table%keys(i)        = htable_null
+         table%keys(i)        = htable_null_li
          table%borders_pos(i) = htable_null
       END FORALL
 
@@ -165,7 +165,6 @@
           !  Local variables and parameters
           !---------------------------------------------------------------------
           INTEGER(ppm_kind_int64), PARAMETER  :: m = 1431374979_ppm_kind_int64
-          INTEGER,                 PARAMETER  :: r = 24
           INTEGER                             :: h
           INTEGER(ppm_kind_int64)             :: data
           INTEGER                             :: k
@@ -178,12 +177,12 @@
 
           DO WHILE (len .GE. 4)
               k = IBITS(data, 0, 8) !data, pos, len. len = 1 always!
-              k = IOR(k, ISHFT(IBITS(data, 8, 8),  8))
+              k = IOR(k, ISHFT(IBITS(data,  8, 8),  8))
               k = IOR(k, ISHFT(IBITS(data, 16, 8), 16))
               k = IOR(k, ISHFT(IBITS(data, 24, 8), 24))
 
               k = k*m
-              k = IEOR(k, ISHFT(k, -1*r))
+              k = IEOR(k, ISHFT(k, -24))
               k = k*m
 
               h = h*m
@@ -214,9 +213,9 @@
           h = IEOR(h, ISHFT(h, -13))
           h = h*m
           h = IEOR(h, ISHFT(h, -15))
-          h = IAND(h, table%nrow - 1)
 
-          hash_val = h
+          hash_val = IAND(h, table%nrow - 1)
+
       END FUNCTION
 
       ELEMENTAL FUNCTION h_key(table, key, jump) RESULT(address)
@@ -298,7 +297,7 @@
          ! Get the address corresponding to given key
          spot = table%h_key(key, jump)
          ! If an empty slot found ...
-         IF (table%keys(spot).EQ.htable_null) THEN
+         IF (table%keys(spot).EQ.htable_null_li) THEN
             ! Store the key and the corresponding value and RETURN.
             table%keys(spot) = key
             table%borders_pos(spot) = value
@@ -406,7 +405,7 @@
              ! Set the return value and return
              value = table%borders_pos(spot)
              RETURN
-          ELSE IF (table%keys(spot).EQ.htable_null) THEN
+          ELSE IF (table%keys(spot).EQ.htable_null_li) THEN
              IF (.NOT.ANY(key.EQ.table%keys)) EXIT loop
           ENDIF
           ! Otherwise, keep on incrementing jump distance
@@ -494,7 +493,7 @@
             IF (table%keys(spot).EQ.key) THEN
                !Remove the key and the corresponding value and RETURN.
                table%borders_pos(spot)=htable_null
-               table%keys(spot)=htable_null
+               table%keys(spot)=htable_null_li
                RETURN
             ENDIF
             ! If the current slot is occupied, jump to next key that results
@@ -594,7 +593,7 @@
       or_fail("table%create")
 
       DO i=1,SIZE(keys_tmp)
-         IF (keys_tmp(i).EQ.htable_null) CYCLE
+         IF (keys_tmp(i).EQ.htable_null_li) CYCLE
          CALL table%insert(keys_tmp(i),borders_pos_tmp(i),info)
       ENDDO
 

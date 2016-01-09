@@ -163,7 +163,6 @@
       INTEGER                          :: n1,n2,nz
       INTEGER, DIMENSION(3)            :: lb
 
-      CHARACTER(LEN=ppm_char) :: mesg
       CHARACTER(LEN=ppm_char) :: caller='ppm_neighlist_vlist'
 
       ! store vlist?
@@ -621,8 +620,7 @@
          !-------------------------------------------------------------------------
          maxvlen = MAXVAL(nvlist)
          IF (ppm_debug .GT. 0) THEN
-            WRITE(mesg,'(A,I8)') 'Maximum length of Verlet lists: ',maxvlen
-            CALL ppm_write(ppm_rank,caller,mesg,info)
+            stdout_f('(A,I8)',"Maximum length of Verlet lists: ",maxvlen)
          ENDIF
 
          iopt = ppm_param_alloc_fit_preserve

@@ -131,5 +131,4 @@ logical                         :: ok
         endif
 
     end test
-
 end test_suite
