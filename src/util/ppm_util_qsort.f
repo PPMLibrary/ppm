@@ -28,13 +28,13 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_util_qsort_s(inlist,outlist,info)
+      SUBROUTINE ppm_util_qsort_s(inlist,outlist,info,inlistSize)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_util_qsort_d(inlist,outlist,info)
+      SUBROUTINE ppm_util_qsort_d(inlist,outlist,info,inlistSize)
 #elif __KIND == __INTEGER
-      SUBROUTINE ppm_util_qsort_i(inlist,outlist,info)
+      SUBROUTINE ppm_util_qsort_i(inlist,outlist,info,inlistSize)
 #elif __KIND == __LONGINT
-      SUBROUTINE ppm_util_qsort_li(inlist,outlist,info)
+      SUBROUTINE ppm_util_qsort_li(inlist,outlist,info,inlistSize)
 #endif
       !!! From a list of values generates a sort permutation list
       !!!
@@ -90,6 +90,7 @@
       !!! Permutation list
       INTEGER,                INTENT(OUT)   :: info
       !!! Return status, 0 on success
+      INTEGER, OPTIONAL,      INTENT(IN   ) :: inlistSize
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -125,8 +126,14 @@
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
-      inlistl = LBOUND(inlist,1)
-      inlistu = UBOUND(inlist,1)
+      IF (PRESENT(inlistSize)) THEN
+         IF (inlistSize.LT.1) GOTO 9999
+         inlistu = inlistSize
+      ELSE
+         inlistu = UBOUND(inlist,1)
+      ENDIF
+      inlistl = 1 !LBOUND(inlist,1)
+      !y inlist is an INTENT(IN) value and not a pointer, so LBOUND is always 1
       n = inlistu-inlistl+1
 
       iopt = ppm_param_alloc_fit
