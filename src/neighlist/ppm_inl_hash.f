@@ -93,6 +93,7 @@
 
       9999 CONTINUE
       CALL substop(caller,t0,info)
+      RETURN
       END SUBROUTINE create_htable
 
       SUBROUTINE destroy_htable(table,info)
@@ -137,6 +138,7 @@
 
       9999 CONTINUE
       CALL substop(caller,t0,info)
+      RETURN
       END SUBROUTINE destroy_htable
 
       ELEMENTAL FUNCTION h_func(table, key, seed) RESULT(hash_val)
@@ -215,7 +217,7 @@
           h = IEOR(h, ISHFT(h, -15))
 
           hash_val = IAND(h, table%nrow - 1)
-
+          RETURN
       END FUNCTION
 
       ELEMENTAL FUNCTION h_key(table, key, jump) RESULT(address)
@@ -247,6 +249,7 @@
       int_addr = 1_ppm_kind_int64 + &
       & MOD((table%h_func(key,seed1)+jump*table%h_func(key,seed2)),table%nrow)
       address  = INT(int_addr)
+      RETURN
       END FUNCTION h_key
 
       SUBROUTINE hash_insert(table, key, value, info)
@@ -321,6 +324,7 @@
       9999 CONTINUE
       CALL substop(caller,t0,info)
 #endif
+      RETURN
       END SUBROUTINE hash_insert
 
       SUBROUTINE hash_insert_(table,key_,value,info)
@@ -347,6 +351,7 @@
 
       key=INT(key_,KIND=ppm_kind_int64)
       CALL table%hash_insert(key,value,info)
+      RETURN
       END SUBROUTINE hash_insert_
 
 #ifdef __DEBUG
@@ -415,6 +420,7 @@
 #ifdef __DEBUG
       CALL substop('hash_search',t0,info)
 #endif
+      RETURN
       END FUNCTION hash_search
 
 #ifdef __DEBUG
@@ -440,6 +446,7 @@
 
       key=INT(key_,KIND=ppm_kind_int64)
       value=table%hash_search(key)
+      RETURN
       END FUNCTION hash_search_
 
       !TODO check this sub
@@ -508,6 +515,7 @@
       9999 CONTINUE
       CALL substop('hash_remove',t0,info)
 #endif
+      RETURN
       END SUBROUTINE hash_remove
 
       SUBROUTINE hash_remove_(table, key_, info)
@@ -532,6 +540,7 @@
 
       key=INT(key_,KIND=ppm_kind_int64)
       CALL table%hash_remove(key, info)
+      RETURN
       END SUBROUTINE hash_remove_
 
       SUBROUTINE grow_htable(table,info,key_,value_)
@@ -608,4 +617,22 @@
 
       9999 CONTINUE
       CALL substop(caller,t0,info)
+      RETURN
       END SUBROUTINE grow_htable
+
+      FUNCTION hash_size(table) RESULT(value)
+      IMPLICIT NONE
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      CLASS(ppm_htable) :: table
+      !!! The hashtable
+      INTEGER           :: value
+      !!! size of the arguments inside the hash table
+      !---------------------------------------------------------------------
+      !  Local variables
+      !---------------------------------------------------------------------
+      value=COUNT(table%keys.NE.htable_null_li)
+      RETURN
+      END FUNCTION hash_size
+
