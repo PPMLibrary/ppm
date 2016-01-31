@@ -452,7 +452,7 @@
       !TODO check this sub
       !Yaser
       !This function PROBABLY suffers from a bug!
-      SUBROUTINE hash_remove(table, key, info)
+      SUBROUTINE hash_remove(table, key, info,existed)
       !!! Given the key, removes the elements in the hash table. Info is
       !!! set to -1 if the key was NOT found.
       !!!
@@ -476,6 +476,7 @@
       INTEGER,                 INTENT(  OUT) :: info
       !!! Info for whether removal was successful or not. 0 if SUCCESSFUL
       !!! and -1 otherwise.
+      LOGICAL, OPTIONAL,       INTENT(IN   ) :: existed
 
       !---------------------------------------------------------------------
       !  Local variables
@@ -490,27 +491,50 @@
 #else
       info = 0
 #endif
-      IF (ANY(key.EQ.table%keys)) THEN
-         jump = 0
-         ! Keep on searching withing bounds of hash table.
-         DO WHILE (jump.LT.table%nrow)
-            ! Get the address corresponding to given key
-            spot = table%h_key(key, jump)
-            ! If an empty slot found ...
-            IF (table%keys(spot).EQ.key) THEN
-               !Remove the key and the corresponding value and RETURN.
-               table%borders_pos(spot)=htable_null
-               table%keys(spot)=htable_null_li
-               RETURN
-            ENDIF
-            ! If the current slot is occupied, jump to next key that results
-            ! in same hash function.
-            jump = jump + 1
-         ENDDO
-         ! If NOT returned within the while-loop, that means the key was NOT found
-         info = -1
+      IF (PRESENT(existed)) THEN
+         IF (existed) THEN
+            jump = 0
+            ! Keep on searching withing bounds of hash table.
+            DO WHILE (jump.LT.table%nrow)
+               ! Get the address corresponding to given key
+               spot = table%h_key(key, jump)
+               ! If an empty slot found ...
+               IF (table%keys(spot).EQ.key) THEN
+                  !Remove the key and the corresponding value and RETURN.
+                  table%borders_pos(spot)=htable_null
+                  table%keys(spot)=htable_null_li
+                  RETURN
+               ENDIF
+               ! If the current slot is occupied, jump to next key that results
+               ! in same hash function.
+               jump = jump + 1
+            ENDDO
+            ! If NOT returned within the while-loop, that means the key was NOT found
+            info = ppm_error_fatal
+         ENDIF
+         RETURN
+      ELSE
+         IF (ANY(key.EQ.table%keys)) THEN
+            jump = 0
+            ! Keep on searching withing bounds of hash table.
+            DO WHILE (jump.LT.table%nrow)
+               ! Get the address corresponding to given key
+               spot = table%h_key(key, jump)
+               ! If an empty slot found ...
+               IF (table%keys(spot).EQ.key) THEN
+                  !Remove the key and the corresponding value and RETURN.
+                  table%borders_pos(spot)=htable_null
+                  table%keys(spot)=htable_null_li
+                  RETURN
+               ENDIF
+               ! If the current slot is occupied, jump to next key that results
+               ! in same hash function.
+               jump = jump + 1
+            ENDDO
+            ! If NOT returned within the while-loop, that means the key was NOT found
+            info = ppm_error_fatal
+         ENDIF
       ENDIF
-
 #ifdef __DEBUG
       9999 CONTINUE
       CALL substop('hash_remove',t0,info)
@@ -518,20 +542,21 @@
       RETURN
       END SUBROUTINE hash_remove
 
-      SUBROUTINE hash_remove_(table, key_, info)
+      SUBROUTINE hash_remove_(table, key_, info,existed)
 
       IMPLICIT NONE
 
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      CLASS(ppm_htable)      :: table
+      CLASS(ppm_htable)                :: table
       !!! The hashtable
-      INTEGER, INTENT(IN   ) :: key_
+      INTEGER,           INTENT(IN   ) :: key_
       !!! Key to be removed
-      INTEGER, INTENT(  OUT) :: info
+      INTEGER,           INTENT(  OUT) :: info
       !!! Info for whether removal was successful or not. 0 if SUCCESSFUL
       !!! and -1 otherwise.
+      LOGICAL, OPTIONAL, INTENT(IN   ) :: existed
 
       !---------------------------------------------------------------------
       !  Local variables
@@ -539,7 +564,11 @@
       INTEGER(ppm_kind_int64) :: key
 
       key=INT(key_,KIND=ppm_kind_int64)
-      CALL table%hash_remove(key, info)
+      IF (PRESENT(existed)) THEN
+         CALL table%hash_remove(key,info,existed)
+      ELSE
+         CALL table%hash_remove(key,info)
+      ENDIF
       RETURN
       END SUBROUTINE hash_remove_
 
@@ -632,7 +661,11 @@
       !---------------------------------------------------------------------
       !  Local variables
       !---------------------------------------------------------------------
-      value=COUNT(table%keys.NE.htable_null_li)
+      IF (table%nrow.GT.0) THEN
+         value=COUNT(table%keys.NE.htable_null_li)
+      ELSE
+         value=0
+      ENDIF
       RETURN
       END FUNCTION hash_size
 
