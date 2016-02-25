@@ -477,6 +477,8 @@
       !!! Info for whether removal was successful or not. 0 if SUCCESSFUL
       !!! and -1 otherwise.
       LOGICAL, OPTIONAL,       INTENT(IN   ) :: existed
+      !!! User responsibility to sure whether the key exists or not!
+      !!! If existed is true, the algorithm does not check its validity
 
       !---------------------------------------------------------------------
       !  Local variables
