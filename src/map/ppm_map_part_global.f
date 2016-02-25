@@ -52,7 +52,6 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
-      USE ppm_module_check_id
       USE ppm_module_map_part_util
       IMPLICIT NONE
 
@@ -88,7 +87,7 @@
       TYPE(ppm_t_topo), POINTER :: topo
 !       TYPE(ppm_t_topo), POINTER      :: target_topo => NULL()
 
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(3) :: ldu
 !       INTEGER, DIMENSION(:), POINTER :: bcdef
@@ -104,7 +103,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 

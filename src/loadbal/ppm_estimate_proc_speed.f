@@ -49,6 +49,7 @@
       USE ppm_module_util_time
       USE ppm_module_mpi
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -80,29 +81,30 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:), ALLOCATABLE :: alltim
+      REAL(ppm_kind_double), DIMENSION(:), ALLOCATABLE :: alltim
 #ifdef __MPI
-      REAL(MK), DIMENSION(:), ALLOCATABLE :: sendtim
+      REAL(ppm_kind_double), DIMENSION(:), ALLOCATABLE :: sendtim
 #endif
-      REAL(MK)                        :: t0,lmyeps,tim,tim1,cutoff2
-      REAL(MK)                        :: xmax,ymax,zmax,r2,r2i,r6i,fs,en
-      REAL(MK)                        :: tmin,tmax
-      REAL(MK), DIMENSION(3)          :: rx,ri,rj,fi,fj
-      REAL(ppm_kind_double)           :: rsum
+      REAL(ppm_kind_double)                            :: t0
+      REAL(ppm_kind_double)                            :: tim,tim1
+      REAL(ppm_kind_double)                            :: tmin,tmax
+      REAL(MK)                                         :: lmyeps,cutoff2,stim
+      REAL(MK)                                         :: xmax,ymax,zmax
+      REAL(MK)                                         :: r2,r2i,r6i,fs,en
+      REAL(MK), DIMENSION(3)                           :: rx,ri,rj,fi,fj
 
       INTEGER               :: i,j,N,iopt
       INTEGER, DIMENSION(1) :: ldl,ldu
 
       LOGICAL :: ldone
 
-      CHARACTER(LEN=ppm_char) :: mesg
       CHARACTER(LEN=ppm_char) :: caller='ppm_estimate_procspeed'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -143,10 +145,10 @@
       !  than tmax seconds, but require every processor to run for at least
       !  tmin seconds for sufficient statistics.
       !-------------------------------------------------------------------------
-      tmax = 5.0_MK
-      tmin = 0.1_MK
-      IF (PRESENT(maxtime)) tmax = maxtime
-      IF (PRESENT(mintime)) tmax = mintime
+      tmax = 5.0_ppm_kind_double
+      tmin = 0.1_ppm_kind_double
+      IF (PRESENT(maxtime)) tmax = REAL(maxtime,ppm_kind_double)
+      IF (PRESENT(mintime)) tmin = REAL(mintime,ppm_kind_double)
 
       !-------------------------------------------------------------------------
       !  Set number of particles to start with. The user can override this if
@@ -180,6 +182,14 @@
       !---------------------------------------------------------------------
       ALLOCATE(alltim(ppm_nproc),STAT=info)
       or_fail_alloc('timings from all processors ALLTIM',ppm_error=ppm_error_fatal)
+
+#ifdef __MPI
+      !---------------------------------------------------------------------
+      !  Broadcast timings to all processors
+      !---------------------------------------------------------------------
+      ALLOCATE(sendtim(ppm_nproc),STAT=info)
+      or_fail_alloc('send buffer for timings SENDTIM',ppm_error=ppm_error_fatal)
+#endif
 
       !-------------------------------------------------------------------------
       !  Set constants for benchmark calculation
@@ -226,26 +236,16 @@
           CALL ppm_util_time(tim1)
           tim = tim1-tim
 
-          alltim = 0.0_MK
 #ifdef __MPI
           !---------------------------------------------------------------------
           !  Broadcast timings to all processors
           !---------------------------------------------------------------------
-          ALLOCATE(sendtim(ppm_nproc),STAT=info)
-          or_fail_alloc('send buffer for timings SENDTIM',ppm_error=ppm_error_fatal)
-
           sendtim = tim
+          alltim = 0.0_ppm_kind_double
 
-#if   __KIND == __SINGLE_PRECISION
-          CALL MPI_Alltoall(sendtim,1,MPI_REAL,alltim,1,MPI_REAL,ppm_comm,info)
-#elif __KIND == __DOUBLE_PRECISION
           CALL MPI_Alltoall(sendtim,1,MPI_DOUBLE_PRECISION,alltim,1, &
           &    MPI_DOUBLE_PRECISION,ppm_comm,info)
-#endif
           or_fail_MPI("MPI_Alltoall")
-
-          DEALLOCATE(sendtim,STAT=info)
-          or_fail_dealloc('send buffer for timings SENDTIM')
 #else
           alltim(1) = tim
 #endif
@@ -271,15 +271,27 @@
 
       ENDDO  ! WHILE(.NOT.ldone)
 
+#ifdef __MPI
+      DEALLOCATE(sendtim,STAT=info)
+      or_fail_dealloc('send buffer for timings SENDTIM')
+#endif
+
       !-------------------------------------------------------------------------
       !  Convert timings to relative speeds
       !-------------------------------------------------------------------------
       DO i=0,ppm_nproc-1
-         procspeed(i) = 1.0_MK/alltim(i+1)
+         procspeed(i) = REAL(1.0_ppm_kind_double/alltim(i+1),MK)
       ENDDO
-      tim = SUM(procspeed(0:ppm_nproc-1))
+
+      !-------------------------------------------------------------------------
+      !  Deallocate local memory
+      !-------------------------------------------------------------------------
+      DEALLOCATE(alltim,STAT=info)
+      or_fail_dealloc('timings from all processors ALLTIM')
+
+      stim = SUM(procspeed(0:ppm_nproc-1))
       DO i=0,ppm_nproc-1
-         procspeed(i) = procspeed(i)/tim
+         procspeed(i) = procspeed(i)/stim
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -304,12 +316,6 @@
       !-------------------------------------------------------------------------
       !  Set the internal ppm_procspeed values ????????
       !-------------------------------------------------------------------------
-
-      !-------------------------------------------------------------------------
-      !  Deallocate local memory
-      !-------------------------------------------------------------------------
-      DEALLOCATE(alltim,STAT=info)
-      or_fail_dealloc('timings from all processors ALLTIM')
 
       !-------------------------------------------------------------------------
       !  Return

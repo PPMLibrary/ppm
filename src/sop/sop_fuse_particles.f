@@ -64,7 +64,7 @@
           INTEGER                                :: ip,iq,ineigh,i,di
           CHARACTER(LEN=256)                     :: filename,cbuf
           CHARACTER(LEN=256)                     :: caller='sop_fuse_particles'
-          REAL(KIND(1.D0))                       :: t0
+          REAL(ppm_kind_double) :: t0
           REAL(MK)                               :: dist,lev
           INTEGER                                :: del_part
           REAL(MK)                               :: threshold

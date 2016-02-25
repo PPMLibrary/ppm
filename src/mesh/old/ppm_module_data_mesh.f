@@ -40,26 +40,26 @@
          !----------------------------------------------------------------------
          !  Mesh mapping, send and receive lists
          !----------------------------------------------------------------------
-
-         INTEGER, DIMENSION(:  ), POINTER :: ppm_mesh_isendfromsub => NULL()
+         INTEGER, DIMENSION(:  ), POINTER :: ppm_mesh_isendfromsub  => NULL()
          !!! list of source subs to send from local processor (local sub number
          !!! on source processor)
          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendblkstart => NULL()
          ! start (lower-left corner) of mesh block to be sent in GLOBAL
          ! mesh coordinates. First index: x,y[,z], 2nd: isendlist
-         INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendpatchid => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendpatchid  => NULL()
          !!! list of source patch ids to send from local processor
-         INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendblksize => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendblksize  => NULL()
          ! size (in grid points) of blocks to be sent
-         INTEGER, DIMENSION(:  ), POINTER :: ppm_mesh_irecvtosub => NULL()
+
+         INTEGER, DIMENSION(:  ), POINTER :: ppm_mesh_irecvtosub    => NULL()
          ! list of destination subs to recv to on local processors (local sub
          ! number on destination processor)
-         INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvpatchid => NULL()
-         !!! list of source patch ids to receive from local processor
          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvblkstart => NULL()
          ! start (lower-left corner) of mesh block to be recvd in GLOBAL
          ! mesh coordinates. First index: x,y[,z], 2nd: isendlist
-         INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvblksize => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvpatchid  => NULL()
+         !!! list of source patch ids to receive from local processor
+         INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvblksize  => NULL()
          ! size (in grid points) of blocks to be recvd
 
       END MODULE ppm_module_data_mesh

@@ -206,7 +206,7 @@
 
       start_subroutine("m2p_interp_mp4")
 
-      dxi = 1.0_MK/Mesh%h
+      dxi = REAL(1.0_ppm_kind_double/Mesh%h,MK)
 
       !  loop over subpatches
       p => Mesh%subpatch%begin()

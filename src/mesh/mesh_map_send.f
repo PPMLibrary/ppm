@@ -24,8 +24,10 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_mpi
-      USE ppm_module_data_mesh
+      USE ppm_module_mapping_typedef, ONLY : ppm_mesh_isendpatchid, &
+      &   ppm_mesh_isendblksize,ppm_mesh_irecvblksize
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -43,9 +45,6 @@
       INTEGER               :: i,j,k,ibuffer,jbuffer,bdim,offs
       INTEGER               :: iopt,tag1,Ndata,msend,mrecv,allsend,allrecv
       CHARACTER(ppm_char)   :: mesg
-#ifdef __MPI
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: commstat
-#endif
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -356,7 +355,7 @@
                   ENDIF
                   CALL MPI_SendRecv(sendd,nsend(k),ppm_mpi_kind,  &
                   &    ppm_isendlist(k),tag1,recvd,nrecv(k),ppm_mpi_kind,  &
-                  &    ppm_irecvlist(k),tag1,ppm_comm,commstat,info)
+                  &    ppm_irecvlist(k),tag1,ppm_comm,MPI_STATUS_IGNORE,info)
                   or_fail_MPI("MPI_SendRecv")
                ELSEIF (psend(k).GT.0.AND.precv(k).EQ.0) THEN
                   IF (ppm_debug.GT.1) THEN
@@ -370,7 +369,7 @@
                      stdout_f('(A,I3)',"Recv from ",'ppm_irecvlist(k)')
                   ENDIF
                   CALL MPI_Recv(recvd,nrecv(k),ppm_mpi_kind,      &
-                  &    ppm_irecvlist(k),tag1,ppm_comm,commstat,info)
+                  &    ppm_irecvlist(k),tag1,ppm_comm,MPI_STATUS_IGNORE,info)
                   or_fail_MPI("MPI_Recv")
                ELSE
                   ! do nothing
@@ -429,7 +428,7 @@
                   ENDIF
                   CALL MPI_SendRecv(sends,nsend(k),ppm_mpi_kind,  &
                   &    ppm_isendlist(k),tag1,recvs,nrecv(k),ppm_mpi_kind,  &
-                  &    ppm_irecvlist(k),tag1,ppm_comm,commstat,info)
+                  &    ppm_irecvlist(k),tag1,ppm_comm,MPI_STATUS_IGNORE,info)
                   or_fail_MPI("MPI_SendRecv")
                ELSEIF (psend(k).GT.0.AND.precv(k).EQ.0) THEN
                   IF (ppm_debug.GT.1) THEN
@@ -443,7 +442,7 @@
                      stdout_f('(A,I3)',"Recv from ",'ppm_irecvlist(k)')
                   ENDIF
                   CALL MPI_Recv(recvs,nrecv(k),ppm_mpi_kind,      &
-                  &    ppm_irecvlist(k),tag1,ppm_comm,commstat,info)
+                  &    ppm_irecvlist(k),tag1,ppm_comm,MPI_STATUS_IGNORE,info)
                   or_fail_MPI("MPI_Recv")
                ELSE
                   ! do nothing

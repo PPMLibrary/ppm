@@ -18,6 +18,7 @@
       USE ppm_module_error
       USE ppm_module_util_functions
       USE ppm_module_interfaces
+      USE ppm_module_mapping_typedef
       IMPLICIT NONE
 
       !----------------------------------------------------------------------
@@ -26,15 +27,15 @@
       !----------------------------------------------------------------------
       ! Module variables
       !----------------------------------------------------------------------
-      INTEGER, PRIVATE, DIMENSION(4)  :: ldc
+      INTEGER, PRIVATE, DIMENSION(4) :: ldc
 
       !----------------------------------------------------------------------
       ! Type declaration
       !----------------------------------------------------------------------
 
-      !!----------------------------------------------------------------------
-      !! Patches (contains the actual data arrays for this field)
-      !!----------------------------------------------------------------------
+      !----------------------------------------------------------------------
+      ! Patches (contains the actual data arrays for this field)
+      !----------------------------------------------------------------------
       TYPE,EXTENDS(ppm_t_subpatch_data_) :: ppm_t_subpatch_data
       CONTAINS
           PROCEDURE :: create    => subpatch_data_create
@@ -97,7 +98,6 @@ minclude ppm_create_collection(A_subpatch,A_subpatch,generate="extend")
           PROCEDURE :: zero                  => equi_mesh_prop_zero
           PROCEDURE :: def_patch             => equi_mesh_def_patch
           PROCEDURE :: def_uniform           => equi_mesh_def_uniform
-          PROCEDURE :: new_subpatch_data_ptr => equi_mesh_new_subpatch_data_ptr
           PROCEDURE :: list_of_fields        => equi_mesh_list_of_fields
 
           PROCEDURE :: block_intersect       => equi_mesh_block_intersect
@@ -120,6 +120,9 @@ minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
 
       !----------------------------------------------------------------------
       ! DATA TYPE FOR COLLECTIVE STORAGE of meshs
+      !This is exactly the same as ppm_c_equi_mesh, except minor change
+      !for push and remove, and in order to have the full functionality
+      !we did not overwrite to the original procedures
       !----------------------------------------------------------------------
       TYPE,EXTENDS(ppm_c_equi_mesh) :: ppm_vc_equi_mesh
       CONTAINS
@@ -131,6 +134,16 @@ minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
       ! DATA STORAGE for the meshes
       !----------------------------------------------------------------------
       TYPE(ppm_vc_equi_mesh) :: ppm_mesh
+
+      !----------------------------------------------------------------------
+      !  Define interface to the meshid check routine
+      !----------------------------------------------------------------------
+      INTERFACE ppm_check_meshid
+      !!! checks mesh ID
+         MODULE PROCEDURE ppm_check_meshid
+      END INTERFACE
+
+      PUBLIC :: ppm_check_meshid
 
       !------------------------------------------------
       ! TODO: stuff that should be moved somewhere else:
@@ -170,7 +183,6 @@ minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
       INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: mesh_ghost_offset => NULL()
 
       INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: invsublist => NULL()
-      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: sublist    => NULL()
 
       !----------------------------------------------------------------------
       !  Type-bound procedures
@@ -222,7 +234,9 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_subpatch_),        INTENT(IN   ) :: sp
           !!! subpatch to which this subpatch_data belongs
           INTEGER,                       INTENT(  OUT) :: info
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER                       :: ndim, datatype
           INTEGER, DIMENSION(ppm_dim+1) :: hi,lo
 
@@ -233,9 +247,8 @@ minclude ppm_get_field_template(4,l)
 
           ! Determine allocation size of the data array
           IF (MINVAL(sp%nnodes(1:ppm_dim)).LE.0) THEN
-             or_fail("invalid size for patch data. This patch should be deleted")
+             fail("invalid size for patch data. This patch should be deleted",ppm_error=ppm_error_fatal)
           ENDIF
-
 
           ndim = ppm_dim
           IF (discr_data%lda.LT.2) THEN
@@ -267,12 +280,11 @@ minclude ppm_get_field_template(4,l)
               CASE (ppm_type_logical)
                   alloc_pointer_with_bounds2("this%data_2d_l",lo,hi)
               CASE DEFAULT
-                  stdout("datatype = ",datatype)
-                  stdout("ndim = ",ndim)
-                  info = ppm_error_fatal
-                  CALL ppm_error(ppm_err_argument,caller,   &
-                  &    'invalid type for mesh patch data',__LINE__,info)
+                  WRITE(cbuf,'(A,2(A,I0))')'Invalid type (for mesh patch data) of ', &
+                  & "datatype = ",datatype," & ndim = ",ndim
+                  fail(cbuf,ppm_error=ppm_error_fatal)
               END SELECT
+
           CASE (3)
               SELECT CASE (datatype)
               CASE (ppm_type_int)
@@ -290,14 +302,11 @@ minclude ppm_get_field_template(4,l)
               CASE (ppm_type_logical)
                   alloc_pointer_with_bounds3("this%data_3d_l",lo,hi)
               CASE DEFAULT
-                  stdout("datatype = ")
-                  stdout(datatype)
-                  stdout("ndim = ")
-                  stdout(ndim)
-                  info = ppm_error_fatal
-                  CALL ppm_error(ppm_err_argument,caller,   &
-                  &    'invalid type for mesh patch data',__LINE__,info)
+                  WRITE(cbuf,'(A,2(A,I0))')'Invalid type (for mesh patch data) of ', &
+                  & "datatype = ",datatype," & ndim = ",ndim
+                  fail(cbuf,ppm_error=ppm_error_fatal)
               END SELECT
+
           CASE (4)
               SELECT CASE (datatype)
               CASE (ppm_type_int)
@@ -315,11 +324,9 @@ minclude ppm_get_field_template(4,l)
               CASE (ppm_type_logical)
                   alloc_pointer_with_bounds4("this%data_4d_l",lo,hi)
               CASE DEFAULT
-                  stdout("datatype = ")
-                  stdout(datatype)
-                  stdout("ndim = ")
-                  stdout(ndim)
-                  fail("invalid type for mesh patch data")
+                  WRITE(cbuf,'(A,2(A,I0))')'Invalid type (for mesh patch data) of ', &
+                  & "datatype = ",datatype," & ndim = ",ndim
+                  fail(cbuf,ppm_error=ppm_error_fatal)
               END SELECT
 
           END SELECT
@@ -336,8 +343,10 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch_data)         :: this
           INTEGER,               INTENT(OUT) :: info
-
-          INTEGER                            :: iopt
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
+          INTEGER :: iopt
 
           start_subroutine("patch_data_destroy")
 
@@ -407,7 +416,9 @@ minclude ppm_get_field_template(4,l)
           !!! boundary conditions
           INTEGER,               INTENT(OUT) :: info
           !!! return status. On success 0
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER :: iopt,i
 
           start_subroutine("subpatch_create")
@@ -421,52 +432,53 @@ minclude ppm_get_field_template(4,l)
           alloc_pointer("p%end_ext",ppm_dim)
           alloc_pointer("p%start_red",ppm_dim)
           alloc_pointer("p%end_red",ppm_dim)
-          alloc_pointer("p%istart_p",ppm_dim)
-          alloc_pointer("p%iend_p",ppm_dim)
+          alloc_pointer("p%bc",'2*ppm_dim')
+          alloc_pointer("p%nnodes",ppm_dim)
           alloc_pointer("p%lo_a",ppm_dim)
           alloc_pointer("p%hi_a",ppm_dim)
-          alloc_pointer("p%nnodes",ppm_dim)
+          alloc_pointer("p%istart_p",ppm_dim)
+          alloc_pointer("p%iend_p",ppm_dim)
           alloc_pointer("p%ghostsize",'2*ppm_dim')
-          alloc_pointer("p%bc",'2*ppm_dim')
-
-          p%meshID   = mesh%ID
-          p%mesh     => mesh
-          p%isub     = isub
-          p%istart   = istart
-          p%iend     = iend
-          p%start    = pstart
-          p%end      = pend
-          p%istart_p = istart_p
-          p%iend_p   = iend_p
-          p%nnodes(1:ppm_dim) = 1 + iend(1:ppm_dim) - istart(1:ppm_dim)
-          p%ghostsize(1:2*ppm_dim) = ghostsize(1:2*ppm_dim)
-          p%bc(1:2*ppm_dim) = bcdef(1:2*ppm_dim)
-
-          !Define allocated size of the subpatch
-          p%lo_a(1)     = 1 - ghostsize(1)
-          p%hi_a(1)     = p%nnodes(1) + ghostsize(2)
-          p%lo_a(2)     = 1 - ghostsize(3)
-          p%hi_a(2)     = p%nnodes(2) + ghostsize(4)
-          IF (ppm_dim.EQ.3) THEN
-             p%lo_a(3) = 1 - ghostsize(5)
-             p%hi_a(3) = p%nnodes(3) + ghostsize(6)
-          ENDIF
-
-          DO i=1,ppm_dim
-              !Extended subpatch (abs. coord)
-              p%start_ext(i) = pstart(i)- mesh%ghostsize(i) * mesh%h(i)
-              p%end_ext(i)   = pend(i)  + mesh%ghostsize(i) * mesh%h(i)
-
-              !Reduced subpatch (abs. coord)
-              p%start_red(i) = pstart(i)-(p%ghostsize(2*i-1)-mesh%ghostsize(i))*mesh%h(i)
-              p%end_red(i)   = pend(i)  -(mesh%ghostsize(i)-p%ghostsize(2*i)) * mesh%h(i)
-          ENDDO
-
 
           IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN
              ALLOCATE(ppm_c_subpatch_data::p%subpatch_data,STAT=info)
              or_fail_alloc("could not allocate p%subpatch_data")
           ENDIF
+
+          p%meshID = mesh%ID
+          p%isub   = isub
+          p%mesh   => mesh
+          p%istart = istart
+          p%iend   = iend
+          p%start  = pstart
+          p%end    = pend
+
+          DO i=1,ppm_dim
+             !Extended subpatch (abs. coord)
+             p%start_ext(i) = pstart(i)- mesh%ghostsize(i) * mesh%h(i)
+             p%end_ext(i)   = pend(i)  + mesh%ghostsize(i) * mesh%h(i)
+
+             !Reduced subpatch (abs. coord)
+             p%start_red(i) = pstart(i)-(ghostsize(2*i-1)-mesh%ghostsize(i))*mesh%h(i)
+             p%end_red(i)   = pend(i)  -(mesh%ghostsize(i)-ghostsize(2*i)) * mesh%h(i)
+          ENDDO
+
+          p%bc(1:2*ppm_dim) = bcdef(1:2*ppm_dim)
+          p%nnodes(1:ppm_dim) = 1 + iend(1:ppm_dim) - istart(1:ppm_dim)
+          !Define allocated size of the subpatch
+          p%lo_a(1)    = 1 - ghostsize(1)
+          p%hi_a(1)    = p%nnodes(1) + ghostsize(2)
+          p%lo_a(2)    = 1 - ghostsize(3)
+          p%hi_a(2)    = p%nnodes(2) + ghostsize(4)
+
+          IF (ppm_dim.EQ.3) THEN
+             p%lo_a(3) = 1 - ghostsize(5)
+             p%hi_a(3) = p%nnodes(3) + ghostsize(6)
+          ENDIF
+
+          p%istart_p = istart_p
+          p%iend_p   = iend_p
+          p%ghostsize(1:2*ppm_dim) = ghostsize(1:2*ppm_dim)
 
           end_subroutine()
 
@@ -482,14 +494,18 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch)              :: p
           INTEGER,               INTENT(OUT) :: info
-
-          INTEGER                            :: iopt
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
+          INTEGER :: iopt
 
           start_subroutine("subpatch_destroy")
 
+          p%meshID = 0
+          p%isub = 0
+          p%mesh => NULL()
+
           iopt = ppm_param_dealloc
-          CALL ppm_alloc(p%nnodes,ldc,iopt,info)
-          or_fail_dealloc("p%nnodes")
           CALL ppm_alloc(p%istart,ldc,iopt,info)
           or_fail_dealloc("p%istart")
           CALL ppm_alloc(p%iend,ldc,iopt,info)
@@ -506,6 +522,10 @@ minclude ppm_get_field_template(4,l)
           or_fail_dealloc("p%start_red")
           CALL ppm_alloc(p%end_red,ldc,iopt,info)
           or_fail_dealloc("p%end_red")
+          CALL ppm_alloc(p%bc,ldc,iopt,info)
+          or_fail_dealloc("p%bc")
+          CALL ppm_alloc(p%nnodes,ldc,iopt,info)
+          or_fail_dealloc("p%nnodes")
           CALL ppm_alloc(p%lo_a,ldc,iopt,info)
           or_fail_dealloc("p%lo_a")
           CALL ppm_alloc(p%hi_a,ldc,iopt,info)
@@ -516,10 +536,6 @@ minclude ppm_get_field_template(4,l)
           or_fail_dealloc("p%iend_p")
           CALL ppm_alloc(p%ghostsize,ldc,iopt,info)
           or_fail_dealloc("p%ghostsize")
-
-          p%meshID = 0
-          p%isub = 0
-          p%mesh => NULL()
 
           destroy_collection_ptr(p%subpatch_data)
 
@@ -539,7 +555,9 @@ minclude ppm_get_field_template(4,l)
           INTEGER,                    INTENT(IN   ) :: i
           INTEGER,                    INTENT(IN   ) :: j
           REAL(ppm_kind_double), DIMENSION(ppm_dim) :: pos
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           SELECT TYPE(mesh => p%mesh)
           TYPE IS (ppm_t_equi_mesh)
               !numbering of mesh nodes goes from 1 to N
@@ -560,7 +578,9 @@ minclude ppm_get_field_template(4,l)
           INTEGER,                   INTENT(IN   ) :: j
           INTEGER,                   INTENT(IN   ) :: k
           REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           SELECT TYPE(mesh => p%mesh)
           TYPE IS (ppm_t_equi_mesh)
               !numbering of mesh nodes goes from 1 to N
@@ -583,7 +603,9 @@ minclude ppm_get_field_template(4,l)
           INTEGER,           INTENT(   IN) :: vecsize
           INTEGER,           INTENT(  OUT) :: info
           INTEGER, OPTIONAL, INTENT(   IN) :: patchid
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("subpatch_A_create")
 
           IF (ASSOCIATED(this%subpatch)) THEN
@@ -610,7 +632,9 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_A_subpatch) :: this
           INTEGER,  INTENT(  OUT) :: info
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("subpatch_A_destroy")
 
           this%patchid = 0
@@ -630,7 +654,6 @@ minclude ppm_get_field_template(4,l)
           !  Modules
           !-------------------------------------------------------------------------
           USE ppm_module_topo_typedef
-          USE ppm_module_check_id
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Includes
@@ -670,8 +693,6 @@ minclude ppm_get_field_template(4,l)
           INTEGER, DIMENSION(ppm_dim) :: Nc
           INTEGER, DIMENSION(3)       :: ldc
 
-          CHARACTER(LEN=ppm_char) :: msg
-
           LOGICAL :: valid
 
           start_subroutine("equi_mesh_create")
@@ -686,12 +707,6 @@ minclude ppm_get_field_template(4,l)
 
           !This mesh is defined for a given topology
           this%topoid = topoid
-
-          !dumb way of creating a global ID for this mesh
-          !TODO find something better? (needed if one creates and destroy
-          ! many meshes)
-          ppm_nb_meshes = ppm_nb_meshes + 1
-          this%ID = ppm_nb_meshes
 
           !By default, there are no patches defined on this mesh yet.
           this%npatch = 0
@@ -752,37 +767,40 @@ minclude ppm_get_field_template(4,l)
           IF (PRESENT(h)) THEN
              this%h(1:ppm_dim) = h(1:ppm_dim)
              IF (ASSOCIATED(topo%max_physs)) THEN
-                this%Nm(1:ppm_dim) = FLOOR((topo%max_physs(1:ppm_dim) - &
-                &                    topo%min_physs(1:ppm_dim))/(h(1:ppm_dim))) + 1
+                this%Nm(1:ppm_dim) = FLOOR(REAL(topo%max_physs(1:ppm_dim)-topo%min_physs(1:ppm_dim),ppm_kind_double)/h(1:ppm_dim)) + 1
              ELSE
-                this%Nm(1:ppm_dim) = FLOOR((topo%max_physd(1:ppm_dim) - &
-                &                    topo%min_physd(1:ppm_dim))/(h(1:ppm_dim))) + 1
+                this%Nm(1:ppm_dim) = FLOOR((topo%max_physd(1:ppm_dim)-topo%min_physd(1:ppm_dim))/h(1:ppm_dim)) + 1
              ENDIF
           ELSE
              this%Nm(1:ppm_dim) = Nm(1:ppm_dim)
              IF (ASSOCIATED(topo%max_physs)) THEN
-                this%h(1:ppm_dim) = (topo%max_physs(1:ppm_dim) &
-                &                 - topo%min_physs(1:ppm_dim)) &
+                this%h(1:ppm_dim) = REAL(topo%max_physs(1:ppm_dim)-                 &
+                &                        topo%min_physs(1:ppm_dim),ppm_kind_double) &
                 &                 / REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
                 !check for round-off problems and fix them if necessary
                 DO k=1,ppm_dim
-                   DO WHILE (topo%min_physs(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physs(k))
+                   DO WHILE (REAL(topo%min_physs(k),ppm_kind_double)+     &
+                   &         REAL(this%Nm(k)-1,ppm_kind_double)*this%h(k) &
+                   &     .LT.REAL(topo%max_physs(k),ppm_kind_double))
                       this%h(k)=this%h(k)+EPSILON(this%h(k))
                    ENDDO
                 ENDDO
-                check_true(<#ALL(topo%min_physs(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physs(1:ppm_dim))#>, &
-                & "round-off problem in mesh creation")
+                valid=ALL(REAL(topo%min_physs(1:ppm_dim),ppm_kind_double)+            &
+                &         REAL(Nm(1:ppm_dim)-1,ppm_kind_double)*this%h(1:ppm_dim).GE. &
+                &         REAL(topo%max_physs(1:ppm_dim),ppm_kind_double))
+                check_true(<#valid#>, &
+                & "ALL(topo%min_physs+(Nm(1:ppm_dim)-1)*this%h.GE.topo%max_physs) is not true. round-off problem in mesh creation!")
              ELSE
                 this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) &
                 &                 - topo%min_physd(1:ppm_dim)) &
                 &                 / REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
                 !check for round-off problems and fix them if necessary
                 DO k=1,ppm_dim
-                   DO WHILE (topo%min_physd(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physd(k))
+                   DO WHILE (topo%min_physd(k)+REAL(this%Nm(k)-1,ppm_kind_double)*this%h(k).LT.topo%max_physd(k))
                       this%h(k)=this%h(k)+EPSILON(this%h(k))
                    ENDDO
                 ENDDO
-                check_true(<#ALL(topo%min_physd(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>, &
+                check_true(<#ALL(topo%min_physd(1:ppm_dim)+REAL(Nm(1:ppm_dim)-1,ppm_kind_double)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>, &
                 & "round-off problem in mesh creation")
              ENDIF
           ENDIF
@@ -839,7 +857,7 @@ minclude ppm_get_field_template(4,l)
                    ! node right on the East, North, or Top domain boundary are
                    ! reduced by 1 mesh node so that real mesh nodes are not
                    ! duplicated.
-                   IF ((this%iend(k,i)-1).GE.(topo%max_subd(k,i)-Offset(k))/this%h(k)) THEN
+                   IF (REAL(this%iend(k,i)-1,ppm_kind_double).GE.(topo%max_subd(k,i)-Offset(k))/this%h(k)) THEN
                       IF (topo%subs_bc(2*k,i).NE.1  .OR.  &
                       &   (topo%subs_bc(2*k,i).EQ.1 .AND. &
                       &   topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
@@ -850,18 +868,20 @@ minclude ppm_get_field_template(4,l)
 
                 !Check that this subdomain is large enough and thus
                 !compatible with this mesh and its resolution h.
-                check_true(<#ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepsd))#>,&
-                "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
+                valid=ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i)).GT. &
+                &         (this%h(1:ppm_dim)*REAL(this%ghostsize(1:ppm_dim),ppm_kind_double)+ppm_myepsd))
+                check_true(<#valid#>,&
+                & "ALL((topo%max_subd-topo%min_subd).GT.(this%h*this%ghostsize+ppm_myepsd)) is not true. Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
 !                 stdout("#isub = ",i," AFTER CHOP")
 !                 stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
 !                 stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
              ENDDO
           ELSE
              DO i=1,nsubs
-                this%istart(1:ppm_dim,i) = 1 + CEILING((topo%min_subs(1:ppm_dim,i) &
+                this%istart(1:ppm_dim,i) = 1 + CEILING((REAL(topo%min_subs(1:ppm_dim,i),ppm_kind_double) &
                 &                        - Offset(1:ppm_dim))/this%h(1:ppm_dim))
-                this%iend(1:ppm_dim,i)   = 1 + FLOOR((topo%max_subs(1:ppm_dim,i)   &
-                &                        - Offset(1:ppm_dim))/(this%h(1:ppm_dim)   &
+                this%iend(1:ppm_dim,i)   = 1 + FLOOR((REAL(topo%max_subs(1:ppm_dim,i),ppm_kind_double)   &
+                &                        - Offset(1:ppm_dim))/(this%h(1:ppm_dim)                         &
                 &                        - EPSILON(this%h(1:ppm_dim))))
                 !WARNING: this is a hack to resolve a round-off issue when h is such
                 !that a node falls epsilon away from the subdomain boundary
@@ -880,10 +900,10 @@ minclude ppm_get_field_template(4,l)
                    ! node right on the East, North, or Top domain boundary are
                    ! reduced by 1 mesh node so that real mesh nodes are not
                    ! duplicated.
-                   IF ((this%iend(k,i)-1).GE.(topo%max_subs(k,i)-Offset(k))/this%h(k)) THEN
-                      IF (topo%subs_bc(2*k,i).NE.1  .OR.  &
-                      &   (topo%subs_bc(2*k,i).EQ.1 .AND. &
-                      &   topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
+                   IF (REAL(this%iend(k,i)-1,ppm_kind_double).GE. &
+                   &  (REAL(topo%max_subs(k,i),ppm_kind_double)-Offset(k))/this%h(k)) THEN
+                      IF (topo%subs_bc(2*k,i).NE.1.OR. &
+                      &  (topo%subs_bc(2*k,i).EQ.1.AND.topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
                          this%iend(k,i) = this%iend(k,i) -1
                       ENDIF
                    ENDIF
@@ -891,8 +911,10 @@ minclude ppm_get_field_template(4,l)
 
                 !Check that this subdomain is large enough and thus
                 !compatible with this mesh and its resolution h.
-                check_true(<#ALL((topo%max_subs(1:ppm_dim,i)-topo%min_subs(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepss))#>,&
-                & "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
+                valid=ALL(REAL(topo%max_subs(1:ppm_dim,i)-topo%min_subs(1:ppm_dim,i),ppm_kind_double).GT. &
+                &        (this%h(1:ppm_dim)*REAL(this%ghostsize(1:ppm_dim),ppm_kind_double)+ppm_myepsd))
+                check_true(<#valid#>,&
+                & "ALL((topo%max_subs-topo%min_subs).GT.(this%h*this%ghostsize+ppm_myepsd)) is not true. Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
                 !stdout("#isub = ",i," AFTER CHOP")
                 !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
                 !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
@@ -901,6 +923,9 @@ minclude ppm_get_field_template(4,l)
 
           CALL ppm_mesh%vpush(this,info)
           or_fail("Failed to push the new Mesh inside the Mesh collection")
+
+          !Creating a global ID for this mesh
+          this%ID = ppm_mesh%nb
 
           !-------------------------------------------------------------------------
           !  Return
@@ -954,7 +979,6 @@ minclude ppm_get_field_template(4,l)
           !  Modules
           !-------------------------------------------------------------------------
           USE ppm_module_topo_typedef
-          USE ppm_module_check_id
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Includes
@@ -1029,20 +1053,25 @@ minclude ppm_get_field_template(4,l)
 
           destroy_collection_ptr(this%field_ptr)
 
+          destroy_collection_ptr(this%maps)
+
           destroy_collection_ptr(this%subpatch)
 
           destroy_collection_ptr(this%patch)
 
           destroy_collection_ptr(this%mdata)
 
-          dealloc_pointer("this%subpatch_by_sub")
+          IF (ASSOCIATED(this%subpatch_by_sub)) THEN
+             DO i=1,SIZE(this%subpatch_by_sub)
+                dealloc_pointer(<# this%subpatch_by_sub(i)%vec #>)
+             ENDDO
+          ENDIF
 
-          dealloc_pointers(this%ghost_fromsub,this%ghost_tosub,this%ghost_patchid,this%ghost_blkstart,this%ghost_blksize,this%ghost_blk,this%ghost_recvtosub,this%ghost_recvpatchid,this%ghost_recvblkstart,this%ghost_recvblksize,this%ghost_recvblk)
+          dealloc_pointer(this%subpatch_by_sub)
 
           this%ID = 0
           this%topoid = 0
           this%npatch = 0
-          this%ghost_initialized = .FALSE.
 
           CALL ppm_mesh%vremove(info,this)
           or_fail("could not remove a detroyed object from a collection")
@@ -1061,48 +1090,56 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_mesh_discr_data_), POINTER, INTENT(  OUT) :: discr_data
           INTEGER,                                INTENT(  OUT) :: info
           INTEGER,OPTIONAL,                       INTENT(  OUT) :: p_idx
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_subpatch_),        POINTER :: p
+          CLASS(ppm_t_subpatch_data_),   POINTER :: subpdat
+          CLASS(ppm_t_mesh_discr_data_), POINTER :: mddata
 
-          CLASS(ppm_t_subpatch_),     POINTER :: p
-          CLASS(ppm_t_subpatch_data_),POINTER :: subpdat
+          INTEGER :: p_idx_
 
           start_subroutine("equi_mesh_create_prop")
-
 
           IF (.NOT.ASSOCIATED(this%mdata)) THEN
              ALLOCATE(ppm_v_mesh_discr_data::this%mdata,STAT=info)
              or_fail_alloc("mdata")
           ENDIF
 
-          ALLOCATE(ppm_t_mesh_discr_data::discr_data,STAT=info)
-          or_fail_alloc("discr_data")
+          ALLOCATE(ppm_t_mesh_discr_data::mddata,STAT=info)
+          or_fail_alloc("mddata")
 
-          CALL discr_data%create(field,info)
-          or_fail("discr_data%create()")
+          CALL mddata%create(field,info)
+          or_fail("mddata%create()")
 
           !Create a new data array on the mesh to store this field
           p => this%subpatch%begin()
           DO WHILE (ASSOCIATED(p))
               ! create a new subpatch_data object
-              subpdat => this%new_subpatch_data_ptr(info)
-              or_fail_alloc("could not get a new ppm_t_subpatch_data pointer")
+              ALLOCATE(ppm_t_subpatch_data::subpdat,STAT=info)
+              or_fail_alloc("could not allocate ppm_t_subpatch_data pointer")
 
-              CALL subpdat%create(discr_data,p,info)
+              CALL subpdat%create(mddata,p,info)
               or_fail("could not create new subpatch_data")
 
-              CALL discr_data%subpatch%push(subpdat,info)
-              or_fail("could not add new subpatch_data to discr_data")
+              CALL mddata%subpatch%push(subpdat,info)
+              or_fail("could not add new subpatch_data to mddata")
 
-              CALL p%subpatch_data%push(subpdat,info,p_idx)
+              CALL p%subpatch_data%push(subpdat,info,p_idx_)
               or_fail("could not add new subpatch_data to subpatch collection")
 
               p => this%subpatch%next()
           ENDDO
 
-          CALL this%mdata%push(discr_data,info)
-          or_fail("could not add new discr_data to discr%mdata")
+          CALL this%mdata%push(mddata,info)
+          or_fail("could not add new mddata to discr%mdata")
+
+          discr_data => mddata
 
           !check that the returned pointer makes sense
           check_associated(discr_data)
+
+          IF (PRESENT(p_idx)) p_idx=p_idx_
 
           end_subroutine()
       END SUBROUTINE equi_mesh_create_prop
@@ -1115,10 +1152,52 @@ minclude ppm_get_field_template(4,l)
           !  Arguments
           !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh)             :: this
-          CLASS(ppm_t_field_), INTENT(IN   ) :: Field
-          INTEGER,             INTENT(  OUT) :: info
 
-          INTEGER :: lda
+          CLASS(ppm_t_field_), INTENT(IN   ) :: Field
+
+          INTEGER,             INTENT(  OUT) :: info
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_subpatch_), POINTER :: sbpitr
+
+          REAL(ppm_kind_single), DIMENSION(:,:),     POINTER :: Field_wp_2d_sca_s
+          REAL(ppm_kind_single), DIMENSION(:,:,:),   POINTER :: Field_wp_2d_vec_s
+          REAL(ppm_kind_single), DIMENSION(:,:,:),   POINTER :: Field_wp_3d_sca_s
+          REAL(ppm_kind_single), DIMENSION(:,:,:,:), POINTER :: Field_wp_3d_vec_s
+
+          REAL(ppm_kind_double), DIMENSION(:,:),     POINTER :: Field_wp_2d_sca_d
+          REAL(ppm_kind_double), DIMENSION(:,:,:),   POINTER :: Field_wp_2d_vec_d
+          REAL(ppm_kind_double), DIMENSION(:,:,:),   POINTER :: Field_wp_3d_sca_d
+          REAL(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: Field_wp_3d_vec_d
+
+          COMPLEX(ppm_kind_single), DIMENSION(:,:),     POINTER :: Field_wp_2d_sca_sc
+          COMPLEX(ppm_kind_single), DIMENSION(:,:,:),   POINTER :: Field_wp_2d_vec_sc
+          COMPLEX(ppm_kind_single), DIMENSION(:,:,:),   POINTER :: Field_wp_3d_sca_sc
+          COMPLEX(ppm_kind_single), DIMENSION(:,:,:,:), POINTER :: Field_wp_3d_vec_sc
+
+          COMPLEX(ppm_kind_double), DIMENSION(:,:),     POINTER :: Field_wp_2d_sca_dc
+          COMPLEX(ppm_kind_double), DIMENSION(:,:,:),   POINTER :: Field_wp_2d_vec_dc
+          COMPLEX(ppm_kind_double), DIMENSION(:,:,:),   POINTER :: Field_wp_3d_sca_dc
+          COMPLEX(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: Field_wp_3d_vec_dc
+
+          INTEGER,                 DIMENSION(:,:),     POINTER :: Field_wp_2d_sca_i
+          INTEGER,                 DIMENSION(:,:,:),   POINTER :: Field_wp_2d_vec_i
+          INTEGER,                 DIMENSION(:,:,:),   POINTER :: Field_wp_3d_sca_i
+          INTEGER,                 DIMENSION(:,:,:,:), POINTER :: Field_wp_3d_vec_i
+
+          INTEGER(ppm_kind_int64), DIMENSION(:,:),     POINTER :: Field_wp_2d_sca_li
+          INTEGER(ppm_kind_int64), DIMENSION(:,:,:),   POINTER :: Field_wp_2d_vec_li
+          INTEGER(ppm_kind_int64), DIMENSION(:,:,:),   POINTER :: Field_wp_3d_sca_li
+          INTEGER(ppm_kind_int64), DIMENSION(:,:,:,:), POINTER :: Field_wp_3d_vec_li
+
+          INTEGER                                              :: lda,i,j,k
+          INTEGER,                 DIMENSION(:),       POINTER :: lo_a,hi_a
+
+          LOGICAL, DIMENSION(:,:),     POINTER :: Field_wp_2d_sca_l
+          LOGICAL, DIMENSION(:,:,:),   POINTER :: Field_wp_2d_vec_l
+          LOGICAL, DIMENSION(:,:,:),   POINTER :: Field_wp_3d_sca_l
+          LOGICAL, DIMENSION(:,:,:,:), POINTER :: Field_wp_3d_vec_l
 
           start_subroutine("equi_mesh_prop_zero")
 
@@ -1126,74 +1205,1257 @@ minclude ppm_get_field_template(4,l)
 
           SELECT CASE (ppm_dim)
           CASE (2)
-              SELECT CASE (lda)
-              CASE (1)
-              foreach n in equi_mesh(this) with sca_fields(Field) prec(ppm_kind_double)
-                  for all
-                      Field_n = REAL(0,ppm_kind_double)
-              end foreach
-              CASE (2)
-              foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
-                  for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
-              end foreach
-              CASE (3)
-              foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
-                  for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
-                      Field_n(3) = REAL(0,ppm_kind_double)
-              end foreach
-              CASE (4)
-              foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
-                  for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
-                      Field_n(3) = REAL(0,ppm_kind_double)
-                      Field_n(4) = REAL(0,ppm_kind_double)
-              end foreach
-              CASE DEFAULT
-              foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
-                  for all
-                      Field_n(1:lda) = REAL(0,ppm_kind_double)
-              end foreach
-              END SELECT
-
+             SELECT CASE (Field%data_type)
+             CASE (ppm_type_real_single)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_sca_s)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_sca_s,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_sca_s(i,j) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_s)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_s,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_s(1,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_s(2,i,j) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                  sbpitr => this%subpatch%begin()
+                  DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_s)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_s,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_s(1,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_s(2,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_s(3,i,j) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_s)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_s,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_s(1,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_s(2,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_s(3,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_s(4,i,j) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_s)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_s,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_s(1:lda,i,j) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_real)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_sca_d)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_sca_d,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_sca_d(i,j) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_d)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_d,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_d(1,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_d(2,i,j) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_d)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_d,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_d(1,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_d(2,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_d(3,i,j) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_d)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_d,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_d(1,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_d(2,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_d(3,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_d(4,i,j) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_d)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_d,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_d(1:lda,i,j) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_int)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_sca_i)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_sca_i,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_sca_i(i,j) = 0
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_i)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_i,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_i(1,i,j) = 0
+                            Field_wp_2d_vec_i(2,i,j) = 0
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_i)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_i,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_i(1,i,j) = 0
+                            Field_wp_2d_vec_i(2,i,j) = 0
+                            Field_wp_2d_vec_i(3,i,j) = 0
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_i)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_i,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_i(1,i,j) = 0
+                            Field_wp_2d_vec_i(2,i,j) = 0
+                            Field_wp_2d_vec_i(3,i,j) = 0
+                            Field_wp_2d_vec_i(4,i,j) = 0
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_i)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_i,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_i(1:lda,i,j) = 0
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_longint)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_sca_li)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_sca_li,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_sca_li(i,j) = 0_ppm_kind_int64
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_li)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_li,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_li(1,i,j) = 0_ppm_kind_int64
+                            Field_wp_2d_vec_li(2,i,j) = 0_ppm_kind_int64
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_li)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_li,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_li(1,i,j) = 0_ppm_kind_int64
+                            Field_wp_2d_vec_li(2,i,j) = 0_ppm_kind_int64
+                            Field_wp_2d_vec_li(3,i,j) = 0_ppm_kind_int64
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_li)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_li,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_li(1,i,j) = 0_ppm_kind_int64
+                            Field_wp_2d_vec_li(2,i,j) = 0_ppm_kind_int64
+                            Field_wp_2d_vec_li(3,i,j) = 0_ppm_kind_int64
+                            Field_wp_2d_vec_li(4,i,j) = 0_ppm_kind_int64
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_li)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_li,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_li(1:lda,i,j) = 0_ppm_kind_int64
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_comp_single)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_sca_sc)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_sca_sc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_sca_sc(i,j) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_sc)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_sc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_sc(1,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_sc(2,i,j) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                  sbpitr => this%subpatch%begin()
+                  DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_sc)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_sc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_sc(1,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_sc(2,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_sc(3,i,j) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_sc)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_sc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_sc(1,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_sc(2,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_sc(3,i,j) = 0.0_ppm_type_real_single
+                            Field_wp_2d_vec_sc(4,i,j) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_sc)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_sc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_sc(1:lda,i,j) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_comp)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_sca_dc)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_sca_dc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_sca_dc(i,j) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_dc)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_dc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_dc(1,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_dc(2,i,j) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_dc)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_dc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_dc(1,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_dc(2,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_dc(3,i,j) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_dc)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_dc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_dc(1,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_dc(2,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_dc(3,i,j) = 0.0_ppm_kind_double
+                            Field_wp_2d_vec_dc(4,i,j) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_dc)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_dc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_dc(1:lda,i,j) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_logical)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_sca_l)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_sca_l,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_sca_l(i,j) = .FALSE.
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_l)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_l,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_l(1,i,j) = .FALSE.
+                            Field_wp_2d_vec_l(2,i,j) = .FALSE.
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_l)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_l,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_l(1,i,j) = .FALSE.
+                            Field_wp_2d_vec_l(2,i,j) = .FALSE.
+                            Field_wp_2d_vec_l(3,i,j) = .FALSE.
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_l)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_l,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_l(1,i,j) = .FALSE.
+                            Field_wp_2d_vec_l(2,i,j) = .FALSE.
+                            Field_wp_2d_vec_l(3,i,j) = .FALSE.
+                            Field_wp_2d_vec_l(4,i,j) = .FALSE.
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_2d_vec_l)
+                      CALL sbpitr%get_field(Field,Field_wp_2d_vec_l,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_2d_vec_l(1:lda,i,j) = .FALSE.
+                         ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             END SELECT
           CASE DEFAULT
-              SELECT CASE (lda)
-              CASE (1)
-              foreach n in equi_mesh(this) with sca_fields(Field) indices(i,j,k) prec(ppm_kind_double)
-                  for all
-                      Field_n = REAL(0,ppm_kind_double)
-              end foreach
-              CASE (2)
-              foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
-                  for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
-              end foreach
-              CASE (3)
-              foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
-                  for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
-                      Field_n(3) = REAL(0,ppm_kind_double)
-              end foreach
-              CASE (4)
-              foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
-                  for all
-                      Field_n(1) = REAL(0,ppm_kind_double)
-                      Field_n(2) = REAL(0,ppm_kind_double)
-                      Field_n(3) = REAL(0,ppm_kind_double)
-                      Field_n(4) = REAL(0,ppm_kind_double)
-              end foreach
-              CASE DEFAULT
-              foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
-                  for all
-                      Field_n(1:lda) = REAL(0,ppm_kind_double)
-              end foreach
-              END SELECT
+             SELECT CASE (Field%data_type)
+             CASE (ppm_type_real_single)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_sca_s)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_sca_s,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_sca_s(i,j,k) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_s)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_s,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_s(1,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_s(2,i,j,k) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                  sbpitr => this%subpatch%begin()
+                  DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_s)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_s,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_s(1,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_s(2,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_s(3,i,j,k) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_s)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_s,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_s(1,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_s(2,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_s(3,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_s(4,i,j,k) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_s)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_s,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_s(1:lda,i,j,k) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_real)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_sca_d)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_sca_d,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_sca_d(i,j,k) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_d)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_d,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_d(1,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_d(2,i,j,k) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_d)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_d,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_d(1,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_d(2,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_d(3,i,j,k) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_d)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_d,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_d(1,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_d(2,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_d(3,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_d(4,i,j,k) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_d)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_d,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_d(1:lda,i,j,k) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_int)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_sca_i)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_sca_i,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_sca_i(i,j,k) = 0
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_i)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_i,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_i(1,i,j,k) = 0
+                            Field_wp_3d_vec_i(2,i,j,k) = 0
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_i)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_i,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_i(1,i,j,k) = 0
+                            Field_wp_3d_vec_i(2,i,j,k) = 0
+                            Field_wp_3d_vec_i(3,i,j,k) = 0
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_i)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_i,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_i(1,i,j,k) = 0
+                            Field_wp_3d_vec_i(2,i,j,k) = 0
+                            Field_wp_3d_vec_i(3,i,j,k) = 0
+                            Field_wp_3d_vec_i(4,i,j,k) = 0
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_i)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_i,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_i(1:lda,i,j,k) = 0
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_longint)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_sca_li)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_sca_li,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_sca_li(i,j,k) = 0_ppm_kind_int64
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_li)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_li,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_li(1,i,j,k) = 0_ppm_kind_int64
+                            Field_wp_3d_vec_li(2,i,j,k) = 0_ppm_kind_int64
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_li)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_li,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_li(1,i,j,k) = 0_ppm_kind_int64
+                            Field_wp_3d_vec_li(2,i,j,k) = 0_ppm_kind_int64
+                            Field_wp_3d_vec_li(3,i,j,k) = 0_ppm_kind_int64
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_li)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_li,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_li(1,i,j,k) = 0_ppm_kind_int64
+                            Field_wp_3d_vec_li(2,i,j,k) = 0_ppm_kind_int64
+                            Field_wp_3d_vec_li(3,i,j,k) = 0_ppm_kind_int64
+                            Field_wp_3d_vec_li(4,i,j,k) = 0_ppm_kind_int64
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_li)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_li,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_li(1:lda,i,j,k) = 0_ppm_kind_int64
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_comp_single)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_sca_sc)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_sca_sc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_sca_sc(i,j,k) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_sc)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_sc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_sc(1,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_sc(2,i,j,k) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                  sbpitr => this%subpatch%begin()
+                  DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_sc)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_sc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_sc(1,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_sc(2,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_sc(3,i,j,k) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_sc)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_sc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_sc(1,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_sc(2,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_sc(3,i,j,k) = 0.0_ppm_type_real_single
+                            Field_wp_3d_vec_sc(4,i,j,k) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_sc)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_sc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_sc(1:lda,i,j,k) = 0.0_ppm_type_real_single
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_comp)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_sca_dc)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_sca_dc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_sca_dc(i,j,k) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_dc)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_dc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_dc(1,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_dc(2,i,j,k) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_dc)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_dc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_dc(1,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_dc(2,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_dc(3,i,j,k) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_dc)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_dc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_dc(1,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_dc(2,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_dc(3,i,j,k) = 0.0_ppm_kind_double
+                            Field_wp_3d_vec_dc(4,i,j,k) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_dc)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_dc,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_dc(1:lda,i,j,k) = 0.0_ppm_kind_double
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             CASE (ppm_type_logical)
+                SELECT CASE (lda)
+                CASE (1)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_sca_i)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_sca_l,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_sca_l(i,j,k) = .FALSE.
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (2)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_l)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_l,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_l(1,i,j,k) = .FALSE.
+                            Field_wp_3d_vec_l(2,i,j,k) = .FALSE.
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (3)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_l)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_l,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_l(1,i,j,k) = .FALSE.
+                            Field_wp_3d_vec_l(2,i,j,k) = .FALSE.
+                            Field_wp_3d_vec_l(3,i,j,k) = .FALSE.
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE (4)
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_l)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_l,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_l(1,i,j,k) = .FALSE.
+                            Field_wp_3d_vec_l(2,i,j,k) = .FALSE.
+                            Field_wp_3d_vec_l(3,i,j,k) = .FALSE.
+                            Field_wp_3d_vec_l(4,i,j,k) = .FALSE.
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                CASE DEFAULT
+                   sbpitr => this%subpatch%begin()
+                   DO WHILE (ASSOCIATED(sbpitr))
+                      NULLIFY(Field_wp_3d_vec_l)
+                      CALL sbpitr%get_field(Field,Field_wp_3d_vec_l,info)
+                      or_fail("Failed to get the data!")
+                      lo_a => sbpitr%lo_a
+                      hi_a => sbpitr%hi_a
+                      DO k = lo_a(3),hi_a(3)
+                      DO j = lo_a(2),hi_a(2)
+                         DO i = lo_a(1), hi_a(1)
+                            Field_wp_3d_vec_l(1:lda,i,j,k) = .FALSE.
+                         ENDDO
+                      ENDDO
+                      ENDDO
+                      sbpitr => this%subpatch%next()
+                   ENDDO
+                END SELECT
+             END SELECT
           END SELECT
 
           end_subroutine()
@@ -1213,6 +2475,7 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
 
           CLASS(ppm_t_equi_mesh)                                    :: this
+
           REAL(ppm_kind_double), DIMENSION(:),        INTENT(INOUT) :: patch
           !!! Positions of the corners of the patch
           !!! (x1,y1,z1,x2,y2,z2), where 1 is the lower-left-bottom corner
@@ -1230,11 +2493,11 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          TYPE(ppm_t_ptr_subpatch), DIMENSION(:), POINTER :: tmp_array => NULL()
+          TYPE(ppm_t_ptr_subpatch), DIMENSION(:), POINTER :: tmp_array
           TYPE(ppm_t_topo),                       POINTER :: topo
 
-          CLASS(ppm_t_subpatch_),                 POINTER :: p
-          CLASS(ppm_t_A_subpatch_),               POINTER :: A_p
+          CLASS(ppm_t_subpatch_),   POINTER :: p
+          CLASS(ppm_t_A_subpatch_), POINTER :: A_p
 
           REAL(ppm_kind_double), DIMENSION(1:ppm_dim) :: h,Offset
           REAL(ppm_kind_double), DIMENSION(1:ppm_dim) :: pstart,pend,pmid
@@ -1249,7 +2512,7 @@ minclude ppm_get_field_template(4,l)
           INTEGER, DIMENSION(2*ppm_dim)      :: bc
           INTEGER, DIMENSION(:), ALLOCATABLE :: indsub
 
-          LOGICAL :: linfinite
+          LOGICAL :: linfinite,ldouble
 
           start_subroutine("mesh_def_patch")
 
@@ -1266,8 +2529,15 @@ minclude ppm_get_field_template(4,l)
           Offset = this%Offset
           topo => ppm_topo(this%topoid)%t
 
-          check_false(<#ASSOCIATED(topo%min_subs)#>,&
-          & "Mesh_def_patch is not yet implemented for single precision")
+          IF (ASSOCIATED(topo%min_subs)) THEN
+             ldouble=.FALSE.
+             check_false(<#ASSOCIATED(topo%min_subd)#>,&
+             & "Mesh_def_patch can not be for both single precision and double precision")
+          ELSE
+             ldouble=.TRUE.
+             check_false(<#ASSOCIATED(topo%min_subs)#>,&
+             & "Mesh_def_patch can not be for both single precision and double precision")
+          ENDIF
 
           !-------------------------------------------------------------------------
           ! Extent of the patch on the global mesh (before it is divided into
@@ -1281,8 +2551,8 @@ minclude ppm_get_field_template(4,l)
 
           !Bounds for the mesh nodes that are inside the patch
           IF (linfinite) THEN
-             istart_p(1:ppm_dim) = -HUGE(1)/2
-             iend_p(1:ppm_dim)   =  HUGE(1)/2
+             istart_p(1:ppm_dim) = -ppm_big_i/2
+             iend_p(1:ppm_dim)   =  ppm_big_i/2
           ELSE
              istart_p(1:ppm_dim) = 1 + &
              & CEILING((   patch(1:ppm_dim)     - Offset(1:ppm_dim))/h(1:ppm_dim))
@@ -1291,17 +2561,26 @@ minclude ppm_get_field_template(4,l)
           ENDIF
 
           !Re-define the patch boundaries so that its corners fall on mesh nodes
-          patch(1:ppm_dim)           = (istart_p(1:ppm_dim)-1)*h(1:ppm_dim) &
+          patch(1:ppm_dim)           = REAL(istart_p(1:ppm_dim)-1,ppm_kind_double)*h(1:ppm_dim) &
           &                          + Offset(1:ppm_dim)
-          patch(ppm_dim+1:2*ppm_dim) = (iend_p(1:ppm_dim)-1)*h(1:ppm_dim) &
+          patch(ppm_dim+1:2*ppm_dim) = REAL(iend_p(1:ppm_dim)-1,ppm_kind_double)*h(1:ppm_dim) &
           &                          + Offset(1:ppm_dim)
 
-          !Bounds for the mesh nodes that are inside the computational domain
-          istart_d(1:ppm_dim) = 1 + CEILING( (topo%min_physd(1:ppm_dim)     &
-          &                       -          Offset(1:ppm_dim))/h(1:ppm_dim) )
-          iend_d(1:ppm_dim)   = 1 + FLOOR( (topo%max_physd(1:ppm_dim)       &
-          &                       -        Offset(1:ppm_dim))/(h(1:ppm_dim) &
-          &                       -        EPSILON(h(1:ppm_dim))) )
+          IF (ldouble) THEN
+             !Bounds for the mesh nodes that are inside the computational domain
+             istart_d(1:ppm_dim) = 1 + CEILING( (topo%min_physd(1:ppm_dim)     &
+             &                       -          Offset(1:ppm_dim))/h(1:ppm_dim) )
+             iend_d(1:ppm_dim)   = 1 + FLOOR( (topo%max_physd(1:ppm_dim)       &
+             &                       -        Offset(1:ppm_dim))/(h(1:ppm_dim) &
+             &                       -        EPSILON(h(1:ppm_dim))) )
+          ELSE
+             !Bounds for the mesh nodes that are inside the computational domain
+             istart_d(1:ppm_dim) = 1 + CEILING( (REAL(topo%min_physs(1:ppm_dim),ppm_kind_double) &
+             &                       -          Offset(1:ppm_dim))/h(1:ppm_dim) )
+             iend_d(1:ppm_dim)   = 1 + FLOOR( (REAL(topo%max_physs(1:ppm_dim),ppm_kind_double)   &
+             &                       -        Offset(1:ppm_dim))/(h(1:ppm_dim) &
+             &                       -        EPSILON(h(1:ppm_dim))) )
+          ENDIF
 
           !-------------------------------------------------------------------------
           !  Allocate bookkeeping arrays (pointers between patches and subpatches)
@@ -1342,199 +2621,407 @@ minclude ppm_get_field_template(4,l)
           ! keeping arrays.
           size_tmp=0
 
-          DO isub=1,topo%nsubs
-             !----------------------------------------------------------------
-             ! check if the subdomain overlaps with the patch
-             ! if so, then there might be a subpatch created for that subdomain.
-             ! Grow the size of the array of pointers this%subpach_by_sub.
-             ! (simpler to do it this way if we dont know how many patches
-             ! are going to be added)
-             !----------------------------------------------------------------
-             IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
-             &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
-                ! yaser: subpach_by_sub should contain global index
-                ! so I would use isub instead of i
-                ASSOCIATE (sarray => this%subpatch_by_sub(isub))
-                    IF (sarray%nsubpatch.GE.sarray%size) THEN
-                       size2 = MAX(2*sarray%size,5)
+          NULLIFY(tmp_array)
 
-                       IF (size_tmp.LT.size2) THEN
-                          dealloc_pointer(tmp_array)
-                          ALLOCATE(tmp_array(size2),STAT=info)
-                          or_fail_alloc("tmp_array")
-                       ENDIF
+          IF (ldouble) THEN
+             DO isub=1,topo%nsubs
+                !----------------------------------------------------------------
+                ! check if the subdomain overlaps with the patch
+                ! if so, then there might be a subpatch created for that subdomain.
+                ! Grow the size of the array of pointers this%subpach_by_sub.
+                ! (simpler to do it this way if we dont know how many patches
+                ! are going to be added)
+                !----------------------------------------------------------------
+                IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
+                &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
+                   ! yaser: subpach_by_sub should contain global index
+                   ! so I would use isub instead of i
+                   ASSOCIATE (sarray => this%subpatch_by_sub(isub))
+                       IF (sarray%nsubpatch.GE.sarray%size) THEN
+                          size2 = MAX(2*sarray%size,5)
 
-                       DO j=1,sarray%nsubpatch
-                          tmp_array(j)%t => sarray%vec(j)%t
-                       ENDDO
+                          IF (size_tmp.LT.size2) THEN
+                             dealloc_pointer(tmp_array)
 
-                       dealloc_pointer(sarray%vec)
-                       ALLOCATE(sarray%vec(size2),STAT=info)
-                       or_fail_alloc("sarray%vec")
+                             ALLOCATE(tmp_array(size2),STAT=info)
+                             or_fail_alloc("tmp_array")
 
-                       DO j=1,sarray%nsubpatch
-                          sarray%vec(j)%t => tmp_array(j)%t
-                       ENDDO
-                       sarray%size = size2
-                    ENDIF
-                END ASSOCIATE
-             ENDIF
-          ENDDO
+                             size_tmp=size2
+                          ENDIF
+
+                          DO j=1,sarray%nsubpatch
+                             tmp_array(j)%t => sarray%vec(j)%t
+                          ENDDO
+
+                          dealloc_pointer(sarray%vec)
+
+                          ALLOCATE(sarray%vec(size2),STAT=info)
+                          or_fail_alloc("sarray%vec")
+
+                          DO j=1,sarray%nsubpatch
+                             sarray%vec(j)%t => tmp_array(j)%t
+                          ENDDO
+
+                          sarray%size = size2
+                      ENDIF
+                   END ASSOCIATE
+                ENDIF
+             ENDDO
+          ELSE !(ldouble)
+             DO isub=1,topo%nsubs
+                !----------------------------------------------------------------
+                ! check if the subdomain overlaps with the patch
+                ! if so, then there might be a subpatch created for that subdomain.
+                ! Grow the size of the array of pointers this%subpach_by_sub.
+                ! (simpler to do it this way if we dont know how many patches
+                ! are going to be added)
+                !----------------------------------------------------------------
+                IF ( ALL(patch(1:ppm_dim).LT.REAL(topo%max_subs(1:ppm_dim,isub),ppm_kind_double)) .AND. &
+                &    ALL(patch(ppm_dim+1:2*ppm_dim).GE.REAL(topo%min_subs(1:ppm_dim,isub),ppm_kind_double)) ) THEN
+                   ! yaser: subpach_by_sub should contain global index
+                   ! so I would use isub instead of i
+                   ASSOCIATE (sarray => this%subpatch_by_sub(isub))
+                       IF (sarray%nsubpatch.GE.sarray%size) THEN
+                          size2 = MAX(2*sarray%size,5)
+
+                          IF (size_tmp.LT.size2) THEN
+                             dealloc_pointer(tmp_array)
+
+                             ALLOCATE(tmp_array(size2),STAT=info)
+                             or_fail_alloc("tmp_array")
+
+                             size_tmp=size2
+                          ENDIF
+
+                          DO j=1,sarray%nsubpatch
+                             tmp_array(j)%t => sarray%vec(j)%t
+                          ENDDO
+
+                          dealloc_pointer(sarray%vec)
+
+                          ALLOCATE(sarray%vec(size2),STAT=info)
+                          or_fail_alloc("sarray%vec")
+
+                          DO j=1,sarray%nsubpatch
+                             sarray%vec(j)%t => tmp_array(j)%t
+                          ENDDO
+
+                          sarray%size = size2
+                      ENDIF
+                   END ASSOCIATE
+                ENDIF
+             ENDDO
+          ENDIF ! ldouble
+
           dealloc_pointer(tmp_array)
 
           nsubpatch = 0
 !           ! loop through all subdomains on this processor
 !           sub: DO i = 1,topo%nsublist
-          ! loop through all subdomains on this topology
-          sub: DO isub=1,topo%nsubs
-              !isub = topo%isublist(i)
-              !how many subpatches do we already have here
-              ! yaser: subpach_by_sub should contain global index
-              ! so I would use isub instead of i
-              nsubpatchi = this%subpatch_by_sub(isub)%nsubpatch
-              !----------------------------------------------------------------
-              ! check if the subdomain overlaps with the patch
-              !----------------------------------------------------------------
-              IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
-              &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
-                  !----------------------------------------------------------------
-                  !Finds the mesh nodes which are contained in the overlap region
-                  !----------------------------------------------------------------
 
-                  !----------------------------------------------------------------
-                  !Absolute positions of the corners (stored for use
-                  !during m2p interpolation, where we need to check whether
-                  !a particle is within a given subpatch)
-                  !----------------------------------------------------------------
-                  pstart(1:ppm_dim) = MAX(patch(1:ppm_dim),&
-                  &   topo%min_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
-                  pend(1:ppm_dim)   = MIN(patch(ppm_dim+1:2*ppm_dim),&
-                  &   topo%max_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
+          IF (ldouble) THEN
+             ! loop through all subdomains on this topology
+             sub_d: DO isub=1,topo%nsubs
+                !isub = topo%isublist(i)
+                !how many subpatches do we already have here
+                ! yaser: subpach_by_sub should contain global index
+                ! so I would use isub instead of i
+                nsubpatchi = this%subpatch_by_sub(isub)%nsubpatch
+                !----------------------------------------------------------------
+                ! check if the subdomain overlaps with the patch
+                !----------------------------------------------------------------
+                IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
+                &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
+                    !----------------------------------------------------------------
+                    !Finds the mesh nodes which are contained in the overlap region
+                    !----------------------------------------------------------------
 
-                  !----------------------------------------------------------------
-                  !Coordinates on the grid
-                  !----------------------------------------------------------------
-                  istart(1:ppm_dim) = 1 + CEILING(pstart(1:ppm_dim)/h(1:ppm_dim))
-                  iend(1:ppm_dim) = 1 + FLOOR(pend(1:ppm_dim)/(h(1:ppm_dim)- &
-                  &                           EPSILON(h(1:ppm_dim))))
-                  !WARNING: this is a hack to resolve a round-off issue when
-                  !h is such that a node falls epsilon away from the subdomain
-                  !boundary
+                    !----------------------------------------------------------------
+                    !Absolute positions of the corners (stored for use
+                    !during m2p interpolation, where we need to check whether
+                    !a particle is within a given subpatch)
+                    !----------------------------------------------------------------
+                    pstart(1:ppm_dim) = MAX(patch(1:ppm_dim),&
+                    &   topo%min_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
+                    pend(1:ppm_dim)   = MIN(patch(ppm_dim+1:2*ppm_dim),&
+                    &   topo%max_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
 
-                  !----------------------------------------------------------------
-                  !Intersect these coordinates with those of the subdomain
-                  !(some nodes may have been removed from the subdomain, e.g. to
-                  !implement some boundary conditions and/or avoid node duplication.
-                  !----------------------------------------------------------------
-                  istart(1:ppm_dim) = MAX(istart(1:ppm_dim),this%istart(1:ppm_dim,isub))
-                  iend(1:ppm_dim)   = MIN(iend(1:ppm_dim),this%iend(1:ppm_dim,isub))
+                    !----------------------------------------------------------------
+                    !Coordinates on the grid
+                    !----------------------------------------------------------------
+                    istart(1:ppm_dim) = 1 + CEILING(pstart(1:ppm_dim)/h(1:ppm_dim))
+                    iend(1:ppm_dim) = 1 + FLOOR(pend(1:ppm_dim)/(h(1:ppm_dim)- &
+                    &                             EPSILON(h(1:ppm_dim))))
+                    !WARNING: this is a hack to resolve a round-off issue when
+                    !h is such that a node falls epsilon away from the subdomain
+                    !boundary
 
-                  !----------------------------------------------------------------
-                  ! Specify boundary conditions for the subpatch
-                  !----------------------------------------------------------------
-                  DO k=1,ppm_dim
-                     IF (istart(k).EQ.istart_d(k) ) THEN
-                        bc(2*k-1) = topo%bcdef(2*k-1)
-                     ELSE
-                        IF (istart(k).EQ.istart_p(k) ) THEN
-                           IF (PRESENT(bcdef)) THEN
-                              bc(2*k-1) = bcdef(2*k-1)
-                           ELSE
-                              bc(2*k-1) = ppm_param_bcdef_freespace
-                           ENDIF
-                        ELSE
-                           bc(2*k-1) = -1
-                        ENDIF
-                     ENDIF
-                     IF (iend(k).EQ.iend_d(k)) THEN
-                        bc(2*k) = topo%bcdef(2*k)
-                     ELSE
-                        IF (iend(k).EQ.iend_p(k) ) THEN
-                           IF (PRESENT(bcdef)) THEN
-                              bc(2*k) = bcdef(2*k)
-                           ELSE
-                              bc(2*k) = ppm_param_bcdef_freespace
-                           ENDIF
-                        ELSE
-                           bc(2*k) = -1
-                        ENDIF
-                     ENDIF
-                     ! For periodic boundary conditions, subpatches that touch
-                     ! the East, North, or Top domain boundary are
-                     ! reduced by 1 mesh node so that real mesh nodes are not
-                     ! duplicated.
-                     IF (bc(2*k).EQ.ppm_param_bcdef_periodic) THEN
-                        iend(k) = iend(k) -1
-                     ENDIF
-!                      IF (iend(k)+1.EQ.iend_d(k)) THEN
-!                         bc(2*k) = topo%bcdef(2*k)
-!                      ENDIF
-                  ENDDO
-                  !----------------------------------------------------------------
-                  !Check that the subpatch contains at least one mesh nodes
-                  !Otherwise, exit loop
-                  ! (a subpatch comprises all the mesh nodes that are WITHIN
-                  !  the patch. If a patch overlap with a subdomain by less than
-                  !  h, it could be that this overlap regions has actually
-                  !  no mesh nodes)
-                  !----------------------------------------------------------------
-                  IF (.NOT.ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))) THEN
-                     CYCLE sub
-                  ENDIF
+                    !----------------------------------------------------------------
+                    !Intersect these coordinates with those of the subdomain
+                    !(some nodes may have been removed from the subdomain, e.g. to
+                    !implement some boundary conditions and/or avoid node duplication.
+                    !----------------------------------------------------------------
+                    istart(1:ppm_dim) = MAX(istart(1:ppm_dim),this%istart(1:ppm_dim,isub))
+                    iend(1:ppm_dim)   = MIN(iend(1:ppm_dim),this%iend(1:ppm_dim,isub))
 
-                  !----------------------------------------------------------------
-                  ! determine ghostlayer size for this subpatch
-                  ! (there is a ghostlayer if and only if the border of the subpatch
-                  ! does not coincide with a border of the patch itself - in that
-                  ! case, the width of the ghostlayer is truncated by the "mesh-wide"
-                  ! ghostsize parameter)
-                  !----------------------------------------------------------------
-                  ghostsize(1) = MIN(istart(1)-istart_p(1),this%ghostsize(1))
-                  ghostsize(2) = MIN(iend_p(1)-iend(1)    ,this%ghostsize(1))
-                  ghostsize(3) = MIN(istart(2)-istart_p(2),this%ghostsize(2))
-                  ghostsize(4) = MIN(iend_p(2)-iend(2)    ,this%ghostsize(2))
-                  IF (ppm_dim.EQ.3) THEN
-                     ghostsize(5) = MIN(istart(3)-istart_p(3),this%ghostsize(3))
-                     ghostsize(6) = MIN(iend_p(3)-iend(3)    ,this%ghostsize(3))
-                  ENDIF
+                    !----------------------------------------------------------------
+                    ! Specify boundary conditions for the subpatch
+                    !----------------------------------------------------------------
+                    DO k=1,ppm_dim
+                       IF (istart(k).EQ.istart_d(k) ) THEN
+                          bc(2*k-1) = topo%bcdef(2*k-1)
+                       ELSE
+                          IF (istart(k).EQ.istart_p(k) ) THEN
+                             IF (PRESENT(bcdef)) THEN
+                                bc(2*k-1) = bcdef(2*k-1)
+                             ELSE
+                                bc(2*k-1) = ppm_param_bcdef_freespace
+                             ENDIF
+                          ELSE
+                             bc(2*k-1) = -1
+                          ENDIF
+                       ENDIF
+                       IF (iend(k).EQ.iend_d(k)) THEN
+                          bc(2*k) = topo%bcdef(2*k)
+                       ELSE
+                          IF (iend(k).EQ.iend_p(k) ) THEN
+                             IF (PRESENT(bcdef)) THEN
+                                bc(2*k) = bcdef(2*k)
+                             ELSE
+                                bc(2*k) = ppm_param_bcdef_freespace
+                             ENDIF
+                          ELSE
+                             bc(2*k) = -1
+                          ENDIF
+                       ENDIF
+                       ! For periodic boundary conditions, subpatches that touch
+                       ! the East, North, or Top domain boundary are
+                       ! reduced by 1 mesh node so that real mesh nodes are not
+                       ! duplicated.
+                       IF (bc(2*k).EQ.ppm_param_bcdef_periodic) THEN
+                          iend(k) = iend(k) -1
+                       ENDIF
+!                        IF (iend(k)+1.EQ.iend_d(k)) THEN
+!                           bc(2*k) = topo%bcdef(2*k)
+!                        ENDIF
+                    ENDDO
+                    !----------------------------------------------------------------
+                    !Check that the subpatch contains at least one mesh nodes
+                    !Otherwise, exit loop
+                    ! (a subpatch comprises all the mesh nodes that are WITHIN
+                    !  the patch. If a patch overlap with a subdomain by less than
+                    !  h, it could be that this overlap regions has actually
+                    !  no mesh nodes)
+                    !----------------------------------------------------------------
+                    IF (.NOT.ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))) THEN
+                       CYCLE sub_d
+                    ENDIF
 
-                  !----------------------------------------------------------------
-                  ! create a new subpatch object
-                  !----------------------------------------------------------------
-                  ALLOCATE(ppm_t_subpatch::p,STAT=info)
-                  or_fail_alloc("could not allocate ppm_t_subpatch pointer")
+                    !----------------------------------------------------------------
+                    ! determine ghostlayer size for this subpatch
+                    ! (there is a ghostlayer if and only if the border of the subpatch
+                    ! does not coincide with a border of the patch itself - in that
+                    ! case, the width of the ghostlayer is truncated by the "mesh-wide"
+                    ! ghostsize parameter)
+                    !----------------------------------------------------------------
+                    ghostsize(1) = MIN(istart(1)-istart_p(1),this%ghostsize(1))
+                    ghostsize(2) = MIN(iend_p(1)-iend(1)    ,this%ghostsize(1))
+                    ghostsize(3) = MIN(istart(2)-istart_p(2),this%ghostsize(2))
+                    ghostsize(4) = MIN(iend_p(2)-iend(2)    ,this%ghostsize(2))
+                    IF (ppm_dim.EQ.3) THEN
+                       ghostsize(5) = MIN(istart(3)-istart_p(3),this%ghostsize(3))
+                       ghostsize(6) = MIN(iend_p(3)-iend(3)    ,this%ghostsize(3))
+                    ENDIF
 
-                  CALL p%create(this,isub,istart,iend,pstart,pend,&
-                  &    istart_p,iend_p,ghostsize,bc,info)
-                  or_fail("could not create new subpatch")
+                    !----------------------------------------------------------------
+                    ! create a new subpatch object
+                    !----------------------------------------------------------------
+                    ALLOCATE(ppm_t_subpatch::p,STAT=info)
+                    or_fail_alloc("could not allocate ppm_t_subpatch pointer")
 
-                  !----------------------------------------------------------------
-                  !add a pointer to this subpatch
-                  !----------------------------------------------------------------
-                  nsubpatchi = nsubpatchi + 1
-                  ! yaser: subpach_by_sub should contain global index
-                  ! so I would use isub instead of i
-                  this%subpatch_by_sub(isub)%vec(nsubpatchi)%t => p
-                  this%subpatch_by_sub(isub)%nsubpatch = nsubpatchi
+                    CALL p%create(this,isub,istart,iend,pstart,pend,&
+                    &    istart_p,iend_p,ghostsize,bc,info)
+                    or_fail("could not create new subpatch")
 
-                  SELECT CASE (indsub(isub))
-                  CASE (1)
-                     ! subdomains on this processor
-                     nsubpatch = nsubpatch+1
-                     A_p%subpatch(nsubpatch)%t => p
+                    !----------------------------------------------------------------
+                    !add a pointer to this subpatch
+                    !----------------------------------------------------------------
+                    nsubpatchi = nsubpatchi + 1
+                    ! yaser: subpach_by_sub should contain global index
+                    ! so I would use isub instead of i
+                    this%subpatch_by_sub(isub)%vec(nsubpatchi)%t => p
+                    this%subpatch_by_sub(isub)%nsubpatch = nsubpatchi
 
-                     !----------------------------------------------------------------
-                     ! put the subpatch object in the collection of subpatches on this mesh
-                     !----------------------------------------------------------------
-                     CALL this%subpatch%push(p,info)
-                     or_fail("could not add new subpatch to mesh")
+                    SELECT CASE (indsub(isub))
+                    CASE (1)
+                       ! subdomains on this processor
+                       nsubpatch = nsubpatch+1
+                       A_p%subpatch(nsubpatch)%t => p
 
-                  CASE(-1)
-                     p => NULL()
+                       !----------------------------------------------------------------
+                       ! put the subpatch object in the collection of subpatches on this mesh
+                       !----------------------------------------------------------------
+                       CALL this%subpatch%push(p,info)
+                       or_fail("could not add new subpatch to mesh")
 
-                  END SELECT
-              ENDIF
-          ENDDO sub
+                    CASE(-1)
+                       p => NULL()
+
+                    END SELECT
+                ENDIF
+             ENDDO sub_d
+          ELSE
+             ! loop through all subdomains on this topology
+             sub_s: DO isub=1,topo%nsubs
+                !isub = topo%isublist(i)
+                !how many subpatches do we already have here
+                ! yaser: subpach_by_sub should contain global index
+                ! so I would use isub instead of i
+                nsubpatchi = this%subpatch_by_sub(isub)%nsubpatch
+                !----------------------------------------------------------------
+                ! check if the subdomain overlaps with the patch
+                !----------------------------------------------------------------
+                IF ( ALL(patch(1:ppm_dim).LT.REAL(topo%max_subs(1:ppm_dim,isub),ppm_kind_double)) .AND. &
+                &    ALL(patch(ppm_dim+1:2*ppm_dim).GE.REAL(topo%min_subs(1:ppm_dim,isub),ppm_kind_double)) ) THEN
+                    !----------------------------------------------------------------
+                    !Finds the mesh nodes which are contained in the overlap region
+                    !----------------------------------------------------------------
+
+                    !----------------------------------------------------------------
+                    !Absolute positions of the corners (stored for use
+                    !during m2p interpolation, where we need to check whether
+                    !a particle is within a given subpatch)
+                    !----------------------------------------------------------------
+                    pstart(1:ppm_dim) = MAX(patch(1:ppm_dim), &
+                    & REAL(topo%min_subs(1:ppm_dim,isub),ppm_kind_double))-Offset(1:ppm_dim)
+                    pend(1:ppm_dim)   = MIN(patch(ppm_dim+1:2*ppm_dim), &
+                    & REAL(topo%max_subs(1:ppm_dim,isub),ppm_kind_double))-Offset(1:ppm_dim)
+
+                    !----------------------------------------------------------------
+                    !Coordinates on the grid
+                    !----------------------------------------------------------------
+                    istart(1:ppm_dim) = 1 + CEILING(pstart(1:ppm_dim)/h(1:ppm_dim))
+                    iend(1:ppm_dim) = 1 + FLOOR(pend(1:ppm_dim)/(h(1:ppm_dim)- &
+                    &                             EPSILON(h(1:ppm_dim))))
+                    !WARNING: this is a hack to resolve a round-off issue when
+                    !h is such that a node falls epsilon away from the subdomain
+                    !boundary
+
+                    !----------------------------------------------------------------
+                    !Intersect these coordinates with those of the subdomain
+                    !(some nodes may have been removed from the subdomain, e.g. to
+                    !implement some boundary conditions and/or avoid node duplication.
+                    !----------------------------------------------------------------
+                    istart(1:ppm_dim) = MAX(istart(1:ppm_dim),this%istart(1:ppm_dim,isub))
+                    iend(1:ppm_dim)   = MIN(iend(1:ppm_dim),this%iend(1:ppm_dim,isub))
+
+                    !----------------------------------------------------------------
+                    ! Specify boundary conditions for the subpatch
+                    !----------------------------------------------------------------
+                    DO k=1,ppm_dim
+                       IF (istart(k).EQ.istart_d(k) ) THEN
+                          bc(2*k-1) = topo%bcdef(2*k-1)
+                       ELSE
+                          IF (istart(k).EQ.istart_p(k) ) THEN
+                             IF (PRESENT(bcdef)) THEN
+                                bc(2*k-1) = bcdef(2*k-1)
+                             ELSE
+                                bc(2*k-1) = ppm_param_bcdef_freespace
+                             ENDIF
+                          ELSE
+                             bc(2*k-1) = -1
+                          ENDIF
+                       ENDIF
+                       IF (iend(k).EQ.iend_d(k)) THEN
+                          bc(2*k) = topo%bcdef(2*k)
+                       ELSE
+                          IF (iend(k).EQ.iend_p(k) ) THEN
+                             IF (PRESENT(bcdef)) THEN
+                                bc(2*k) = bcdef(2*k)
+                             ELSE
+                                bc(2*k) = ppm_param_bcdef_freespace
+                             ENDIF
+                          ELSE
+                             bc(2*k) = -1
+                          ENDIF
+                       ENDIF
+                       ! For periodic boundary conditions, subpatches that touch
+                       ! the East, North, or Top domain boundary are
+                       ! reduced by 1 mesh node so that real mesh nodes are not
+                       ! duplicated.
+                       IF (bc(2*k).EQ.ppm_param_bcdef_periodic) THEN
+                          iend(k) = iend(k) -1
+                       ENDIF
+!                        IF (iend(k)+1.EQ.iend_d(k)) THEN
+!                           bc(2*k) = topo%bcdef(2*k)
+!                        ENDIF
+                    ENDDO
+                    !----------------------------------------------------------------
+                    !Check that the subpatch contains at least one mesh nodes
+                    !Otherwise, exit loop
+                    ! (a subpatch comprises all the mesh nodes that are WITHIN
+                    !  the patch. If a patch overlap with a subdomain by less than
+                    !  h, it could be that this overlap regions has actually
+                    !  no mesh nodes)
+                    !----------------------------------------------------------------
+                    IF (.NOT.ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))) THEN
+                       CYCLE sub_s
+                    ENDIF
+
+                    !----------------------------------------------------------------
+                    ! determine ghostlayer size for this subpatch
+                    ! (there is a ghostlayer if and only if the border of the subpatch
+                    ! does not coincide with a border of the patch itself - in that
+                    ! case, the width of the ghostlayer is truncated by the "mesh-wide"
+                    ! ghostsize parameter)
+                    !----------------------------------------------------------------
+                    ghostsize(1) = MIN(istart(1)-istart_p(1),this%ghostsize(1))
+                    ghostsize(2) = MIN(iend_p(1)-iend(1)    ,this%ghostsize(1))
+                    ghostsize(3) = MIN(istart(2)-istart_p(2),this%ghostsize(2))
+                    ghostsize(4) = MIN(iend_p(2)-iend(2)    ,this%ghostsize(2))
+                    IF (ppm_dim.EQ.3) THEN
+                       ghostsize(5) = MIN(istart(3)-istart_p(3),this%ghostsize(3))
+                       ghostsize(6) = MIN(iend_p(3)-iend(3)    ,this%ghostsize(3))
+                    ENDIF
+
+                    !----------------------------------------------------------------
+                    ! create a new subpatch object
+                    !----------------------------------------------------------------
+                    ALLOCATE(ppm_t_subpatch::p,STAT=info)
+                    or_fail_alloc("could not allocate ppm_t_subpatch pointer")
+
+                    CALL p%create(this,isub,istart,iend,pstart,pend,&
+                    &    istart_p,iend_p,ghostsize,bc,info)
+                    or_fail("could not create new subpatch")
+
+                    !----------------------------------------------------------------
+                    !add a pointer to this subpatch
+                    !----------------------------------------------------------------
+                    nsubpatchi = nsubpatchi + 1
+                    ! yaser: subpach_by_sub should contain global index
+                    ! so I would use isub instead of i
+                    this%subpatch_by_sub(isub)%vec(nsubpatchi)%t => p
+                    this%subpatch_by_sub(isub)%nsubpatch = nsubpatchi
+
+                    SELECT CASE (indsub(isub))
+                    CASE (1)
+                       ! subdomains on this processor
+                       nsubpatch = nsubpatch+1
+                       A_p%subpatch(nsubpatch)%t => p
+
+                       !----------------------------------------------------------------
+                       ! put the subpatch object in the collection of subpatches on this mesh
+                       !----------------------------------------------------------------
+                       CALL this%subpatch%push(p,info)
+                       or_fail("could not add new subpatch to mesh")
+
+                    CASE(-1)
+                       p => NULL()
+
+                    END SELECT
+                ENDIF
+             ENDDO sub_s
+          ENDIF ! ldouble
 
           CALL this%patch%push(A_p,info,id)
           or_fail("could not add new subpatch_ptr_array to mesh%patch")
@@ -1544,9 +3031,6 @@ minclude ppm_get_field_template(4,l)
 
           !Increment the number of patches defined on this mesh
           this%npatch = this%npatch + 1
-
-          !The ghost mesh nodes have not been computed
-          this%ghost_initialized = .FALSE.
 
           DEALLOCATE(indsub,STAT=info)
           or_fail_dealloc("indsub")
@@ -1564,6 +3048,7 @@ minclude ppm_get_field_template(4,l)
           !  Arguments
           !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh)                :: this
+
           INTEGER,                INTENT(  OUT) :: info
           !!! Returns status, 0 upon success
           INTEGER, OPTIONAL,      INTENT(IN   ) :: patchid
@@ -1571,53 +3056,31 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          REAL(ppm_kind_double),DIMENSION(2*ppm_dim) :: patch
+          REAL(ppm_kind_double), DIMENSION(2*ppm_dim) :: patch
 
           start_subroutine("mesh_def_uniform")
 
           !----------------------------------------------------------------
           ! Create a huge patch
           !----------------------------------------------------------------
-          patch(1:ppm_dim)           = -HUGE(1._ppm_kind_double)
-          patch(ppm_dim+1:2*ppm_dim) =  HUGE(1._ppm_kind_double)
+          !Choosing infinite=.TRUE. we do not need to provide patch
 
           !----------------------------------------------------------------
           !and add it to the mesh (it will compute the intersection
           ! between this infinite patch and the (hopefully) finite
           ! computational domain)
           !----------------------------------------------------------------
-          CALL this%def_patch(patch,info,patchid,infinite=.TRUE.)
+          IF (PRESENT(patchid)) THEN
+             CALL this%def_patch(patch,info,patchid,infinite=.TRUE.)
+          ELSE
+             CALL this%def_patch(patch,info,infinite=.TRUE.)
+          ENDIF
           or_fail("failed to add patch")
 
           !TODO add some checks for the finiteness of the computational domain
 
           end_subroutine()
       END SUBROUTINE equi_mesh_def_uniform
-
-
-      FUNCTION equi_mesh_new_subpatch_data_ptr(this,info) RESULT(sp)
-          !!! returns a pointer to a new subpatch_data object
-
-          IMPLICIT NONE
-          !-------------------------------------------------------------------------
-          !  Arguments
-          !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh)                     :: this
-          !!! cartesian mesh object
-          CLASS(ppm_t_subpatch_data_), POINTER       :: sp
-          INTEGER,                     INTENT(  OUT) :: info
-          !!! Returns status, 0 upon success
-          !-------------------------------------------------------------------------
-          !  Local variables
-          !-------------------------------------------------------------------------
-          INTEGER , DIMENSION(3)    :: ldc
-          start_subroutine("equi_mesh_new_subpatch_data_ptr")
-
-          ALLOCATE(ppm_t_subpatch_data::sp,STAT=info)
-          or_fail_alloc("could not allocate ppm_t_subpatch_data pointer")
-
-          end_subroutine()
-      END FUNCTION equi_mesh_new_subpatch_data_ptr
 
 
       FUNCTION equi_mesh_list_of_fields(this,info) RESULT(fids)
@@ -1631,7 +3094,9 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_equi_mesh)                :: this
           INTEGER,                INTENT(  OUT) :: info
           INTEGER, DIMENSION(:),  POINTER       :: fids
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_main_abstr), POINTER :: f
 
           INTEGER :: i,j
@@ -1679,8 +3144,11 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_equi_mesh)             :: this
           CLASS(ppm_t_field_), INTENT(IN   ) :: field
           !!! this field is discretized on that mesh
-          INTEGER,             INTENT(OUT) :: info
 
+          INTEGER,             INTENT(OUT) :: info
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER :: p_idx
 
           start_subroutine("equi_mesh_map_push")
@@ -1707,6 +3175,21 @@ minclude ppm_get_field_template(4,l)
                     CALL mesh_map_push_2d_sca_i(this,p_idx,info)
                     or_fail("map_field_push_2d")
 
+                 CASE (ppm_type_longint)
+                    fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
+
+                 CASE (ppm_type_comp_single)
+                    CALL mesh_map_push_2d_sca_sc(this,p_idx,info)
+                    or_fail("map_field_push_2d")
+
+                 CASE (ppm_type_comp)
+                    CALL mesh_map_push_2d_sca_dc(this,p_idx,info)
+                    or_fail("map_field_push_2d")
+
+                 CASE (ppm_type_logical)
+                    CALL mesh_map_push_2d_sca_l(this,p_idx,info)
+                    or_fail("map_field_push_2d")
+
                  END SELECT
               ELSE
                  SELECT CASE (field%data_type)
@@ -1720,6 +3203,21 @@ minclude ppm_get_field_template(4,l)
 
                  CASE (ppm_type_int)
                     CALL mesh_map_push_2d_vec_i(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_2d")
+
+                 CASE (ppm_type_longint)
+                    fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
+
+                 CASE (ppm_type_comp_single)
+                    CALL mesh_map_push_2d_vec_sc(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_2d")
+
+                 CASE (ppm_type_comp)
+                    CALL mesh_map_push_2d_vec_dc(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_2d")
+
+                 CASE (ppm_type_logical)
+                    CALL mesh_map_push_2d_vec_l(this,field%lda,p_idx,info)
                     or_fail("map_field_push_2d")
 
                  END SELECT
@@ -1740,6 +3238,21 @@ minclude ppm_get_field_template(4,l)
                     CALL mesh_map_push_3d_sca_i(this,p_idx,info)
                     or_fail("map_field_push_3d")
 
+                 CASE (ppm_type_longint)
+                    fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
+
+                 CASE (ppm_type_comp_single)
+                    CALL mesh_map_push_3d_sca_sc(this,p_idx,info)
+                    or_fail("map_field_push_3d")
+
+                 CASE (ppm_type_comp)
+                    CALL mesh_map_push_3d_sca_dc(this,p_idx,info)
+                    or_fail("map_field_push_3d")
+
+                 CASE (ppm_type_logical)
+                    CALL mesh_map_push_3d_sca_l(this,p_idx,info)
+                    or_fail("map_field_push_3d")
+
                  END SELECT
               ELSE
                  SELECT CASE (field%data_type)
@@ -1753,6 +3266,21 @@ minclude ppm_get_field_template(4,l)
 
                  CASE (ppm_type_int)
                     CALL mesh_map_push_3d_vec_i(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_3d")
+
+                 CASE (ppm_type_longint)
+                    fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
+
+                 CASE (ppm_type_comp_single)
+                    CALL mesh_map_push_3d_vec_sc(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_3d")
+
+                 CASE (ppm_type_comp)
+                    CALL mesh_map_push_3d_vec_dc(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_3d")
+
+                 CASE (ppm_type_logical)
+                    CALL mesh_map_push_3d_vec_l(this,field%lda,p_idx,info)
                     or_fail("map_field_push_3d")
 
                  END SELECT
@@ -1773,9 +3301,12 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_equi_mesh)             :: this
           CLASS(ppm_t_field_), INTENT(INOUT) :: field
           !!! this field is discretized on that mesh
+
           INTEGER,             INTENT(  OUT) :: info
           INTEGER,   OPTIONAL, INTENT(IN   ) :: poptype
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           INTEGER :: p_idx
 
           start_subroutine("equi_mesh_map_pop")
@@ -1785,136 +3316,256 @@ minclude ppm_get_field_template(4,l)
           SELECT CASE (PRESENT(poptype))
           CASE (.FALSE.)
              IF (ppm_dim.EQ.2) THEN
-                 IF (field%lda.EQ.1) THEN
-                    SELECT CASE (field%data_type)
-                    CASE (ppm_type_real_single)
-                       CALL mesh_map_pop_2d_sca_s(this,p_idx,info)
-                       or_fail("map_field_pop_2d")
+                IF (field%lda.EQ.1) THEN
+                   SELECT CASE (field%data_type)
+                   CASE (ppm_type_real_single)
+                      CALL mesh_map_pop_2d_sca_s(this,p_idx,info)
+                      or_fail("map_field_pop_2d")
 
-                    CASE (ppm_type_real)
-                       CALL mesh_map_pop_2d_sca_d(this,p_idx,info)
-                       or_fail("map_field_pop_2d")
+                   CASE (ppm_type_real)
+                      CALL mesh_map_pop_2d_sca_d(this,p_idx,info)
+                      or_fail("map_field_pop_2d")
 
-                    CASE (ppm_type_int)
-                       CALL mesh_map_pop_2d_sca_i(this,p_idx,info)
-                       or_fail("map_field_pop_2d")
+                   CASE (ppm_type_int)
+                      CALL mesh_map_pop_2d_sca_i(this,p_idx,info)
+                      or_fail("map_field_pop_2d")
 
-                    END SELECT
-                 ELSE
-                    SELECT CASE (field%data_type)
-                    CASE (ppm_type_real_single)
-                       CALL mesh_map_pop_2d_vec_s(this,field%lda,p_idx,info)
-                       or_fail("map_field_pop_2d")
+                   CASE (ppm_type_longint)
+                      fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
 
-                    CASE (ppm_type_real)
-                       CALL mesh_map_pop_2d_vec_d(this,field%lda,p_idx,info)
-                       or_fail("map_field_pop_2d")
+                   CASE (ppm_type_comp_single)
+                      CALL mesh_map_pop_2d_sca_sc(this,p_idx,info)
+                      or_fail("map_field_pop_2d")
 
-                    CASE (ppm_type_int)
-                       CALL mesh_map_pop_2d_vec_i(this,field%lda,p_idx,info)
-                       or_fail("map_field_pop_2d")
+                   CASE (ppm_type_comp)
+                      CALL mesh_map_pop_2d_sca_dc(this,p_idx,info)
+                      or_fail("map_field_pop_2d")
 
-                    END SELECT
-                 ENDIF
+                   CASE (ppm_type_logical)
+                      CALL mesh_map_pop_2d_sca_l(this,p_idx,info)
+                      or_fail("map_field_pop_2d")
+
+                   END SELECT
+                ELSE
+                   SELECT CASE (field%data_type)
+                   CASE (ppm_type_real_single)
+                      CALL mesh_map_pop_2d_vec_s(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_2d")
+
+                   CASE (ppm_type_real)
+                      CALL mesh_map_pop_2d_vec_d(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_2d")
+
+                   CASE (ppm_type_int)
+                      CALL mesh_map_pop_2d_vec_i(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_2d")
+
+                   CASE (ppm_type_longint)
+                      fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
+
+                   CASE (ppm_type_comp_single)
+                      CALL mesh_map_pop_2d_vec_sc(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_2d")
+
+                   CASE (ppm_type_comp)
+                      CALL mesh_map_pop_2d_vec_dc(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_2d")
+
+                   CASE (ppm_type_logical)
+                      CALL mesh_map_pop_2d_vec_l(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_2d")
+
+                   END SELECT
+                ENDIF
              ELSE
-                 IF (field%lda.EQ.1) THEN
-                    SELECT CASE (field%data_type)
-                    CASE (ppm_type_real_single)
-                       CALL mesh_map_pop_3d_sca_s(this,p_idx,info)
-                       or_fail("map_field_pop_3d")
+                IF (field%lda.EQ.1) THEN
+                   SELECT CASE (field%data_type)
+                   CASE (ppm_type_real_single)
+                      CALL mesh_map_pop_3d_sca_s(this,p_idx,info)
+                      or_fail("map_field_pop_3d")
 
-                    CASE (ppm_type_real)
-                       CALL mesh_map_pop_3d_sca_d(this,p_idx,info)
-                       or_fail("map_field_pop_3d")
+                   CASE (ppm_type_real)
+                      CALL mesh_map_pop_3d_sca_d(this,p_idx,info)
+                      or_fail("map_field_pop_3d")
 
-                    CASE (ppm_type_int)
-                       CALL mesh_map_pop_3d_sca_i(this,p_idx,info)
-                       or_fail("map_field_pop_3d")
+                   CASE (ppm_type_int)
+                      CALL mesh_map_pop_3d_sca_i(this,p_idx,info)
+                      or_fail("map_field_pop_3d")
 
-                    END SELECT
-                 ELSE
-                    SELECT CASE (field%data_type)
-                    CASE (ppm_type_real_single)
-                       CALL mesh_map_pop_3d_vec_s(this,field%lda,p_idx,info)
-                       or_fail("map_field_pop_3d")
+                   CASE (ppm_type_longint)
+                      fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
 
-                    CASE (ppm_type_real)
-                       CALL mesh_map_pop_3d_vec_d(this,field%lda,p_idx,info)
-                       or_fail("map_field_pop_3d")
+                   CASE (ppm_type_comp_single)
+                      CALL mesh_map_pop_3d_sca_sc(this,p_idx,info)
+                      or_fail("map_field_pop_3d")
 
-                    CASE (ppm_type_int)
-                       CALL mesh_map_pop_3d_vec_i(this,field%lda,p_idx,info)
-                       or_fail("map_field_pop_3d")
+                   CASE (ppm_type_comp)
+                      CALL mesh_map_pop_3d_sca_dc(this,p_idx,info)
+                      or_fail("map_field_pop_3d")
 
-                    END SELECT
-                 ENDIF
+                   CASE (ppm_type_logical)
+                      CALL mesh_map_pop_3d_sca_l(this,p_idx,info)
+                      or_fail("map_field_pop_3d")
+
+                   END SELECT
+                ELSE
+                   SELECT CASE (field%data_type)
+                   CASE (ppm_type_real_single)
+                      CALL mesh_map_pop_3d_vec_s(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_3d")
+
+                   CASE (ppm_type_real)
+                      CALL mesh_map_pop_3d_vec_d(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_3d")
+
+                   CASE (ppm_type_int)
+                      CALL mesh_map_pop_3d_vec_i(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_3d")
+
+                   CASE (ppm_type_longint)
+                      fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
+
+                   CASE (ppm_type_comp_single)
+                      CALL mesh_map_pop_3d_vec_sc(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_3d")
+
+                   CASE (ppm_type_comp)
+                      CALL mesh_map_pop_3d_vec_dc(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_3d")
+
+                   CASE (ppm_type_logical)
+                      CALL mesh_map_pop_3d_vec_l(this,field%lda,p_idx,info)
+                      or_fail("map_field_pop_3d")
+
+                   END SELECT
+                ENDIF
              ENDIF
 
           CASE (.TRUE.)
              IF (ppm_dim.EQ.2) THEN
-                 IF (field%lda.EQ.1) THEN
-                    SELECT CASE (field%data_type)
-                    CASE (ppm_type_real_single)
-                       CALL mesh_map_pop_2d_sca_s(this,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_2d")
+                IF (field%lda.EQ.1) THEN
+                   SELECT CASE (field%data_type)
+                   CASE (ppm_type_real_single)
+                      CALL mesh_map_pop_2d_sca_s(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
 
-                    CASE (ppm_type_real)
-                       CALL mesh_map_pop_2d_sca_d(this,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_2d")
+                   CASE (ppm_type_real)
+                      CALL mesh_map_pop_2d_sca_d(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
 
-                    CASE (ppm_type_int)
-                       CALL mesh_map_pop_2d_sca_i(this,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_2d")
+                   CASE (ppm_type_int)
+                      CALL mesh_map_pop_2d_sca_i(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
 
-                    END SELECT
-                 ELSE
-                    SELECT CASE (field%data_type)
-                    CASE (ppm_type_real_single)
-                       CALL mesh_map_pop_2d_vec_s(this,field%lda,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_2d")
+                   CASE (ppm_type_longint)
+                      fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
 
-                    CASE (ppm_type_real)
-                       CALL mesh_map_pop_2d_vec_d(this,field%lda,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_2d")
+                   CASE (ppm_type_comp_single)
+                      CALL mesh_map_pop_2d_sca_sc(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
 
-                    CASE (ppm_type_int)
-                       CALL mesh_map_pop_2d_vec_i(this,field%lda,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_2d")
+                   CASE (ppm_type_comp)
+                      CALL mesh_map_pop_2d_sca_dc(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
 
-                    END SELECT
-                 ENDIF
+                   CASE (ppm_type_logical)
+                      CALL mesh_map_pop_2d_sca_l(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
+
+                   END SELECT
+                ELSE
+                   SELECT CASE (field%data_type)
+                   CASE (ppm_type_real_single)
+                      CALL mesh_map_pop_2d_vec_s(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
+
+                   CASE (ppm_type_real)
+                      CALL mesh_map_pop_2d_vec_d(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
+
+                   CASE (ppm_type_int)
+                      CALL mesh_map_pop_2d_vec_i(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
+
+                   CASE (ppm_type_longint)
+                      fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
+
+                   CASE (ppm_type_comp_single)
+                      CALL mesh_map_pop_2d_vec_sc(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
+
+                   CASE (ppm_type_comp)
+                      CALL mesh_map_pop_2d_vec_dc(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
+
+                   CASE (ppm_type_logical)
+                      CALL mesh_map_pop_2d_vec_l(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_2d")
+
+                   END SELECT
+                ENDIF
              ELSE
-                 IF (field%lda.EQ.1) THEN
-                    SELECT CASE (field%data_type)
-                    CASE (ppm_type_real_single)
-                       CALL mesh_map_pop_3d_sca_s(this,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_3d")
+                IF (field%lda.EQ.1) THEN
+                   SELECT CASE (field%data_type)
+                   CASE (ppm_type_real_single)
+                      CALL mesh_map_pop_3d_sca_s(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
 
-                    CASE (ppm_type_real)
-                       CALL mesh_map_pop_3d_sca_d(this,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_3d")
+                   CASE (ppm_type_real)
+                      CALL mesh_map_pop_3d_sca_d(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
 
-                    CASE (ppm_type_int)
-                       CALL mesh_map_pop_3d_sca_i(this,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_3d")
+                   CASE (ppm_type_int)
+                      CALL mesh_map_pop_3d_sca_i(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
 
-                    END SELECT
-                 ELSE
-                    SELECT CASE (field%data_type)
-                    CASE (ppm_type_real_single)
-                       CALL mesh_map_pop_3d_vec_s(this,field%lda,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_3d")
+                   CASE (ppm_type_longint)
+                      fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
 
-                    CASE (ppm_type_real)
-                       CALL mesh_map_pop_3d_vec_d(this,field%lda,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_3d")
+                   CASE (ppm_type_comp_single)
+                      CALL mesh_map_pop_3d_sca_sc(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
 
-                    CASE (ppm_type_int)
-                       CALL mesh_map_pop_3d_vec_i(this,field%lda,p_idx,info,poptype=poptype)
-                       or_fail("map_field_pop_3d")
+                   CASE (ppm_type_comp)
+                      CALL mesh_map_pop_3d_sca_dc(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
 
-                    END SELECT
-                 ENDIF
+                   CASE (ppm_type_logical)
+                      CALL mesh_map_pop_3d_sca_l(this,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
+
+                   END SELECT
+                ELSE
+                   SELECT CASE (field%data_type)
+                   CASE (ppm_type_real_single)
+                      CALL mesh_map_pop_3d_vec_s(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
+
+                   CASE (ppm_type_real)
+                      CALL mesh_map_pop_3d_vec_d(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
+
+                   CASE (ppm_type_int)
+                      CALL mesh_map_pop_3d_vec_i(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
+
+                   CASE (ppm_type_longint)
+                      fail("this data type is not implemented yet!",ppm_error=ppm_error_fatal)
+
+                   CASE (ppm_type_comp_single)
+                      CALL mesh_map_pop_3d_vec_sc(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
+
+                   CASE (ppm_type_comp)
+                      CALL mesh_map_pop_3d_vec_dc(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
+
+                   CASE (ppm_type_logical)
+                      CALL mesh_map_pop_3d_vec_l(this,field%lda,p_idx,info,poptype=poptype)
+                      or_fail("map_field_pop_3d")
+
+                   END SELECT
+                ENDIF
              ENDIF
           END SELECT
 
@@ -1929,8 +3580,11 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_mesh_discr_data)               :: this
           CLASS(ppm_t_field_), TARGET, INTENT(IN   ) :: field
-          INTEGER,                     INTENT(  OUT) :: info
 
+          INTEGER,                     INTENT(  OUT) :: info
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("mesh_discr_data_create")
 
           this%data_type = field%data_type
@@ -1951,14 +3605,19 @@ minclude ppm_get_field_template(4,l)
           !  Arguments
           !-------------------------------------------------------------------------
           CLASS(ppm_t_mesh_discr_data) :: this
-          INTEGER,       INTENT(  OUT) :: info
 
+          INTEGER,       INTENT(  OUT) :: info
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("mesh_discr_data_destroy")
 
           this%data_type = 0
           this%field_ptr => NULL()
           this%lda = 0
           this%name = ""
+
+          destroy_collection_ptr(this%subpatch)
 
           end_subroutine()
       END SUBROUTINE
@@ -1978,7 +3637,9 @@ minclude ppm_get_field_template(4,l)
           INTEGER,                       INTENT(  OUT) :: info
 
           CLASS(ppm_t_field_), OPTIONAL, TARGET        :: Field
-
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
           start_subroutine("equi_mesh_print_vtk")
 
           IF (ppm_dim.EQ.2) THEN
@@ -2112,6 +3773,8 @@ minclude ppm_get_field_template(4,l)
 #undef __VFIELD
 
 #include "mesh/mesh_interp_to_part.f"
+#include "mesh/ppm_check_meshid.f"
+
       !PUSH
       SUBROUTINE ppm_vc_equi_mesh_push(this,element,info,id)
           !!! add an element into the collection
@@ -2184,6 +3847,8 @@ minclude ppm_get_field_template(4,l)
           !swap with the last non-empty element of the collection
           IF (this%max_id.GT.this%min_id) THEN
              this%vec(del_id)%t => this%vec(this%max_id)%t
+             !meshid is changing to the real ID
+             this%vec(del_id)%t%ID=del_id
              this%vec(this%max_id)%t => NULL()
           ELSE
              this%vec(del_id)%t => NULL()

@@ -84,6 +84,7 @@
       USE ppm_module_util_rank
       USE ppm_module_neighlist
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -95,57 +96,59 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: min_phys
+      REAL(MK), DIMENSION(:)  ,     INTENT(IN   ) :: min_phys
       !!! Min. extent of the physical domain
-      REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: max_phys
+      REAL(MK), DIMENSION(:)  ,     INTENT(IN   ) :: max_phys
       !!! Max. extent of the physical domain
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: bcdef
+      INTEGER , DIMENSION(:  ),     INTENT(IN   ) :: bcdef
       !!! Boundary condition definition
-      REAL(MK), DIMENSION(:,:), POINTER       :: min_sub
+      REAL(MK), DIMENSION(:,:),     POINTER       :: min_sub
       !!! Min. extent of the sub domain
-      REAL(MK), DIMENSION(:,:), POINTER       :: max_sub
+      REAL(MK), DIMENSION(:,:),     POINTER       :: max_sub
       !!! Max. extent of the sub domain
-      INTEGER , DIMENSION(:,:), POINTER       :: ineigh
+      INTEGER , DIMENSION(:,:),     POINTER       :: ineigh
       !!! Points to the `nneigh(:)` subs of isub
-      INTEGER , DIMENSION(:  ), POINTER       :: nneigh
+      INTEGER , DIMENSION(:  ),     POINTER       :: nneigh
       !!! `nneigh(isub)` returns the total number
       !!! of neighbouring subs of isub
-      INTEGER                 , INTENT(IN   ) :: nsubs
+      INTEGER,                      INTENT(IN   ) :: nsubs
       !!! Total number of (real) sub domains
-      REAL(MK), DIMENSION(ppm_dim),INTENT(IN) :: ghostsize
+      REAL(MK), DIMENSION(ppm_dim), INTENT(IN   ) :: ghostsize
       !!! The ghostlayer size in each dimension
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER                 ,     INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(ppm_dim)            :: bsize,len_sub
+      REAL(ppm_kind_double)                 :: t0
+      REAL(MK), DIMENSION(ppm_dim)          :: bsize,len_sub
       REAL(MK), DIMENSION(:,:), ALLOCATABLE :: ctrs
       REAL(MK)                                :: mx1,mx2,mx3
       REAL(MK)                                :: mn1,mn2,mn3
-      INTEGER , DIMENSION(:  ), POINTER       :: subid => NULL()
-      INTEGER , DIMENSION(:  ), POINTER       :: lhbx  => NULL()
-      INTEGER , DIMENSION(:  ), POINTER       :: lpdx  => NULL()
-      INTEGER , DIMENSION(:,:), POINTER       :: inp   => NULL()
-      INTEGER , DIMENSION(:,:), POINTER       :: jnp   => NULL()
-      INTEGER , DIMENSION(ppm_dim)            :: ldc,Nm,Nmtot
-      INTEGER , DIMENSION(2*ppm_dim)          :: Ngl
-      INTEGER                                 :: nsubsplus,nnp
-      INTEGER                                 :: i,j,ii,jj,k,kk,iopt,iend
-      INTEGER                                 :: ipart,jpart,n1,n2,iinter
-      INTEGER                                 :: isize,ip,jp,cbox,istart
-      INTEGER                                 :: jstart,jend,ibox,jbox
-      INTEGER                                 :: imx,jmx,kmx
-      REAL(MK)                                :: t0
-      LOGICAL                                 :: isin,pbdrx,pbdry,pbdrz
+
+      INTEGER , DIMENSION(:  ), POINTER :: subid => NULL()
+      INTEGER , DIMENSION(:  ), POINTER :: lhbx  => NULL()
+      INTEGER , DIMENSION(:  ), POINTER :: lpdx  => NULL()
+      INTEGER , DIMENSION(:,:), POINTER :: inp   => NULL()
+      INTEGER , DIMENSION(:,:), POINTER :: jnp   => NULL()
+      INTEGER , DIMENSION(ppm_dim)      :: ldc,Nm,Nmtot
+      INTEGER , DIMENSION(2*ppm_dim)    :: Ngl
+      INTEGER                           :: nsubsplus,nnp
+      INTEGER                           :: i,j,ii,jj,k,kk,iopt,iend
+      INTEGER                           :: ipart,jpart,n1,n2,iinter
+      INTEGER                           :: isize,ip,jp,cbox,istart
+      INTEGER                           :: jstart,jend,ibox,jbox
+      INTEGER                           :: imx,jmx,kmx
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_find_neigh'
+
+      LOGICAL :: isin,pbdrx,pbdry,pbdrz
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -160,9 +163,7 @@
       !-------------------------------------------------------------------------
       !  Initialize the ID
       !-------------------------------------------------------------------------
-      DO i=1,nsubs
-         subid(i) = i
-      ENDDO
+      FORALL (i=1:nsubs) subid(i) = i
 
       !-------------------------------------------------------------------------
       !  Add ghost domains for the periodic system
@@ -182,9 +183,7 @@
       !-------------------------------------------------------------------------
       !  Initialize the number of neighbours to zero
       !-------------------------------------------------------------------------
-      DO i=1,nsubsplus
-         nneigh(i) = 0
-      ENDDO
+      FORALL (i=1:nsubsplus) nneigh(i) = 0
 
       !-------------------------------------------------------------------------
       !  And allocate the pointers to the neighbours
@@ -197,11 +196,7 @@
       !-------------------------------------------------------------------------
       !  Initialize the neighbor sub indices to undefined
       !-------------------------------------------------------------------------
-      DO i=1,nsubsplus
-         DO j=1,ldc(1)
-            ineigh(j,i) = ppm_param_undefined
-         ENDDO
-      ENDDO
+      FORALL (i=1:ldc(1),j=1:nsubsplus) ineigh(i,j) = ppm_param_undefined
 
       !-------------------------------------------------------------------------
       !  If there are less than 2 subs there can be no neighbors
@@ -219,29 +214,28 @@
       !-------------------------------------------------------------------------
       !  Store the center points and the max extent of any sub
       !-------------------------------------------------------------------------
+      bsize = 0.0_MK
       SELECT CASE (ppm_dim)
       CASE (3)
-          bsize(1:3) = 0.0_MK
           DO i=1,nsubsplus
-              ctrs(1,i)  = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
-              ctrs(2,i)  = 0.5_MK*(min_sub(2,i) + max_sub(2,i))
-              ctrs(3,i)  = 0.5_MK*(min_sub(3,i) + max_sub(3,i))
-              len_sub(1) = max_sub(1,i) - min_sub(1,i)
-              len_sub(2) = max_sub(2,i) - min_sub(2,i)
-              len_sub(3) = max_sub(3,i) - min_sub(3,i)
-              IF (len_sub(1).GT.bsize(1)) bsize(1) = len_sub(1)
-              IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
-              IF (len_sub(3).GT.bsize(3)) bsize(3) = len_sub(3)
+             ctrs(1,i)  = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
+             ctrs(2,i)  = 0.5_MK*(min_sub(2,i) + max_sub(2,i))
+             ctrs(3,i)  = 0.5_MK*(min_sub(3,i) + max_sub(3,i))
+             len_sub(1) = max_sub(1,i) - min_sub(1,i)
+             len_sub(2) = max_sub(2,i) - min_sub(2,i)
+             len_sub(3) = max_sub(3,i) - min_sub(3,i)
+             IF (len_sub(1).GT.bsize(1)) bsize(1) = len_sub(1)
+             IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
+             IF (len_sub(3).GT.bsize(3)) bsize(3) = len_sub(3)
           ENDDO
       CASE (2)
-          bsize(1:2) = 0.0_MK
           DO i=1,nsubsplus
-              ctrs(1,i) = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
-              ctrs(2,i) = 0.5_MK*(min_sub(2,i) + max_sub(2,i))
-              len_sub(1) = max_sub(1,i) - min_sub(1,i)
-              len_sub(2) = max_sub(2,i) - min_sub(2,i)
-              IF (len_sub(1).GT.bsize(1)) bsize(1) = len_sub(1)
-              IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
+             ctrs(1,i) = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
+             ctrs(2,i) = 0.5_MK*(min_sub(2,i) + max_sub(2,i))
+             len_sub(1) = max_sub(1,i) - min_sub(1,i)
+             len_sub(2) = max_sub(2,i) - min_sub(2,i)
+             IF (len_sub(1).GT.bsize(1)) bsize(1) = len_sub(1)
+             IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
           ENDDO
       END SELECT
 
@@ -315,7 +309,7 @@
               !  that we already have in the list and we need to check
               !  for duplicates when adding these subs.
               !-----------------------------------------------------------------
-              IF((j.EQ.jmx).AND.(bcdef(4).EQ.ppm_param_bcdef_periodic))THEN
+              IF ((j.EQ.jmx).AND.(bcdef(4).EQ.ppm_param_bcdef_periodic))THEN
                   pbdry = .TRUE.
               ELSE
                   pbdry = .FALSE.

@@ -10,7 +10,7 @@
                 CALL find_flag(WRAP(DTYPE)_args(i)%flag(1:2), ok)
 #endif
              END IF
-             IF ((.NOT. ok) .AND. (WRAP(DTYPE)_args(i)%long_flag_set)) THEN
+             IF ((.NOT.ok).AND.(WRAP(DTYPE)_args(i)%long_flag_set)) THEN
                 ! long flag
 #ifndef __LOGICAL
                 CALL find_flag(WRAP(DTYPE)_args(i) &
@@ -27,7 +27,7 @@
                 ! match found - convert the arg
                 READ (value,*,IOSTAT=ios) WRAP(DTYPE)_args(i)%variable
                 ! check for failure
-                IF (ios .NE. 0) THEN
+                IF (ios.NE.0) THEN
                    WRITE (cvar,*) 'Invalid argument (', value(1:LEN_TRIM(value)), ') for arg ', &
                    & WRAP(DTYPE)_args(i)%name(1:LEN_TRIM(WRAP(DTYPE)_args(i)%name))
 

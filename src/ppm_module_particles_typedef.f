@@ -266,6 +266,8 @@
           !swap with the last non-empty element of the collection
           IF (this%max_id.GT.this%min_id) THEN
              this%vec(del_id)%t => this%vec(this%max_id)%t
+             !Update particle set ID to the real ID
+             this%vec(del_id)%t%ID=del_id
              this%vec(this%max_id)%t => NULL()
           ELSE
              this%vec(del_id)%t => NULL()
@@ -351,6 +353,8 @@
           !swap with the last non-empty element of the collection
           IF (this%max_id.GT.this%min_id) THEN
              this%vec(del_id)%t => this%vec(this%max_id)%t
+             !Update particle set ID to the real ID
+             this%vec(del_id)%t%ID=del_id
              this%vec(this%max_id)%t => NULL()
           ELSE
              this%vec(del_id)%t => NULL()

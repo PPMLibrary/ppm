@@ -30,15 +30,15 @@
           !!! Order of approximation for each term of the differential operator
           CLASS(ppm_t_discr_data), OPTIONAL,               TARGET        :: prop
 
-
-
           REAL(MK), DIMENSION(:),   POINTER :: nn2
           REAL(MK), DIMENSION(:,:), POINTER :: xp => NULL()
           REAL(MK)                          :: dist2
+          REAL(MK), PARAMETER               :: big=HUGE(1.0_MK)
 
           INTEGER, DIMENSION(:),   POINTER :: nvlist
           INTEGER, DIMENSION(:,:), POINTER :: vlist
           INTEGER                          :: ip,iq,ineigh
+          INTEGER                          :: datatype
 
           !nearest-neighbor distance, for interpolating operators. Either they
           !were computed already, or this has to be done now.
@@ -83,9 +83,11 @@
              IF (.NOT.PRESENT(prop)) THEN
                 SELECT TYPE(Part_src)
                 CLASS IS (DTYPE(ppm_t_particles)_)
+                   datatype=MERGE(ppm_type_real,ppm_type_real_single,ppm_kind.EQ.ppm_kind_double)
+
                    !Create a new property and make this%nn_sq point to it
                    CALL Part_src%create_prop(info,part_prop=this%nn_sq,&
-                   &    dtype=ppm_type_real,name='nearest_neighb_squared')
+                   &    dtype=datatype,name='nearest_neighb_squared')
                    or_fail("could not create property for nn_sq")
 
                    NULLIFY(nvlist,vlist,nn2)
@@ -100,7 +102,7 @@
                    or_fail("could not get pointer to Verlet lists")
 
                    DO ip=1,Part_src%Npart
-                      nn2(ip) = HUGE(1._MK)
+                      nn2(ip) = big
                       DO ineigh=1,nvlist(ip)
                          iq=vlist(ineigh,ip)
                          dist2 = SUM((xp(1:ppm_dim,iq)-xp(1:ppm_dim,ip))**2)
@@ -124,7 +126,7 @@
 
                 END SELECT
              ENDIF
-          ENDIF
+          ENDIF !this%flags(ppm_ops_interp)
 
           end_subroutine()
       END SUBROUTINE DTYPE(dcop_create)
@@ -150,7 +152,10 @@
              SELECT TYPE(Part_src => this%discr_src)
              CLASS IS (DTYPE(ppm_t_particles)_)
                 CALL Part_src%props%remove(info,this%nn_sq)
-                or_fail("failed to remove property")
+                or_fail("Failed to remove property")
+
+                DEALLOCATE(this%nn_sq,STAT=info)
+                or_fail_dealloc("Failed to destroy property")
 
                 this%nn_sq => NULL()
 
@@ -174,6 +179,7 @@
           !!! (this is an expensive step and has to
           !!! be re-done everytime the particles move)
           IMPLICIT NONE
+
           DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
@@ -221,6 +227,7 @@
         !!! The dimension of Field_to needs to conform the output of the
         !!! operator (vector or scalar, type, etc...).
         USE ppm_module_mpi
+        USE ppm_module_util_time
         IMPLICIT NONE
         !-------------------------------------------------------------------------
         !  Include
@@ -272,9 +279,8 @@
 
         start_subroutine("dcop_compute")
 
-#ifdef __MPI
-        t1 = MPI_WTIME(info)
-#endif
+        CALL ppm_util_time(t1)
+
         !-------------------------------------------------------------------------
         ! Check arguments
         !-------------------------------------------------------------------------
@@ -314,7 +320,7 @@
                     check_false(<#ASSOCIATED(Field_to%discr_info)#>,&
                     & "Destination field seems to be corrupted - Try Field%destroy()?")
 
-                    write(fname,'(A,A)') "Output_from_",TRIM(ADJUSTL(this%op_ptr%name))
+                    WRITE(fname,'(A,A)') "Output_from_",TRIM(ADJUSTL(this%op_ptr%name))
 
                     IF (vector_operator) THEN
                        CALL Field_to%create(this%op_ptr%nterms,info,name=fname)
@@ -576,10 +582,9 @@
               ENDIF
 
               Part_src%stats%nb_dc_apply = Part_src%stats%nb_dc_apply + 1
-#ifdef __MPI
-              t2 = MPI_WTIME(info)
+
+              CALL ppm_util_time(t2)
               Part_src%stats%t_dc_apply = Part_src%stats%t_dc_apply+(t2-t1)
-#endif
 
            CLASS DEFAULT
               fail("Wrong type. Operator should be discretized on a particle set")

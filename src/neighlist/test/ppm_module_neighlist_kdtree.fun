@@ -102,8 +102,8 @@ test_suite ppm_module_neighlist_kdtree
 
     REAL(MK), DIMENSION(ndim) :: coord
 
-    TYPE(kdtree2_d), POINTER :: tree
-    TYPE(kdtree2_result_d), DIMENSION(:), ALLOCATABLE, TARGET :: results,resultsb
+    TYPE(kdtree_d), POINTER :: tree
+    TYPE(kdtree_result_d), DIMENSION(:), ALLOCATABLE, TARGET :: results,resultsb
     TYPE(ppm_t_particles_d), POINTER :: Part
     CLASS(ppm_t_neighlist_d_), POINTER :: Nlist
 
@@ -211,7 +211,7 @@ test_suite ppm_module_neighlist_kdtree
     DO ip=1,Part%Npart
        ! If the tree is not sorted you need to remove the self
        ! particle from list of neighbors
-       CALL kdtree2_n_nearest(tree,xp(1:ndim,ip), &
+       CALL kdtree_n_nearest(tree,xp(1:ndim,ip), &
        &    knn+1,results,info)
        Assert_Equal(info,0)
        Nlist%vlist(1:knn,ip)=results(2:knn+1)%idx
@@ -224,11 +224,11 @@ test_suite ppm_module_neighlist_kdtree
 
     !compare the results of kdtree nearest search with brute search
     DO ip=1,10  !Part%Npart
-       CALL kdtree2_n_nearest(tree,xp(1:ndim,ip), &
+       CALL kdtree_n_nearest(tree,xp(1:ndim,ip), &
        &    knn+1,results,info)
        Assert_Equal(info,0)
 
-       CALL kdtree2_n_nearest_brute_force(tree,xp(1:ndim,ip), &
+       CALL kdtree_n_nearest_brute_force(tree,xp(1:ndim,ip), &
        &    knn+1,resultsb,info)
        Assert_Equal(info,0)
 

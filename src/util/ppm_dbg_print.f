@@ -49,7 +49,6 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-
       USE ppm_module_data
       USE ppm_module_topo
       USE ppm_module_alloc
@@ -98,10 +97,10 @@
       ! local vars
       CHARACTER(128)                     :: sfmt,pfmt
       CHARACTER(64)                     :: sfname,pfname
-      TYPE(ppm_t_topo), POINTER         :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER         :: topo
       INTEGER                           :: i
       INTEGER                           :: iunit
-      REAL(mk)                          :: t0
+      REAL(ppm_kind_double) :: t0
       INTEGER                           :: mpart
 #ifdef __MPI
       INTEGER, DIMENSION(:),    POINTER :: allnp   => NULL()
@@ -139,6 +138,7 @@
 #ifdef __MPI
       IF (ppm_rank.EQ.0) THEN
 #endif
+      NULLIFY(topo)
       CALL ppm_topo_get(topoid,topo,info)
       OPEN(iunit,FILE=sfname)
 
@@ -154,119 +154,116 @@
 #endif
 
       IF (PRESENT(xp).AND.PRESENT(np)) THEN
-          IF (PRESENT(mp)) THEN
-              mpart = mp
-          ELSE
-              mpart = np
-          ENDIF
+         IF (PRESENT(mp)) THEN
+            mpart = mp
+         ELSE
+            mpart = np
+         ENDIF
 
 #ifdef __MPI
-          !--------------------------------------------------------------------
-          ! Send all data to rank 0
-          !--------------------------------------------------------------------
-          ! first allocate the size info arrays
-          lda(1) = ppm_nproc
-          CALL ppm_alloc(allnp,lda,ppm_param_alloc_fit,info)
-          CALL ppm_alloc(allmp,lda,ppm_param_alloc_fit,info)
+         !--------------------------------------------------------------------
+         ! Send all data to rank 0
+         !--------------------------------------------------------------------
+         ! first allocate the size info arrays
+         lda(1) = ppm_nproc
+         CALL ppm_alloc(allnp,lda,ppm_param_alloc_fit,info)
+         CALL ppm_alloc(allmp,lda,ppm_param_alloc_fit,info)
 #if   __CTAG == __SCALAR
-          CALL ppm_alloc(allctag,lda,ppm_param_alloc_fit,info)
+         CALL ppm_alloc(allctag,lda,ppm_param_alloc_fit,info)
 #endif
-          or_fail_alloc('failed to allocate allnp, allmp or allctag',ppm_error=ppm_error_fatal)
+         or_fail_alloc('failed to allocate allnp, allmp or allctag',ppm_error=ppm_error_fatal)
 
-          ! gather the np and mp at the root
-          CALL MPI_Gather(np,1,MPI_INTEGER,allnp,1,MPI_INTEGER,0,ppm_comm,info)
-          CALL MPI_Gather(mpart,1,MPI_INTEGER,allmp,1,MPI_INTEGER,0,ppm_comm,info)
+         ! gather the np and mp at the root
+         CALL MPI_Gather(np,1,MPI_INTEGER,allnp,1,MPI_INTEGER,0,ppm_comm,info)
+         CALL MPI_Gather(mpart,1,MPI_INTEGER,allmp,1,MPI_INTEGER,0,ppm_comm,info)
 #if   __CTAG == __SCALAR
-          CALL MPI_Gather(colortag,1,MPI_INTEGER,allctag,1,MPI_INTEGER,0,&
-          &               ppm_comm,info)
+         CALL MPI_Gather(colortag,1,MPI_INTEGER,allctag,1,MPI_INTEGER,0,ppm_comm,info)
 #endif
-          or_fail_MPI('failed to gather allnp, allmp or allctag',ppm_error=ppm_error_fatal)
+         or_fail_MPI('failed to gather allnp, allmp or allctag',ppm_error=ppm_error_fatal)
 
-          IF (ppm_rank.EQ.0) THEN
-              ! allocate allxp array
-              maxmp = MAXVAL(allmp)
-              lda(1) = ppm_dim
-              lda(2) = maxmp
-              lda(3) = ppm_nproc
-              CALL ppm_alloc(allxp,lda,ppm_param_alloc_fit,info)
+         IF (ppm_rank.EQ.0) THEN
+            ! allocate allxp array
+            maxmp = MAXVAL(allmp)
+            lda(1) = ppm_dim
+            lda(2) = maxmp
+            lda(3) = ppm_nproc
+            CALL ppm_alloc(allxp,lda,ppm_param_alloc_fit,info)
 #if __CTAG == __VECTOR
-              lda(1) = maxmp
-              lda(2) = ppm_nproc
-              CALL ppm_alloc(allctag,lda,ppm_param_alloc_fit,info)
+            lda(1) = maxmp
+            lda(2) = ppm_nproc
+            CALL ppm_alloc(allctag,lda,ppm_param_alloc_fit,info)
 #endif
-              or_fail_alloc('failed to allocate allxp',ppm_error=ppm_error_fatal)
+            or_fail_alloc('failed to allocate allxp',ppm_error=ppm_error_fatal)
 
-              lda(1) = ppm_nproc
-              CALL ppm_alloc(req,lda,ppm_param_alloc_fit,info)
-              or_fail_alloc('failed to allocate req',ppm_error=ppm_error_fatal)
+            lda(1) = ppm_nproc
+            CALL ppm_alloc(req,lda,ppm_param_alloc_fit,info)
+            or_fail_alloc('failed to allocate req',ppm_error=ppm_error_fatal)
 
-              DO i=1,allmp(1)
-                  allxp(:,i,1) = xp(:,i)
+            DO i=1,allmp(1)
+               allxp(:,i,1) = xp(:,i)
 #if __CTAG == __VECTOR
-                  allctag(i,1) = colortag(i)
+               allctag(i,1) = colortag(i)
 #endif
-              ENDDO
+            ENDDO
 
-              ! now let all procs communicate with rank 0
-              DO iproc=1,ppm_nproc-1
-                  CALL mpi_recv(allxp(:,:,iproc+1),allmp(iproc+1)*ppm_dim,&
-                  &             ppm_mpi_kind,iproc,  &
-                  &             0,ppm_comm,MPI_STATUS_IGNORE,info)
-                  or_fail_MPI("failed to sendrecv xp",ppm_error=ppm_error_fatal)
+            ! now let all procs communicate with rank 0
+            DO iproc=1,ppm_nproc-1
+               CALL MPI_Recv(allxp(:,:,iproc+1),allmp(iproc+1)*ppm_dim,&
+               &    ppm_mpi_kind,iproc,0,ppm_comm,MPI_STATUS_IGNORE,info)
+               or_fail_MPI("failed to sendrecv xp",ppm_error=ppm_error_fatal)
 #if __CTAG == __VECTOR
-                  CALL mpi_recv(allctag(:,iproc+1),allmp(iproc+1),&
-                  &             MPI_INTEGER,iproc,  &
-                  &             0,ppm_comm,MPI_STATUS_IGNORE,info)
-                  or_fail_MPI("failed to sendrecv ctag",ppm_error=ppm_error_fatal)
+               CALL MPI_Recv(allctag(:,iproc+1),allmp(iproc+1),&
+               &    MPI_INTEGER,iproc,0,ppm_comm,MPI_STATUS_IGNORE,info)
+               or_fail_MPI("failed to sendrecv ctag",ppm_error=ppm_error_fatal)
 #endif
-              ENDDO
-              IF (PRESENT(append).AND.append) then
-                  OPEN(iunit,FILE=pfname,ACCESS='APPEND')
-              ELSE
-                  OPEN(iunit,FILE=pfname)
-              ENDIF
-              DO iproc=1,ppm_nproc
-                  DO i=1,allnp(iproc)
+            ENDDO
+            IF (PRESENT(append).AND.append) then
+               OPEN(iunit,FILE=pfname,ACCESS='APPEND')
+            ELSE
+               OPEN(iunit,FILE=pfname)
+            ENDIF
+            DO iproc=1,ppm_nproc
+               DO i=1,allnp(iproc)
 #if __CTAG == __SCALAR
-                      WRITE(iunit,pfmt) allxp(:,i,iproc),allctag(iproc)
+                  WRITE(iunit,pfmt) allxp(:,i,iproc),allctag(iproc)
 #elif __CTAG == __VECTOR
-                      WRITE(iunit,pfmt) allxp(:,i,iproc),allctag(i,iproc)
+                  WRITE(iunit,pfmt) allxp(:,i,iproc),allctag(i,iproc)
 #endif
-                  ENDDO
-                  DO i=allnp(iproc)+1,allmp(iproc)
+               ENDDO
+               DO i=allnp(iproc)+1,allmp(iproc)
 #if __CTAG == __SCALAR
-                      WRITE(iunit,pfmt) allxp(:,i,iproc),-1
+                  WRITE(iunit,pfmt) allxp(:,i,iproc),-1
 #elif __CTAG == __VECTOR
-                      WRITE(iunit,pfmt) allxp(:,i,iproc),allctag(i,iproc)
+                  WRITE(iunit,pfmt) allxp(:,i,iproc),allctag(i,iproc)
 #endif
-                  ENDDO
-              ENDDO
-              CLOSE(iunit)
-              CALL ppm_alloc(allxp,lda,ppm_param_dealloc,info)
-          ELSE
-              CALL mpi_send(xp,mpart*ppm_dim,ppm_mpi_kind,0,0,ppm_comm,info)
+               ENDDO
+            ENDDO
+            CLOSE(iunit)
+            CALL ppm_alloc(allxp,lda,ppm_param_dealloc,info)
+         ELSE
+            CALL MPI_Send(xp,mpart*ppm_dim,ppm_mpi_kind,0,0,ppm_comm,info)
 #if __CTAG == __VECTOR
-              CALL mpi_send(colortag,mpart,MPI_INTEGER,0,0,ppm_comm,info)
+            CALL MPI_Send(colortag,mpart,MPI_INTEGER,0,0,ppm_comm,info)
 #endif
           ENDIF
 #else
           IF (PRESENT(append).AND.append) then
-              OPEN(iunit,FILE=pfname,access='append')
+             OPEN(iunit,FILE=pfname,ACCESS='APPEND')
           ELSE
-              OPEN(iunit,FILE=pfname)
+             OPEN(iunit,FILE=pfname)
           ENDIF
           DO i=1,np
 #if __CTAG == __SCALAR
-              WRITE(iunit,pfmt) xp(:,i),colortag
+             WRITE(iunit,pfmt) xp(:,i),colortag
 #elif __CTAG == __VECTOR
-              WRITE(iunit,pfmt) xp(:,i),colortag(i)
+             WRITE(iunit,pfmt) xp(:,i),colortag(i)
 #endif
           ENDDO
           DO i=np+1,mpart
 #if __CTAG == __SCALAR
-              WRITE(iunit,pfmt) xp(:,i),-1
+             WRITE(iunit,pfmt) xp(:,i),-1
 #elif __CTAG == __VECTOR
-              WRITE(iunit,pfmt) xp(:,i),colortag(i)
+             WRITE(iunit,pfmt) xp(:,i),colortag(i)
 #endif
           ENDDO
           CLOSE(iunit)

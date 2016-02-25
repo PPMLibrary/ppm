@@ -40,7 +40,12 @@
       MODULE ppm_module_map_part_util
       !!! This module provides various particle mapping utility and helper
       !!! routines and their work-arrays.
-
+         USE ppm_module_mapping_typedef, ONLY : ppm_buffer_set,           &
+         &   ppm_nsendbuffer,ppm_nrecvbuffer, ppm_t_part_mapping_s,       &
+         &   ppm_t_part_mapping_d,ppm_buffer_dim,ppm_buffer_type,         &
+         &   ppm_psendbuffer,ppm_isendlist,ppm_irecvlist,ppm_buffer2part, &
+         &   ppm_sendbuffers,ppm_sendbufferd,ppm_map_type,ppm_nrecvlist,  &
+         &   ppm_nsendlist
          IMPLICIT NONE
 
          PRIVATE
@@ -58,6 +63,9 @@
          INTEGER ,DIMENSION(:), POINTER :: ilist2    => NULL()
          INTEGER ,DIMENSION(:), POINTER :: ilist3    => NULL()
          INTEGER ,DIMENSION(:), POINTER :: ilist4    => NULL()
+
+         TYPE(ppm_t_part_mapping_s), POINTER :: map_s => NULL()
+         TYPE(ppm_t_part_mapping_d), POINTER :: map_d => NULL()
 
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_eqdistrib

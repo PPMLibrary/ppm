@@ -1,8 +1,6 @@
 test_suite ppm_module_interp_p2m
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+    USE ppm_module_mpi
 
     integer, parameter              :: debug = 0
     integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)

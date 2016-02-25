@@ -36,25 +36,36 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data
+      USE ppm_module_data, ONLY : ppm_char,ppm_debug,ppm_initialized,          &
+      &   ppm_stdout,ppm_stderr,ppm_logfile,ppm_error_error,ppm_param_dealloc, &
+      &   ppm_proc_speed,ppm_rank,ppm_kind_double,ppm_comm
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
       USE ppm_module_log
+      USE ppm_module_mapping_typedef
+#ifdef __MPI3
+      USE ppm_module_mpi
+#endif
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
       INTEGER, INTENT(  OUT) :: info
       !!! Returns 0 upon success
+
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(1) :: lda
       INTEGER               :: iopt
       INTEGER               :: istat
+#ifdef __MPI3
+      INTEGER               :: request
+#endif
 
       REAL(ppm_kind_double) :: t0
 
@@ -66,10 +77,14 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
-      lda(1)=0
+
+#ifdef __MPI3
+      CALL MPI_Ibarrier(ppm_comm,request,info)
+      or_fail_MPI("MPI_Ibarrier")
+#endif
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -149,6 +164,12 @@
          CALL ppm_log(caller,cbuf,info)
       ENDIF
 
+#ifdef  __MPI3
+      !wait for everyone to call the barrier
+      CALL MPI_Wait(request,MPI_STATUS_IGNORE,info)
+      or_fail_MPI("MPI_Wait")
+#endif
+
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
@@ -158,21 +179,21 @@
       !-------------------------------------------------------------------------
       !  Close output units if needed
       !-------------------------------------------------------------------------
-      IF (ppm_stdout .GE. 0) THEN
+      IF (ppm_stdout.GE.0) THEN
          ! do not close it if it is a system standard unit
          IF (ppm_stdout .NE. 6) THEN
             INQUIRE(ppm_stdout,OPENED=isopen)
             IF (isopen) CLOSE(ppm_stdout)
          ENDIF
       ENDIF
-      IF (ppm_stderr .GE. 0) THEN
+      IF (ppm_stderr.GE.0) THEN
          ! do not close it if it is a system standard unit
          IF (ppm_stderr .NE. 0) THEN
             INQUIRE(ppm_stderr,OPENED=isopen)
             IF (isopen) CLOSE(ppm_stderr)
          ENDIF
       ENDIF
-      IF (ppm_logfile .GE. 0) THEN
+      IF (ppm_logfile.GE.0) THEN
          INQUIRE(ppm_logfile,OPENED=isopen)
          IF (isopen) CLOSE(ppm_logfile)
       ENDIF

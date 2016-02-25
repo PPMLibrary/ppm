@@ -22,8 +22,6 @@
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
-      USE ppm_module_check_id
-
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -51,17 +49,16 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double) :: t0
       INTEGER                           :: i,j,k,dim
-      CHARACTER(LEN=ppm_char)           :: mesg
       LOGICAL                           :: valid
-      TYPE(ppm_t_topo)        , POINTER :: topo
+      TYPE(ppm_t_topo), POINTER :: topo
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_scale_domain',t0,info)
 

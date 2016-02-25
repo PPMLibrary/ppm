@@ -37,7 +37,7 @@
       !!! This module provides neighbor
       !!! search routines (cell lists, Verlet lists).
 
-         USE ppm_module_topo_typedef, ONLY : ppm_t_topo,ppm_topo
+         USE ppm_module_topo_typedef, ONLY : ppm_t_topo,ppm_topo,ppm_check_topoid
          IMPLICIT NONE
 
          !----------------------------------------------------------------------

@@ -120,10 +120,7 @@
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_data
-      USE ppm_module_data_mesh
       USE ppm_module_data_rmsh
-      USE ppm_module_check_id
-
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION
@@ -229,7 +226,7 @@
       REAL(mk)                                         :: strength
       LOGICAL                                          :: lok,lslave
       LOGICAL                                          :: with_vol
-      TYPE(ppm_t_equi_mesh), POINTER                   :: p_mesh)
+      TYPE(ppm_t_equi_mesh), POINTER                   :: p_mesh
       TYPE(ppm_t_topo)     , POINTER                   :: topo
 #if  __MODE == __VEC
       LOGICAL                                          :: with_weighting

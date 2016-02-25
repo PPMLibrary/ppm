@@ -60,6 +60,7 @@
       USE ppm_module_alloc
       USE ppm_module_write
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -104,7 +105,7 @@
       ! mean number of particles per cell
       REAL(MK) :: mean
       ! timer
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
       ! local info level
       INTEGER               :: info2
       ! counters
@@ -116,21 +117,19 @@
       INTEGER, DIMENSION(1) :: ldc
       INTEGER               :: iopt
 
-
       ! work arrays: box idx of each particle, write pointer, number of
       ! particles per box
       INTEGER, DIMENSION(:), ALLOCATABLE :: pbox
       INTEGER, DIMENSION(:), ALLOCATABLE :: cbox
       INTEGER, DIMENSION(:), ALLOCATABLE :: npbx
 
-      CHARACTER(LEN=ppm_char) :: msg
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_util_rank'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       ! store the input info (substart will reset info to 0)
       info2 = info
@@ -150,6 +149,14 @@
       nmtot(1) = nm(1) + ngl(1) + ngl(4)
       nmtot(2) = nm(2) + ngl(2) + ngl(5)
       nmtot(3) = nm(3) + ngl(3) + ngl(6)
+
+      !TODO
+      !One should fix all the INTEGER numbers!
+      IF (REAL(nmtot(1),MK)*REAL(nmtot(2),MK).GE.REAL(ppm_big_i-1,MK)) THEN
+         stdout("INTEGER Overflow!")
+         fail("INTEGER Overflow!",ppm_error=ppm_error_fatal)
+      ENDIF
+
       nbox  = nmtot(1) * nmtot(2) * nmtot(3)
 
       !-------------------------------------------------------------------------
@@ -188,7 +195,7 @@
       z0 = xmin(3)
 
       !-------------------------------------------------------------------------
-      !  Initialise particle counter (Number of Particle in a box)
+      !  Initialize particle counter (Number of Particle in a box)
       !-------------------------------------------------------------------------
       npbx = 0
 
@@ -217,8 +224,8 @@
          !  and cell lists are built per sub.
          !----------------------------------------------------------------------
          IF (icount .GT. 0) THEN
-            WRITE(msg,'(I8,A)') icount,' particles'
-            fail(msg,ppm_err_part_range,exit_point=no,ppm_error=ppm_error_warning)
+            WRITE(cbuf,'(I8,A)') icount,' particles'
+            fail(cbuf,ppm_err_part_range,exit_point=no,ppm_error=ppm_error_warning)
          ENDIF
       ENDIF
 
@@ -291,8 +298,8 @@
       ENDDO
 
       IF (icorr.GT.0) THEN
-         WRITE(msg,'(I8,A)')icorr,' particle indices corrected'
-         fail(msg,ppm_err_index_corr,exit_point=no,ppm_error=ppm_error_notice)
+         WRITE(cbuf,'(I8,A)')icorr,' particle indices corrected'
+         fail(cbuf,ppm_err_index_corr,exit_point=no,ppm_error=ppm_error_notice)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -363,8 +370,8 @@
          !  Should add up to icount
          !----------------------------------------------------------------------
          IF (i.NE.icount) THEN
-            WRITE(msg,'(2(A,I10))') 'icount=',icount,' Sum(npbx)=',i
-            fail(msg,ppm_error=ppm_error_error)
+            WRITE(cbuf,'(2(A,I10))') 'icount=',icount,' Sum(npbx)=',i
+            fail(cbuf,ppm_error=ppm_error_error)
          ENDIF
       ENDIF
 

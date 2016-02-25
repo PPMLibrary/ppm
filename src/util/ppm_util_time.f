@@ -45,7 +45,7 @@
       !!! This routine should not be called by the PPM client developer. Use
       !!! `ppm_time` instead.
 #if   __KIND == __SINGLE_PRECISION
-      USE ppm_module_data, ONLY : ppm_kind_single
+      USE ppm_module_data, ONLY : ppm_kind_single,ppm_kind_double
 #elif __KIND == __DOUBLE_PRECISION
       USE ppm_module_data, ONLY : ppm_kind_double
 #endif
@@ -71,6 +71,9 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
+#if   __KIND == __SINGLE_PRECISION
+      REAL(ppm_kind_double) :: timing_
+#endif
 #ifdef __ETIME
       REAL(MK) :: array(2)
       !-------------------------------------------------------------------------
@@ -83,13 +86,23 @@
       !-------------------------------------------------------------------------
       !  Call the MPI function MPI_Wtime
       !-------------------------------------------------------------------------
+#if   __KIND == __SINGLE_PRECISION
+      timing_ = MPI_Wtime()
+      timing =REAL(timing_,MK)
+#else
       timing = MPI_Wtime()
+#endif
 #else
       !-------------------------------------------------------------------------
       !  Call the C routine: etime to get the cpu time
       !-------------------------------------------------------------------------
 #ifdef __ETIME
+#if   __KIND == __SINGLE_PRECISION
+      timing_ = etime(array)
+      timing =REAL(timing_,MK)
+#else
       timing = etime(array)
+#endif
 #else
       CALL CPU_TIME(timing)
 #endif

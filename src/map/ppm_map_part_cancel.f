@@ -42,8 +42,7 @@
       !-------------------------------------------------------------------------
       USE ppm_module_substart
       USE ppm_module_substop
-      USE ppm_module_data, ONLY : ppm_kind_double,ppm_char,ppm_buffer_set, &
-      &   ppm_nsendbuffer,ppm_nrecvbuffer
+      USE ppm_module_data, ONLY : ppm_kind_double,ppm_char
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
@@ -58,7 +57,7 @@
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_map_part_cancel'
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 

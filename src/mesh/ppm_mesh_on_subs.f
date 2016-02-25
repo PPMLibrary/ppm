@@ -45,6 +45,7 @@
       USE ppm_module_substart
       USE ppm_module_substop
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -84,23 +85,22 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                     :: t0
-      REAL(MK), DIMENSION(ppm_dim) :: len_phys,dx,rat
-      REAL(MK), DIMENSION(ppm_dim) :: Offst
+      REAL(ppm_kind_double)                     :: t0
+      REAL(ppm_kind_double), DIMENSION(ppm_dim) :: len_phys,dx
+      REAL(ppm_kind_double), DIMENSION(ppm_dim) :: Offst
 
       INTEGER, DIMENSION(ppm_dim) :: iend
       !!! Upper-right coordinates on the sub mesh
       INTEGER, DIMENSION(ppm_dim) :: ldu,Nc
       INTEGER                     :: iopt,i,j,k
 
-      CHARACTER(LEN=ppm_char) :: mesg
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_mesh_on_subs'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -113,29 +113,26 @@
       ENDIF
 
       IF (PRESENT(Offset)) THEN
-#if   __KIND == __SINGLE_PRECISION
-         Offst(1:ppm_dim) = REAL(Offset(1:ppm_dim),MK)
-#elif __KIND == __DOUBLE_PRECISION
-         Offst(1:ppm_dim) = Offset(1:ppm_dim)
-#endif
+         Offst = Offset
       ELSE
-         Offst = 0.0_MK
+         Offst = 0.0_ppm_kind_double
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Mesh spacing
       !-------------------------------------------------------------------------
       Nc(1:ppm_dim)       = Nm(1:ppm_dim)-1
-      len_phys(1:ppm_dim) = max_phys(1:ppm_dim) - min_phys(1:ppm_dim)
-      dx(1:ppm_dim)       = len_phys(1:ppm_dim)/REAL(Nc(1:ppm_dim),MK)
+      len_phys(1:ppm_dim) = REAL(max_phys(1:ppm_dim)-min_phys(1:ppm_dim),ppm_kind_double)
+      dx(1:ppm_dim)       = len_phys(1:ppm_dim)/REAL(Nc(1:ppm_dim),ppm_kind_double)
 
       !check for round-off problems and fix them if necessary
       DO k=1,ppm_dim
-         DO WHILE (min_phys(k)+Nc(k)*dx(k).LT.max_phys(k))
+         DO WHILE (REAL(min_phys(k),ppm_kind_double)+REAL(Nc(k),ppm_kind_double)*dx(k).LT.REAL(max_phys(k),ppm_kind_double))
             dx(k)=dx(k)+EPSILON(dx(k))
          ENDDO
       ENDDO
-      check_true(<#ALL(min_phys(1:ppm_dim)+Nc(1:ppm_dim)*dx(1:ppm_dim).GE.max_phys(1:ppm_dim))#>,"round-off problem in mesh creation")
+      check_true(<#ALL(REAL(min_phys(1:ppm_dim),ppm_kind_double)+REAL(Nc(1:ppm_dim),ppm_kind_double)*dx(1:ppm_dim).GE.REAL(max_phys(1:ppm_dim),ppm_kind_double))#>, &
+      & "round-off problem in mesh creation")
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the meshes
@@ -153,93 +150,66 @@
       !  Determine number of mesh points.
       !-------------------------------------------------------------------------
       DO i=1,nsubs
-         istart(1:ppm_dim,i) = 1 + CEILING((min_sub(1:ppm_dim,i) - Offst(1:ppm_dim)) &
-         &                   /dx(1:ppm_dim))
-         iend(1:ppm_dim)     = 1 + FLOOR((  max_sub(1:ppm_dim,i) - Offst(1:ppm_dim)) &
-         &                   /(dx(1:ppm_dim)- EPSILON(dx(1:ppm_dim))))
-         ndata(1:ppm_dim,i)  =  1 + iend(1:ppm_dim) - istart(1:ppm_dim,i)
+         istart(1:ppm_dim,i)=1+CEILING((REAL(min_sub(1:ppm_dim,i),ppm_kind_double)-Offst(1:ppm_dim))/dx(1:ppm_dim))
+         iend(1:ppm_dim)    =1+FLOOR((  REAL(max_sub(1:ppm_dim,i),ppm_kind_double)-Offst(1:ppm_dim))/(dx(1:ppm_dim)-EPSILON(dx(1:ppm_dim))))
+         ndata(1:ppm_dim,i) =1+iend(1:ppm_dim)-istart(1:ppm_dim,i)
       ENDDO
 
       !-------------------------------------------------------------------------
       !  Some diagnostics
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-         WRITE(mesg,'(A,I5)') 'number of meshes on subs created: ',nsubs
-         CALL ppm_write(ppm_rank,caller,mesg,info)
+         stdout_f('(A,I5)',"number of meshes on subs created: ",nsubs)
       ENDIF
       IF (ppm_debug .GT. 1) THEN
-          IF (ppm_dim .LT. 3) THEN
-              DO i=1,nsubs
-                  WRITE(mesg,'(I4,A,2I8)') i,' istart: ',istart(1:2,i)
-                  CALL ppm_write(ppm_rank,caller,mesg,info)
-                  WRITE(mesg,'(I4,A,2I8)') i,' ndata : ',ndata(1:2,i)
-                  CALL ppm_write(ppm_rank,caller,mesg,info)
-                  WRITE(mesg,'(A)')'------------------------------------'
-                  CALL ppm_write(ppm_rank,caller,mesg,info)
-              ENDDO
-          ELSE
-              DO i=1,nsubs
-                  WRITE(mesg,'(I4,A,3I8)') i,' istart: ',istart(1:3,i)
-                  CALL ppm_write(ppm_rank,caller,mesg,info)
-                  WRITE(mesg,'(I4,A,3I8)') i,' ndata : ',ndata(1:3,i)
-                  CALL ppm_write(ppm_rank,caller,mesg,info)
-                  WRITE(mesg,'(A)')'------------------------------------'
-                  CALL ppm_write(ppm_rank,caller,mesg,info)
-              ENDDO
-          ENDIF
+         IF (ppm_dim .LT. 3) THEN
+            DO i=1,nsubs
+               stdout_f('(I4,A,2I8)',i," istart: ",'istart(1:2,i)')
+               stdout_f('(I4,A,2I8)',i," ndata : ",'ndata(1:2,i)')
+               stdout_f('(A)',"------------------------------------")
+            ENDDO
+         ELSE
+            DO i=1,nsubs
+               stdout_f('(I4,A,3I8)',i," istart: ",'istart(1:3,i)')
+               stdout_f('(I4,A,3I8)',i," ndata : ",'ndata(1:3,i)')
+               stdout_f('(A)',"------------------------------------")
+            ENDDO
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (nsubs .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'nsubs must be > 0',__LINE__,info)
-              GOTO 8888
+             fail('nsubs must be > 0',exit_point=8888)
           ENDIF
           IF (SIZE(min_sub,2) .LT. nsubs .OR. SIZE(max_sub,2) .LT. nsubs) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'not enough subs specified in min_sub, max_sub',__LINE__,info)
-              GOTO 8888
+             fail('not enough subs specified in min_sub, max_sub',exit_point=8888)
           ENDIF
           IF (SIZE(min_sub,1).LT.ppm_dim.OR.SIZE(max_sub,1).LT.ppm_dim) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'leading dimension in min_sub, max_sub wrong',__LINE__,info)
-              GOTO 8888
+             fail('leading dimension in min_sub, max_sub wrong',exit_point=8888)
           ENDIF
           DO i=1,nsubs
-              DO j=1,ppm_dim
-                  IF (max_sub(j,i) .LT. min_sub(j,i)) THEN
-                      info = ppm_error_error
-                      CALL ppm_error(ppm_err_argument,caller,  &
-     &                    'max_sub must always be >= min_sub',__LINE__,info)
-                      GOTO 8888
-                  ENDIF
-              ENDDO
+             DO j=1,ppm_dim
+                IF (max_sub(j,i) .LT. min_sub(j,i)) THEN
+                   fail('max_sub must always be >= min_sub',exit_point=8888)
+                ENDIF
+             ENDDO
           ENDDO
           DO i=1,ppm_dim
-              IF (Nm(i) .LT. 2) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,  &
-     &                'Nm must be >1 in all space dimensions',__LINE__,info)
-                  GOTO 8888
-              ENDIF
-              IF (max_phys(i) .LE. min_phys(i)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,  &
-     &                'max_phys must be > min_phys',__LINE__,info)
-                  GOTO 8888
-              ENDIF
+             IF (Nm(i) .LT. 2) THEN
+                fail('Nm must be >1 in all space dimensions',exit_point=8888)
+             ENDIF
+             IF (max_phys(i) .LE. min_phys(i)) THEN
+                fail('max_phys must be > min_phys',exit_point=8888)
+             ENDIF
           ENDDO
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_mesh_on_subs_s

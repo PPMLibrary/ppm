@@ -48,11 +48,10 @@
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_data
-      USE ppm_module_data_mesh
       USE ppm_module_data_rmsh
       USE ppm_module_write
       USE ppm_module_util_time
-      USE ppm_module_check_id
+      USE ppm_module_mapping_typedef
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION
@@ -125,7 +124,7 @@
 
 
       !--------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !--------------------------------------------------------------------------
 
 
@@ -287,6 +286,7 @@
      max_sub => topo%max_subd
 #endif
 
+     nlist2 = 0
      !--------------------------------------------------------------------------
      !  Loop over the subdomains (since the first domains are most likely
      !  to be empty, we look backwards to reduce the number of elements in

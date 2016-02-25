@@ -29,19 +29,19 @@
 
 #if   __TYPE == __TREE
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_tree_alloc_ts(iopt,nbox,nbpd,nlevel,min_box,     &
-     &    max_box,boxcost,parent,nchld,child,blevel,nbpl,info)
+      SUBROUTINE ppm_tree_alloc_ts(iopt,nbox,nbpd,nlevel,min_box, &
+      &          max_box,boxcost,parent,nchld,child,blevel,nbpl,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_tree_alloc_td(iopt,nbox,nbpd,nlevel,min_box,     &
-     &    max_box,boxcost,parent,nchld,child,blevel,nbpl,info)
+      SUBROUTINE ppm_tree_alloc_td(iopt,nbox,nbpd,nlevel,min_box, &
+      &          max_box,boxcost,parent,nchld,child,blevel,nbpl,info)
 #endif
 #elif __TYPE == __DECOMP
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_tree_alloc_ds(iopt,nbox,nbpd,min_box,max_box,    &
-      &    boxcost,nchld,blevel,info)
+      SUBROUTINE ppm_tree_alloc_ds(iopt,nbox,nbpd,min_box,max_box, &
+      &          boxcost,nchld,blevel,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_tree_alloc_dd(iopt,nbox,nbpd,min_box,max_box,    &
-      &    boxcost,nchld,blevel,info)
+      SUBROUTINE ppm_tree_alloc_dd(iopt,nbox,nbpd,min_box,max_box, &
+      &          boxcost,nchld,blevel,info)
 #endif
 #endif
       !!! This routine (re)allocates the tree data structures.
@@ -55,6 +55,7 @@
       USE ppm_module_error
       USE ppm_module_alloc
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -66,6 +67,16 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
+      INTEGER                 , INTENT(IN   ) :: iopt
+      !!! Allocation mode (passed on to ppm_alloc)
+      INTEGER                 , INTENT(IN   ) :: nbox
+      !!! New number of boxes to allocate
+      INTEGER                 , INTENT(IN   ) :: nbpd
+      !!! Number of children per parent
+#if   __TYPE == __TREE
+      INTEGER                 , INTENT(IN   ) :: nlevel
+      !!! Number of levels in the tree
+#endif
       REAL(MK), DIMENSION(:,:), POINTER       :: min_box
       !!! Lower coordinates of the box.
       !!!
@@ -78,33 +89,29 @@
       !!! 2nd: box ID
       REAL(MK), DIMENSION(:  ), POINTER       :: boxcost
       !!! Cost of all the boxes.
-      INTEGER , DIMENSION(:  ), POINTER       :: nchld
-      !!! Number of children of each box.
-      INTEGER                 , INTENT(IN   ) :: iopt
-      !!! Allocation mode (passed on to ppm_alloc)
-      INTEGER                 , INTENT(IN   ) :: nbox
-      !!! New number of boxes to allocate
-      INTEGER                 , INTENT(IN   ) :: nbpd
-      !!! Number of children per parent
-      INTEGER                 , INTENT(  OUT) :: info
-      !!! Return status, 0 on success
-      INTEGER , DIMENSION(:  ), POINTER       :: blevel
-      !!! Tree level of each box
 #if   __TYPE == __TREE
-      INTEGER                 , INTENT(IN   ) :: nlevel
-      !!! Number of levels in the tree
-      INTEGER , DIMENSION(:  ), POINTER       :: parent
+      INTEGER,  DIMENSION(:  ), POINTER       :: parent
       !!! Index of the parent box of each box. `ppm_param_undefined` if no
       !!! parent (i.e. root box)
-      INTEGER , DIMENSION(:  ), POINTER       :: nbpl
-      !!! The number of boxes per level
-      INTEGER , DIMENSION(:,:), POINTER       :: child
+#endif
+      INTEGER,  DIMENSION(:  ), POINTER       :: nchld
+      !!! Number of children of each box.
+#if   __TYPE == __TREE
+      INTEGER,  DIMENSION(:,:), POINTER       :: child
       !!! Indices of all children of a box. 1st index: child ID, 2nd: box ID.
 #endif
+      INTEGER,  DIMENSION(:  ), POINTER       :: blevel
+      !!! Tree level of each box
+#if   __TYPE == __TREE
+      INTEGER,  DIMENSION(:  ), POINTER       :: nbpl
+      !!! The number of boxes per level
+#endif
+      INTEGER,                  INTENT(  OUT) :: info
+      !!! Return status, 0 on success
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(2) :: ldc
 
@@ -114,7 +121,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -130,10 +137,10 @@
       !  Allocate
       !-------------------------------------------------------------------------
       IF (have_particles) THEN
-          ldc(1) = 2
-          ldc(2) = nbox
-          CALL ppm_alloc(tree_lhbx,ldc,iopt,info)
-          or_fail_alloc('pointer to headers TREE_LHBX',ppm_error=ppm_error_fatal)
+         ldc(1) = 2
+         ldc(2) = nbox
+         CALL ppm_alloc(tree_lhbx,ldc,iopt,info)
+         or_fail_alloc('pointer to headers TREE_LHBX',ppm_error=ppm_error_fatal)
       ENDIF
 
       ldc(1) = ppm_dim

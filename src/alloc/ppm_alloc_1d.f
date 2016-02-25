@@ -26,7 +26,30 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-
+#if   __LKIND == __LDA64
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE alloc_1d_s_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 1D real single arrays
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE alloc_1d_d_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 1D real double arrays
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+      SUBROUTINE alloc_1d_sc_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 1D complex single arrays
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+      SUBROUTINE alloc_1d_dc_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 1D complex double arrays
+#elif __KIND == __INTEGER
+      SUBROUTINE alloc_1d_i_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 1D integer arrays
+#elif __KIND == __LONGINT
+      SUBROUTINE alloc_1d_li_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 1D 64bit integer arrays
+#elif __KIND == __LOGICAL
+      SUBROUTINE alloc_1d_l_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 1D logical arrays
+#endif
+#else
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE alloc_1d_s(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 1D real single arrays
@@ -49,8 +72,8 @@
       SUBROUTINE alloc_1d_l(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 1D logical arrays
 #endif
+#endif
       !!! (pointers) based on the number of elements.
-
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -63,6 +86,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -82,7 +106,11 @@
       LOGICAL                   , DIMENSION(:), POINTER :: adata
 #endif
       !!! Pointer to array which is to be (re)allocated.
-      INTEGER, DIMENSION(:)     , INTENT(IN)    :: lda
+#if   __LKIND == __LDA64
+      INTEGER(ppm_kind_int64), DIMENSION(:), INTENT(IN   ) :: lda
+#else
+      INTEGER,                 DIMENSION(:), INTENT(IN   ) :: lda
+#endif
       !!! Number of desired elements in leading dimension of array. (>0)
       INTEGER                   , INTENT(IN)    :: iopt
       !!! Allocation mode. One of:
@@ -97,6 +125,10 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
+#ifdef __DEBUG
+      REAL(ppm_kind_double) :: t0
+#endif
+
 #if   __KIND == __SINGLE_PRECISION
       REAL(ppm_kind_single)   , DIMENSION(:), POINTER :: work
 #elif __KIND == __DOUBLE_PRECISION
@@ -112,19 +144,21 @@
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:), POINTER :: work
 #endif
+#if   __LKIND == __LDA64
+      INTEGER(ppm_kind_int64) :: i,ldb,ldc
+#else
       INTEGER :: i,ldb,ldc
+#endif
+
       LOGICAL :: lcopy,lalloc,lrealloc
 
-#ifdef __DEBUG
-      REAL(ppm_kind_double) :: t0
-#endif
       CHARACTER(LEN=*), PARAMETER :: caller='ppm_alloc_1d'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
 #ifdef __DEBUG
       CALL substart(caller,t0,info)
@@ -283,6 +317,23 @@
       CALL substop(caller,t0,info)
 #endif
       RETURN
+#if   __LKIND == __LDA64
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE alloc_1d_s_
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE alloc_1d_d_
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+      END SUBROUTINE alloc_1d_sc_
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+      END SUBROUTINE alloc_1d_dc_
+#elif __KIND == __INTEGER
+      END SUBROUTINE alloc_1d_i_
+#elif __KIND == __LONGINT
+      END SUBROUTINE alloc_1d_li_
+#elif __KIND == __LOGICAL
+      END SUBROUTINE alloc_1d_l_
+#endif
+#else
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE alloc_1d_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -297,4 +348,5 @@
       END SUBROUTINE alloc_1d_li
 #elif __KIND == __LOGICAL
       END SUBROUTINE alloc_1d_l
+#endif
 #endif

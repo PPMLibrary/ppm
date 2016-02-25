@@ -38,11 +38,11 @@
         !  Used modules
         !-------------------------------------------------------------------------
         USE ppm_module_data
-        USE ppm_module_inl_hash
-        USE ppm_module_alloc
-        USE ppm_module_error
         USE ppm_module_substart
         USE ppm_module_substop
+        USE ppm_module_error
+        USE ppm_module_alloc
+        USE ppm_module_inl_hash
         USE ppm_module_mktopo
         IMPLICIT NONE
 

@@ -8,9 +8,8 @@ use ppm_module_finalize
 use ppm_module_interfaces
 
 #ifdef __MPI
-    INCLUDE "mpif.h"
+  include "mpif.h"
 #endif
-
     integer, parameter              :: debug = 0
     integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 #ifdef __MPI
@@ -145,6 +144,8 @@ use ppm_module_interfaces
         class(ppm_t_subpatch_),POINTER   :: p => NULL()
 
         integer,dimension(:),pointer :: ilist => NULL()
+
+        start_subroutine("field_uniform_basics")
         !----------------
         ! make topology
         !----------------
@@ -235,10 +236,12 @@ use ppm_module_interfaces
 
         ilist => Mesh1%list_of_fields(info)
         if (associated(ilist)) then
-           write(*,*) 'mesh1%list: ', ilist
+           stdout("mesh1%list: ",ilist)
         endif
         ilist => Mesh2%list_of_fields(info)
-        write(*,*) 'mesh2%list: ', associated(ilist)
+        if (associated(ilist)) then
+           stdout("mesh2%list: ",ilist)
+        endif
 
         !--------------------
         ! Remove a patch
@@ -258,6 +261,7 @@ use ppm_module_interfaces
 
         p=>NULL()
 
+        end_subroutine()
     end test
 !------------------------------------------------------------------------------
     test field_basics

@@ -2,20 +2,21 @@
           !!! create a set of particles
           !!! This allocates the particle positions.
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
-          CLASS(DTYPE(ppm_t_sop))                :: Pc
+          CLASS(DTYPE(ppm_t_sop))                   :: Pc
           !!! Data structure containing the particles
-          INTEGER,                INTENT(IN   )  :: Npart
+          INTEGER,                    INTENT(IN   ) :: Npart
           !!! Number of particles
-          INTEGER,                INTENT(  OUT)  :: info
+          INTEGER,                    INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
           !-------------------------------------------------------------------------
           !  Optional arguments
           !-------------------------------------------------------------------------
-          CHARACTER(LEN=*),       OPTIONAL       :: name
+          CHARACTER(LEN=*), OPTIONAL, INTENT(IN   ) :: name
           !!! give a name to this Particle set
           !-------------------------------------------------------------------------
           !  Local variables
@@ -31,17 +32,17 @@
           or_fail("failed to initialize non-sop particle set")
 
           !and update the few fields that are specific to SOP
-          Pc%adapt_wp => NULL()
-          Pc%D => NULL()
-          Pc%Dtilde => NULL()
+          Pc%adapt_wp   => NULL()
+          Pc%D          => NULL()
+          Pc%Dtilde     => NULL()
           ! Particles do not represent a level-set function
-          Pc%level_set = .FALSE.
-          Pc%level => NULL()
+          Pc%level_set  = .FALSE.
+          Pc%level      => NULL()
           !        Pc%level_old_id = 0
           Pc%level_grad => NULL()
           !        Pc%level_grad_old_id = 0
           ! Particles are by default isotropic
-          Pc%anisotropic = .FALSE.
+          Pc%anisotropic= .FALSE.
 
           end_subroutine()
       END SUBROUTINE DTYPE(sop_create)

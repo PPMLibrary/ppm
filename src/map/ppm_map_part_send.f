@@ -50,6 +50,7 @@
       USE ppm_module_write
       USE ppm_module_mpi
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -72,9 +73,6 @@
       INTEGER                             :: nbuffer,ibuffer,jbuffer
       INTEGER                             :: iopt,count,tag1,qpart,msend,mrecv
       INTEGER                             :: npart_send,npart_recv
-#ifdef __MPI
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
-#endif
 
       CHARACTER(ppm_char) :: caller='ppm_map_part_send'
 
@@ -83,7 +81,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
       !-------------------------------------------------------------------------
@@ -195,7 +193,8 @@
                 & ", nsend=",'nsend(k)',", psend=",'psend(k)')
              ENDIF
              CALL MPI_SendRecv(psend(k),1,MPI_INTEGER,ppm_isendlist(k),tag1, &
-             &    precv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1,ppm_comm,status,info)
+             &    precv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1,ppm_comm,     &
+             &    MPI_STATUS_IGNORE,info)
 
              ! Compute nrecv(k) from precv(k)
              nrecv(k) = sbdim*precv(k)
@@ -407,7 +406,7 @@
                 CALL MPI_SendRecv( &
                 &    sendd,nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, &
                 &    recvd,nrecv(k),ppm_mpi_kind,ppm_irecvlist(k),tag1, &
-                &    ppm_comm,status,info)
+                &    ppm_comm,MPI_STATUS_IGNORE,info)
             ENDIF
 #else
             recvd = sendd
@@ -458,7 +457,7 @@
                 CALL MPI_SendRecv(                                      &
                 &    sends,nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, &
                 &    recvs,nrecv(k),ppm_mpi_kind,ppm_irecvlist(k),tag1, &
-                &    ppm_comm,status,info)
+                &    ppm_comm,MPI_STATUS_IGNORE,info)
             ENDIF
 #else
             recvs = sends

@@ -62,11 +62,13 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data_mesh
-      USE ppm_module_check_id
       USE ppm_module_util_invert_list
       USE ppm_module_topo_typedef
+      USE ppm_module_mapping_typedef, ONLY :            &
+      &   ppm_mesh_isendfromsub,ppm_mesh_isendblkstart, &
+      &   ppm_mesh_isendpatchid,ppm_mesh_isendblksize
       IMPLICIT NONE
+
 #if    __KIND == __SINGLE_PRECISION | __KIND == __SINGLE_PRECISION_COMPLEX
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #else
@@ -132,10 +134,11 @@
       !!! For scalar fields, the first index is omitted (the others shift
       !!! accordingly).
 
-      INTEGER, DIMENSION(2) :: ldu,mofs,patchid
-      INTEGER               :: i,j,k,ibuffer,isub,imesh,jmesh,jsub
-      INTEGER               :: ipatch
-      INTEGER               :: iopt,Ndata,xlo,xhi,ylo,yhi,ldb
+      INTEGER, DIMENSION(2)          :: ldu,mofs,patchid
+      INTEGER                        :: i,j,k,ibuffer,isub,imesh,jmesh,jsub
+      INTEGER                        :: ipatch
+      INTEGER                        :: iopt,Ndata,xlo,xhi,ylo,yhi,ldb
+      INTEGER, DIMENSION(:), POINTER :: sublist
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
 #endif
@@ -147,7 +150,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       start_subroutine("mesh_map_push_2d")
 
@@ -178,18 +181,6 @@
             &                ppm_mesh_isendblksize(2,j))
          ENDDO
       ENDDO
-
-      !-------------------------------------------------------------------------
-      !  If there is nothing to be sent we are done
-      !-------------------------------------------------------------------------
-      IF (Ndata.EQ.0) THEN
-         IF (ppm_debug.GT.1) THEN
-            fail('There is no data to be sent. Skipping push.', &
-            & ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
-            info=0
-         ENDIF
-         GOTO 9999
-      ENDIF
 
       !-------------------------------------------------------------------------
       !  Increment the buffer set
@@ -231,24 +222,29 @@
       ppm_buffer_type(ppm_buffer_set) = ppm_logical
 #endif
 
+      !-------------------------------------------------------------------------
+      !  If there is nothing to be sent we are done
+      !-------------------------------------------------------------------------
+      IF (Ndata.EQ.0) THEN
+         IF (ppm_debug.GT.1) THEN
+            fail('There is no data to be sent. Skipping push.', &
+            & ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
+            info=0
+         ENDIF
+
+         GOTO 9999
+      ENDIF
+
       IF (ppm_debug.GT.2) THEN
          !-------------------------------------------------------------------------
          !  Build the inverse sub list to find local sub indeices based on
          !  global ones (the global ones are communicated)
          !-------------------------------------------------------------------------
-         iopt   = ppm_param_alloc_fit
          ldu(1) = topo%nsublist
-         CALL ppm_alloc(sublist,ldu,iopt,info)
-         or_fail_alloc("sublist")
-         ! We need to copy it into a temp list, since directly using
-         ! ppm_isublist(:,ppm_field_topoid) as an argument to invert_list is
-         ! not possible since the argument needs to be a POINTER.
-         sublist(1:ldu(1)) = topo%isublist(1:ldu(1))
-         CALL ppm_util_invert_list(sublist,invsublist,info)
+         sublist => topo%isublist(1:ldu(1))
 
-         iopt   = ppm_param_dealloc
-         CALL ppm_alloc(sublist,ldu,iopt,info)
-         or_fail_alloc("ppm_sublist")
+         CALL ppm_util_invert_list(sublist,invsublist,info)
+         or_fail("ppm_util_invert_list")
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -958,33 +954,105 @@
                !  Get the sub ID for this mesh block
                !----------------------------------------------------------------
                jsub = ppm_mesh_isendfromsub(j)
+               !----------------------------------------------------------------
+               !  Get the patch ID for this mesh block
+               !----------------------------------------------------------------
+               patchid(1:2) = ppm_mesh_isendpatchid(1:2,j)
                IF (ppm_debug.GT.2) THEN
                   !----------------------------------------------------------------
                   !  Translate to local sub ID for storing the data
                   !----------------------------------------------------------------
                   isub = invsublist(jsub)
                ENDIF
+
                !----------------------------------------------------------------
-               !  Mesh offset for this sub
+               !  Get pointer to the data for this sub, this field and this block
+               ! TODO: room for improvement!...
                !----------------------------------------------------------------
-               mofs(1) = this%istart(1,jsub)-1
-               mofs(2) = this%istart(2,jsub)-1
-               !----------------------------------------------------------------
-               !  Get boundaries of mesh block to be sent on local sub
-               !  coordinates
-               !----------------------------------------------------------------
-               xlo = ppm_mesh_isendblkstart(1,j)-mofs(1)
-               ylo = ppm_mesh_isendblkstart(2,j)-mofs(2)
-               xhi = xlo+ppm_mesh_isendblksize(1,j)-1
-               yhi = ylo+ppm_mesh_isendblksize(2,j)-1
-               IF (ppm_debug.GT.1) THEN
-                  stdout_f('(A,2I4)',"start: ",'ppm_mesh_isendblkstart(1:2,j)')
-                  stdout_f('(A,2I4)',"size: ",'ppm_mesh_isendblksize(1:2,j)')
-                  stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
-                  stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
-                  stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
-                  stdout_f('(A,I1)',"buffer dim: ",lda)
+               !something like that may be nice?
+               !CALL this%get_field_on_patch(fdata,isub,info)
+               !or_fail("could not get_field_on_patch for this sub")
+               !(lazy) search for the subpatch that has the right global id
+               found_patch = .FALSE.
+               !stdout("isub = ",isub," jsub = ",jsub," j = ",j)
+               patches_s: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
+                  SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
+                  TYPE IS (ppm_t_subpatch)
+                     IF (ALL(p%istart_p.EQ.patchid)) THEN
+                        found_patch = .TRUE.
+#if   __DIM == __SFIELD
+#if   __KIND == __SINGLE_PRECISION
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_rs
+#elif __KIND == __DOUBLE_PRECISION
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_rd
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_cs
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_cd
+#elif __KIND == __INTEGER
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_i
+#elif __KIND == __LOGICAL
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_l
+#endif
+#elif __DIM == __VFIELD
+#if   __KIND == __SINGLE_PRECISION
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rs
+#elif __KIND == __DOUBLE_PRECISION
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_cs
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_cd
+#elif __KIND == __INTEGER
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_i
+#elif __KIND == __LOGICAL
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_l
+#endif
+#endif
+                        !-----------------------------------------------------
+                        !  Mesh offset for this sub
+                        !-----------------------------------------------------
+                        !mofs(1) = this%istart(1,jsub)-1
+                        !mofs(2) = this%istart(2,jsub)-1
+                        mofs(1) = p%istart(1)-1
+                        mofs(2) = p%istart(2)-1
+                        !----------------------------------------------------
+                        !  Get boundaries of mesh block to be sent on local sub
+                        !  coordinates
+                        !----------------------------------------------------
+                        xlo = ppm_mesh_isendblkstart(1,j)-mofs(1)
+                        ylo = ppm_mesh_isendblkstart(2,j)-mofs(2)
+                        xhi = xlo+ppm_mesh_isendblksize(1,j)-1
+                        yhi = ylo+ppm_mesh_isendblksize(2,j)-1
+
+                        IF (ppm_debug.GT.2) THEN
+                           stdout("isub = ",isub," jsub = ",jsub)
+                           stdout_f('(A,2I4)',"start: ",'ppm_mesh_isendblkstart(1:2,j)')
+                           stdout_f('(A,2I4)',"size: ",'ppm_mesh_isendblksize(1:2,j)')
+                           stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
+                           stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                           stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                           stdout_f('(A,I1)',"buffer dim: ",lda)
+                           stdout("p%lo_a",'p%lo_a')
+                           stdout("p%hi_a",'p%hi_a')
+                           stdout("p%istart",'p%istart')
+                           stdout("p%iend",'p%iend')
+                        ENDIF
+
+                        check_true(<#(xlo.GE.p%lo_a(1))#>)
+                        check_true(<#(xhi.LE.p%hi_a(1))#>)
+                        check_true(<#(ylo.GE.p%lo_a(2))#>)
+                        check_true(<#(yhi.LE.p%hi_a(2))#>)
+                        check_associated(fdata)
+
+                        EXIT patches_s
+                     ENDIF !ALL(p%istart_p.EQ.patchid)
+                  END SELECT
+               ENDDO patches_s
+               IF (.NOT. found_patch) THEN
+                  fail("could not find a patch on this sub with the right global id")
                ENDIF
+
                !----------------------------------------------------------------
                !  Loop over all mesh points of this block and append data
                !  to send buffer.
@@ -1022,8 +1090,8 @@
      &                      REAL(AIMAG(fdata(1,imesh,jmesh)),   &
      &                      ppm_kind_single)
 #elif  __KIND == __INTEGER
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                         IF (fdata(1,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1079,11 +1147,11 @@
      &                      REAL(AIMAG(fdata(2,imesh,jmesh)),   &
      &                      ppm_kind_single)
 #elif  __KIND == __INTEGER
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
                         ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(2,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                         IF (fdata(1,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1164,14 +1232,14 @@
      &                      REAL(AIMAG(fdata(3,imesh,jmesh)),   &
      &                      ppm_kind_single)
 #elif  __KIND == __INTEGER
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
                         ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(2,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
                         ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(3,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                         IF (fdata(1,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1277,17 +1345,17 @@
      &                      REAL(AIMAG(fdata(4,imesh,jmesh)),   &
      &                      ppm_kind_single)
 #elif  __KIND == __INTEGER
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
                         ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(2,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
                         ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(3,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
                         ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(4,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(4,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                         IF (fdata(1,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1418,20 +1486,20 @@
      &                      REAL(AIMAG(fdata(5,imesh,jmesh)),   &
      &                      ppm_kind_single)
 #elif  __KIND == __INTEGER
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
                         ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(2,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
                         ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(3,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
                         ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(4,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(4,imesh,jmesh),ppm_kind_single)
                         ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(5,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(5,imesh,jmesh),1.0_ppm_kind_single)
+!      &                      REAL(fdata(5,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                         IF (fdata(1,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1493,8 +1561,8 @@
      &                         REAL(AIMAG(fdata(k,imesh,jmesh)),   &
      &                         ppm_kind_single)
 #elif  __KIND == __INTEGER
-                           ppm_sendbuffers(ibuffer) =    &
-     &                         REAL(fdata(k,imesh,jmesh),ppm_kind_single)
+                           ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(k,imesh,jmesh),1.0_ppm_kind_single)
+!      &                         REAL(fdata(k,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                            IF (fdata(k,imesh,jmesh)) THEN
                               ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1530,8 +1598,8 @@
                      ppm_sendbuffers(ibuffer) =    &
      &                   REAL(AIMAG(fdata(imesh,jmesh)),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                     ppm_sendbuffers(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh),ppm_kind_single)
+                     ppm_sendbuffers(ibuffer) = TRANSFER(fdata(imesh,jmesh),1.0_ppm_kind_single)
+!      &                   REAL(fdata(imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                      IF (fdata(imesh,jmesh)) THEN
                         ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1555,7 +1623,7 @@
          !-------------------------------------------------------------------------
          !  Deallocate inverse sub list
          !-------------------------------------------------------------------------
-         iopt   = ppm_param_dealloc
+         iopt = ppm_param_dealloc
          CALL ppm_alloc(invsublist,ldu,iopt,info)
          or_fail_dealloc("INVSUBLIST")
       ENDIF

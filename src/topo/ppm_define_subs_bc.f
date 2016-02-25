@@ -85,18 +85,21 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER , DIMENSION(ppm_dim) :: ldc
-      INTEGER                      :: i,iopt
-      REAL(MK)                     :: t0
-      REAL(MK)                     :: lmyeps
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)              :: lmyeps
+
+      INTEGER, DIMENSION(ppm_dim) :: ldc
+      INTEGER                     :: i,iopt
+
+      CHARACTER(LEN=ppm_char) :: caller="ppm_define_subs_bc"
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_define_subs_bc',t0,info)
+      CALL substart(caller,t0,info)
 #if    __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif  __KIND == __DOUBLE_PRECISION
@@ -110,12 +113,7 @@
       ldc(1) = 2*ppm_dim
       ldc(2) = MAX(nsubs,1)
       CALL ppm_alloc(subs_bc,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_define_subs_bc',     &
-     &        'allocation of subs_bc failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc("allocation of subs_bc failed")
 
       !-------------------------------------------------------------------------
       !  Loop over the global subs and compare their
@@ -185,8 +183,8 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_define_subs_bc',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE define_subsbc_s

@@ -160,6 +160,7 @@
             ilist1(nlist1) = ipart
          END DO
       END IF
+      nlist2=0
 
       !-------------------------------------------------------------------------
       !  Loop over the subpatches in each subdomain

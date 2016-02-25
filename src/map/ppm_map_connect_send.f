@@ -45,6 +45,8 @@
       USE ppm_module_alloc
       USE ppm_module_mpi
       USE ppm_module_util_invert_list
+      USE ppm_module_mapping_typedef, ONLY : ppm_buffer_set,ppm_buffer2part, &
+      &   ppm_nsendlist,ppm_psendbuffer,ppm_isendlist,ppm_irecvlist
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
@@ -75,11 +77,7 @@
       INTEGER               :: i,j,k,l,msend,mrecv,iopt,ipos,part,qpart,icon
       INTEGER               :: tag,cd_size,ncons_local
       INTEGER               :: hops
-      INTEGER, PARAMETER    :: big=HUGE(1)
       INTEGER               :: min_,max_
-#ifdef __MPI
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
-#endif
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_map_connect_send'
       !-------------------------------------------------------------------------
@@ -87,7 +85,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -195,7 +193,7 @@
          tag = 100
          CALL MPI_SendRecv(csend(k),1,MPI_INTEGER,ppm_isendlist(k),tag, &
          &                 crecv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag, &
-         &                 ppm_comm,status,info)
+         &                 ppm_comm,MPI_STATUS_IGNORE,info)
          or_fail_MPI("MPI_SendRecv")
 
          msend = msend + csend(k)
@@ -248,10 +246,9 @@
          ENDDO
 
          tag = 200
-         CALL MPI_SendRecv(sendbuffer,csend(k)*lda,MPI_INTEGER,      &
-         &                 ppm_isendlist(k),tag,                     &
-         &                 recvbuffer,crecv(k)*lda,MPI_INTEGER,      &
-         &                 ppm_irecvlist(k),tag,ppm_comm,status,info)
+         CALL MPI_SendRecv(sendbuffer,csend(k)*lda,MPI_INTEGER,         &
+         &    ppm_isendlist(k),tag,recvbuffer,crecv(k)*lda,MPI_INTEGER, &
+         &    ppm_irecvlist(k),tag,ppm_comm,MPI_STATUS_IGNORE,info)
          or_fail_MPI("MPI_SendRecv")
 
          !----------------------------------------------------------------------
@@ -313,7 +310,7 @@
              DO i = 1,lda
                 IF ((cd_local(i,j) .GE. min_) .AND.  &
                 &   (cd_local(i,j) .LE. max_)) THEN
-                   IF (id_inv(cd_local(i,j)) .GT. -big) THEN
+                   IF (id_inv(cd_local(i,j)) .GT. -ppm_big_i) THEN
                       l = l + 1
                    ENDIF
                 ELSE

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_tree_divcheck
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -29,16 +29,16 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_tree_divcheck_s(min_box,max_box,nbox,minboxsize,   &
-     &    fixed,boxcost,ndiv,info)
+      &          fixed,boxcost,ndiv,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_tree_divcheck_d(min_box,max_box,nbox,minboxsize,   &
-     &    fixed,boxcost,ndiv,info)
+      &          fixed,boxcost,ndiv,info)
 #endif
       !!! This routine checks how many dimensions of a box are divisible.
       !!!
       !!! NOTE: A box with cost 0 is counted as non-divisible.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -46,6 +46,7 @@
       USE ppm_module_error
       USE ppm_module_write
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -55,118 +56,107 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: min_box
+      REAL(ppm_kind_double), DIMENSION(:,:), INTENT(IN   ) :: min_box
       !!! Lower coordinates of the boxes.
       !!!
       !!! 1st index: x,y[,z]                                                   +
       !!! 2nd: box ID
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: max_box
+      REAL(ppm_kind_double), DIMENSION(:,:), INTENT(IN   ) :: max_box
       !!! Upper coordinates of the boxes.
       !!!
       !!! 1st index: x,y[,z]                                                   +
       !!! 2nd: box ID
-      INTEGER                 , INTENT(IN   ) :: nbox
+      INTEGER,                               INTENT(IN   ) :: nbox
       !!! Number of boxes to check
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: minboxsize
+      REAL(MK),              DIMENSION(:  ), INTENT(IN   ) :: minboxsize
       !!! Minimum box size in all dimensions.
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: boxcost
-      !!! Costs associated with boxes
-      LOGICAL , DIMENSION(:  ), INTENT(IN   ) :: fixed
+      LOGICAL,               DIMENSION(:  ), INTENT(IN   ) :: fixed
       !!! Flags telling which dimensions are fixed (i.e. must not be divided).
-      INTEGER , DIMENSION(:  ), POINTER       :: ndiv
+      REAL(ppm_kind_double), DIMENSION(:  ), INTENT(IN   ) :: boxcost
+      !!! Costs associated with boxes
+      INTEGER,               DIMENSION(:  ), POINTER       :: ndiv
       !!! Number of divisible directions of each box (1..nbox).
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,                               INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0,lmyeps,boxlen
-      REAL(MK), DIMENSION(ppm_dim)            :: ms2
-      INTEGER                                 :: iopt,i,j
-      INTEGER, DIMENSION(2)                   :: ldc
+      REAL(ppm_kind_double)                     :: t0
+      REAL(ppm_kind_double)                     :: boxlen
+      REAL(ppm_kind_double), DIMENSION(ppm_dim) :: ms2
+
+      INTEGER               :: iopt,i,j
+      INTEGER, DIMENSION(2) :: ldc
+
+      CHARACTER(LEN=ppm_char) :: caller="ppm_tree_divcheck"
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_tree_divcheck',t0,info)
-#if   __KIND == __SINGLE_PRECISION
-      lmyeps = ppm_myepss
-#elif __KIND == __DOUBLE_PRECISION
-      lmyeps = ppm_myepsd
-#endif
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check input arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
-      ENDIF 
+      IF (ppm_debug.GT.0) THEN
+         CALL check
+         IF (info.NE.0) GOTO 9999
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  If there are no boxes to check, we quit
       !-------------------------------------------------------------------------
-      IF (nbox .LT. 1) THEN
-          CALL ppm_write(ppm_rank,'ppm_tree_divcheck',   &
-     &        'No boxes to be checked. Exiting.',info)
-          GOTO 9999
+      IF (nbox.LT.1) THEN
+         stdout("No boxes to be checked. Exiting.")
+         GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Count and determine divisible dimensions
       !-------------------------------------------------------------------------
       DO i=1,ppm_dim
-          ms2(i) = 2.0_MK*minboxsize(i)
+         ms2(i) = 2.0_ppm_kind_double*REAL(minboxsize(i),ppm_kind_double)
       ENDDO
 
       DO i=1,nbox
-          ndiv(i) = 0
-          IF (boxcost(i) .GT. lmyeps) THEN
-              DO j=1,ppm_dim
-                  boxlen = max_box(j,i)-min_box(j,i)
-                  IF (((boxlen-ms2(j)).GT.lmyeps*boxlen).AND.(.NOT.fixed(j))) THEN
-                      ndiv(i) = ndiv(i) + 1
-                  ENDIF
-              ENDDO
-          ENDIF
+         ndiv(i) = 0
+         IF (boxcost(i).GT.ppm_myepsd) THEN
+            DO j=1,ppm_dim
+               boxlen = max_box(j,i)-min_box(j,i)
+               IF (((boxlen-ms2(j)).GT.ppm_myepsd*boxlen).AND.(.NOT.fixed(j))) THEN
+                  ndiv(i) = ndiv(i) + 1
+               ENDIF
+            ENDDO
+         ENDIF
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_tree_divcheck',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
-         IF (nbox .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_tree_divcheck',     &
-     &          'Number of boxes must be >= 0',__LINE__,info)
-            GOTO 8888
+         IF (nbox.LT.0) THEN
+            fail("Number of boxes must be >= 0",exit_point=8888)
          ENDIF
          DO i=1,ppm_dim
-            IF (minboxsize(i) .LT. 0.0_MK) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_tree_divcheck',     &
-     &             'the minimum box size must be > 0 !',__LINE__,info)
-               GOTO 8888
+            IF (minboxsize(i).LT.0.0_MK) THEN
+               fail("the minimum box size must be > 0 !",exit_point=8888)
             ENDIF
             DO j=1,nbox
-               IF (min_box(i,j) .GT. max_box(i,j)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_tree_divcheck',   &
-     &                'min_box must be <= max_box !',__LINE__,info)
-                  GOTO 8888
+               IF (min_box(i,j).GT.max_box(i,j)) THEN
+                  fail("min_box must be <= max_box !",exit_point=8888)
                ENDIF
             ENDDO
          ENDDO
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_tree_divcheck_s

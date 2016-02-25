@@ -1,12 +1,25 @@
+      !----------------------------------------------------------------------
+      ! K-D tree routines in Fortran 90 by:
+      ! Matthew B. Kennel, Institute For Nonlinear Science,
+      ! reference: http://arxiv.org/abs/physics/0408067
+      ! Licensed under the Academic Free License version 1.1.
+      !
+      ! It has been adapted and amended for PPM library by Yaser Afshar.
+      !
+      ![NOTE]
+      ! In this adaptation the maximum query vector size has been set to three
+      ! in case of future development and higher dimensionality this routine
+      ! needs to be modified
+      !----------------------------------------------------------------------
       !
       ! maintain a priority queue (PQ) of data, pairs of 'priority/payload',
       ! implemented with a binary heap.  This is the type, and the 'dis' field
       ! is the priority.
       !
-      TYPE :: DTYPE(kdtree2_result)
+      TYPE :: DTYPE(kdtree_result)
         REAL(MK) :: dis
         INTEGER  :: idx
-      END TYPE DTYPE(kdtree2_result)
+      END TYPE DTYPE(kdtree_result)
 
 #if __KIND == __SINGLE_PRECISION
       !
@@ -41,7 +54,7 @@
       ! of large numbers of neighbors.
       !
       TYPE :: pq
-        INTEGER                                       :: heap_size = 0
+        INTEGER                                      :: heap_size = 0
         ! The priority queue consists of elements
         ! priority(1:heap_size), with associated payload(:).
         !
@@ -49,8 +62,8 @@
         ! Assumes the allocation is always sufficient.
         ! Will NOT increase it to match.
 
-        TYPE(kdtree2_result_s), DIMENSION(:), POINTER :: elems_s => NULL()
-        TYPE(kdtree2_result_d), DIMENSION(:), POINTER :: elems_d => NULL()
+        TYPE(kdtree_result_s), DIMENSION(:), POINTER :: elems_s => NULL()
+        TYPE(kdtree_result_d), DIMENSION(:), POINTER :: elems_d => NULL()
       CONTAINS
         PROCEDURE :: pq_create_s
         PROCEDURE :: pq_create_d
@@ -100,7 +113,7 @@
 
       END TYPE DTYPE(tree_node)
 
-      TYPE :: DTYPE(kdtree2)
+      TYPE :: DTYPE(kdtree)
         ! Global information about the tree, one per tree
         INTEGER                           :: dimen=0
         INTEGER                           :: n=0
@@ -135,15 +148,15 @@
         ! root pointer of the tree
 
       CONTAINS
-        PROCEDURE :: create                     => DTYPE(kdtree2_create)
-        PROCEDURE :: destroy                    => DTYPE(kdtree2_destroy)
-        PROCEDURE :: destroy_node               => DTYPE(kdtree2_destroy_node)
+        PROCEDURE :: create                     => DTYPE(kdtree_create)
+        PROCEDURE :: destroy                    => DTYPE(kdtree_destroy)
+        PROCEDURE :: destroy_node               => DTYPE(kdtree_destroy_node)
         PROCEDURE :: build                      => DTYPE(build_tree)
         PROCEDURE :: build_range                => DTYPE(build_tree_for_range)
         PROCEDURE :: spread_in_coordinate       => DTYPE(spread_in_coordinate)
         PROCEDURE :: select_on_coordinate_value => DTYPE(select_on_coordinate_value)
 
-      END TYPE DTYPE(kdtree2)
+      END TYPE DTYPE(kdtree)
 
       TYPE :: DTYPE(tree_search_record)
         !
@@ -153,30 +166,30 @@
         ! Many fields are copied from the tree structure, in order to
         ! speed up the search.
         !
-        INTEGER                                              :: dimen
-        INTEGER                                              :: nn
-        INTEGER                                              :: nfound
-        INTEGER                                              :: centeridx=999
-        INTEGER                                              :: correltime=9999
+        INTEGER                                             :: dimen
+        INTEGER                                             :: nn
+        INTEGER                                             :: nfound
+        INTEGER                                             :: centeridx=999
+        INTEGER                                             :: correltime=9999
         ! exclude points within 'correltime' of 'centeridx', if centeridx >= 0
-        INTEGER                                              :: nalloc
+        INTEGER                                             :: nalloc
         ! how much allocated for results(:)?
-        INTEGER,                     DIMENSION(:),   POINTER :: ind => NULL()
+        INTEGER,                    DIMENSION(:),   POINTER :: ind => NULL()
         ! temp pointer to indexes
 
-        REAL(MK)                                             :: ballsize
-        REAL(MK),                    DIMENSION(3)            :: qv
+        REAL(MK)                                            :: ballsize
+        REAL(MK),                   DIMENSION(3)            :: qv
         ! query vector (at PPM we do not have dimension more than 3)
-        REAL(MK),                    DIMENSION(:,:), POINTER :: data => NULL()
+        REAL(MK),                   DIMENSION(:,:), POINTER :: data => NULL()
         ! temp pointer to data
 
-        TYPE(DTYPE(kdtree2_result)), DIMENSION(:),   POINTER :: results => NULL()
+        TYPE(DTYPE(kdtree_result)), DIMENSION(:),   POINTER :: results => NULL()
         ! results
-        TYPE(pq)                                             :: pq
+        TYPE(pq)                                            :: pq
 
-        LOGICAL                                              :: rearrange
+        LOGICAL                                             :: rearrange
         ! are the data rearranged or original?
-        LOGICAL                                              :: overflow
+        LOGICAL                                             :: overflow
         ! did the # of points found overflow the storage provided?
       END TYPE DTYPE(tree_search_record)
 

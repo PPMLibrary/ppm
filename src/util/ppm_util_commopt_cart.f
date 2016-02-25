@@ -61,7 +61,6 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_mpi
-      USE ppm_module_check_id
       IMPLICIT NONE
 
       INTEGER, PARAMETER :: MK = ppm_kind_double
@@ -90,7 +89,7 @@
       INTEGER                               :: idir,icpu,iangle,jangle,lrank
       INTEGER                               :: idirect,lidir
       !-----------------------------------------------------
-      REAL(MK)                              :: t0
+      REAL(ppm_kind_double) :: t0
       INTEGER, DIMENSION(2)                 :: ldu
       INTEGER                               :: iopt
       ! number of neighborhood relations in total
@@ -114,8 +113,6 @@
       INTEGER                               :: mincolor,maxcolor
       LOGICAL                               :: valid
 #ifdef __MPI
-      ! MPI comm status
-      INTEGER, DIMENSION(MPI_STATUS_SIZE)   :: status
       LOGICAL, DIMENSION(3)                 :: periods
       INTEGER, DIMENSION(3)                 :: ndims
 #endif
@@ -123,7 +120,7 @@
 
       CHARACTER(len=256) :: mesg
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_util_commopt_cart',t0,info)
 

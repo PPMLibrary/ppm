@@ -76,8 +76,10 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_write
-      USE ppm_module_check_id
       USE ppm_module_util_commopt
+      USE ppm_module_mapping_typedef, ONLY : ppm_ghosthack,ppm_psendbuffer, &
+      &   ppm_buffer2part,ppm_buffer_set,ppm_nsendlist,ppm_nrecvlist,       &
+      &   ppm_isendlist,ppm_irecvlist,ppm_map_type,ppm_precvbuffer
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
@@ -97,7 +99,7 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(2) :: ldu
       INTEGER               :: i,j,k
@@ -111,7 +113,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 

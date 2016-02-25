@@ -28,30 +28,24 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_topo_metis_s2p_s(min_sub,max_sub,nneigh,ineigh,    &
-     &               cost,nsubs,assig,sub2proc,isublist,nsublist,info)
+      SUBROUTINE ppm_topo_metis_s2p_s(min_phys,max_phys,min_sub,max_sub, &
+      &          cost,ghostsize,nneigh,ineigh,nsubs,sub2proc,isublist,   &
+      &          nsublist,assig,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_topo_metis_s2p_d(min_sub,max_sub,nneigh,ineigh,    &
-     &               cost,nsubs,assig,sub2proc,isublist,nsublist,info)
+      SUBROUTINE ppm_topo_metis_s2p_d(min_phys,max_phys,min_sub,max_sub, &
+      &          cost,ghostsize,nneigh,ineigh,nsubs,sub2proc,isublist,   &
+      &          nsublist,assig,info)
 #endif
       !!! This routine assigns the subdomains to the processors
-      !!! using the METIS grid partitioning library.
-      !!!
-      !!! [NOTE]
-      !!! Uses ppm_myeps for real comparisons in order to
-      !!! decide if two points are the same. Checks these
-      !!! decisions using the ineigh list.
-      !!!
-      !!! The corner numbering is currently done using a full
-      !!! search. This is inefficient and should maybe be
-      !!! replaced with some more clever algorithm.
-      !!!
-      !!! [NOTE]
-      !!! Currently, we make no use of link (graph edges)
-      !!! weight as well as communication weights (number of
-      !!! ghost particles/mesh points that need to be sent
-      !!! for each edgecut). There is definitely room for
-      !!! improvement here to get even better load balancing.
+      !!! using the METIS grid partitioning library version 5.1
+      !
+      ! Note: For METIS_PartGraphRecursive the assig does not differ
+      !
+      ! Note: In the current implementation, load imbalance at each partition
+      ! is set as:
+      ! For Multilevel recursive bisectioning, the default value is 1 (i.e.,
+      ! load imbalance of 1.001) and for Multilevel k-way partitioning,
+      ! the default value is 30 (i.e., load imbalance of 1.03)
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
@@ -62,6 +56,7 @@
       USE ppm_module_alloc
       USE ppm_module_write
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -73,91 +68,148 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: min_sub
+      REAL(MK), DIMENSION(:  ), POINTER       :: min_phys
+      !!! Minimum of physical extend of the computational domain
+      REAL(MK), DIMENSION(:  ), POINTER       :: max_phys
+      !!! Maximum of physical extend of the computational domain
+      REAL(MK), DIMENSION(:,:), POINTER       :: min_sub
       !!! Min. extent of all subdomains
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: max_sub
+      REAL(MK), DIMENSION(:,:), POINTER       :: max_sub
       !!! Max. extent of all subdomains
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: cost
+      REAL(MK), DIMENSION(:  ), POINTER       :: cost
       !!! Costs of all subdomains (i.e. sum of particle/mesh node costs in
       !!! that subdomain. Used for weighting the assignment.
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: nneigh
+      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: ghostsize
+      !!! The size (width) of the ghost layer.
+      INTEGER,  DIMENSION(:  ), POINTER       :: nneigh
       !!! The number of neighbours of a subdomain
-      INTEGER , DIMENSION(:,:), INTENT(IN   ) :: ineigh
+      INTEGER,  DIMENSION(:,:), POINTER       :: ineigh
       !!! Pointers to these neighbours
-      INTEGER , DIMENSION(:  ), POINTER       :: sub2proc
-      !!! Full list of processor affiliation of subdomains
-      INTEGER , DIMENSION(:  ), POINTER       :: isublist
-      !!! List of subdomains assigned to the local processors
-      INTEGER                 , INTENT(IN   ) :: nsubs
+      INTEGER,                  INTENT(IN   ) :: nsubs
       !!! Total number of subdomains
-      INTEGER                 , INTENT(IN   ) :: assig
+      INTEGER,  DIMENSION(:  ), POINTER       :: sub2proc
+      !!! Full list of processor affiliation of subdomains
+      INTEGER,  DIMENSION(:  ), POINTER       :: isublist
+      !!! List of subdomains assigned to the local processors
+
+      INTEGER,                  INTENT(  OUT) :: nsublist
+      !!! The number of subdomains assigned
+
+      INTEGER,                  INTENT(IN   ) :: assig
       !!! METIS assignment type. One of:
       !!!
-      !!! * ppm_param_assign_nodal_cut
-      !!! * ppm_param_assign_nodal_comm
-      !!! * ppm_param_assign_dual_cut
-      !!! * ppm_param_assign_dual_comm
-      INTEGER                 , INTENT(  OUT) :: nsublist
-      !!! The number of subdomains assigned
-      INTEGER                 , INTENT(  OUT) :: info
+      !!! * ppm_param_assign_metis_cut
+      !!!  Partitioning a graph of subdomains into k parts minimizing the edgecut
+      !!! * ppm_param_assign_metis_comm
+      !!!  Partitioning a graph of subdomains into k parts minimizing the total communication volume
+      INTEGER,                  INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
+
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER , DIMENSION(:  ), POINTER   :: elmnts  => NULL()
-      INTEGER , DIMENSION(:  ), POINTER   :: npart   => NULL()
-      INTEGER , DIMENSION(:  ), POINTER   :: nxadj   => NULL()
-      INTEGER , DIMENSION(:  ), POINTER   :: nadjncy => NULL()
-      INTEGER , DIMENSION(:  ), POINTER   :: vwgt    => NULL()
-      INTEGER , DIMENSION(:  ), POINTER   :: adjwgt  => NULL()
-      INTEGER , DIMENSION(:  ), POINTER   :: vsize   => NULL()
-      INTEGER , DIMENSION(:  ), POINTER   :: vote    => NULL()
-      INTEGER , DIMENSION(:,:), POINTER   :: cornerno => NULL()
-      REAL(MK), DIMENSION(:,:,:), POINTER :: corner  => NULL()
-      REAL(ppm_kind_single), DIMENSION(:), POINTER :: tpwgt => NULL()
-      INTEGER , DIMENSION(3)              :: ldc
-      INTEGER , DIMENSION(1)              :: maxvote
-      INTEGER , DIMENSION(5)              :: metis_options
-      INTEGER                             :: iopt,isub,points,etype
-      INTEGER                             :: nnodes,numtype,nparts,edgecut
-      INTEGER                             :: j,k,i
-      INTEGER                             :: jsub,jj,ident,nvert,wgtflag,volume
+      REAL(MK),              DIMENSION(ppm_dim)          :: len_phys
+      ! physical extent of comput. domain
+      REAL(MK),              DIMENSION(:,:), ALLOCATABLE :: len_subs
+      REAL(ppm_kind_double)                              :: t0
+      REAL(MK)                                           :: lmyeps,tmp
+      REAL(MK)                                           :: minsp,maxsp,meansp
+      REAL(MK)                                           :: sx,sy,sz
+      REAL(MK)                                           :: ex,ey,ez
+      REAL(MK)                                           :: lx,ly,lz
+      REAL(ppm_kind_single), DIMENSION(:),   POINTER     :: tpwgts => NULL()
+      !This is an array of size nparts*ncon that specifies the desired weight
+      !for each partition and constraint.
+      REAL(ppm_kind_single), DIMENSION(:),   POINTER     :: ubvec => NULL()
+      !Array for load imbalance
+      !For Multilevel recursive bisectioning,
+      !the default value is 1 (i.e., load imbalance of 1.001)
+      !For Multilevel k-way partitioning,
+      !the default value is 30 (i.e., load imbalance of 1.03)
 
-      REAL(MK)                            :: t0,lmyeps
-      REAL(ppm_kind_double)               :: minsp,maxsp,meansp
-      LOGICAL                             :: lasymm
+      INTEGER                        :: nvtxs
+      !The number of vertices in the graph
+      INTEGER                        :: ncon
+      !The number of balancing constraints. It should be at least 1.
+      INTEGER, DIMENSION(:), POINTER :: xadj   => NULL()
+      !The adjacency structure of the graph.
+      INTEGER, DIMENSION(:), POINTER :: adjncy => NULL()
+      !The adjacency structure of the graph.
+      INTEGER, DIMENSION(:), POINTER :: vwgt   => NULL()
+      !The weights of the vertices
+      INTEGER, DIMENSION(:), POINTER :: vsize  => NULL()
+      !The size of the vertices for computing the total communication volume
+      INTEGER, DIMENSION(:), POINTER :: adjwgt => NULL()
+      !The weights of the edges
+      INTEGER                        :: nparts
+      !The number of parts to partition the graph.
+      !(which is the number of processors)
+      INTEGER                        :: objval
+      !This variable stores the edge-cut or the total communication
+      !volume of the partitioning solution
+      INTEGER, DIMENSION(:), POINTER :: part   => NULL()
+      !This is a vector which tells each vertex belongs to which partition or processor
+      INTEGER, DIMENSION(40)         :: options
+      !The maximum length of the options array is 40
+      ! (METIS_OPTION_OBJTYPE ==2)=0,1     (Edge-cut minimization,
+      !                                     Total communication volume minimization.)
+      !                                     Only valid for METIS PartGraphKway
+      ! (METIS_OPTION_CTYPE   ==3)=0,1     (Random matching,Sorted heavy-edge matching.)
+      ! (METIS_OPTION_IPTYPE  ==4)=0,1,2,3 (Grows a bisection using a greedy strategy,
+      !                                     Computes a bisection at random followed by a refinement,
+      !                                     Derives a separator from an edge cut,
+      !                                     Grow a bisection using a greedy node-based strategy)
+      ! (METIS_OPTION_RTYPE   ==5)=0,1,2,3 (FM-based cut refinement,
+      !                                     Greedy-based cut and volume refinement,
+      !                                     Two-sided node FM refinement,
+      !                                     One-sided node FM refinement.)
+      ! (METIS_OPTION_DBGLVL  ==6)=0,.     (The default value is 0
+      !                                    (no debugging/progress information))
+      ! (METIS_OPTION_NITER,
+      ! (METIS_OPTION_NCUTS,
+      ! (METIS_OPTION_SEED,
+      ! (METIS_OPTION_NO2HOP,
+      ! (METIS_OPTION_MINCONN ==11)=0,1 (Does not explicitly minimize the
+      !                                  maximum connectivity,
+      !                                  Explicitly minimize the maximum connectivity.)
+      !                                  Only valid for METIS PartGraphKway
+      ! (METIS_OPTION_CONTIG  ==12)=0,1 (Does not force contiguous partitions,
+      !                                  Forces contiguous partitions.)
+      !                                  Only valid for METIS PartGraphKway
+      ! (METIS_OPTION_UFACTOR,
+      ! (METIS_OPTION_NUMBERING ==18)=0,1 (C-style,Fortran-style.)
+      !
+      INTEGER, DIMENSION(1)            :: ldc
+      INTEGER                          :: iopt,isub,jsub
+      INTEGER                          :: i,j,nedgs
 
-
-      CHARACTER(ppm_char) :: mesg
       CHARACTER(ppm_char) :: caller='ppm_topo_metis_s2p'
+
+      LOGICAL :: lasymm
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
-
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
-#if   __KIND == __SINGLE_PRECISION
-      lmyeps = ppm_myepss
-#elif __KIND == __DOUBLE_PRECISION
-      lmyeps = ppm_myepsd
-#endif
 
       !-------------------------------------------------------------------------
       !  Error if METIS library support is not available
       !-------------------------------------------------------------------------
 #ifndef __METIS
       nsublist = 0
-      fail('PPM was compiled without Metis support',ppm_err_nometis)
+
+      fail("PPM was compiled without Metis support", &
+      & ppm_err_nometis,ppm_error=ppm_error_fatal)
 #else
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL check
-         IF (info .NE. 0) GOTO 9999
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -166,12 +218,12 @@
       iopt   = ppm_param_alloc_fit
       ldc(1) = nsubs
       CALL ppm_alloc(sub2proc,ldc,iopt,info)
-      or_fail_alloc('sub2procs allocation failed',ppm_error=ppm_error_fatal)
+      or_fail_alloc("sub2procs allocation failed",ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Check if we only have one processor, we are done
       !-------------------------------------------------------------------------
-      IF (ppm_nproc .EQ. 1) THEN
+      IF (ppm_nproc.EQ.1) THEN
          !----------------------------------------------------------------------
          !  Allocate the isublist array
          !----------------------------------------------------------------------
@@ -191,507 +243,450 @@
          GOTO 9999
       ENDIF
 
-      !-------------------------------------------------------------------------
-      !  Number of points per sub and element type
-      !-------------------------------------------------------------------------
-      points = 8
-      etype  = 3   ! METIS type hexahedra
-      IF (ppm_dim .EQ. 2) THEN
-         points = 4
-         etype  = 4   ! METIS type quadrilaterals
-      ENDIF
+#if   __KIND == __SINGLE_PRECISION
+      lmyeps=ppm_myepss
+#elif __KIND == __DOUBLE_PRECISION
+      lmyeps=ppm_myepsd
+#endif
 
-      !-------------------------------------------------------------------------
-      !  Corner subdomain arrays
-      !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_fit
-      ldc(1) = ppm_dim
-      ldc(2) = points
-      ldc(3) = nsubs
-      CALL ppm_alloc(corner,ldc,iopt,info)
-      or_fail_alloc('subdomain corner list CORNER',ppm_error=ppm_error_fatal)
+      nvtxs=nsubs
+      !The number of vertices in the graph.
 
-      ldc(1) = points
-      ldc(2) = nsubs
-      CALL ppm_alloc(cornerno,ldc,iopt,info)
-      or_fail_alloc('subdomain corner numbers CORNERNO',ppm_error=ppm_error_fatal)
+      ncon=1
+      !The number of balancing constraints.
 
-      !-------------------------------------------------------------------------
-      !  Initialize corner numbers
-      !-------------------------------------------------------------------------
-      FORALL (isub=1:nsubs,j=1:points) cornerno(j,isub) = 0
+      iopt=ppm_param_alloc_fit
+      ldc(1)=nvtxs+1
+      CALL ppm_alloc(xadj,ldc,iopt,info)
+      or_fail_alloc('METIS adjacency structure of a graph, array XADJ',ppm_error=ppm_error_fatal)
 
-      !-------------------------------------------------------------------------
-      !  Store sub corners in METIS numbering order
-      !-------------------------------------------------------------------------
-      SELECT CASE (ppm_dim)
-      CASE (2)
-         DO isub=1,nsubs
-            corner(1,1,isub) = min_sub(1,isub)
-            corner(2,1,isub) = min_sub(2,isub)
+      nedgs=SUM(nneigh(1:nsubs))
+      ldc(1)=nedgs
+      !The number of edges in the graph
+      CALL ppm_alloc(adjncy,ldc,iopt,info)
+      or_fail_alloc('METIS adjacency structure of a graph, array ADJNCY',ppm_error=ppm_error_fatal)
 
-            corner(1,2,isub) = min_sub(1,isub)
-            corner(2,2,isub) = max_sub(2,isub)
+      ldc(1)=nvtxs*ncon
+      CALL ppm_alloc(vwgt,ldc,iopt,info)
+      or_fail_alloc('METIS weights of the vertices, array VWGT',ppm_error=ppm_error_fatal)
 
-            corner(1,3,isub) = max_sub(1,isub)
-            corner(2,3,isub) = max_sub(2,isub)
+      !NULLIFY(vsize)
+      ldc(1)=nvtxs
+      CALL ppm_alloc(vsize,ldc,iopt,info)
+      or_fail_alloc('METIS size of the vertices for the total communication volume, array VSIZE',ppm_error=ppm_error_fatal)
 
-            corner(1,4,isub) = max_sub(1,isub)
-            corner(2,4,isub) = min_sub(2,isub)
-         ENDDO
-      CASE DEFAULT
-         DO isub=1,nsubs
-            corner(1,1,isub) = min_sub(1,isub)
-            corner(2,1,isub) = min_sub(2,isub)
-            corner(3,1,isub) = max_sub(3,isub)
+      FORALL (i=1:nvtxs) vsize(i)=0
 
-            corner(1,2,isub) = min_sub(1,isub)
-            corner(2,2,isub) = max_sub(2,isub)
-            corner(3,2,isub) = max_sub(3,isub)
+      ldc(1)=nedgs
+      !The number of edges in the graph
+      CALL ppm_alloc(adjwgt,ldc,iopt,info)
+      or_fail_alloc('METIS weights of the edges, array ADJWGT',ppm_error=ppm_error_fatal)
 
-            corner(1,3,isub) = max_sub(1,isub)
-            corner(2,3,isub) = max_sub(2,isub)
-            corner(3,3,isub) = max_sub(3,isub)
-
-            corner(1,4,isub) = max_sub(1,isub)
-            corner(2,4,isub) = min_sub(2,isub)
-            corner(3,4,isub) = max_sub(3,isub)
-
-            corner(1,5,isub) = min_sub(1,isub)
-            corner(2,5,isub) = min_sub(2,isub)
-            corner(3,5,isub) = min_sub(3,isub)
-
-            corner(1,6,isub) = min_sub(1,isub)
-            corner(2,6,isub) = max_sub(2,isub)
-            corner(3,6,isub) = min_sub(3,isub)
-
-            corner(1,7,isub) = max_sub(1,isub)
-            corner(2,7,isub) = max_sub(2,isub)
-            corner(3,7,isub) = min_sub(3,isub)
-
-            corner(1,8,isub) = max_sub(1,isub)
-            corner(2,8,isub) = min_sub(2,isub)
-            corner(3,8,isub) = min_sub(3,isub)
-         ENDDO
-      END SELECT
-
-      !-------------------------------------------------------------------------
-      !  Number corners with same point in space having same number
-      !-------------------------------------------------------------------------
-      cornerno(1,1) = 1
-      cornerno(2,1) = 2
-      cornerno(3,1) = 3
-      cornerno(4,1) = 4
-      nnodes = 4
-      SELECT CASE (ppm_dim)
-      CASE (2)
-         DO isub=2,nsubs
-            DO j=1,points
-               ident = 0
-               !----------------------------------------------------------------
-               !  Check all points of all neighbors
-               !----------------------------------------------------------------
-               DO k=1,nneigh(isub)
-                  jsub = ineigh(k,isub)
-                  DO jj=1,points
-                     !----------------------------------------------------------
-                     !  If points coincide, store point number
-                     !----------------------------------------------------------
-                     IF ((ABS(corner(1,j,isub)-corner(1,jj,jsub)).LT.   &
-                     &  lmyeps*(max_sub(1,isub)-min_sub(1,isub))).AND. &
-                     &  (ABS(corner(2,j,isub)-corner(2,jj,jsub)).LT. &
-                     &  lmyeps*(max_sub(2,isub)-min_sub(2,isub)))) THEN
-                        IF (cornerno(jj,jsub) .GT. 0) ident = cornerno(jj,jsub)
-                     ENDIF
-                  ENDDO
-               ENDDO
-               !----------------------------------------------------------------
-               !  If identical point was found: inherit number, else
-               !  increase counter of distinct nodes and get new number
-               !----------------------------------------------------------------
-               IF (ident .GT. 0) THEN
-                  cornerno(j,isub) = ident
-               ELSE
-                  nnodes = nnodes + 1
-                  cornerno(j,isub) = nnodes
-               ENDIF
-            ENDDO
-         ENDDO
-      CASE DEFAULT
-         cornerno(5,1) = 5
-         cornerno(6,1) = 6
-         cornerno(7,1) = 7
-         cornerno(8,1) = 8
-         nnodes = 8
-         DO isub=2,nsubs
-            DO j=1,points
-               ident = 0
-               !----------------------------------------------------------------
-               !  Check all points of all neighbors
-               !----------------------------------------------------------------
-               DO k=1,nneigh(isub)
-                  jsub = ineigh(k,isub)
-                  DO jj=1,points
-                     !----------------------------------------------------------
-                     !  If points coincide, store point number
-                     !----------------------------------------------------------
-                     IF ((ABS(corner(1,j,isub)-corner(1,jj,jsub)).LT.   &
-                     &  lmyeps*(max_sub(1,isub)-min_sub(1,isub))).AND. &
-                     &  (ABS(corner(2,j,isub)-corner(2,jj,jsub)).LT.   &
-                     &  lmyeps*(max_sub(2,isub)-min_sub(2,isub))).AND. &
-                     &  (ABS(corner(3,j,isub)-corner(3,jj,jsub)).LT.   &
-                     &  lmyeps*(max_sub(3,isub)-min_sub(3,isub)))) THEN
-                        IF (cornerno(jj,jsub) .GT. 0) ident = cornerno(jj,jsub)
-                     ENDIF
-                  ENDDO
-               ENDDO
-               !----------------------------------------------------------------
-               !  If identical point was found: inherit number, else
-               !  increase counter of distinct nodes and get new number
-               !----------------------------------------------------------------
-               IF (ident .GT. 0) THEN
-                  cornerno(j,isub) = ident
-               ELSE
-                  nnodes = nnodes + 1
-                  cornerno(j,isub) = nnodes
-               ENDIF
-            ENDDO
-         ENDDO
-      END SELECT
-
-      !-------------------------------------------------------------------------
-      !  Sanity check
-      !-------------------------------------------------------------------------
-      IF (ppm_debug.GT.0) THEN
-         IF (MAXVAL(cornerno).NE.nnodes.OR.MINVAL(cornerno).NE.1) THEN
-            fail('Nodes were missed or counted twice',ppm_err_node_number)
-         ENDIF
-      ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Deallocate corner list
-      !-------------------------------------------------------------------------
-      iopt   = ppm_param_dealloc
-      CALL ppm_alloc(corner,ldc,iopt,info)
-      or_fail_dealloc('subdomain corner list CORNER',exit_point=no,ppm_error=ppm_error_fatal)
+      nparts=ppm_nproc
+      !The number of parts to partition the graph which is the number of processors
 
       !-------------------------------------------------------------------------
       !  Check if we need asymmetric partitions or not
       !-------------------------------------------------------------------------
-      minsp = MINVAL(ppm_proc_speed(0:ppm_nproc-1))
-      maxsp = MAXVAL(ppm_proc_speed(0:ppm_nproc-1))
-      meansp = 1.0_ppm_kind_double/REAL(ppm_nproc,ppm_kind_double)
-      meansp = (ABS(maxsp-minsp))/meansp
-      lasymm = .FALSE.
+      minsp =MINVAL(ppm_proc_speed(0:nparts-1))
+      maxsp =MAXVAL(ppm_proc_speed(0:nparts-1))
+      meansp=ABS(maxsp-minsp)*REAL(nparts,MK)
+      lasymm=meansp.GT.0.05_MK
       ! if there is more than 5 percent difference, do it
-      IF (meansp .GT. 0.05_ppm_kind_double) lasymm = .TRUE.
 
-      IF (ppm_debug .GT. 0) THEN
-         WRITE(mesg,'(A,F7.4)') 'Slowest processor: ',minsp
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A,F7.4)') 'Fastest processor: ',maxsp
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A,F7.4)') 'Processor speed imbalance: ',meansp
-         CALL ppm_write(ppm_rank,caller,mesg,info)
+      IF (ppm_debug.GT.0) THEN
+         stdout_f('(A,F7.4)',"Slowest processor: ",minsp)
+         stdout_f('(A,F7.4)',"Fastest processor: ",maxsp)
+         stdout_f('(A,F7.4)',"Processor speed imbalance: ",meansp)
          IF (lasymm) THEN
-            CALL ppm_write(ppm_rank,caller,'Doing asymmetric assignment',info)
+            stdout("doing Asymmetric assignment")
          ELSE
-            CALL ppm_write(ppm_rank,caller,'Doing symmetric assignment',info)
+            stdout("doing Symmetric assignment")
          ENDIF
       ENDIF
 
-      !-------------------------------------------------------------------------
-      !  Number of vertices in the graph
-      !-------------------------------------------------------------------------
-      IF (assig .EQ. ppm_param_assign_nodal_cut .OR. &
-      &  assig .EQ. ppm_param_assign_nodal_comm) THEN
-         nvert = nnodes
-      ELSE
-         nvert = nsubs
-      ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Number of desired graph partitions
-      !-------------------------------------------------------------------------
-      nparts  = ppm_nproc
-
-      !-------------------------------------------------------------------------
-      !  Allocate METIS mesh data array
-      !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_fit
-      ldc(1) = nsubs*points
-      CALL ppm_alloc(elmnts,ldc,iopt,info)
-      or_fail_alloc('METIS mesh data array ELMNTS',ppm_error=ppm_error_fatal)
-
-      ldc(1) = nvert
-      CALL ppm_alloc(npart,ldc,iopt,info)
-      or_fail_alloc('METIS node partition vector NODEPART',ppm_error=ppm_error_fatal)
-
-      CALL ppm_alloc(vwgt,ldc,iopt,info)
-      or_fail_alloc('METIS vertex weight vector VWGT',ppm_error=ppm_error_fatal)
-
-      ldc(1) = 1
-      CALL ppm_alloc(adjwgt,ldc,iopt,info)
-      or_fail_alloc('METIS vertex weight vector ADJWGT',ppm_error=ppm_error_fatal)
-
-      CALL ppm_alloc(vsize,ldc,iopt,info)
-      or_fail_alloc('METIS vertex weight vector VSIZE',ppm_error=ppm_error_fatal)
-
-  !    NULLIFY(adjwgt)   ! we make no use of link weights
-  !    NULLIFY(vsize)    ! we make no use of communication weights
-      ldc(1) = nvert+1
-      CALL ppm_alloc(nxadj,ldc,iopt,info)
-      or_fail_alloc('METIS graph structure array NXADJ',ppm_error=ppm_error_fatal)
-
-      ldc(1) = 6*nvert
-      IF (ppm_dim .EQ. 2) ldc(1) = 4*nvert
-      CALL ppm_alloc(nadjncy,ldc,iopt,info)
-      or_fail_alloc('METIS graph adjacency array NADJNCY',ppm_error=ppm_error_fatal)
+      ldc(1)=nparts*ncon
+      CALL ppm_alloc(tpwgts,ldc,iopt,info)
+      or_fail_alloc('METIS desired weight for each (partition) processor, array TPWGTS',ppm_error=ppm_error_fatal)
 
       IF (lasymm) THEN
-         ldc(1) = nparts
-         CALL ppm_alloc(tpwgt,ldc,iopt,info)
-         or_fail_alloc('METIS partition weights TPWGT',ppm_error=ppm_error_fatal)
-      ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Fill METIS mesh data structure
-      !-------------------------------------------------------------------------
-#ifdef __VECTOR
-      !-------------------------------------------------------------------------
-      !  For long vector length: inner loop is over subs
-      !-------------------------------------------------------------------------
-      DO j=1,points
-         DO isub=1,nsubs
-            elmnts((isub-1)*points+j) = cornerno(j,isub)
-         ENDDO
-      ENDDO
-#else
-      !-------------------------------------------------------------------------
-      !  For memory stride: inner loop is over points
-      !-------------------------------------------------------------------------
-      DO isub=1,nsubs
-         DO j=1,points
-            elmnts((isub-1)*points+j) = cornerno(j,isub)
-         ENDDO
-      ENDDO
-#endif
-
-      !-------------------------------------------------------------------------
-      !  Store partition weights for METIS if needed
-      !-------------------------------------------------------------------------
-      IF (lasymm) THEN
-         DO i=1,nparts
-            tpwgt(i) = REAL(ppm_proc_speed(i-1),ppm_kind_single)
-         ENDDO
-      ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Convert mesh to graph using METIS
-      !-------------------------------------------------------------------------
-      ! use Frotran numbering (starting from 1)
-      numtype = 1
-      IF (assig .EQ. ppm_param_assign_nodal_cut .OR.   &
-      &  assig .EQ. ppm_param_assign_nodal_comm) THEN
-         CALL METIS_MeshToNodal(nsubs,nnodes,elmnts,etype,numtype,nxadj,nadjncy)
-         wgtflag = 2  ! weights on vertices only / comput. weights only
-         DO i=1,nvert
-            vwgt(i)  = 0
-         ENDDO
-         DO i=1,nsubs
-            DO j=1,points
-               ! computation weights
-               vwgt(cornerno(j,i)) = vwgt(cornerno(j,i)) + INT(cost(i))
+         !-------------------------------------------------------------------------
+         !  Store partition weights for METIS if needed
+         !-------------------------------------------------------------------------
+         DO i=0,nparts-1
+            DO j=1,ncon
+               !The target partition weight for the ith partition and jth
+               !constraint is specified at tpwgts[i*ncon+j]
+               tpwgts(i*ncon+j) = REAL(ppm_proc_speed(i),ppm_kind_single)
             ENDDO
          ENDDO
-      ELSEIF (assig .EQ. ppm_param_assign_dual_cut .OR.   &
-      &       assig .EQ. ppm_param_assign_dual_comm) THEN
-         CALL METIS_MeshToDual(nsubs,nnodes,elmnts,etype,numtype,nxadj,nadjncy)
-         wgtflag = 2  ! weights on vertices only / comput. weights only
-         DO i=1,nsubs
-            ! computation weights
-            vwgt(i)  = INT(cost(i))
-         ENDDO
       ELSE
-         fail('Unknown METIS assignment scheme. Bailing out.')
+         tmp=0.0_MK
+         DO i=0,nparts-1
+            tmp=tmp+REAL(ppm_proc_speed(i),MK)
+         ENDDO
+
+         tmp=tmp/REAL(nparts,MK)
+
+         FORALL (i=1:ldc(1)) tpwgts(i)=REAL(tmp,ppm_kind_single)
       ENDIF
 
-      !-------------------------------------------------------------------------
-      !  Partition graph into nparts parts using METIS and the minimal
-      !  edgecut objective
-      !-------------------------------------------------------------------------
-      IF (assig .EQ. ppm_param_assign_nodal_cut .OR.   &
-      &    assig .EQ. ppm_param_assign_dual_cut) THEN
-         IF (nparts .LE. 8) THEN
-            !-------------------------------------------------------------------
-            !  Use recursive algorithm since it produces better partitions
-            !-------------------------------------------------------------------
-            metis_options(1) = 1 ! use user-set values
-            metis_options(2) = 3 ! sorted heavy-edge matching
-            metis_options(3) = 1 ! region growing preprocessing
-            metis_options(4) = 1 ! boundary refinement postprocessing
-            metis_options(5) = 0 ! no debugging
-            IF (lasymm) THEN
-               CALL METIS_WPartGraphRecursive(nvert,nxadj,nadjncy,vwgt,adjwgt, &
-               &    wgtflag,numtype,nparts,tpwgt,metis_options,edgecut,npart)
-            ELSE
-               CALL METIS_PartGraphRecursive(nvert,nxadj,nadjncy,vwgt,adjwgt, &
-               &    wgtflag,numtype,nparts,metis_options,edgecut,npart)
-            ENDIF
-         ELSE
-            !-------------------------------------------------------------------
-            !  Use multilevel algorithm since it is faster
-            !-------------------------------------------------------------------
-            metis_options(1) = 1 ! use user-set values
-            metis_options(2) = 3 ! sorted heavy-edge matching
-            metis_options(3) = 1 ! initialize with recursive bisection
-            metis_options(4) = 3 ! minimize connectivity of subdomains
-            metis_options(5) = 0 ! no debugging
-            IF (lasymm) THEN
-               CALL METIS_WPartGraphKway(nvert,nxadj,nadjncy,vwgt,adjwgt,   &
-               &  wgtflag,numtype,nparts,tpwgt,metis_options,edgecut,npart)
-            ELSE
-               CALL METIS_PartGraphKway(nvert,nxadj,nadjncy,vwgt,adjwgt,   &
-               &  wgtflag,numtype,nparts,metis_options,edgecut,npart)
-            ENDIF
-         ENDIF
+      !Array for load imbalance
+      ldc(1)=ncon
+      CALL ppm_alloc(ubvec,ldc,iopt,info)
+      or_fail_alloc('METIS array for load imbalance, array UBVEC',ppm_error=ppm_error_fatal)
 
-         !----------------------------------------------------------------------
-         !  Output diagnostics
-         !----------------------------------------------------------------------
-         ! egdecut is the number of mesh edges that has been cut by the
-         ! partition.
-         IF (ppm_debug .GT. 0) THEN
-            WRITE(mesg,'(A,I6)') 'METIS returned edgecut = ',edgecut
-            CALL ppm_write(ppm_rank,caller,mesg,info)
-         ENDIF
+      CALL METIS_SetDefaultOptions(options)
+      !Initializes the options array into its default values.
 
-      !-------------------------------------------------------------------------
-      !  Partition graph into nparts parts using METIS and the minimal
-      !  communication volume objective
-      !-------------------------------------------------------------------------
-      ELSEIF (assig .EQ. ppm_param_assign_nodal_comm .OR.   &
-      &       assig .EQ. ppm_param_assign_dual_comm) THEN
-         !----------------------------------------------------------------------
-         !  For this objective METIS only has the multilevel algorithm
-         !----------------------------------------------------------------------
-         metis_options(1) = 1 ! use user-set values
-         metis_options(2) = 3 ! sorted heavy-edge matching
-         metis_options(3) = 1 ! initialize with recursive bisection
-         metis_options(4) = 3 ! minimize connectivity of subdomains
-         metis_options(5) = 0 ! no debugging
-         IF (lasymm) THEN
-            CALL METIS_WPartGraphVKway(nvert,nxadj,nadjncy,vwgt,vsize,   &
-            &    wgtflag,numtype,nparts,tpwgt,metis_options,volume,npart)
-         ELSE
-            CALL METIS_PartGraphVKway(nvert,nxadj,nadjncy,vwgt,vsize,   &
-            &    wgtflag,numtype,nparts,metis_options,volume,npart)
-         ENDIF
+      ldc(1) = nvtxs
+      CALL ppm_alloc(part,ldc,iopt,info)
+      or_fail_alloc('METIS partition vector of the graph which tells each vertex belongs to which partition or processor, array PART',ppm_error=ppm_error_fatal)
 
-         !----------------------------------------------------------------------
-         !  Output diagnostics
-         !----------------------------------------------------------------------
-         ! egdecut is the number of mesh edges that has been cut by the
-         ! partition.
-         IF (ppm_debug .GT. 0) THEN
-            WRITE(mesg,'(A,I6)') 'METIS returned communication volume = ',volume
-            CALL ppm_write(ppm_rank,caller,mesg,info)
-         ENDIF
+      !----------------------------------------------------------------
+      !  Fill the adjacency structure of the graph
+      !----------------------------------------------------------------
+      xadj(1)=1
+      DO isub=1,nsubs
+         xadj(isub+1)=xadj(isub)+nneigh(isub)
+      ENDDO
+
+      j=0
+      DO isub=1,nsubs
+         DO i=1,nneigh(isub)
+            j=j+1
+            adjncy(j)=ineigh(i,isub)
+         ENDDO
+      ENDDO
+
+      ! computation weights
+      FORALL (isub=1:nsubs) vwgt(isub)=INT(cost(isub))
+
+      len_phys(1:ppm_dim) = max_phys(1:ppm_dim) - min_phys(1:ppm_dim)
+
+      ALLOCATE(len_subs(ppm_dim,nsubs),STAT=info)
+      or_fail_alloc("len_subs")
+
+      len_subs(1:ppm_dim,1:nsubs)=max_sub(1:ppm_dim,1:nsubs)-min_sub(1:ppm_dim,1:nsubs)+lmyeps
+
+      !----------------------------------------------------------------
+      !  Fill the weights of the edge array (adjwgt).
+      !  Here we consider the length (area) of the neighbor subdomain
+      !  as weight for the edge which connects two neighbour subdomains
+      !  by an edge.
+      !  The edge (area) is a coefficient which is related to the approximate
+      !  amount of communications between two adjacent neighbor subdomains.
+      !
+      !  Fill the total communication volume array (vsize).
+      !  Total communication on each vertex is considered as a summation
+      !  of all weights of the edge array of neighbour subdomains.
+      !----------------------------------------------------------------
+
+      tmp=MAXVAL(ghostsize)
+
+      SELECT CASE (ppm_dim)
+      CASE (2)
+         j=0
+         DO isub=1,nsubs
+            DO i=1,nneigh(isub)
+               jsub=ineigh(i,isub)
+
+               IF (len_subs(1,jsub).GE.len_phys(1).AND.len_subs(1,isub).GE.len_phys(1)) THEN
+                  sx=min_sub(1,jsub)
+                  ex=max_sub(1,jsub)
+               ELSE
+                  !Correction for neighbor cells through periodic boundary conditions
+                  IF (max_sub(1,jsub)-min_sub(1,isub)+lmyeps.GE.len_phys(1)) THEN
+                     sx=MAX(min_sub(1,isub),min_sub(1,jsub)-len_phys(1))
+                     ex=MIN(max_sub(1,isub),max_sub(1,jsub)-len_phys(1))
+                  ELSE IF (max_sub(1,isub)-min_sub(1,jsub)+lmyeps.GE.len_phys(1)) THEN
+                     sx=MAX(min_sub(1,isub)-len_phys(1),min_sub(1,jsub))
+                     ex=MIN(max_sub(1,isub)-len_phys(1),max_sub(1,jsub))
+                  ELSE
+                     sx=MAX(min_sub(1,isub),min_sub(1,jsub))
+                     ex=MIN(max_sub(1,isub),max_sub(1,jsub))
+                  ENDIF
+               ENDIF
+               lx=ABS(ex-sx)
+
+
+               IF (len_subs(2,jsub).GE.len_phys(2).AND.len_subs(2,isub).GE.len_phys(2)) THEN
+                  sy=min_sub(2,jsub)
+                  ey=max_sub(2,jsub)
+               ELSE
+                  IF (max_sub(2,jsub)-min_sub(2,isub)+lmyeps.GE.len_phys(2)) THEN
+                     sy=MAX(min_sub(2,isub),min_sub(2,jsub)-len_phys(2))
+                     ey=MIN(max_sub(2,isub),max_sub(2,jsub)-len_phys(2))
+                  ELSE IF (max_sub(2,isub)-min_sub(2,jsub)+lmyeps.GE.len_phys(2)) THEN
+                     sy=MAX(min_sub(2,isub)-len_phys(2),min_sub(2,jsub))
+                     ey=MIN(max_sub(2,isub)-len_phys(2),max_sub(2,jsub))
+                  ELSE
+                     sy=MAX(min_sub(2,isub),min_sub(2,jsub))
+                     ey=MIN(max_sub(2,isub),max_sub(2,jsub))
+                  ENDIF
+               ENDIF
+               ly=ABS(ey-sy)
+
+               j=j+1
+
+               IF (lx.LE.lmyeps.AND.ly.LE.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=1
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
+               ELSE IF (lx.LE.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=INT(ly/ghostsize(2))
+                  ELSE IF (tmp.GT.lmyeps) THEN
+                     adjwgt(j)=INT(ly/tmp)
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
+               ELSE IF (ly.LE.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=INT(lx/ghostsize(1))
+                  ELSE IF (tmp.GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx/tmp)
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
+               ELSE
+                  fail("St is wrong!!!",ppm_error=ppm_error_fatal)
+               ENDIF
+
+               vsize(isub)=vsize(isub)+adjwgt(j)
+            ENDDO !i=1,nneigh(isub)
+         ENDDO !isub=1,nsubs
+
+      CASE (3)
+         j=0
+         DO isub=1,nsubs
+            DO i=1,nneigh(isub)
+               jsub=ineigh(i,isub)
+
+               IF (len_subs(1,jsub).GE.len_phys(1).AND.len_subs(1,isub).GE.len_phys(1)) THEN
+                  sx=min_sub(1,jsub)
+                  ex=max_sub(1,jsub)
+               ELSE
+                  !Correction for neighbor cells through periodic boundary conditions
+                  IF (max_sub(1,jsub)-min_sub(1,isub)+lmyeps.GE.len_phys(1)) THEN
+                     sx=MAX(min_sub(1,isub),min_sub(1,jsub)-len_phys(1))
+                     ex=MIN(max_sub(1,isub),max_sub(1,jsub)-len_phys(1))
+                  ELSE IF (max_sub(1,isub)-min_sub(1,jsub)+lmyeps.GE.len_phys(1)) THEN
+                     sx=MAX(min_sub(1,isub)-len_phys(1),min_sub(1,jsub))
+                     ex=MIN(max_sub(1,isub)-len_phys(1),max_sub(1,jsub))
+                  ELSE
+                     sx=MAX(min_sub(1,isub),min_sub(1,jsub))
+                     ex=MIN(max_sub(1,isub),max_sub(1,jsub))
+                  ENDIF
+               ENDIF
+               lx=ABS(ex-sx)
+
+               IF (len_subs(2,jsub).GE.len_phys(2).AND.len_subs(2,isub).GE.len_phys(2)) THEN
+                  sy=min_sub(2,jsub)
+                  ey=max_sub(2,jsub)
+               ELSE
+                  IF (max_sub(2,jsub)-min_sub(2,isub)+lmyeps.GE.len_phys(2)) THEN
+                     sy=MAX(min_sub(2,isub),min_sub(2,jsub)-len_phys(2))
+                     ey=MIN(max_sub(2,isub),max_sub(2,jsub)-len_phys(2))
+                  ELSE IF (max_sub(2,isub)-min_sub(2,jsub)+lmyeps.GE.len_phys(2)) THEN
+                     sy=MAX(min_sub(2,isub)-len_phys(2),min_sub(2,jsub))
+                     ey=MIN(max_sub(2,isub)-len_phys(2),max_sub(2,jsub))
+                  ELSE
+                     sy=MAX(min_sub(2,isub),min_sub(2,jsub))
+                     ey=MIN(max_sub(2,isub),max_sub(2,jsub))
+                  ENDIF
+               ENDIF
+               ly=ABS(ey-sy)
+
+               IF (len_subs(3,jsub).GE.len_phys(3).AND.len_subs(3,isub).GE.len_phys(3)) THEN
+                  sz=min_sub(3,jsub)
+                  ez=max_sub(3,jsub)
+               ELSE
+                  IF (max_sub(3,jsub)-min_sub(3,isub)+lmyeps.GE.len_phys(3)) THEN
+                     sz=MAX(min_sub(3,isub),min_sub(3,jsub)-len_phys(3))
+                     ez=MIN(max_sub(3,isub),max_sub(3,jsub)-len_phys(3))
+                  ELSE IF (max_sub(3,isub)-min_sub(3,jsub)+lmyeps.GE.len_phys(3)) THEN
+                     sz=MAX(min_sub(3,isub)-len_phys(3),min_sub(3,jsub))
+                     ez=MIN(max_sub(3,isub)-len_phys(3),max_sub(3,jsub))
+                  ELSE
+                     sz=MAX(min_sub(3,isub),min_sub(3,jsub))
+                     ez=MIN(max_sub(3,isub),max_sub(3,jsub))
+                  ENDIF
+               ENDIF
+               lz=ABS(ez-sz)
+
+               j=j+1
+               IF (lx.LE.lmyeps.AND.ly.LE.lmyeps.AND.lz.LE.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=1
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
+               ELSE IF (lx.LE.lmyeps.AND.ly.LE.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=INT(lz/ghostsize(3))
+                  ELSE IF (ghostsize(1).GT.lmyeps.AND.ghostsize(2).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lz/MIN(ghostsize(1),ghostsize(2)))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
+               ELSE IF (lx.LE.lmyeps.AND.lz.LE.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=INT(ly/ghostsize(2))
+                  ELSE IF (ghostsize(1).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                     adjwgt(j)=INT(ly/MIN(ghostsize(1),ghostsize(3)))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
+               ELSE IF (ly.LE.lmyeps.AND.lz.LE.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=INT(lx/ghostsize(1))
+                  ELSE IF (ghostsize(2).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx/MIN(ghostsize(2),ghostsize(3)))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
+               ELSE IF (lx.LE.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=INT(ly*lz/(ghostsize(2)*ghostsize(3)))
+                  ELSE IF (ghostsize(1).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                     adjwgt(j)=INT(ly*lz/MIN(ghostsize(1),ghostsize(3)))
+                  ELSE IF (ghostsize(1).GT.lmyeps.AND.ghostsize(2).GT.lmyeps) THEN
+                     adjwgt(j)=INT(ly*lz/MIN(ghostsize(1),ghostsize(2)))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
+               ELSE IF (ly.LE.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=INT(lx*lz/(ghostsize(1)*ghostsize(3)))
+                  ELSE IF (ghostsize(2).GT.lmyeps.AND.ghostsize(1).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx*lz/MIN(ghostsize(2),ghostsize(1)))
+                  ELSE IF (ghostsize(2).GT.lmyeps.AND.ghostsize(3).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx*lz/MIN(ghostsize(2),ghostsize(3)))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
+               ELSE IF (lz.LE.lmyeps) THEN
+                  IF (ALL(ghostsize.GT.lmyeps)) THEN
+                     adjwgt(j)=INT(lx*ly/(ghostsize(1)*ghostsize(2)))
+                  ELSE IF (ghostsize(3).GT.lmyeps.AND.ghostsize(2).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx*ly/MIN(ghostsize(3),ghostsize(2)))
+                  ELSE IF (ghostsize(3).GT.lmyeps.AND.ghostsize(1).GT.lmyeps) THEN
+                     adjwgt(j)=INT(lx*ly/MIN(ghostsize(3),ghostsize(1)))
+                  ELSE
+                     adjwgt(j)=0
+                  ENDIF
+               ELSE
+                  fail("St is wrong!!!",ppm_error=ppm_error_fatal)
+               ENDIF
+
+               vsize(isub)=vsize(isub)+adjwgt(j)
+            ENDDO !i=1,nneigh(isub)
+         ENDDO !isub=1,nsubs
+
+      END SELECT
+
+      DEALLOCATE(len_subs,STAT=info)
+      or_fail_dealloc("len_subs")
+
+      options( 3)=1 !Sorted heavy-edge matching
+      options( 4)=0 !Grows a bisection using a greedy strategy.
+      options( 5)=3 !One-sided node FM refinement
+      options( 6)=MERGE(1,0,ppm_debug.GT.0) !(no debugging/progress information)
+      options(18)=1 !Fortran-style numbering is assumed that starts from 1.
+
+      IF (nsubs.LT.4*ppm_nproc) THEN
+         ubvec=1.001
+         CALL METIS_PartGraphRecursive(nvtxs,ncon,xadj,adjncy,vwgt, &
+         &    vsize,adjwgt,nparts,tpwgts,ubvec,options,objval,part)
       ELSE
-         fail('Unknown METIS assignment scheme. Bailing out.')
+         !-------------------------------------------------------------------------
+         !  Partition graph into nparts parts using METIS and the minimal
+         !  edgecut objective, egdecut is the number of mesh edges that
+         !  has been cut by the partition.
+         !-------------------------------------------------------------------------
+         SELECT CASE (assig)
+         CASE (ppm_param_assign_metis_cut)
+            options(2)=0 !Edge-cut minimization
+         CASE (ppm_param_assign_metis_comm)
+            options(2)=1 !Total communication volume minimization.
+         CASE DEFAULT
+            fail('Unknown METIS assignment scheme. Bailing out.')
+         END SELECT
+
+         ubvec=1.03
+         CALL METIS_PartGraphKway(nvtxs,ncon,xadj,adjncy,vwgt, &
+         &    vsize,adjwgt,nparts,tpwgts,ubvec,options,objval,part)
+      ENDIF
+
+      !----------------------------------------------------------------------
+      !  Output diagnostics
+      !----------------------------------------------------------------------
+      IF (ppm_debug .GT. 0) THEN
+         SELECT CASE (assig)
+         CASE (ppm_param_assign_metis_cut)
+            stdout_f('(A,I6)',"METIS returned edgecut = ",objval)
+         CASE (ppm_param_assign_metis_comm)
+            stdout_f('(A,I6)',"METIS returned communication volume = ",objval)
+         END SELECT
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Find subs2proc assignment based on graph decomposition
       !-------------------------------------------------------------------------
-      IF (assig .EQ. ppm_param_assign_nodal_cut .OR.   &
-      &   assig .EQ. ppm_param_assign_nodal_comm) THEN
-         ! a vertex is a mesh node: take a majority vote of all corners of
-         ! a sub to determine its processor affiliation
-         ldc(1) = nparts
-         CALL ppm_alloc(vote,ldc,iopt,info)
-         or_fail_alloc('majority vote count VOTE',ppm_error=ppm_error_fatal)
-
-         DO i=1,nsubs
-            vote(1:nparts) = 0
-            DO j=1,points
-               ! the processor this node was assigned to
-               jj = npart(cornerno(j,i))
-               vote(jj) = vote(jj) + 1
-            ENDDO
-            ! majority vote of all corners of this sub
-            maxvote = MAXLOC(vote)
-            sub2proc(i) = maxvote(1)-1  ! MPI ranks start at 0
-         ENDDO
-      ELSEIF (assig .EQ. ppm_param_assign_dual_cut .OR.   &
-      &        assig .EQ. ppm_param_assign_dual_comm) THEN
-         ! a graph vertex is a sub
-         DO i=1,nsubs
-            sub2proc(i) = npart(i)-1    ! MPI ranks start at 0
-         ENDDO
-      ELSE
-         fail('Unknown METIS assignment scheme. Bailing out.')
-      ENDIF
+      ! a graph vertex is a sub
+      FORALL (isub=1:nsubs) sub2proc(isub)=part(isub)-1  ! MPI ranks start at 0
 
       !-------------------------------------------------------------------------
       !  Deallocate METIS work memory
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_dealloc
-      IF (lasymm) THEN
-         CALL ppm_alloc(tpwgt,ldc,iopt,info)
-         or_fail_dealloc('METIS graph adjacency array TPWGT',exit_point=no)
-      ENDIF
-      CALL ppm_alloc(nadjncy,ldc,iopt,info)
-      or_fail_dealloc('METIS graph adjacency array NADJNCY',exit_point=no)
+      iopt=ppm_param_dealloc
+      CALL ppm_alloc(xadj,ldc,iopt,info)
+      or_fail_dealloc('METIS adjacency structure of a graph, array XADJ',exit_point=no)
 
-      CALL ppm_alloc(nxadj,ldc,iopt,info)
-      or_fail_dealloc('METIS graph structure array NXADJ',exit_point=no)
-
-      CALL ppm_alloc(vsize,ldc,iopt,info)
-      or_fail_dealloc('METIS graph structure array VSIZE',exit_point=no)
-
-      CALL ppm_alloc(adjwgt,ldc,iopt,info)
-      or_fail_dealloc('METIS graph structure array ADJWGT',exit_point=no)
+      CALL ppm_alloc(adjncy,ldc,iopt,info)
+      or_fail_dealloc('METIS adjacency structure of a graph, array ADJNCY',exit_point=no)
 
       CALL ppm_alloc(vwgt,ldc,iopt,info)
-      or_fail_dealloc('METIS vertex weight vector VWGT',exit_point=no)
+      or_fail_dealloc('METIS weights of the vertices, vector VWGT',exit_point=no)
 
-      CALL ppm_alloc(npart,ldc,iopt,info)
-      or_fail_dealloc('METIS node partition vector NODEPART',exit_point=no)
+      CALL ppm_alloc(vsize,ldc,iopt,info)
+      or_fail_dealloc('METIS size of the vertices for the total communication volume, array VSIZE',exit_point=no)
 
-      CALL ppm_alloc(elmnts,ldc,iopt,info)
-      or_fail_dealloc('METIS mesh data array ELMNTS',exit_point=no)
+      CALL ppm_alloc(adjwgt,ldc,iopt,info)
+      or_fail_dealloc('METIS weights of the edges, array ADJWGT',exit_point=no)
 
-      !-------------------------------------------------------------------------
-      !  Deallocate corner numbers
-      !-------------------------------------------------------------------------
-      CALL ppm_alloc(cornerno,ldc,iopt,info)
-      or_fail_dealloc('subdomain corner numbers CORNERNO',exit_point=no)
+      CALL ppm_alloc(tpwgts,ldc,iopt,info)
+      or_fail_dealloc('METIS graph adjacency array TPWGTS',exit_point=no)
 
+      CALL ppm_alloc(part,ldc,iopt,info)
+      or_fail_dealloc('METIS partition vector of the graph which tells each vertex belongs to which partition or processor, array PART',exit_point=no)
+
+      CALL ppm_alloc(ubvec,ldc,iopt,info)
+      or_fail_dealloc('METIS array for load imbalance UBVEC',exit_point=no)
       !-------------------------------------------------------------------------
       !  Count number of subs assigned to local processor
       !-------------------------------------------------------------------------
-      nsublist = 0
-      DO isub=1,nsubs
-         IF (sub2proc(isub) .EQ. ppm_rank) nsublist = nsublist + 1
-      ENDDO
+      nsublist=COUNT(sub2proc(1:nsubs).EQ.ppm_rank)
 
       !-------------------------------------------------------------------------
       !  Allocate the isublist array
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_fit
-      ldc(1) = nsublist
+      iopt  =ppm_param_alloc_fit
+      ldc(1)=nsublist
       CALL ppm_alloc(isublist,ldc,iopt,info)
       or_fail_alloc('isublist allocation failed',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Fill list of local subs
       !-------------------------------------------------------------------------
-      nsublist = 0
+      nsublist=0
       DO isub=1,nsubs
          IF (sub2proc(isub) .EQ. ppm_rank) THEN
-            nsublist = nsublist + 1
-            isublist(nsublist) = isub
+            nsublist=nsublist+1
+            isublist(nsublist)=isub
          ENDIF
       ENDDO
 #endif
@@ -707,10 +702,8 @@
          IF (nsubs .LE. 0) THEN
             fail('nsubs must be > 0',exit_point=8888)
          ENDIF
-         IF (assig .NE. ppm_param_assign_nodal_cut .AND.  &
-         &   assig .NE. ppm_param_assign_nodal_comm .AND. &
-         &   assig .NE. ppm_param_assign_dual_cut   .AND. &
-         &   assig .NE. ppm_param_assign_dual_comm) THEN
+         IF (assig .NE. ppm_param_assign_metis_cut .AND.  &
+         &   assig .NE. ppm_param_assign_metis_comm) THEN
             fail('Invalid assignment type for METIS passed',exit_point=8888)
          ENDIF
          DO isub=1,nsubs

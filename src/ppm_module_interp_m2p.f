@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :            ppm_module_rmsh_remesh
+      !  Module       :            ppm_module_interp_m2p
       !-------------------------------------------------------------------------
       ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
@@ -147,4 +147,3 @@
 #undef __SCA
 
       END MODULE ppm_module_interp_m2p
-

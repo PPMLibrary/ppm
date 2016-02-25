@@ -88,10 +88,11 @@
       !  Local variables
       !-------------------------------------------------------------------------
       INTEGER :: i
-      REAL(MK) :: dx,dy,dz,rad,t0
+      REAL(MK) :: dx,dy,dz,rad
+      REAL(ppm_kind_double) :: t0
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_util_cart2sph',t0,info)
 

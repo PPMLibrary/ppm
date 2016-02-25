@@ -151,6 +151,7 @@
       FORALL (ipart=1:this%Npart) ilist1(ipart)=ipart
 
       nlist1=this%Npart
+      nlist2=0
 
       !-------------------------------------------------------------------------!
       !  Loop over the subpatches in each subdomain
@@ -485,16 +486,11 @@
 
       CALL Field%map_ghost_push(Mesh,info)
       or_fail("map_ghost_push")
-
-      CALL Mesh%map_send(info)
-      or_fail("map_send")
       !non-blocking send
-      !CALL Mesh%map_isend(info)
-      !or_fail("map_isend")
-
+      CALL Mesh%map_isend(info)
+      or_fail("map_isend")
       CALL Field%map_ghost_pop(Mesh,info)
       or_fail("map_ghost_pop")
-
 
       IF (PRESENT(p2m_bcdef)) THEN
          IF (Field%lda.EQ.1) THEN

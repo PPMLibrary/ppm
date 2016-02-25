@@ -61,6 +61,7 @@
           REAL(MK), DIMENSION(:,:), POINTER     :: eta => NULL()
           REAL(MK)                              :: c_value
           REAL(MK)                              :: min_sv_p
+          REAL(MK), PARAMETER                   :: big=HUGE(1.0_MK)
 
           INTEGER, DIMENSION(:,:), ALLOCATABLE :: alpha,gamma
           INTEGER                              :: order_a
@@ -144,6 +145,7 @@
              adaptive = .FALSE.
           END SELECT
 
+          !bug sum_degree is just allocated
           IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
              !!! nearest-neighbour distances within Part_src
              !!! (they must have been already computed)
@@ -153,6 +155,8 @@
           ENDIF
 
 
+          !Yaser: Obvious bug here
+          !It will replace degree with no use!!!!
           !Determine number of coefficients needed for this operator
           DO i=1,nterms
              degree = op%degree(1+(i-1)*ppm_dim:i*ppm_dim)
@@ -168,8 +172,7 @@
                 DO j = 1,ppm_dim
                    n_odd = n_odd + MOD(degree(j),2)
                 ENDDO
-                ncoeff = binomial((sum_degree(i)-n_odd)/2 + &
-                CEILING(order_a/2.0) -1 + ppm_dim,ppm_dim)
+                ncoeff = binomial((sum_degree(i)-n_odd)/2 + CEILING(order_a/2.0) -1 + ppm_dim,ppm_dim)
              ELSE
                 ncoeff = binomial(degree_poly+ppm_dim,ppm_dim)
              ENDIF
@@ -243,7 +246,7 @@
 
           !only used to compute the SVD, mainly for debugging.
           IF (PRESENT(min_sv)) THEN
-             min_sv = HUGE(1._MK)
+             min_sv = big
              ALLOCATE(Z_copy(ncoeff,ncoeff),STAT=info)
              or_fail_alloc("Z_copy")
           ENDIF

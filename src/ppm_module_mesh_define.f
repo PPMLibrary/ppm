@@ -41,7 +41,6 @@
       !!! (the data living on the meshes). Several fields can use the
       !!! same mesh. Meshes are defined as ppm-internal TYPES, whereas
       !!! fields are user-provided arrays.
-         USE ppm_module_topo_typedef
          IMPLICIT NONE
 
          !----------------------------------------------------------------------
@@ -51,12 +50,10 @@
             MODULE PROCEDURE ppm_mesh_define
          END INTERFACE
 
+      CONTAINS
          !----------------------------------------------------------------------
          !  Include the source
          !----------------------------------------------------------------------
-         CONTAINS
-
 #include "mesh/ppm_mesh_define.f"
-
 
       END MODULE ppm_module_mesh_define

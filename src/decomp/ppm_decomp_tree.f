@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE decomp_tree_s(xp,Npart,min_phys,max_phys, &
-     &   minboxsize,tolerance,min_sub,max_sub,nsubs,info,pcost)
+      &   minboxsize,tolerance,min_sub,max_sub,nsubs,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE decomp_tree_d(xp,Npart,min_phys,max_phys, &
-     &   minboxsize,tolerance,min_sub,max_sub,nsubs,info,pcost)
+      &   minboxsize,tolerance,min_sub,max_sub,nsubs,info,pcost)
 #endif
       !!! Performs a tree-like decomposition.
       !!! It subdivides space until the number of leaves in the
@@ -51,6 +51,7 @@
       USE ppm_module_write
       USE ppm_module_mpi
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -66,13 +67,10 @@
       !!! Position of the particles
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! Number of particles
-      REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: min_phys
+      REAL(MK), DIMENSION(:)  , POINTER       :: min_phys
       !!! Minimum coordinate of the physical/computational domain
-      REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: max_phys
+      REAL(MK), DIMENSION(:)  , POINTER       :: max_phys
       !!! Maximum coordinate of the physical/computational domain
-      REAL(MK), DIMENSION(:)  , OPTIONAL, INTENT(IN) :: pcost
-      !!! Argument of length Npart, specifying the
-      !!! computational cost of each particle.
       REAL(MK)                , INTENT(IN   ) :: minboxsize
       !!! Minimum box size
       REAL(MK)                , INTENT(IN   ) :: tolerance
@@ -86,13 +84,16 @@
       !!! Total number of subdomains
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
+      REAL(MK), DIMENSION(:)  , OPTIONAL, INTENT(IN) :: pcost
+      !!! Argument of length Npart, specifying the
+      !!! computational cost of each particle.
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim)      :: len_phys
       REAL(MK), DIMENSION(2)            :: vector_in,vector_out
       REAL(MK)                          :: mean_npbx,var_npbx
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double)             :: t0
       REAL(MK), DIMENSION(:,:), POINTER :: min_box
       REAL(MK), DIMENSION(:,:), POINTER :: max_box
       REAL(MK), DIMENSION(:,:), POINTER :: work
@@ -114,7 +115,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -122,8 +123,8 @@
       !  check input arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -199,7 +200,7 @@
       or_fail_alloc('alloc of npbxg failed!')
 
       !-------------------------------------------------------------------------
-      !  Initialise the first box
+      !  Initialize the first box
       !-------------------------------------------------------------------------
       fbox  = 1
       DO k=1,ppm_dim

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_check_meshid
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -38,86 +38,81 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
-      USE ppm_module_data_mesh
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_write
+      USE ppm_module_topo_typedef
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER , INTENT(IN   )        :: meshid
+      INTEGER, INTENT(IN   ) :: meshid
       !!! Mesh ID to be checked.
-      INTEGER , INTENT(IN   )        :: topoid
+      INTEGER, INTENT(IN   ) :: topoid
       !!! Topology ID on which the mesh is defined.
-      LOGICAL , INTENT(  OUT)        :: valid
+      LOGICAL, INTENT(  OUT) :: valid
       !!! Returns `TRUE` if the given meshid is valid and defined,
       !!! `FALSE` otherwise.
-      INTEGER , INTENT(  OUT)        :: info
+      INTEGER, INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
 
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double)          :: t0
-      LOGICAL                        :: topo_ok
-      !TYPE(ppm_t_topo), POINTER      :: topo => NULL()
+      CLASS(ppm_t_equi_mesh_), POINTER :: mesh
+
+      REAL(ppm_kind_double) :: t0
+
+      INTEGER :: meshid_
+
+      CHARACTER(LEN=ppm_char) :: caller="ppm_check_meshid"
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_check_meshid',t0,info)
-      valid = .TRUE.
+      CALL substart(caller,t0,info)
 
-      CALL ppm_write(ppm_rank,'ppm_check_meshid','NEED TO UPDATE THIS CHECKING ROUTINE',info)
+      !-------------------------------------------------------------------------
+      !  Check arguments
+      !-------------------------------------------------------------------------
+      IF (ppm_debug.GT.0) THEN
+         CALL check
+         IF (info.NE.0) GOTO 9999
+      ENDIF
 
-      !!-------------------------------------------------------------------------
-      !!  Check arguments
-      !!-------------------------------------------------------------------------
-      !IF (ppm_debug .GT. 0) THEN
-        !CALL check
-        !IF (info .NE. 0) GOTO 9999
-      !ENDIF
+      meshid_=-1
+      mesh => ppm_mesh%begin()
+      DO WHILE (ASSOCIATED(mesh))
+         IF (mesh%ID.EQ.meshid) THEN
+            IF (mesh%topoid.EQ.topoid) THEN
+               meshid_=ppm_mesh%iter_id
+               EXIT
+            ENDIF
+         ENDIF
+         mesh => ppm_mesh%next()
+      ENDDO
 
-      !!-------------------------------------------------------------------------
-      !!  Validity check
-      !!-------------------------------------------------------------------------
-      !CALL ppm_check_topoid(topoid,topo_ok,info)
-      !IF (.NOT. topo_ok) THEN
-        !valid = .FALSE.
-        !GOTO 9999
-      !ENDIF
-      !topo => ppm_topo(topoid)%t
-
-      !IF ((meshid .LT. 1).OR.(meshid .GT. topo%max_meshid)) THEN
-          !valid = .FALSE.
-      !ENDIF
+      IF (meshid_.LT.ppm_mesh%min_id.OR.meshid_.GT.ppm_mesh%max_id) THEN
+         stdout("Input mesh ID ",meshid," Is Invalid!")
+         valid=.FALSE.
+      ELSE
+         valid=.TRUE.
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_check_meshid',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
-      !CONTAINS
-      !SUBROUTINE check
-          !IF (.NOT. ppm_initialized) THEN
-              !info = ppm_error_error
-              !CALL ppm_error(ppm_err_ppm_noinit,'ppm_check_meshid',  &
-     !&            'Please call ppm_init first!',__LINE__,info)
-              !valid = .FALSE.
-              !GOTO 8888
-          !ENDIF
-          !CALL ppm_check_topoid(topoid,topo_ok,info)
-          !IF (.NOT. topo_ok) THEN
-              !info = ppm_error_error
-              !CALL ppm_error(ppm_err_argument,'ppm_check_meshid',  &
-     !&            'Topoid out of range!',__LINE__,info)
-              !valid = .FALSE.
-              !GOTO 8888
-          !ENDIF
- !8888     CONTINUE
-      !END SUBROUTINE check
+      CONTAINS
+      SUBROUTINE check
+          IF (.NOT.ppm_initialized) THEN
+             valid=.FALSE.
+             fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
+          ENDIF
+      8888 CONTINUE
+      END SUBROUTINE check
       END SUBROUTINE ppm_check_meshid

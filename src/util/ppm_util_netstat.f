@@ -66,15 +66,12 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      REAL(MK)                        :: t0
+      REAL(ppm_kind_double)           :: t0
       REAL(MK)                        :: tstart,tend
       REAL(MK), DIMENSION(:), POINTER :: latencies
       REAL(MK), DIMENSION(:), POINTER :: bandwidths
 
       INTEGER                             :: i,irank,icomm,tag
-#ifdef __MPI
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: stat
-#endif
       INTEGER                             :: iopt
       INTEGER                             :: src,dest
       INTEGER, PARAMETER                  :: lncomm = 1000 !N latency comms
@@ -151,12 +148,12 @@
                CALL MPI_Send(buf,small,MPI_INTEGER,dest,i,ppm_comm,info)
                or_fail_MPI("MPI Send failed!")
             ELSE
-               CALL MPI_Recv(buf,small,MPI_INTEGER,src,i,ppm_comm,stat,info)
+               CALL MPI_Recv(buf,small,MPI_INTEGER,src,i,ppm_comm,MPI_STATUS_IGNORE,info)
                or_fail_MPI("MPI Recv failed!")
             ENDIF
 
 !           CALL MPI_SendRecv(sbuf,small,MPI_INTEGER,irank,tag, &
-!           &    rbuf,small,MPI_INTEGER,irank,tag,ppm_comm,stat,info)
+!           &    rbuf,small,MPI_INTEGER,irank,tag,ppm_comm,MPI_STATUS_IGNORE,info)
 
          ENDDO
 
@@ -166,13 +163,13 @@
       ENDDO
 
 
-      DEALLOCATE(buf,stat=info)
+      DEALLOCATE(buf,STAT=info)
       or_fail_dealloc('dealloc latency buffer')
 
       !-------------------------------------------------------------------------
       !  Measure Bandwidth
       !-------------------------------------------------------------------------
-      ALLOCATE(buf(big),stat=info)
+      ALLOCATE(buf(big),STAT=info)
       or_fail_alloc('bandwidth buffer')
 
       buf(:) = 42
@@ -191,11 +188,11 @@
                CALL MPI_Send(buf,big,MPI_INTEGER,dest,i,ppm_comm,info)
                or_fail_MPI("MPI Send failed!")
             ELSE
-               CALL MPI_Recv(buf,big,MPI_INTEGER,src,i,ppm_comm,stat,info)
+               CALL MPI_Recv(buf,big,MPI_INTEGER,src,i,ppm_comm,MPI_STATUS_IGNORE,info)
                or_fail_MPI("MPI Recv failed!")
             ENDIF
 !           CALL MPI_SendRecv(sbuf,big,MPI_INTEGER,irank,tag, &
-!           &    rbuf,big,MPI_INTEGER,irank,tag,ppm_comm,stat,info)
+!           &    rbuf,big,MPI_INTEGER,irank,tag,ppm_comm,MPI_STATUS_IGNORE,info)
 
          ENDDO
 
@@ -205,7 +202,7 @@
       ENDDO
 
 
-      DEALLOCATE(buf,stat=info)
+      DEALLOCATE(buf,STAT=info)
       or_fail_dealloc("dealloc bandwidth buffer")
 #else
       fail('Bandwidth and latency default to 0',ppm_err_nompi,exit_point=no, &

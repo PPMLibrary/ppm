@@ -63,6 +63,7 @@
       USE ppm_module_write
       USE ppm_module_mpi
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -92,7 +93,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)               :: t0,maxcost
+      REAL(ppm_kind_double)  :: t0
+      REAL(MK)               :: maxcost
       REAL(ppm_kind_double)  :: alpha,beta
       CHARACTER(LEN=ppm_char):: mesg
 #ifdef __MPI
@@ -103,7 +105,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_set_decomp_cost',t0,info)
 

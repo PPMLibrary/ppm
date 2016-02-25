@@ -192,6 +192,8 @@
           integer, dimension(ppm_dim)                :: degree
           real(ppm_kind_double),dimension(1)         :: coeffs
 
+          REAL(MK), PARAMETER :: big=HUGE(1.0_MK)
+
           start_subroutine("sop_adapt")
 
           !-------------------------------------------------------------------------!
@@ -262,7 +264,7 @@
                   need_derivatives=.TRUE.
           ENDIF
 
-          IF (PRESENT(stats)) stats%min_sv=HUGE(1._mk)
+          IF (PRESENT(stats)) stats%min_sv=big
 
           ! Check that the scalar field on which particles are supposed to adapt
           ! has been defined or is provided by an analytical function

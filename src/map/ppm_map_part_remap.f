@@ -44,7 +44,6 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_topo_check
-      USE ppm_module_check_id
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -66,13 +65,13 @@
       !  Local variables
       !-------------------------------------------------------------------------
       LOGICAL             :: topo_ok
-      REAL(MK)            :: t0
+      REAL(ppm_kind_double) :: t0
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_map_part_remap',t0,info)
 

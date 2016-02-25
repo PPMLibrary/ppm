@@ -28,11 +28,9 @@
       !-------------------------------------------------------------------------
 
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_s(topoid, &
-      &          xp,lda,Npart,isymm,ghostsize,info)
+      SUBROUTINE ppm_map_part_ghost_get_s(topoid,xp,lda,Npart,isymm,ghostsize,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_d(topoid, &
-      &          xp,lda,Npart,isymm,ghostsize,info)
+      SUBROUTINE ppm_map_part_ghost_get_d(topoid,xp,lda,Npart,isymm,ghostsize,info)
 #endif
       !!! This routine maps/adds the ghost particles on the current topology.
       !!! This routine is similar to the partial mapping routine
@@ -105,9 +103,14 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
-      USE ppm_module_check_id
       USE ppm_module_util_commopt
       USE ppm_module_topo_typedef
+      USE ppm_module_mapping_typedef, ONLY : ppm_psendbuffer,ppm_nsendlist, &
+      &   ppm_nrecvlist,ppm_nsendbuffer,ppm_isendlist,ppm_buffer2part,      &
+      &   ppm_buffer_dim,ppm_buffer_set,ppm_buffer_type,ppm_irecvlist,      &
+      &   ppm_sendbuffers,ppm_sendbufferd,ppm_sendbufsize,                  &
+      &   ppm_ghost_offset_facs,ppm_ghost_offset_facd,ppm_ghost_offsets,    &
+      &   ppm_ghost_offsetd,ppm_map_type
       IMPLICIT NONE
 
 #if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
@@ -152,7 +155,7 @@
       REAL(MK), DIMENSION(:),   POINTER :: min_phys
       REAL(MK), DIMENSION(:),   POINTER :: max_phys
       REAL(MK), DIMENSION(ppm_dim)      :: len_phys
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double)             :: t0
       REAL(MK)                          :: eps
 
       INTEGER, DIMENSION(3)         :: ldu
@@ -172,7 +175,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -185,6 +188,7 @@
       ENDIF
 
       topo => ppm_topo(topoid)%t
+
 #if __KIND == __DOUBLE_PRECISION
       eps = ppm_myepsd
 #else

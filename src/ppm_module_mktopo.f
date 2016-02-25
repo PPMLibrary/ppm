@@ -36,8 +36,27 @@
       MODULE ppm_module_mktopo
       !!! This module provides the interface to the routines that create
       !!! topologies.
+         !-------------------------------------------------------------------------
+         !  Modules
+         !-------------------------------------------------------------------------
+         USE ppm_module_data
+         USE ppm_module_substart
+         USE ppm_module_substop
+         USE ppm_module_error
+         USE ppm_module_alloc
+         USE ppm_module_write
+         USE ppm_module_define_subs_bc
+         USE ppm_module_find_neigh
+         USE ppm_module_tree
+         USE ppm_module_topo_cost
+         USE ppm_module_topo_store
+         USE ppm_module_topo_subs2proc
+         USE ppm_module_topo_metis_s2p
+         USE ppm_module_topo_box2subs
          USE ppm_module_topo_typedef
          IMPLICIT NONE
+
+         PRIVATE
 
          !----------------------------------------------------------------------
          !  Define interfaces to the main topology routine(s)
@@ -53,10 +72,12 @@
             MODULE PROCEDURE ppm_topo_mktree_d
          END INTERFACE
 
-         !----------------------------------------------------------------------
-         !  include the source
-         !----------------------------------------------------------------------
-         CONTAINS
+         PUBLIC :: ppm_mktopo
+
+      !----------------------------------------------------------------------
+      !  include the source
+      !----------------------------------------------------------------------
+      CONTAINS
 
 #define __KIND __SINGLE_PRECISION
 #include "topo/ppm_topo_mkpart.f"

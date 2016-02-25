@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_find_duplicates
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -60,7 +60,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: adata
       !!! Data to be checked for duplicates. Both single and double precision
@@ -80,9 +80,10 @@
       !!! Returns status, 0 upon success
 
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                   :: t0,lmyeps,bsum,split
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)                                   :: lmyeps,bsum,split
       REAL(MK), DIMENSION(3)                     :: xmin,xmax,bsize,aspct
       INTEGER , DIMENSION(3)                     :: Nm
       INTEGER , DIMENSION(6)                     :: Ngl
@@ -93,11 +94,11 @@
       INTEGER                                    :: iend,isize,iopt
       CHARACTER(LEN=ppm_char)                    :: mesg
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_find_duplicates',t0,info)
       nident = 0
@@ -322,7 +323,7 @@
                               !-------------------------------------------------
                               iopt   = ppm_param_alloc_grow_preserve
                               ldc(1) = 2
-                              ldc(2) = nident 
+                              ldc(2) = nident
                               CALL ppm_alloc(ident,ldc,iopt,info)
                               IF (info .NE. 0) THEN
                                   info = ppm_error_fatal
@@ -372,7 +373,7 @@
                               !-------------------------------------------------
                               iopt   = ppm_param_alloc_grow_preserve
                               ldc(1) = 2
-                              ldc(2) = nident 
+                              ldc(2) = nident
                               CALL ppm_alloc(ident,ldc,iopt,info)
                               IF (info .NE. 0) THEN
                                   info = ppm_error_fatal

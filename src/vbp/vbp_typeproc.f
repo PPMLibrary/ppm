@@ -2,10 +2,11 @@
           !!! create a set of particles
           !!! This allocates the particle positions.
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
           CLASS(DTYPE(ppm_t_vbp))                   :: Pc
           !!! Data structure containing the particles
           INTEGER,                    INTENT(IN   ) :: Npart
@@ -79,10 +80,11 @@
           !!! the ghosts are flagged as "not up-to-date" and will have to be
           !!! recomputed before they are used again.
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
           CLASS(DTYPE(ppm_t_vbp))                  :: Pc
           REAL(MK),                 INTENT(IN   )  :: cutoff
           !!! cutoff radius (same number of elements as we have particles)
@@ -149,16 +151,19 @@
           ! Arguments
           !-------------------------------------------------------------------------
           DEFINE_MK()
+
           CLASS(DTYPE(ppm_t_vbp))                                 :: Pc
+
           REAL(MK), DIMENSION(:),                   INTENT(IN   ) :: cutoff
           !!! cutoff radius (same number of elements as we have particles)
+
           INTEGER,                                  INTENT(  OUT) :: info
           !!! return status. On success, 0
+
           CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, INTENT(INOUT) :: NList
           !!! Neighbor list for which this cutoff radius
           !!! applies. By default, this is the "standard" Verlet list, with neighbours
           !!! sought within the particle set itself.
-
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
@@ -167,7 +172,7 @@
           REAL(MK), DIMENSION(:), POINTER :: rcp
           REAL(MK)                        :: max_cutoff
 
-          INTEGER :: ip
+          INTEGER :: ip,datatype
 
           start_subroutine("vbp_set_varying_cutoff")
 
@@ -175,7 +180,9 @@
           !  Set new cutoff
           !-------------------------------------------------------------------------
           IF (.NOT.ASSOCIATED(Pc%rcp)) THEN
-             CALL Pc%create_prop(info,part_prop=Pc%rcp,dtype=ppm_type_real,name='rcp')
+             datatype=MERGE(ppm_type_real,ppm_type_real_single,ppm_kind.EQ.ppm_kind_double)
+
+             CALL Pc%create_prop(info,part_prop=Pc%rcp,dtype=datatype,name='rcp')
              or_fail("could not create property for varying cutoff radius rcp")
           ENDIF
 
@@ -232,19 +239,26 @@
       &          name,skin,symmetry,cutoff,Nlist)
           !!! Create a data structure to store a neighbour list
           IMPLICIT NONE
+
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           ! Arguments
           !-------------------------------------------------------------------------
-          DEFINE_MK()
           CLASS(DTYPE(ppm_t_vbp))                                 :: this
+
           CLASS(DTYPE(ppm_t_particles)_),           TARGET        :: Part_src
           !!! Particle set to which the neighbours belong (can be the same as this)
+
           INTEGER,                                  INTENT(  OUT) :: info
+
           CHARACTER(LEN=*),               OPTIONAL, INTENT(IN   ) :: name
           !!! name of this neighbour list
+
           REAL(MK),                       OPTIONAL, INTENT(IN   ) :: skin
           REAL(MK),                       OPTIONAL, INTENT(IN   ) :: cutoff
+
           LOGICAL,                        OPTIONAL, INTENT(IN   ) :: symmetry
+
           CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, POINTER       :: Nlist
           !!! returns a pointer to the newly created verlet list
 
@@ -252,7 +266,7 @@
 
           REAL(MK), DIMENSION(:), POINTER :: rcp
 
-          INTEGER :: vec_size,i
+          INTEGER :: vec_size,i,datatype
 
           start_subroutine("vbp_neigh_create")
 
@@ -273,13 +287,14 @@
 
           ASSOCIATE (ghosts => this%flags(ppm_part_ghosts))
              IF (.NOT.ASSOCIATED(this%rcp)) THEN
+                datatype=MERGE(ppm_type_real,ppm_type_real_single,ppm_kind.EQ.ppm_kind_double)
+
                 CALL this%create_prop(info,part_prop=this%rcp, &
-                &    dtype=ppm_type_real,name='rcp',with_ghosts=ghosts)
+                &    dtype=datatype,name='rcp',with_ghosts=ghosts)
                 or_fail("Creating property for rcp failed")
              ENDIF
 
              NULLIFY(rcp)
-
              !yaser I resolved the bug, by if conditional
              !TOCHECK
              IF (PRESENT(cutoff)) THEN
@@ -354,6 +369,7 @@
         USE ppm_module_inl_xset_vlist
         USE ppm_module_inl_k_vlist
         USE ppm_module_kdtree
+        USE ppm_module_util_time
         IMPLICIT NONE
 
         DEFINE_MK()
@@ -393,9 +409,9 @@
         !-------------------------------------------------------------------------
         TYPE(ppm_t_topo), POINTER :: topo
 
-        TYPE(DTYPE(kdtree2)), POINTER :: tree
+        TYPE(DTYPE(kdtree)), POINTER :: tree
 
-        TYPE(DTYPE(kdtree2_result)), DIMENSION(:), ALLOCATABLE, TARGET :: results
+        TYPE(DTYPE(kdtree_result)), DIMENSION(:), ALLOCATABLE, TARGET :: results
 
         CLASS(ppm_t_operator_discr_),   POINTER :: op
         CLASS(DTYPE(ppm_t_particles)_), POINTER :: Part_src
@@ -518,9 +534,8 @@
 
            IF (lknn) THEN
               this%stats%nb_kdtree = this%stats%nb_kdtree+1
-#ifdef __MPI
-              t1 = MPI_WTIME(info)
-#endif
+
+              CALL ppm_util_time(t1)
 
               ALLOCATE(tree,STAT=info)
               or_fail_alloc("tree")
@@ -538,9 +553,9 @@
               or_fail_alloc("Nlist%vlist")
 
               DO ip=1,this%Npart
-                 CALL kdtree2_n_nearest(tree,this%xp(1:ppm_dim,ip),&
+                 CALL kdtree_n_nearest(tree,this%xp(1:ppm_dim,ip),&
                  &    knn+1,results,info)
-                 or_fail("kdtree2_n_nearest")
+                 or_fail("kdtree_n_nearest")
 
                  ! If the tree is not sorted you need to remove the
                  ! particle ip from the list of neighbors
@@ -570,10 +585,9 @@
 
               DEALLOCATE(results,STAT=info)
               or_fail_dealloc("results")
-#ifdef __MPI
-              t2 = MPI_WTIME(info)
+
+              CALL ppm_util_time(t2)
               this%stats%t_kdtree = this%stats%t_kdtree+(t2-t1)
-#endif
            ELSE
               !FIXME: when adaptive ghost layers are available
               ghostlayer(1:2*ppm_dim)=Part_src%ghostlayer
@@ -582,9 +596,8 @@
               conventionalinl: IF (this%conventionalinl) THEN
                  this%stats%nb_cinl = this%stats%nb_cinl+1
 
-#ifdef __MPI
-                 t1 = MPI_WTIME(info)
-#endif
+                 CALL ppm_util_time(t1)
+
                  !HUGLY HACK to make CNL routines work on a topology with
                  !several subdomains
 #if   __KIND == __SINGLE_PRECISION
@@ -602,42 +615,38 @@
 #endif
                  or_fail("ppm_cinl_vlist failed")
                  !end HUGLY HACK
-#ifdef __MPI
-                 t2 = MPI_WTIME(info)
+
+                 CALL ppm_util_time(t2)
                  this%stats%t_cinl = this%stats%t_cinl + (t2 - t1)
-#endif
               ELSE
 #endif
                  !__WITH_CNL
                  IF (xset_neighlists) THEN
                     this%stats%nb_xset_nl = this%stats%nb_xset_nl + 1
-#ifdef __MPI
-                    t1 = MPI_WTIME(info)
-#endif
+
+                    CALL ppm_util_time(t1)
+
                     CALL ppm_inl_xset_vlist(topoid,this%xp,                &
                     &    this%Npart,this%Mpart,Part_src%xp,Part_src%Npart, &
                     &    Part_src%Mpart,rcp,                               &
                     &    tskin,ghostlayer,info,Nlist%vlist,                &
                     &    Nlist%nvlist,lstore)
                     or_fail("ppm_inl_xset_vlist failed")
-#ifdef __MPI
-                    t2 = MPI_WTIME(info)
+
+                    CALL ppm_util_time(t2)
                     this%stats%t_xset_nl = this%stats%t_xset_nl + (t2 - t1)
-#endif
                  ELSE
                     this%stats%nb_inl = this%stats%nb_inl+1
-#ifdef __MPI
-                    t1 = MPI_WTIME(info)
-#endif
+
+                    CALL ppm_util_time(t1)
+
                     CALL ppm_inl_vlist(topoid,this%xp,np_target,     &
                     &    this%Mpart,rcp,tskin,lsymm,ghostlayer,info, &
                     &    Nlist%vlist,Nlist%nvlist)
                     or_fail("ppm_inl_vlist failed")
 
-#ifdef __MPI
-                    t2 = MPI_WTIME(info)
+                    CALL ppm_util_time(t2)
                     this%stats%t_inl = this%stats%t_inl + (t2 - t1)
-#endif
                  ENDIF ! XSET
 #ifdef __WITH_CNL
               ENDIF conventionalinl

@@ -54,6 +54,7 @@
       USE ppm_module_error
       USE ppm_module_write
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -65,39 +66,40 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: minboxes
+      INTEGER,                             INTENT(IN   ) :: minboxes
       !!! Minimum number of childless boxes of non-zero cost to create.
-      INTEGER                 , INTENT(IN   ) :: nsubs
+      INTEGER,                             INTENT(IN   ) :: nsubs
       !!! Number of childless boxes with non-zero cost. This is not the
       !!! same as number of divisible boxes as they need not be larger than
       !!! 2*minboxsize in this case.
-      REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: boxcost
+      REAL(ppm_kind_double), DIMENSION(:), INTENT(IN   ) :: boxcost
       !!! Computational cost associated with each box
-      INTEGER , DIMENSION(:)  , INTENT(IN   ) :: iboxlist
+      INTEGER,               DIMENSION(:), INTENT(IN   ) :: iboxlist
       !!! List of divisible boxes.
-      INTEGER                 , INTENT(IN   ) :: nboxlist
+      INTEGER,                             INTENT(IN   ) :: nboxlist
       !!! Number of boxes which could be divided further (i.e. length of
       !!! iboxlist).
-      INTEGER                 , INTENT(IN   ) :: nlevel
-      !!! Number if tree levels (tree depth) so far.
-      REAL(MK)                , INTENT(IN   ) :: maxvariance
+      INTEGER,                             INTENT(IN   ) :: nlevel
+      !!! Number of tree levels (tree depth) so far.
+      REAL(MK),                            INTENT(IN   ) :: maxvariance
       !!! Maximum variance of cost allowed   between boxes. Set to .LE. 0 to
       !!! disable this.
-      REAL(MK)                , INTENT(IN   ) :: maxboxcost
+      REAL(MK),                            INTENT(IN   ) :: maxboxcost
       !!! Maximum allowed cost of a box. Tree will stop if all boxes are
       !!! below this cost. If .LE. 0, cost is unlimited.
-      INTEGER                 , INTENT(IN   ) :: maxlevels
+      INTEGER,                             INTENT(IN   ) :: maxlevels
       !!! Maximum number of levels to be created. Tree stops as soon as
       !!! this is reached. If .LE. 0, levels are unlimited.
-      LOGICAL                 , INTENT(  OUT) :: lcontinue
+      LOGICAL,                             INTENT(  OUT) :: lcontinue
       !!! `FALSE` if no further subdivision is needed, `TRUE` otherwise.
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,                             INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK) :: t0,meancost,diffcost,varcost
-      REAL(MK) :: maxcost,dm
+      REAL(ppm_kind_double) :: t0
+      REAL(ppm_kind_double) :: meancost,diffcost,varcost
+      REAL(ppm_kind_double) :: maxcost,dm
 
       INTEGER :: i,j
 
@@ -107,26 +109,26 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
+
       lcontinue = .TRUE.
 
       !-------------------------------------------------------------------------
       !  Check input arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL check
-         IF (info .NE. 0) GOTO 9999
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
       !  If there are no boxes, we quit
       !-------------------------------------------------------------------------
-      IF (nsubs .LT. 1) THEN
+      IF (nsubs.LT.1) THEN
          lcontinue = .FALSE. ! no boxes = nothing to subdivide !
-         CALL ppm_write(ppm_rank,caller,   &
-         &    'No non-empty boxes present. Done.',info)
+         stdout("No non-empty boxes present. Done.")
          GOTO 9999
       ENDIF
 
@@ -134,18 +136,16 @@
       !  If there are no more boxes that could potentially be divided, we
       !  have to stop.
       !-------------------------------------------------------------------------
-      IF (nboxlist .LT. 1) THEN
+      IF (nboxlist.LT.1) THEN
          lcontinue = .FALSE.
          !---------------------------------------------------------------------
          !  If there are less boxes than processors, we have a problem
          !  THIS SHOULD GO TO THE DECOMP ROUTINE AND NOT INTO THE GENERIC
          !  TREE !!!
          !---------------------------------------------------------------------
-         IF (nsubs .LT. minboxes) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_few_subs,caller, &
-            &    'Could not create the minimum number of non-empty boxes!', &
-            &    __LINE__,info)
+         IF (nsubs.LT.minboxes) THEN
+            fail("Could not create the minimum number of non-empty boxes!", &
+            & ppm_err_few_subs,exit_point=no)
          ENDIF
          GOTO 9999
       ENDIF
@@ -153,83 +153,74 @@
       !-------------------------------------------------------------------------
       !  If the max tree depth has been reached, we stop
       !-------------------------------------------------------------------------
-      IF (maxlevels .GT. 0) THEN
-          IF (nlevel .GE. maxlevels) THEN
-              lcontinue = .FALSE.
-              IF (ppm_debug .GT. 1) THEN
-                  CALL ppm_write(ppm_rank,caller,     &
-     &                'Max number of levels reached. Done.',info)
-              ENDIF
-              GOTO 9999
-          ENDIF
+      IF (maxlevels.GT.0) THEN
+         IF (nlevel.GE.maxlevels) THEN
+            lcontinue = .FALSE.
+            IF (ppm_debug.GT.1) THEN
+               stdout("Max number of levels reached. Done.")
+            ENDIF
+            GOTO 9999
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
       !  If there are less boxes than processors, decomposition is not OK
       !-------------------------------------------------------------------------
-      IF (nsubs .LT. minboxes) GOTO 9999
+      IF (nsubs.LT.minboxes) GOTO 9999
 
       !-------------------------------------------------------------------------
       !  Compute the variance of divisible box costs
       !-------------------------------------------------------------------------
-      varcost  = 0.0_MK
-      meancost = 0.0_MK
+      meancost = 0.0_ppm_kind_double
       maxcost  = -HUGE(maxcost)
       DO i=1,nboxlist
-          j = iboxlist(i)
-          dm = boxcost(j)
-          meancost = meancost + dm
-          IF (dm .GT. maxcost) THEN
-              maxcost = dm
-          ENDIF
+         j = iboxlist(i)
+         dm = boxcost(j)
+         meancost = meancost + dm
+         IF (dm.GT.maxcost) THEN
+            maxcost = dm
+         ENDIF
       ENDDO
-      IF (nboxlist .GT. 1) THEN
-          meancost = meancost/REAL(nboxlist,MK)
-          DO i=1,nboxlist
-              j = iboxlist(i)
-              diffcost = boxcost(j) - meancost
-              varcost  = varcost + (diffcost*diffcost)
-          ENDDO
-          varcost  = varcost/REAL(nboxlist-1,MK)
+
+      varcost  = 0.0_ppm_kind_double
+      IF (nboxlist.GT.1) THEN
+         meancost = meancost/REAL(nboxlist,ppm_kind_double)
+         DO i=1,nboxlist
+            j        = iboxlist(i)
+            diffcost = boxcost(j) - meancost
+            varcost  = varcost + diffcost*diffcost
+         ENDDO
+         varcost = varcost/REAL(nboxlist-1,ppm_kind_double)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  If variance of costs is below threshold, decomposition is OK
       !-------------------------------------------------------------------------
-      IF (varcost .LT. maxvariance) lcontinue = .FALSE.
+      IF (varcost.LT.REAL(maxvariance,ppm_kind_double)) lcontinue = .FALSE.
 
       !-------------------------------------------------------------------------
       !  If all boxes are below the maxcost we are done.
       !-------------------------------------------------------------------------
-      IF (maxcost .LT. maxboxcost) lcontinue = .FALSE.
+      IF (maxcost.LT.REAL(maxboxcost,ppm_kind_double)) lcontinue = .FALSE.
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
-         IF (nsubs .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,     &
-     &          'Number of non-empty boxes must be >= 0',__LINE__,info)
-            GOTO 8888
+         IF (nsubs.LT.0) THEN
+            fail("Number of non-empty boxes must be >= 0",exit_point=8888)
          ENDIF
-         IF (nlevel .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,     &
-     &          'Number of levels must be >= 0',__LINE__,info)
-            GOTO 8888
+         IF (nlevel.LT.0) THEN
+            fail("Number of levels must be >= 0",exit_point=8888)
          ENDIF
-         IF (nboxlist .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,     &
-     &          'Number of boxes in list must be >= 0',__LINE__,info)
-            GOTO 8888
+         IF (nboxlist.LT.0) THEN
+            fail("Number of boxes in list must be >= 0",exit_point=8888)
          ENDIF
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_tree_done_s

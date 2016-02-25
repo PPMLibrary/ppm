@@ -37,6 +37,7 @@
       !!! This module provides the mapping routines for partial particle
       !!! mapping
          USE ppm_module_topo_typedef
+         USE ppm_module_mapping_typedef
          IMPLICIT NONE
 
          PRIVATE

@@ -29,7 +29,6 @@
 
       MODULE ppm_module_map_connect
       !!! This module provides the mapping routines for connections
-
          IMPLICIT NONE
 
          PRIVATE

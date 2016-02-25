@@ -76,20 +76,8 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_error
-      USE ppm_module_alloc
       USE ppm_module_mpi
-      USE ppm_module_topo_cost
-      USE ppm_module_topo_store
-      USE ppm_module_define_subs_bc
-      USE ppm_module_topo_metis_s2p
-      USE ppm_module_topo_subs2proc
-      USE ppm_module_find_neigh
       USE ppm_module_decomp
-      USE ppm_module_tree
       USE ppm_module_topo_box2subs
       IMPLICIT NONE
 
@@ -141,10 +129,8 @@
       !!! The type of subdomain-to-processor assignment. One of:
       !!!
       !!! *  ppm_param_assign_internal
-      !!! *  ppm_param_assign_nodal_cut
-      !!! *  ppm_param_assign_nodal_comm
-      !!! *  ppm_param_assign_dual_cut
-      !!! *  ppm_param_assign_dual_comm
+      !!! *  ppm_param_assign_metis_cut
+      !!! *  ppm_param_assign_metis_comm
       !!! *  ppm_param_assign_user_defined
       !!!
       !!! *nodal* and *dual* assignments  use the external library METIS
@@ -207,7 +193,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double)             :: t0
       REAL(MK)                          :: parea,sarea,larea,lmyeps
       REAL(MK), DIMENSION(3,2)          :: weights
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec
@@ -230,7 +216,7 @@
       INTEGER, DIMENSION(:  ), POINTER :: sub2proc => NULL()
       INTEGER, DIMENSION(  :), POINTER :: isublist => NULL()
 
-      CHARACTER(ppm_char) :: mesg
+      CHARACTER(ppm_char) :: cbuf
       CHARACTER(ppm_char) :: caller='ppm_topo_mkpart'
 
       LOGICAL, DIMENSION(ppm_dim) :: fixed
@@ -239,9 +225,10 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
+
 #if   __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif __KIND == __DOUBLE_PRECISION
@@ -264,35 +251,30 @@
       or_fail_MPI('MPI_AllReduce failed')
 
       IF (Ntot.LT.1) THEN
-         info = ppm_error_notice
-         CALL ppm_error(ppm_err_argument,caller,   &
-         &   'No particles in domain',__LINE__,info)
-         GOTO 9999
+         fail('No particles in domain',ppm_error=ppm_error_notice)
       ENDIF
 #else
       IF (Npart.LT.1) THEN
-         info = ppm_error_notice
-         CALL ppm_error(ppm_err_argument,caller,   &
-         &    'No particle on this processor',__LINE__,info)
-         GOTO 9999
+        fail('No particle on this processor',ppm_error=ppm_error_notice)
       ENDIF
 #endif
 
       ! If the user defined nsubs then use those
       IF (PRESENT(user_nsubs)) THEN
-          nsubs = user_nsubs
+         nsubs = user_nsubs
       ELSE
-          nsubs = 0
+         nsubs = 0
       ENDIF
       IF (PRESENT(user_minsub)) THEN
-          min_sub => user_minsub
+         min_sub => user_minsub
       ENDIF
       IF (PRESENT(user_maxsub)) THEN
-          max_sub => user_maxsub
+         max_sub => user_maxsub
       ENDIF
       IF (PRESENT(user_sub2proc)) THEN
-          sub2proc => user_sub2proc
+         sub2proc => user_sub2proc
       ENDIF
+
       !----------------------------------------------------------------------
       !  Dummy argument for non-existing mesh
       !----------------------------------------------------------------------
@@ -368,10 +350,7 @@
       &     ppm_param_decomp_ypencil, &
       &     ppm_param_decomp_zpencil)
          IF ((decomp.EQ.ppm_param_decomp_zpencil).AND.(ppm_dim.LT.3)) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-             &    'Cannot make z pencils in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make z pencils in 2D!',ppm_err_argument)
          ENDIF
          !-------------------------------------------------------------------
          !  pencil quadrisection using the general ppm_tree
@@ -394,18 +373,18 @@
          Nm(1:ppm_dim)    = 0
          ! build tree
          IF (PRESENT(pcost)) THEN
-            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-            &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
+            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,      &
+            &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
             &    min_box,max_box,nbox,nchld,info,pcost)
          ELSE
-            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-            &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
+            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,      &
+            &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
             &    min_box,max_box,nbox,nchld,info)
          ENDIF
          or_fail('Pencil decomposition failed')
 
          ! convert tree to subs
-         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
+         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub, &
          &    max_sub,nsubs,info)
          IF (info .NE. 0) GOTO 9999
 
@@ -413,16 +392,10 @@
       &     ppm_param_decomp_xz_slab, &
       &     ppm_param_decomp_yz_slab)
          IF ((decomp.EQ.ppm_param_decomp_xz_slab).AND.(ppm_dim.LT.3)) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-             &    'Cannot make x-z slabs in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make x-z slabs in 2D!',ppm_err_argument)
          ENDIF
          IF ((decomp.EQ.ppm_param_decomp_yz_slab).AND.(ppm_dim.LT.3)) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-     &           'Cannot make y-z slabs in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make y-z slabs in 2D!',ppm_err_argument)
          ENDIF
          !-------------------------------------------------------------------
          !  slab bisection using the general ppm_tree
@@ -453,23 +426,19 @@
          Nm(1:ppm_dim)    = 0
          ! build tree
          IF (PRESENT(pcost)) THEN
-             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-     &           ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
-     &           min_box,max_box,nbox,nchld,info,pcost)
+            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,      &
+            &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
+            &    min_box,max_box,nbox,nchld,info,pcost)
          ELSE
-             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-     &           ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
-     &           min_box,max_box,nbox,nchld,info)
+            CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,      &
+            &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
+            &    min_box,max_box,nbox,nchld,info)
          ENDIF
-         IF (info.NE.0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_sub_failed,caller,  &
-     &           'Slab decomposition failed',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail('Slab decomposition failed')
+
          ! convert tree to subs
          CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
-     &       max_sub,nsubs,info)
+         &    max_sub,nsubs,info)
          IF (info .NE. 0) GOTO 9999
 
       CASE (ppm_param_decomp_cuboid)
@@ -514,11 +483,9 @@
          !-------------------------------------------------------------------
          !  unknown decomposition
          !-------------------------------------------------------------------
-         info = ppm_error_error
-         WRITE(mesg,'(A,I5)') 'Unknown decomposition type: ',decomp
-         CALL ppm_error(ppm_err_argument,caller,   &
-         &    mesg,__LINE__,info)
-         GOTO 9999
+         WRITE(cbuf,'(A,I5)') 'Unknown decomposition type: ',decomp
+         fail(cbuf,ppm_err_argument)
+
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -553,15 +520,16 @@
          &    isublist,nsublist,info)
          or_fail('Assigning subs to processors failed')
 
-      CASE (ppm_param_assign_nodal_cut,  &
-      &     ppm_param_assign_nodal_comm, &
-      &     ppm_param_assign_dual_cut,   &
-      &     ppm_param_assign_dual_comm)
+      CASE (ppm_param_assign_metis_cut, &
+      &     ppm_param_assign_metis_comm)
+         gsvec(1:ppm_dim) = ghostsize
+
          !-------------------------------------------------------------------
          !  use METIS library to do assignment
          !-------------------------------------------------------------------
-         CALL ppm_topo_metis_s2p(min_sub,max_sub,nneigh,ineigh,cost,nsubs,&
-         &    assig,sub2proc,isublist,nsublist,info)
+         CALL ppm_topo_metis_s2p(min_phys,max_phys,min_sub,max_sub, &
+         &    cost,gsvec,nneigh,ineigh,nsubs,sub2proc,isublist,     &
+         &    nsublist,assig,info)
          or_fail('Assigning subs to processors using METIS failed')
 
       CASE (ppm_param_assign_user_defined)
@@ -586,20 +554,17 @@
          !-------------------------------------------------------------------
          !  unknown assignment scheme
          !-------------------------------------------------------------------
-         info = ppm_error_error
-         WRITE(mesg,'(A,I5)') 'Unknown assignment scheme: ',assig
-         CALL ppm_error(ppm_err_argument,caller,   &
-         &    mesg,__LINE__,info)
-         GOTO 9999
-      END SELECT
+         WRITE(cbuf,'(A,I5)') 'Unknown assignment scheme: ',assig
+         fail(cbuf,ppm_err_argument)
 
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Find and define the boundary conditions on the subs on the local
       !  processor (the routine will allocate the requried memory)
       !-------------------------------------------------------------------------
-      CALL ppm_define_subs_bc(min_phys,max_phys,bcdef,min_sub,max_sub, &
-      &    nsubs,subs_bc,info)
+      CALL ppm_define_subs_bc(min_phys,max_phys,bcdef, &
+      &    min_sub,max_sub,nsubs,subs_bc,info)
       or_fail('finding and defining the BC of the subs failed ')
 
       ! isublist:  my subs (ppm_rank)
@@ -610,20 +575,18 @@
       !-------------------------------------------------------------------------
       CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,  &
       &    subs_bc,sub2proc,nsubs,bcdef,ghostsize,isublist,nsublist, &
-      &    nneigh,ineigh,info)
+      &    nneigh,ineigh,info,decomp)
       or_fail('Storing topology failed')
 
       iopt = ppm_param_dealloc
-      IF (decomp.NE.ppm_param_decomp_user_defined) THEN
-         CALL ppm_alloc(nchld,ldc,iopt,info)
-         or_fail_dealloc('nchld')
+      CALL ppm_alloc(nchld,ldc,iopt,info)
+      or_fail_dealloc('nchld')
 
-         CALL ppm_alloc(min_box,ldc,iopt,info)
-         or_fail_dealloc('min_box')
+      CALL ppm_alloc(min_box,ldc,iopt,info)
+      or_fail_dealloc('min_box')
 
-         CALL ppm_alloc(max_box,ldc,iopt,info)
-         or_fail_dealloc('max_box')
-      END IF
+      CALL ppm_alloc(max_box,ldc,iopt,info)
+      or_fail_dealloc('max_box')
 
       CALL ppm_alloc(ineigh,ldc,iopt,info)
       or_fail_dealloc("ineigh")
@@ -673,204 +636,116 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
-        IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,caller,  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 8888
+          IF (.NOT. ppm_initialized) THEN
+             fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
           ENDIF ! test ppm_initialized
           IF (Npart .LT. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'Npart must not be negative',__LINE__,info)
-              GOTO 8888
+             fail('Npart must not be negative!',exit_point=8888)
           ENDIF ! test Npart > 0
           IF (.NOT.ASSOCIATED(xp)) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'xp is not allocated',__LINE__,info)
-              GOTO 8888
+             fail('xp is not allocated!',exit_point=8888)
           ENDIF ! test xp associated
-          IF(SIZE(xp,1) .LT. ppm_dim) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller, &
-     &          'leading dimension of xp too small',&
-     &          __LINE__, info)
-              GOTO 8888
+          IF (SIZE(xp,1) .LT. ppm_dim) THEN
+             fail('leading dimension of xp too small!',exit_point=8888)
           ENDIF ! test xp enough dims
-          IF(SIZE(xp,2) .LT. Npart) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller, &
-     &          'not enough particles contained in xp',&
-     &          __LINE__, info)
-              GOTO 8888
+          IF (SIZE(xp,2) .LT. Npart) THEN
+             fail('not enough particles contained in xp!',exit_point=8888)
           ENDIF ! test xp >= Npart
           IF (topoid.NE.0) THEN
-              IF ((topoid.GT.SIZE(ppm_topo)) .OR. &
-     &                (topoid.LT.1)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller, &
-     &                 'topoid indexing outside ppm_topo',&
-     &                  __LINE__, info)
-                  GOTO 8888
-              ENDIF
+             IF ((topoid.GT.SIZE(ppm_topo)).OR.(topoid.LT.1)) THEN
+                fail('topoid indexing outside ppm_topo!',exit_point=8888)
+             ENDIF
           ENDIF
           IF (PRESENT(pcost)) THEN
-              IF (SIZE(pcost,1) .LT. Npart) THEN
-              info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,  &
-     &                'pcost must be of at least length Npart',__LINE__,info)
-                  GOTO 8888
-              ENDIF ! test pcost >= Npart
+             IF (SIZE(pcost,1) .LT. Npart) THEN
+                fail('pcost must be of at least length Npart!',exit_point=8888)
+             ENDIF ! test pcost >= Npart
           ENDIF ! test pcost present
           IF (ghostsize.LT.0.0_MK) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'ghostsize must not be negative',__LINE__,info)
-              GOTO 8888
+             fail('ghostsize must not be negative!',exit_point=8888)
           ENDIF ! test ghostsize
           DO i=1,ppm_dim
-              IF (max_phys(i) .LE. min_phys(i)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,  &
-     &                'max_phys must be > min_phys',__LINE__,info)
-                  GOTO 8888
-              ENDIF ! test valid dims
+             IF (max_phys(i) .LE. min_phys(i)) THEN
+                fail('max_phys must be > min_phys!',exit_point=8888)
+             ENDIF ! test valid dims
           ENDDO ! for each dimension
           IF (assig .EQ. ppm_param_assign_user_defined) THEN
-              IF (decomp .NE. ppm_param_decomp_user_defined) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller, &
-     &                'decomp type set to user_defined for this assignment',&
-     &                __LINE__, info)
-                  GOTO 8888
-              ENDIF ! test decomp user_defined
-              IF (.NOT.PRESENT(user_nsubs)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_top_mkpart', &
-     &               'user_nsubs must be provided if assignment user defined', &
-     &                __LINE__,info)
-                  GOTO 8888
-              ENDIF ! test user_nsubs present
-              IF (user_nsubs .LE. 0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller, &
-     &                'user_nsubs has to be > 0',__LINE__,info)
-                  GOTO 8888
-              ENDIF ! test user_nsubs > 0
-              IF (.NOT.PRESENT(user_minsub)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_top_mkpart', &
-     &                'min_sub must be provided if assignment user defined', &
-     &                __LINE__,info)
-                  GOTO 8888
-              ENDIF ! test min_subs present
-              IF (.NOT.ASSOCIATED(user_minsub)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller, &
-     &                'min_sub has to be associated',__LINE__,info)
-                  GOTO 8888
-              ENDIF ! test min_sub asoc
-              IF (SIZE(user_minsub,2).LT.user_nsubs) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller, &
-     &                'min_sub has to be of length at least user_nsubs', &
-                      __LINE__,info)
-                  GOTO 8888
-              ENDIF ! test size of min_sub
-              IF (.NOT.PRESENT(user_maxsub)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_top_mkpart', &
-     &                'max_sub must be provided if assignment user defined', &
-     &                __LINE__,info)
-                  GOTO 8888
-              ENDIF ! test max_subs present
-              IF (.NOT.ASSOCIATED(user_maxsub)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller, &
-     &                'max_sub has to be associated',__LINE__,info)
-                  GOTO 8888
-              ENDIF ! test max_sub asoc
-              IF (SIZE(user_maxsub,2).LT.user_nsubs) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller, &
-     &                'max_sub has to be of length at least user_nsubs', &
-     &                __LINE__,info)
-                  GOTO 8888
-              ENDIF ! test size of max_sub
-              IF (.NOT.PRESENT(user_sub2proc)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_top_mkpart', &
-     &                'sub2proc must be provided if assignment user defined', &
-     &                __LINE__,info)
-                  GOTO 8888
-              ENDIF ! test sub2proc present
-              IF (.NOT.ASSOCIATED(user_sub2proc)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller, &
-                      'sub2proc has to be associated',__LINE__,info)
-                  GOTO 8888
-              ENDIF ! test sub2proc asoc
-              IF (SIZE(user_sub2proc).LT.user_nsubs) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller, &
-     &                 'sub2proc must be at least length user_nsubs', &
-     &                 __LINE__,info)
-                  GOTO 8888
-              ENDIF ! test size of sub2proc
-              DO i=1,user_nsubs
-                  IF ((user_sub2proc(i).LT.0).OR.   &
-     &                (user_sub2proc(i).GE.ppm_nproc)) THEN
-                     info = ppm_error_error
-                     CALL ppm_error(ppm_err_argument,caller, &
-     &                   'invalid processor specified in sub2proc',&
-     &                   __LINE__, info)
-                     GOTO 8888
-                 ENDIF ! test if processor assign valid
-              ENDDO ! for each sub
+             IF (decomp .NE. ppm_param_decomp_user_defined) THEN
+                fail('decomp type set to user_defined for this assignment!',exit_point=8888)
+             ENDIF ! test decomp user_defined
+             IF (.NOT.PRESENT(user_nsubs)) THEN
+                fail('user_nsubs must be provided if assignment user defined!',exit_point=8888)
+             ENDIF ! test user_nsubs present
+             IF (user_nsubs .LE. 0) THEN
+                fail('user_nsubs has to be > 0!',exit_point=8888)
+             ENDIF ! test user_nsubs > 0
+             IF (.NOT.PRESENT(user_minsub)) THEN
+                fail('min_sub must be provided if assignment user defined!',exit_point=8888)
+             ENDIF ! test min_subs present
+             IF (.NOT.ASSOCIATED(user_minsub)) THEN
+                fail('min_sub has to be associated!',exit_point=8888)
+             ENDIF ! test min_sub asoc
+             IF (SIZE(user_minsub,2).LT.user_nsubs) THEN
+                fail('min_sub has to be of length at least user_nsubs!',exit_point=8888)
+             ENDIF ! test size of min_sub
+             IF (.NOT.PRESENT(user_maxsub)) THEN
+                fail('max_sub must be provided if assignment user defined!',exit_point=8888)
+             ENDIF ! test max_subs present
+             IF (.NOT.ASSOCIATED(user_maxsub)) THEN
+                fail('max_sub has to be associated!',exit_point=8888)
+             ENDIF ! test max_sub asoc
+             IF (SIZE(user_maxsub,2).LT.user_nsubs) THEN
+                fail('max_sub has to be of length at least user_nsubs!',exit_point=8888)
+             ENDIF ! test size of max_sub
+             IF (.NOT.PRESENT(user_sub2proc)) THEN
+                fail('sub2proc must be provided if assignment user defined!',exit_point=8888)
+             ENDIF ! test sub2proc present
+             IF (.NOT.ASSOCIATED(user_sub2proc)) THEN
+                fail('sub2proc has to be associated!',exit_point=8888)
+             ENDIF ! test sub2proc asoc
+             IF (SIZE(user_sub2proc).LT.user_nsubs) THEN
+                fail('sub2proc must be at least length user_nsubs!',exit_point=8888)
+             ENDIF ! test size of sub2proc
+             DO i=1,user_nsubs
+                IF ((user_sub2proc(i).LT.0).OR.(user_sub2proc(i).GE.ppm_nproc)) THEN
+                   fail('invalid processor specified in sub2proc!',exit_point=8888)
+                ENDIF ! test if processor assign valid
+             ENDDO ! for each sub
           ENDIF ! do user defined assignment checks
           IF (decomp .EQ. ppm_param_decomp_user_defined) THEN
-              IF(user_nsubs .LE. 0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller, &
-     &                'no subs defined in user_defined decomposition',&
-     &                __LINE__, info)
-                  GOTO 8888
-              ENDIF ! test user_nsubs
-              !-------------------------------------------------------------
-              !  Check that the user-defined subs add up to the whole
-              !  computational domain.
-              !  TODO: ONE COULD DO MORE TESTS HERE.
-              !-------------------------------------------------------------
-              parea = (max_phys(1)-min_phys(1))*(max_phys(2)-min_phys(2))
-              IF (ppm_dim.EQ.3) THEN
-                  parea = parea*(max_phys(3)-min_phys(3))
-              ENDIF
-              sarea = 0.0_MK
-              DO i=1,user_nsubs
-                  larea = (user_maxsub(1,i)-user_minsub(1,i))* &
-     &                    (user_maxsub(2,i)-user_minsub(2,i))
-                  IF (ppm_dim.EQ.3) THEN
-                      larea = larea*(user_maxsub(3,i)-user_minsub(3,i))
-                  END IF
-                  sarea = sarea + larea
-              ENDDO
-              IF(ABS(sarea-parea)/parea.GE.lmyeps) THEN
-                  !---------------------------------------------------------
-                  !  Mismatch!
-                  !---------------------------------------------------------
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,   &
-     &                'faulty subdomains defined',__LINE__,info)
-                  GOTO 8888
-              ENDIF
+             IF (user_nsubs .LE. 0) THEN
+                fail('no subs defined in user_defined decomposition!',exit_point=8888)
+             ENDIF ! test user_nsubs
+             !-------------------------------------------------------------
+             !  Check that the user-defined subs add up to the whole
+             !  computational domain.
+             !  TODO: ONE COULD DO MORE TESTS HERE.
+             !-------------------------------------------------------------
+             parea = (max_phys(1)-min_phys(1))*(max_phys(2)-min_phys(2))
+             IF (ppm_dim.EQ.3) THEN
+                parea = parea*(max_phys(3)-min_phys(3))
+             ENDIF
+             sarea = 0.0_MK
+             DO i=1,user_nsubs
+                larea = (user_maxsub(1,i)-user_minsub(1,i))*(user_maxsub(2,i)-user_minsub(2,i))
+                IF (ppm_dim.EQ.3) THEN
+                   larea = larea*(user_maxsub(3,i)-user_minsub(3,i))
+                END IF
+                sarea = sarea + larea
+             ENDDO
+             IF (ABS(sarea-parea)/parea.GE.lmyeps) THEN
+                !---------------------------------------------------------
+                !  Mismatch!
+                !---------------------------------------------------------
+                fail('faulty subdomains defined!',exit_point=8888)
+             ENDIF
           ENDIF
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_topo_mkpart_s

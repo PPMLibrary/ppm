@@ -49,7 +49,7 @@
         INTEGER,                              INTENT(  OUT)   :: info
 
         ! local variables
-        REAL(KIND(1.d0)) :: t0
+        REAL(ppm_kind_double) :: t0
         REAL(MK)         :: weight,weight_sum
         REAL(MK)         :: almostzero,h_local
 
@@ -62,7 +62,7 @@
         CHARACTER(LEN=ppm_char) :: caller = 'sop_approx_wp_2d'
 #endif
         !!---------------------------------------------------------------------!
-        !! Initialise
+        !! Initialize
         !!---------------------------------------------------------------------!
 #if debug_verbosity > 0
         CALL substart(caller,t0,info)

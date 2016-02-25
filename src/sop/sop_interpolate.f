@@ -30,7 +30,7 @@
           !  Local variables
           !-------------------------------------------------------------------------
           INTEGER                         :: ip,iq,ineigh,i,prop_id,eta_id
-          REAL(KIND(1.d0))                :: t0
+          REAL(ppm_kind_double) :: t0
 
 
           REAL(MK),     DIMENSION(:,:), POINTER      :: xp_old
@@ -60,7 +60,7 @@
           CHARACTER(LEN=ppm_char) :: filename
           CHARACTER(LEN=ppm_char) :: caller = 'sop_interpolate'
           !!-------------------------------------------------------------------------!
-          !! Initialise
+          !! Initialize
           !!-------------------------------------------------------------------------!
 #if debug_verbosity > 0
           CALL substart(caller,t0,info)

@@ -1,11 +1,12 @@
 !minclude ppm_header(ppm_module_interfaces)
 
-#define __REAL 3
-#define __COMPLEX 4
-#define __INTEGER 5
-#define __LONGINT 6
-#define __LOGICAL 7
-#define __CHAR 8
+#define __REAL        3
+#define __COMPLEX     4
+#define __INTEGER     5
+#define __LONGINT     6
+#define __LOGICAL     7
+#define __CHAR        8
+#define __MAPPINGTYPE 9
 
       MODULE ppm_module_interfaces
       !!! Declares all data types
@@ -90,11 +91,6 @@
       INTEGER, PARAMETER, PUBLIC :: ppm_param_length_opsflags = 4
 
       !----------------------------------------------------------------------
-      ! Global variables
-      !----------------------------------------------------------------------
-      INTEGER :: ppm_nb_meshes    = 0
-      INTEGER :: ppm_nb_part_sets = 0
-      !----------------------------------------------------------------------
       ! Module variables
       !----------------------------------------------------------------------
       INTEGER, PRIVATE, DIMENSION(3) :: ldc
@@ -156,13 +152,16 @@ minclude ppm_create_collection(discr_data,discr_data,generate="concrete",vec=tru
       TYPE, ABSTRACT, EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
           !!! Generic differential operator
           !!! (It only contains semantic information on the operator)
-          INTEGER, DIMENSION(:),               POINTER :: degree => NULL()
-          !!! degree of each term in the linear combination of differential ops
+          INTEGER                                      :: nterms = 0
+          !!! number of terms
+
           REAL(ppm_kind_double), DIMENSION(:), POINTER :: coeffs => NULL()
           !!! array where the coefficients in linear combinations of
           !!! differential ops are stored
-          INTEGER                                      :: nterms = 0
-          !!! number of terms
+
+          INTEGER, DIMENSION(:),               POINTER :: degree => NULL()
+          !!! degree of each term in the linear combination of differential ops
+
           CHARACTER(LEN=ppm_char)                      :: name
           !!! name of the vector-valued property
 
@@ -177,11 +176,11 @@ minclude ppm_create_collection(operator_,operator_,generate="abstract")
       TYPE, ABSTRACT :: ppm_t_operator_discr_
           !!! discretized operator
           CLASS(ppm_t_discr_kind), POINTER              :: discr_src => NULL()
-          !!! Pointer to the discretization (mesh or particles) that this operator
-          !!! takes data from
+          !!! Pointer to the discretization (mesh or particles) that
+          !!! this operator takes data from
           CLASS(ppm_t_discr_kind), POINTER              :: discr_to  => NULL()
-          !!! Pointer to the discretization (mesh or particles) that this operator
-          !!! returns values on
+          !!! Pointer to the discretization (mesh or particles) that
+          !!! this operator returns values on
           INTEGER, DIMENSION(:),   POINTER              :: order     => NULL()
           !!! Order of approximation for each term of the differential operator
           CLASS(ppm_t_operator_),  POINTER              :: op_ptr    => NULL()
@@ -221,9 +220,11 @@ minclude ppm_create_collection(operator_discr,operator_discr,generate="extend")
 #define  DTYPE(a) a/**/_s
 #define  MK ppm_kind_single
 #define  _MK _ppm_kind_single
+#define  __MYTYPE __MAPPINGTYPE
 #include "map/mapping_abstract_typedef.f"
 #include "operator/operator_discr_abstract_typedef.f"
 #include "part/particles_abstract_typedef.f"
+#undef  __MYTYPE
 #undef  DTYPE
 #undef  MK
 #undef  _MK
@@ -622,56 +623,8 @@ minclude ppm_create_collection(A_subpatch_,A_subpatch_,generate="abstract")
           CLASS(ppm_v_main_abstr),               POINTER :: field_ptr         => NULL()
           !!! Pointers to the fields that are currently discretized on this mesh
 
-          CLASS(ppm_t_mesh_mapping_s_),          POINTER :: mapping_s         => NULL()
-          CLASS(ppm_t_mesh_mapping_d_),          POINTER :: mapping_d         => NULL()
-
-
-          !------------------------------------------------------------------
-          !  Mesh ghosts mappings
-          !------------------------------------------------------------------
-          LOGICAL                                        :: ghost_initialized = .FALSE.
-          !!! is .TRUE. if the ghost mappings have been initialized
-          !!! else, .FALSE.
-          INTEGER,               DIMENSION(:),   POINTER :: ghost_fromsub     => NULL()
-          !!! list of source subs of ghost mesh blocks (globel sub number).
-          !!! These are the owner subs of the actual real mesh points
-          !!! 1st index: meshblock ID
-          INTEGER,               DIMENSION(:),   POINTER :: ghost_tosub       => NULL()
-          !!! list of target subs of ghost mesh blocks (globel sub number).
-          !!! These are the subs a block will serve as a ghost on.
-          !!! 1st index: meshblock ID
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_patchid     => NULL()
-          !!! list of patches of ghost mesh blocks (globel sub number).
-          !!! 1st index: patch ID
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_blkstart    => NULL()
-          !!! start (lower-left corner) of ghost mesh block in GLOBAL
-          !!! mesh coordinates. First index: x,y[,z], 2nd: meshblock ID
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_blksize     => NULL()
-          !!! size (in grid points) of ghost blocks. 1st index: x,y[,z], 2nd:
-          !!! meshblock ID
-          INTEGER,               DIMENSION(:),   POINTER :: ghost_blk         => NULL()
-          !!! mesh ghost block list. 1st index: target processor
-          INTEGER                                        :: ghost_nsend
-          !!! number of mesh blocks to be sent as ghosts
-          INTEGER                                        :: ghost_nrecv
-          !!! number of mesh blocks to be recvd as ghosts
-          INTEGER,               DIMENSION(:),   POINTER :: ghost_recvtosub   => NULL()
-          !!! list of target subs for ghost mesh blocks to be received,
-          !!! i.e. being ghost on the local processor (globel sub number).
-          !!! These are the subs where the blocks will serve as ghosts
-          !!! 1st index: meshblock ID
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_recvpatchid => NULL()
-          !!! list of patches (global indices) for ghost mesh blocks to be received,
-          !!! i.e. being ghost on the local processor (globel sub number).
-          !!! 1st index: patch ID
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_recvblkstart=> NULL()
-          !!! start (lower-left corner) of received ghost mesh block in
-          !!! GLOBAL  mesh coordinates. 1st index: x,y[,z], 2nd: meshblock ID
-          INTEGER,               DIMENSION(:,:), POINTER :: ghost_recvblksize => NULL()
-          !!! size (in grid points) of recvd ghost blocks.
-          !!! 1st index: x,y[,z], 2nd: meshblock ID
-          INTEGER,               DIMENSION(:),   POINTER :: ghost_recvblk     => NULL()
-          !!! mesh ghost block receive list. 1st index: target processor
+          CLASS(ppm_c_mesh_mapping_),            POINTER :: maps              => NULL()
+          !!! Container for mesh mappings
 
           TYPE(ppm_t_mesh_maplist),              POINTER :: mapping           => NULL()
 
@@ -682,8 +635,6 @@ minclude ppm_create_collection(A_subpatch_,A_subpatch_,generate="abstract")
           PROCEDURE(equi_mesh_prop_zero_),      DEFERRED :: zero
           PROCEDURE(equi_mesh_def_patch_),      DEFERRED :: def_patch
           PROCEDURE(equi_mesh_def_uniform_),    DEFERRED :: def_uniform
-          PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
-          &                                     DEFERRED :: new_subpatch_data_ptr
           PROCEDURE(equi_mesh_list_of_fields_), DEFERRED :: list_of_fields
           PROCEDURE(equi_mesh_block_intersect_),DEFERRED :: block_intersect
           PROCEDURE(equi_mesh_map_ghost_init_), DEFERRED :: map_ghost_init
@@ -737,6 +688,7 @@ minclude ppm_create_collection_interfaces(mesh_discr_data_,mesh_discr_data_,vec=
       !minclude ppm_create_collection_interfaces(ppm_t_discr_kind_,vec=true)
 
 #define  DTYPE(a) a/**/_s
+#define __MYTYPE __MAPPINGTYPE
 #include "map/mapping_interfaces.f"
 
 #define  DTYPE(a) a/**/_d

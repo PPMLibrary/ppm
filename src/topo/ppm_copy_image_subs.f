@@ -54,6 +54,7 @@
       USE ppm_module_alloc
       USE ppm_module_mpi
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -89,7 +90,9 @@
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim) :: len_phys
-      REAL(MK)                     :: t0
+      REAL(ppm_kind_double)        :: t0
+      REAL(MK)                     :: ppm_myeps
+
       INTEGER , DIMENSION(ppm_dim) :: ldc
       INTEGER                      :: i,j,k
       INTEGER                      :: iopt,isize
@@ -100,7 +103,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -111,6 +114,12 @@
          CALL check
          IF (info .NE. 0) GOTO 9999
       ENDIF
+
+#if   __KIND == __SINGLE_PRECISION
+      ppm_myeps = ppm_myepss
+#elif __KIND == __DOUBLE_PRECISION
+      ppm_myeps = ppm_myepsd
+#endif
 
       !-------------------------------------------------------------------------
       !  Compute the extend of the physical system
@@ -143,7 +152,7 @@
             !-------------------------------------------------------------------
             j = nsubsplus
             DO i=1,nsubsplus
-               IF (min_sub(1,i).EQ.min_phys(1)) THEN
+               IF (ABS(min_sub(1,i)-min_phys(1)).LE.ppm_myeps) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
                      isize  = isize * 2
@@ -164,7 +173,7 @@
                   max_sub(1,j) = max_sub(1,i) + len_phys(1)
                   max_sub(2,j) = max_sub(2,i)
                ENDIF
-               IF (max_sub(1,i).EQ.max_phys(1)) THEN
+               IF (ABS(max_sub(1,i)-max_phys(1)).LE.ppm_myeps) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
                      isize  = isize * 2
@@ -192,7 +201,7 @@
             !-------------------------------------------------------------------
             j = nsubsplus
             DO i=1,nsubsplus
-               IF (min_sub(1,i).EQ.min_phys(1)) THEN
+               IF (ABS(min_sub(1,i)-min_phys(1)).LE.ppm_myeps) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
                      isize  = isize * 2
@@ -214,7 +223,7 @@
                   max_sub(2,j) = max_sub(2,i)
                   max_sub(3,j) = max_sub(3,i)
                ENDIF
-               IF (max_sub(1,i).EQ.max_phys(1)) THEN
+               IF (ABS(max_sub(1,i)-max_phys(1)).LE.ppm_myeps) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
                      isize  = isize * 2
@@ -251,7 +260,7 @@
             !-------------------------------------------------------------------
             j = nsubsplus
             DO i=1,nsubsplus
-               IF (min_sub(2,i).EQ.min_phys(2)) THEN
+               IF (ABS(min_sub(2,i)-min_phys(2)).LE.ppm_myeps) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
                      isize  = isize * 2
@@ -271,7 +280,7 @@
                   max_sub(1,j) = max_sub(1,i)
                   max_sub(2,j) = max_sub(2,i) + len_phys(2)
                ENDIF
-               IF (max_sub(2,i).EQ.max_phys(2)) THEN
+               IF (ABS(max_sub(2,i)-max_phys(2)).LE.ppm_myeps) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
                      isize  = isize * 2
@@ -299,7 +308,7 @@
             !-------------------------------------------------------------------
             j = nsubsplus
             DO i=1,nsubsplus
-               IF (min_sub(2,i).EQ.min_phys(2)) THEN
+               IF (ABS(min_sub(2,i)-min_phys(2)).LE.ppm_myeps) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
                      isize  = isize * 2
@@ -321,7 +330,7 @@
                   max_sub(2,j) = max_sub(2,i) + len_phys(2)
                   max_sub(3,j) = max_sub(3,i)
                ENDIF
-               IF (max_sub(2,i).EQ.max_phys(2)) THEN
+               IF (ABS(max_sub(2,i)-max_phys(2)).LE.ppm_myeps) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
                      isize  = isize * 2
@@ -355,7 +364,7 @@
             !-------------------------------------------------------------------
             j = nsubsplus
             DO i=1,nsubsplus
-               IF (min_sub(3,i).EQ.min_phys(3)) THEN
+               IF (ABS(min_sub(3,i)-min_phys(3)).LE.ppm_myeps) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
                      isize  = isize * 2
@@ -377,7 +386,7 @@
                   max_sub(2,j) = max_sub(2,i)
                   max_sub(3,j) = max_sub(3,i) + len_phys(3)
                ENDIF
-               IF (max_sub(3,i).EQ.max_phys(3)) THEN
+               IF (ABS(max_sub(3,i)-max_phys(3)).LE.ppm_myeps) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
                      isize  = isize * 2

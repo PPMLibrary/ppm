@@ -67,7 +67,7 @@
           INTEGER                                :: ip,iq,ineigh,i,di
           CHARACTER(LEN=256)                     :: cbuf
           CHARACTER(LEN=256)                     :: caller='sop_spawn_particles'
-          REAL(KIND(1.D0))                       :: t0
+          REAL(ppm_kind_double) :: t0
           REAL(MK)                               :: lev
           REAL(MK)                               :: theta1,theta2
           INTEGER                                :: nvlist_theoretical
@@ -534,6 +534,8 @@
           INTEGER,DIMENSION(:),POINTER          :: nb_neigh
           INTEGER                               :: nb_close_theo, nb_fuse_neigh
 
+          REAL(MK), PARAMETER :: big=HUGE(1.0_MK)
+
           info = 0
           nvlist => Particles%nvlist
           vlist => Particles%vlist
@@ -548,7 +550,7 @@
           !max_nn = 0._mk
           avg_nn = 0._mk
           particle_loop: DO ip = 1,Particles%Npart
-              nn = HUGE(1._MK)
+              nn = big
               close_neigh = 0
               nb_fuse_neigh = 0
               very_close_neigh = 0

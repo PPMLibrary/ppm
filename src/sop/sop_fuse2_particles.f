@@ -62,7 +62,7 @@
           INTEGER                                :: ip,iq,ineigh,i,di
           CHARACTER(LEN=256)                     :: filename,cbuf
           CHARACTER(LEN=256)                     :: caller='sop_fuse2_particles'
-          REAL(KIND(1.D0))                       :: t0
+          REAL(ppm_kind_double) :: t0
           REAL(MK)                               :: dist,lev
           INTEGER                                :: del_part
           REAL(MK)                               :: threshold
@@ -93,7 +93,7 @@
                   nb_neigh_max_thresh = 15
               ENDIF
           ELSE
-              nb_neigh_max_thresh = HUGE(1)
+              nb_neigh_max_thresh = ppm_big_i
           ENDIF
 
 #if debug_verbosity > 0

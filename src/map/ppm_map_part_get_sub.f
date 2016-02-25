@@ -48,7 +48,6 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_mpi
-      USE ppm_module_check_id
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK=ppm_kind_single
@@ -80,7 +79,7 @@
 
       REAL(MK), DIMENSION(:,:), POINTER :: min_sub
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double)             :: t0
 
       INTEGER, DIMENSION(:),      POINTER :: bcdef
       INTEGER, DIMENSION(3)               :: ldu
@@ -90,9 +89,6 @@
       INTEGER                             :: ipart,sendrank,recvrank
       INTEGER                             :: iopt,iset,ibuffer
       INTEGER                             :: tag1,tag2
-#ifdef __MPI
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
-#endif
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_map_part_get_sub'
 
@@ -103,7 +99,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -319,7 +315,7 @@
          !----------------------------------------------------------------------
          CALL MPI_SendRecv(nlist3,1,MPI_INTEGER,recvrank,tag1, &
          &                 nlist4,1,MPI_INTEGER,sendrank,tag1, &
-         &                 ppm_comm,status,info)
+         &                 ppm_comm,MPI_STATUS_IGNORE,info)
          or_fail_MPI("MPI_SendRecv for nlist3 & nlist4 failed.")
 
          !----------------------------------------------------------------------
@@ -336,7 +332,7 @@
          !----------------------------------------------------------------------
          CALL MPI_SendRecv(ilist3,nlist3,MPI_INTEGER,recvrank,tag2, &
          &                 ilist4,nlist4,MPI_INTEGER,sendrank,tag2, &
-         &                 ppm_comm,status,info)
+         &                 ppm_comm,MPI_STATUS_IGNORE,info)
          or_fail_MPI("MPI_SendRecv for ilist3 & ilist4 failed.")
 
          !----------------------------------------------------------------------

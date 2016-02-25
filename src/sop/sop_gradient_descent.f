@@ -16,6 +16,7 @@
           !!!---------------------------------------------------------------------!
 
           USE ppm_module_mpi
+          USE ppm_module_util_time
           USE ppm_module_inl_xset_vlist
           USE ppm_module_io_vtk
 #ifdef __USE_LBFGS
@@ -82,7 +83,7 @@
           INTEGER                             :: iunit
           CHARACTER(LEN = 256)                :: filename,cbuf
           CHARACTER(LEN = 256)                :: caller='sop_gradient_descent'
-          REAL(KIND(1.D0))                    :: t0
+          REAL(ppm_kind_double) :: t0
 
           REAL(MK)                            :: step,step_previous,alpha1,alpha2
           REAL(MK)                            :: step_min,step_max,step_stall
@@ -126,13 +127,14 @@
           REAL(MK),DIMENSION(:),ALLOCATABLE   :: DIAG
           REAL(MK),DIMENSION(:),ALLOCATABLE   :: xp_lbfgs,grad_lbfgs
 #endif
-#ifdef __MPI
+
+          REAL(MK), PARAMETER :: big=HUGE(1._MK)
+
           REAL(KIND(1.D0))                    :: t1,t2
           REAL(KIND(1.D0))                    :: ls_t1,ls_t2
           REAL(KIND(1.D0))                    :: add_t1,add_t2
           REAL(KIND(1.D0))                    :: del_t1,del_t2
           REAL(KIND(1.D0))                    :: compD_t1,compD_t2
-#endif
 
 
 #ifdef __USE_DEL_METHOD2
@@ -201,10 +203,10 @@
 
           it_adapt = 0
           adding_particles=.TRUE.
-          Psi_max = HUGE(1._MK)
-          gradPsi_max = HUGE(1._MK)
-          Psi_global = HUGE(1._MK)
-          Psi_global_old = HUGE(1._MK)
+          Psi_max = big
+          gradPsi_max = big
+          Psi_global = big
+          Psi_global_old = big
 
           ! Adaptivity stopping criterion
           IF (PRESENT(threshold)) THEN
@@ -353,9 +355,8 @@
 
               !call check_duplicates(Particles)
 
-#ifdef __MPI
-              add_t1 = MPI_WTIME(info)
-#endif
+              CALL ppm_util_time(add_t1)
+
               !count neighbours at a distance < D and decide
               ! whether we need to add new particles
               adaptation_ok = .true.
@@ -452,10 +453,9 @@
                   GOTO 9999
               ENDIF
 
-#ifdef __MPI
-              add_t2 = MPI_WTIME(info)
+
+              CALL ppm_util_time(add_t2)
               Particles%stats%t_add = Particles%stats%t_add + (add_t2-add_t1)
-#endif
 
 
 #if debug_verbosity > 2
@@ -469,9 +469,7 @@
               !Delete (fuse) particles that are too close to each other
               !(needs ghost particles to be up-to-date)
 
-#ifdef __MPI
-              del_t1 = MPI_WTIME(info)
-#endif
+              CALL ppm_util_time(del_t1)
 
 #ifdef __USE_DEL_METHOD2
               CALL sop_fuse2_particles(Particles,opts,info,nb_part_del=nb_fuse)
@@ -487,10 +485,9 @@
               !we only removed particles - they didnt move.
               Particles%areinside=.TRUE.
               Particles%ontopology=.TRUE.
-#ifdef __MPI
-              del_t2 = MPI_WTIME(info)
+
+              CALL ppm_util_time(del_t2)
               Particles%stats%t_del = Particles%stats%t_del + (del_t2-del_t1)
-#endif
 
 #ifdef __USE_LBFGS
               IF (nb_fuse .GT. 0) lbfgs_continue = .FALSE.
@@ -504,9 +501,8 @@
                   GOTO 9999
               ENDIF
 
-#ifdef __MPI
-              compD_t1 = MPI_WTIME(info)
-#endif
+              CALL ppm_util_time(compD_t1)
+
               Compute_D: IF (PRESENT(wp_grad_fun).OR. &
                   (.NOT.need_derivatives.AND.PRESENT(wp_fun))) THEN
                   !!-----------------------------------------------------------------!
@@ -524,10 +520,9 @@
                   ! do not update D
 
               ENDIF Compute_D
-#ifdef __MPI
-              compD_t2 = MPI_WTIME(info)
+
+              CALL ppm_util_time(compD_t2)
               Particles%stats%t_compD = Particles%stats%t_compD + (compD_t2-compD_t1)
-#endif
 
               IF (.NOT. PRESENT(wp_fun)) THEN
                   !------------------------------------------------------------------!
@@ -541,9 +536,9 @@
                   ! It means that a particle can have a small D only
                   ! if it has neighbours from the initial generation (D_old) that
                   ! also have a small D.
-#ifdef __MPI
-              t1 = MPI_WTIME(info)
-#endif
+
+              CALL ppm_util_time(t1)
+
               !WRITE(filename,'(A,I0,A,I0)') 'debug_old_',Particles%itime,'_',it_adapt
               !CALL ppm_vtk_particle_cloud(filename,Particles_old,info)
               !WRITE(filename,'(A,I0,A,I0)') 'debug_new_',Particles%itime,'_',it_adapt
@@ -587,11 +582,10 @@
                   xp => Get_xp(Particles)
                   xp_old => Get_xp(Particles_old,with_ghosts=.true.)
 
-#ifdef __MPI
-              t2 = MPI_WTIME(info)
+              CALL ppm_util_time(t2)
               Particles%stats%t_xset_inl = Particles%stats%t_xset_inl + (t2-t1)
               Particles%stats%nb_xset_inl = Particles%stats%nb_xset_inl+1
-#endif
+
 
               !Linear interpolation of D_tilde
                   DO ip=1,Particles%Npart
@@ -599,8 +593,8 @@
                           Dtilde(ip) = opts%maximum_D
                           D(ip) = opts%maximum_D
                       else
-                          minDold=HUGE(1._MK)
-                          tmpvar1=HUGE(1._MK)
+                          minDold=big
+                          tmpvar1=big
                           Dtilde(ip) = 0._mk
                           weight_sum = 0._mk
 
@@ -715,9 +709,8 @@
               !! /begin Line search **
               !!---------------------------------------------------------------------!
               Particles%stats%nb_ls = Particles%stats%nb_ls + 1
-#ifdef __MPI
-              ls_t1 = MPI_WTIME(info)
-#endif
+
+              CALL ppm_util_time(ls_t1)
 
               !!---------------------------------------------------------------------!
               !! Reallocate arrays whose sizes have changed
@@ -901,7 +894,7 @@
 #endif
 
 
-              Psi_1 = HUGE(1._MK)
+              Psi_1 = big
               alpha1 = -1._MK
               alpha2 = -1._MK
               step_previous = 0._MK
@@ -1004,10 +997,9 @@
               GOTO 9999
 #endif
       !end ifdef between LBFGS and  SD  algorithms
-#ifdef __MPI
-              ls_t2 = MPI_WTIME(info)
+
+              CALL ppm_util_time(ls_t2)
               Particles%stats%t_ls = Particles%stats%t_ls + (ls_t2-ls_t1)
-#endif
 
 
 #if debug_verbosity > 0
@@ -1236,7 +1228,7 @@
           INTEGER                             :: iunit
           CHARACTER(LEN = 256)                :: filename,cbuf
           CHARACTER(LEN = 256)                :: caller='sop_gradient_descent_ls'
-          REAL(KIND(1.D0))                    :: t0
+          REAL(ppm_kind_double) :: t0
 
           REAL(MK)                            :: step,step_previous,alpha1,alpha2
           REAL(MK)                            :: step_min,step_max,step_stall
@@ -1333,9 +1325,9 @@
           ENDIF
 
           it_adapt = 0
-          Psi_max = HUGE(1._MK)
-          Psi_global = HUGE(1._MK)
-          Psi_global_old = HUGE(1._MK)
+          Psi_max = big
+          Psi_global = big
+          Psi_global_old = big
 
           ! Adaptivity stopping criterion
           IF (PRESENT(threshold)) THEN
@@ -1519,7 +1511,7 @@
                   D     => Get_wps(Particles,    Particles%D_id)
                   D_old => Get_wps(Particles_old,Particles_old%D_id)
                   DO ip=1,Particles%Npart
-                      minDold=HUGE(1._MK)
+                      minDold=big
                       DO ineigh=1,nvlist_cross(ip)
                           iq=vlist_cross(ineigh,ip)
                           minDold=MIN(minDold,D_old(iq))
@@ -1809,7 +1801,7 @@
               !ENDIF
 
               Psi_global_old = Psi_global
-              Psi_1 = HUGE(1._MK)
+              Psi_1 = big
               alpha1 = -1._MK
               alpha2 = -1._MK
               step_previous = 0._MK

@@ -47,6 +47,7 @@
       USE ppm_module_alloc
       USE ppm_module_util_sort
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -58,27 +59,27 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: kbox
-      !!! ID of the parent box
       REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: xp
       !!! Particle coordinates
+      INTEGER , DIMENSION(:)  , INTENT(INOUT) :: ppb
+      !!! ppb(i_box) returns the first index of the
+      !!! particle in the box of index ibox
+      INTEGER , DIMENSION(:)  , INTENT(INOUT) :: npbx
+      !!! npbx(i_box) returns the number of particles in the box of index ibox
+      INTEGER                 , INTENT(IN   ) :: kbox
+      !!! ID of the parent box
+      INTEGER                 , INTENT(INOUT) :: nbox
+      !!! Current number of boxes
       REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: min_box
       !!! Smallest extremum of the sub-domains
       REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: max_box
       !!! Largest extremum of the sub-domains
-      INTEGER , DIMENSION(:)  , INTENT(INOUT) :: ppb
-      !!! ppb(i_box) returns the first index of the particle in the box of
-      !!! index ibox
-      INTEGER , DIMENSION(:)  , INTENT(INOUT) :: npbx
-      !!! npbx(i_box) returns the number of particles in the box of index ibox
-      INTEGER                 , INTENT(INOUT) :: nbox
-      !!! Current number of boxes
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                     :: t0
+      REAL(ppm_kind_double)        :: t0
       REAL(MK), DIMENSION(ppm_dim) :: cen_box
 
       INTEGER , DIMENSION(:), ALLOCATABLE :: npbx_temp
@@ -91,7 +92,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -116,7 +117,7 @@
       Nm  = 2
       idx = ppb(kbox)
 
-      ALLOCATE(npbx_temp(PRODUCT(Nm)), STAT=info)
+      ALLOCATE(npbx_temp(PRODUCT(Nm)),STAT=info)
       or_fail_alloc("Allocation of npbx_temp array failed.")
 
       !-------------------------------------------------------------------------
@@ -128,9 +129,8 @@
          !  in two dimensions
          !----------------------------------------------------------------------
          jdx = idx + npbx(kbox) - 1
-         CALL ppm_util_sort2d(xp(1:2,idx:jdx),npbx(kbox),          &
-         &                    min_box(1:2,kbox),max_box(1:2,kbox), &
-         &                    Nm,npbx_temp,info)
+         CALL ppm_util_sort2d(xp(1:2,idx:jdx),npbx(kbox), &
+         &    min_box(1:2,kbox),max_box(1:2,kbox),Nm,npbx_temp,info)
          IF (info.NE.0) GOTO 9999
 
          !----------------------------------------------------------------------
@@ -177,9 +177,8 @@
          !  in three dimensions
          !----------------------------------------------------------------------
          jdx = idx + npbx(kbox) - 1
-         CALL ppm_util_sort3d(xp(1:3,idx:jdx),npbx(kbox),          &
-         &                    min_box(1:3,kbox),max_box(1:3,kbox), &
-         &                    Nm,npbx_temp,info)
+         CALL ppm_util_sort3d(xp(1:3,idx:jdx),npbx(kbox), &
+         &    min_box(1:3,kbox),max_box(1:3,kbox),Nm,npbx_temp,info)
          IF (info.NE.0) GOTO 9999
 
          ppb(nbox+1)  = ppb(kbox)

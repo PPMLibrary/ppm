@@ -435,11 +435,12 @@ minclude ppm_create_collection_interfaces(DTYPE(neighlist)_,DTYPE(neighlist)_)
           INTEGER,         INTENT(  OUT) :: info
       END SUBROUTINE
 
-      SUBROUTINE DTYPE(part_map_ghost_isend)_(Pc,info)
+      SUBROUTINE DTYPE(part_map_ghost_isend)_(Pc,info,sendrecv)
           IMPORT DTYPE(ppm_t_particles)_
           IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(  OUT) :: info
+          CLASS(DTYPE(ppm_t_particles)_)   :: Pc
+          INTEGER,           INTENT(  OUT) :: info
+          LOGICAL, OPTIONAL, INTENT(IN   ) :: sendrecv
       END SUBROUTINE
 
       SUBROUTINE DTYPE(part_map_ghost_pop)_(Pc,info,Field)
@@ -505,11 +506,12 @@ minclude ppm_create_collection_interfaces(DTYPE(neighlist)_,DTYPE(neighlist)_)
           INTEGER,         INTENT(  OUT) :: info
       END SUBROUTINE
 
-      SUBROUTINE DTYPE(part_map_isend)_(Pc,info)
+      SUBROUTINE DTYPE(part_map_isend)_(Pc,info,sendrecv)
           IMPORT DTYPE(ppm_t_particles)_
           IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_) :: Pc
-          INTEGER,         INTENT(  OUT) :: info
+          CLASS(DTYPE(ppm_t_particles)_)   :: Pc
+          INTEGER,           INTENT(  OUT) :: info
+          LOGICAL, OPTIONAL, INTENT(IN   ) :: sendrecv
       END SUBROUTINE
 
       SUBROUTINE DTYPE(part_map_pop)_(Pc,info,Field)

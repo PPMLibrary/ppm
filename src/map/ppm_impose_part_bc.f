@@ -58,7 +58,6 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_data
-      USE ppm_module_check_id
       USE ppm_module_topo_typedef
       IMPLICIT NONE
 
@@ -88,7 +87,7 @@
 
       REAL(MK), DIMENSION(ppm_dim)    :: len_phys
       REAL(MK), DIMENSION(:), POINTER :: max_phys,min_phys
-      REAL(MK)                        :: t0
+      REAL(ppm_kind_double)           :: t0
 
       INTEGER :: i
 
@@ -101,7 +100,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 

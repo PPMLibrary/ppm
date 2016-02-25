@@ -36,13 +36,17 @@
 #define __VECTOR 4
 
       MODULE ppm_module_util_dbg
-      !!! This module provides the routines
-      !!! that solve cubic equations with real roots.
+      !!! This Module provides a simple means to visualize particles and
+      !!! domain decompositions for debugging and monitoring purposes.
+      !!!
+      !!! The module is used in conjunction with the ppmdbg.py script.
+      !!! It creates two files with names ppm_dbg_####.sub and ppm_dbg_####.dat
+      !!! That contain the domain decomposition and particle data respectively
 
          IMPLICIT NONE
 
          !----------------------------------------------------------------------
-         !  Define interfaces to the main topology routine(s)
+         !  Define interfaces to the main routine(s)
          !----------------------------------------------------------------------
          INTERFACE ppm_dbg_print
             MODULE PROCEDURE dbg_print_sca_s

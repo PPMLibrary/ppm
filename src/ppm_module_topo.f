@@ -40,5 +40,6 @@
          USE ppm_module_scale_domain, ONLY : ppm_scale_domain
          USE ppm_module_topo_get,     ONLY : ppm_topo_get, &
          &   ppm_topo_get_decomp
+         IMPLICIT NONE
 
       END MODULE ppm_module_topo

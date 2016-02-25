@@ -259,6 +259,8 @@
          store_info = 0
          FORALL (ipart=1:Np) ilist1(ipart) = ipart
       ENDIF
+      nlist2 = 0
+
 #if   __KIND == __SINGLE_PRECISION
       myeps = ppm_myepss
       min_sub => topo%min_subs

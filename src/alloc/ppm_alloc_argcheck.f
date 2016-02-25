@@ -26,8 +26,11 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-
+#if   __LKIND == __LDA64
+      SUBROUTINE ppm_alloc_argcheck_(caller,iopt,ldl,dimension,info,ldu)
+#else
       SUBROUTINE ppm_alloc_argcheck(caller,iopt,ldl,dimension,info,ldu)
+#endif
       !!! Checks the arguments of the ppm_alloc routines
 
       !-------------------------------------------------------------------------
@@ -37,19 +40,27 @@
       USE ppm_module_error
       USE ppm_module_substart
       USE ppm_module_substop
-
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CHARACTER(LEN=*)               , INTENT(IN)   :: caller
+      CHARACTER(LEN=*),                                INTENT(IN   ) :: caller
       !!! name of calling subroutine
-      INTEGER, DIMENSION(:)          , INTENT(IN)   :: ldl
+#if   __LKIND == __LDA64
+      INTEGER(ppm_kind_int64), DIMENSION(:)          , INTENT(IN   ) :: ldl
       !!! Lower index limit in leading dim.
-      INTEGER, OPTIONAL, DIMENSION(:), INTENT(IN)   :: ldu
+      INTEGER(ppm_kind_int64), OPTIONAL, DIMENSION(:), INTENT(IN   ) :: ldu
       !!! Upper index limit in leading dim. (>ldl(1)).
       !!! OPTIONAL in ppm_alloc_*dl.f
-      INTEGER                        , INTENT(IN)   :: iopt
+#else
+      INTEGER, DIMENSION(:)          , INTENT(IN   ) :: ldl
+      !!! Lower index limit in leading dim.
+      INTEGER, OPTIONAL, DIMENSION(:), INTENT(IN   ) :: ldu
+      !!! Upper index limit in leading dim. (>ldl(1)).
+      !!! OPTIONAL in ppm_alloc_*dl.f
+#endif
+      INTEGER                        , INTENT(IN   ) :: iopt
       !!! Allocation mode. One of:
       !!!
       !!! * ppm_param_alloc_fit
@@ -57,9 +68,9 @@
       !!! * ppm_param_alloc_grow
       !!! * ppm_param_alloc_grow_preserve
       !!! * ppm_param_dealloc
-      INTEGER                        , INTENT(IN)   :: dimension
+      INTEGER                        , INTENT(IN   ) :: dimension
       !!! Helps to determine the dimension of the caller subroutine (1-5)
-      INTEGER                        , INTENT(OUT)  :: info
+      INTEGER                        , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success.
       !-------------------------------------------------------------------------
       !  Local variables
@@ -67,7 +78,7 @@
       INTEGER :: i
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       info = 0
       !-------------------------------------------------------------------------
@@ -98,6 +109,10 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       RETURN
+#if   __LKIND == __LDA64
+      END SUBROUTINE ppm_alloc_argcheck_
+#else
       END SUBROUTINE ppm_alloc_argcheck
+#endif

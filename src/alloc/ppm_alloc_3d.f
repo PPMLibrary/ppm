@@ -26,7 +26,6 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE alloc_3d_s(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 3D real single arrays
@@ -62,6 +61,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -113,6 +113,7 @@
 #endif
       INTEGER, DIMENSION(3) :: ldb,ldc,lda_new
       INTEGER               :: i,j,k
+
       LOGICAL               :: lcopy,lalloc,lrealloc
 #ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
@@ -124,7 +125,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
 #ifdef __DEBUG
       CALL substart(caller,t0,info)
@@ -410,4 +411,3 @@
 #elif __KIND == __LOGICAL
       END SUBROUTINE alloc_3d_l
 #endif
-

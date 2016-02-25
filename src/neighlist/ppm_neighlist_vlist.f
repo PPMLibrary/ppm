@@ -71,7 +71,6 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
-      USE ppm_module_check_id
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION
@@ -133,7 +132,7 @@
       TYPE(ppm_t_topo), POINTER :: topo
 
       ! timer
-      REAL(MK)               :: t0
+      REAL(ppm_kind_double)  :: t0
       ! coordinate difference
       REAL(MK)               :: dx,dy,dz
       ! inter particle distance
@@ -164,7 +163,6 @@
       INTEGER                          :: n1,n2,nz
       INTEGER, DIMENSION(3)            :: lb
 
-      CHARACTER(LEN=ppm_char) :: mesg
       CHARACTER(LEN=ppm_char) :: caller='ppm_neighlist_vlist'
 
       ! store vlist?
@@ -176,7 +174,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -272,7 +270,7 @@
             n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
             IF (ppm_dim.EQ.3) THEN
                nz  = cl(idom)%nm(3)
-            ELSE IF (ppm_dim .EQ. 2) THEN
+            ELSE !IF (ppm_dim .EQ. 2) THEN
                n2 = 0
                nz = lb(3)+2
             ENDIF
@@ -458,7 +456,7 @@
             n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
             IF (ppm_dim.EQ.3) THEN
                nz  = cl(idom)%nm(3)
-            ELSE IF (ppm_dim .EQ. 2) THEN
+            ELSE !IF (ppm_dim .EQ. 2) THEN
                n2 = 0
                nz = lb(3)+2
             ENDIF
@@ -622,8 +620,7 @@
          !-------------------------------------------------------------------------
          maxvlen = MAXVAL(nvlist)
          IF (ppm_debug .GT. 0) THEN
-            WRITE(mesg,'(A,I8)') 'Maximum length of Verlet lists: ',maxvlen
-            CALL ppm_write(ppm_rank,caller,mesg,info)
+            stdout_f('(A,I8)',"Maximum length of Verlet lists: ",maxvlen)
          ENDIF
 
          iopt = ppm_param_alloc_fit_preserve

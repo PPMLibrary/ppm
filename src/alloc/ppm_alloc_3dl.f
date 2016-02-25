@@ -26,7 +26,6 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE alloc_3dl_s(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 3D real single arrays
@@ -62,6 +61,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -85,6 +85,7 @@
       !!! Lower index limits
       INTEGER, DIMENSION(:)   , INTENT(IN)    :: ldu
       !!! Upper index limits (>ldl(1:3)).
+
       INTEGER                 , INTENT(IN)    :: iopt
       !!! Allocation mode. One of:
       !!!
@@ -113,8 +114,10 @@
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:,:,:), POINTER :: work
 #endif
+
       INTEGER, DIMENSION(3) :: lda,ldb,ldc,ldd,ldl_new,ldu_new
       INTEGER               :: i,j,k
+
       LOGICAL               :: lcopy,lalloc,lrealloc
 #ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
@@ -125,7 +128,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
 #ifdef __DEBUG
       CALL substart(caller,t0,info)
@@ -473,4 +476,3 @@
 #elif __KIND == __LOGICAL
       END SUBROUTINE alloc_3dl_l
 #endif
-

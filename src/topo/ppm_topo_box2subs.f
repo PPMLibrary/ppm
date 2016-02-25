@@ -44,8 +44,6 @@
       !!! higher existing box can be taken to fill the gap
       !!! in order to return a decomposition with no holes
       !!! in space.
-
-
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
@@ -55,6 +53,7 @@
       USE ppm_module_error
       USE ppm_module_alloc
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -66,47 +65,48 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: min_box
+      REAL(MK), DIMENSION(:,:), POINTER                 :: min_box
       !!! Lower coordinates of the boxes.
       !!!
       !!! 1st index: x,y[,z]                                                   +
       !!! 2nd: box ID
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: max_box
+      REAL(MK), DIMENSION(:,:), POINTER                 :: max_box
       !!! Upper coordinates of the boxes.
       !!!
       !!! 1st index: x,y[,z]                                                   +
       !!! 2nd: box ID
-      INTEGER                 , INTENT(IN   ) :: nbox
-      !!! Total number of boxes
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: nchld
+      INTEGER,  DIMENSION(:  ), INTENT(IN   )           :: nchld
       !!! Number of children of each box.
-      INTEGER , DIMENSION(:  ), INTENT(IN   ), OPTIONAL :: blevel
-      !!! Tree level of each box as returned by ppm_tree.
-      !!! Needs to be present if level is present.
-      INTEGER , DIMENSION(:,:), INTENT(IN   ), OPTIONAL :: child
-      !!! Children (1st index) of all boxes (2nd index).
-      !!! Needs to be present if level is present.
-      INTEGER                 , INTENT(IN   ), OPTIONAL :: level
+      INTEGER                 , INTENT(IN   )           :: nbox
+      !!! Total number of boxes
+      REAL(MK), DIMENSION(:,:), POINTER                 :: min_sub
+      !!! Returns lower coordinates of the subs.
+      REAL(MK), DIMENSION(:,:), POINTER                 :: max_sub
+      !!! Returns upper coordinates of the subs.
+      INTEGER,                  INTENT(  OUT)           :: nsubs
+      !!! Number of subs.
+      INTEGER,                  INTENT(  OUT)           :: info
+      !!! Returns status, 0 upon success
+      INTEGER , DIMENSION(:  ), POINTER,       OPTIONAL :: boxid
+      !!! To which of the original boxes does each sub correspond?
+      !!! Only allocated and returned of present.
+      INTEGER,                  INTENT(IN   ), OPTIONAL :: level
       !!! Specifies tree level from which boxes are
       !!! to be taken. If > 0, only the boxes which are precisely
       !!! on that level are returned, possibly leading to holes in
       !!! the decomposition. If < 0, holes are filled with the next
       !!! higher-level existing box.
-      INTEGER , DIMENSION(:  ), POINTER, OPTIONAL :: boxid
-      !!! To which of the original boxes does each sub correspond?
-      !!! Only allocated and returned of present.
-      REAL(MK), DIMENSION(:,:), POINTER       :: min_sub
-      !!! Returns lower coordinates of the subs.
-      REAL(MK), DIMENSION(:,:), POINTER       :: max_sub
-      !!! Returns upper coordinates of the subs.
-      INTEGER                 , INTENT(  OUT) :: nsubs
-      !!! Number of subs.
-      INTEGER                 , INTENT(  OUT) :: info
-      !!! Returns status, 0 upon success
+      INTEGER, DIMENSION(:  ),  INTENT(IN   ), OPTIONAL :: blevel
+      !!! Tree level of each box as returned by ppm_tree.
+      !!! Needs to be present if level is present.
+      INTEGER, DIMENSION(:,:),  INTENT(IN   ), OPTIONAL :: child
+      !!! Children (1st index) of all boxes (2nd index).
+      !!! Needs to be present if level is present.
+
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK) :: t0
+      REAL(ppm_kind_double) :: t0
 
       INTEGER                        :: iopt,i,j,istack
       INTEGER, DIMENSION(2)          :: ldc
@@ -119,7 +119,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -146,69 +146,69 @@
       !-------------------------------------------------------------------------
       nsubs = 0
       IF (PRESENT(level)) THEN
-          IF (level .GT. 0) THEN
-              !-----------------------------------------------------------------
-              !  Count boxes on specified level
-              !-----------------------------------------------------------------
-              DO i=1,nbox
-                  IF (blevel(i) .EQ. level) THEN
-                      nsubs = nsubs + 1
-                      subbox(nsubs) = i
-                  ENDIF
-              ENDDO
-          ELSE
-              !-----------------------------------------------------------------
-              !  Traverse tree at most down to the specified level
-              !-----------------------------------------------------------------
-              iopt   = ppm_param_alloc_fit
-              ldc(1) = MIN((-level-2)*(nchld(1)-1) + nchld(1),1)
-              CALL ppm_alloc(boxstack,ldc,iopt,info)
-              or_fail_alloc('stack of boxes to traverse BOXSTACK',ppm_error=ppm_error_fatal)
-
-              ! push root box
-              istack = 1
-              boxstack(istack) = 1
-
-              ! traverse the tree to find boxes
-              DO WHILE (istack .GT. 0)
-                  i = boxstack(istack)
-                  istack = istack - 1
-                  ! add box if it is on desired level or above and has
-                  ! no children
-                  IF ((blevel(i).EQ.-level).OR.(nchld(i).EQ.0)) THEN
-                      nsubs = nsubs + 1
-                      subbox(nsubs) = i
-                  ELSE
-                      ! grow stack if needed
-                      IF ((istack+nchld(i)) .GT. ldc(1)) THEN
-                          ldc(1) = ldc(1) + nchld(i)
-                          iopt     = ppm_param_alloc_grow_preserve
-                          CALL ppm_alloc(boxstack,ldc,iopt,info)
-                          or_fail_alloc('stack of boxes to traverse BOXSTACK',ppm_error=ppm_error_fatal)
-                      ENDIF
-                      ! push all its children to the stack
-                      DO j=1,nchld(i)
-                          istack = istack + 1
-                          boxstack(istack) = child(j,i)
-                      ENDDO
-                  ENDIF
-              ENDDO
-
-              ! deallocate stack
-              iopt = ppm_param_dealloc
-              CALL ppm_alloc(boxstack,ldc,iopt,info)
-              or_fail_dealloc('stack of boxes to traverse BOXSTACK')
-          ENDIF
-      ELSE
-          !---------------------------------------------------------------------
-          !  Count childless boxes
-          !---------------------------------------------------------------------
-          DO i=1,nbox
-              IF (nchld(i) .LT. 1) THEN
+         IF (level .GT. 0) THEN
+            !-----------------------------------------------------------------
+            !  Count boxes on specified level
+            !-----------------------------------------------------------------
+            DO i=1,nbox
+               IF (blevel(i) .EQ. level) THEN
                   nsubs = nsubs + 1
                   subbox(nsubs) = i
-              ENDIF
-          ENDDO
+               ENDIF
+            ENDDO
+         ELSE
+            !-----------------------------------------------------------------
+            !  Traverse tree at most down to the specified level
+            !-----------------------------------------------------------------
+            iopt   = ppm_param_alloc_fit
+            ldc(1) = MIN((-level-2)*(nchld(1)-1) + nchld(1),1)
+            CALL ppm_alloc(boxstack,ldc,iopt,info)
+            or_fail_alloc('stack of boxes to traverse BOXSTACK',ppm_error=ppm_error_fatal)
+
+            ! push root box
+            istack = 1
+            boxstack(istack) = 1
+
+            ! traverse the tree to find boxes
+            DO WHILE (istack .GT. 0)
+               i = boxstack(istack)
+               istack = istack - 1
+               ! add box if it is on desired level or above and has
+               ! no children
+               IF ((blevel(i).EQ.-level).OR.(nchld(i).EQ.0)) THEN
+                  nsubs = nsubs + 1
+                  subbox(nsubs) = i
+               ELSE
+                  ! grow stack if needed
+                  IF ((istack+nchld(i)) .GT. ldc(1)) THEN
+                     ldc(1) = ldc(1) + nchld(i)
+                     iopt     = ppm_param_alloc_grow_preserve
+                     CALL ppm_alloc(boxstack,ldc,iopt,info)
+                     or_fail_alloc('stack of boxes to traverse BOXSTACK',ppm_error=ppm_error_fatal)
+                  ENDIF
+                     ! push all its children to the stack
+                  DO j=1,nchld(i)
+                     istack = istack + 1
+                     boxstack(istack) = child(j,i)
+                  ENDDO
+               ENDIF
+            ENDDO
+
+            ! deallocate stack
+            iopt = ppm_param_dealloc
+            CALL ppm_alloc(boxstack,ldc,iopt,info)
+            or_fail_dealloc('stack of boxes to traverse BOXSTACK')
+         ENDIF
+      ELSE
+         !---------------------------------------------------------------------
+         !  Count childless boxes
+         !---------------------------------------------------------------------
+         DO i=1,nbox
+            IF (nchld(i) .LT. 1) THEN
+               nsubs = nsubs + 1
+               subbox(nsubs) = i
+            ENDIF
+         ENDDO
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -224,41 +224,41 @@
       or_fail_alloc('maximum extent of subs MAX_SUB',ppm_error=ppm_error_fatal)
 
       IF (PRESENT(boxid)) THEN
-          ldc(1) = nsubs
-          CALL ppm_alloc(boxid,ldc,iopt,info)
-          or_fail_alloc('box ID of subs BOXID',ppm_error=ppm_error_fatal)
+         ldc(1) = nsubs
+         CALL ppm_alloc(boxid,ldc,iopt,info)
+         or_fail_alloc('box ID of subs BOXID',ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Store subs
       !-------------------------------------------------------------------------
       IF (ppm_dim .EQ. 2) THEN
-          DO i=1,nsubs
-              j = subbox(i)
-              min_sub(1,i) = min_box(1,j)
-              min_sub(2,i) = min_box(2,j)
-              max_sub(1,i) = max_box(1,j)
-              max_sub(2,i) = max_box(2,j)
-          ENDDO
+         DO i=1,nsubs
+            j = subbox(i)
+            min_sub(1,i) = min_box(1,j)
+            min_sub(2,i) = min_box(2,j)
+            max_sub(1,i) = max_box(1,j)
+            max_sub(2,i) = max_box(2,j)
+         ENDDO
       ELSE
-          DO i=1,nsubs
-              j = subbox(i)
-              min_sub(1,i) = min_box(1,j)
-              min_sub(2,i) = min_box(2,j)
-              min_sub(3,i) = min_box(3,j)
-              max_sub(1,i) = max_box(1,j)
-              max_sub(2,i) = max_box(2,j)
-              max_sub(3,i) = max_box(3,j)
-          ENDDO
+         DO i=1,nsubs
+            j = subbox(i)
+            min_sub(1,i) = min_box(1,j)
+            min_sub(2,i) = min_box(2,j)
+            min_sub(3,i) = min_box(3,j)
+            max_sub(1,i) = max_box(1,j)
+            max_sub(2,i) = max_box(2,j)
+            max_sub(3,i) = max_box(3,j)
+         ENDDO
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Store box IDs if needed
       !-------------------------------------------------------------------------
       IF (PRESENT(boxid)) THEN
-          DO i=1,nsubs
-             boxid(i) = subbox(i)
-          ENDDO
+         DO i=1,nsubs
+            boxid(i) = subbox(i)
+         ENDDO
       ENDIF
       !-------------------------------------------------------------------------
       !  Deallocate list
@@ -286,12 +286,12 @@
             ENDDO
          ENDDO
          IF (PRESENT(level)) THEN
-             IF (.NOT.PRESENT(blevel)) THEN
-                fail('blevel must be present if level is.',exit_point=8888)
-             ENDIF
-             IF (.NOT.PRESENT(child)) THEN
-                fail('child must be present if level is.',exit_point=8888)
-             ENDIF
+            IF (.NOT.PRESENT(blevel)) THEN
+               fail('blevel must be present if level is.',exit_point=8888)
+            ENDIF
+            IF (.NOT.PRESENT(child)) THEN
+               fail('child must be present if level is.',exit_point=8888)
+            ENDIF
          ENDIF
       8888 CONTINUE
       END SUBROUTINE check

@@ -48,6 +48,8 @@
           TYPE(DTYPE(sop_t_stats)), POINTER, INTENT(INOUT) :: stats
           INTEGER,                           INTENT(  OUT) :: info
 
+          REAL(MK), PARAMETER :: big=HUGE(1.0_MK)
+
           CHARACTER(LEN=ppm_char) :: caller='sop_init_stats'
 
           info = 0
@@ -55,7 +57,7 @@
           or_fail_alloc('stats allocation error')
 
           stats%nb_grad_desc_steps = 0
-          stats%min_sv = HUGE(1._MK)
+          stats%min_sv = big
 
       9999 CONTINUE
 

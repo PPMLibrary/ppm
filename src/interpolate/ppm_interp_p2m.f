@@ -83,7 +83,6 @@
       !  Modules
       !------------------------------------------------------------------------!
       USE ppm_module_map
-      USE ppm_module_check_id
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION
@@ -187,7 +186,7 @@
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_interp_p2m'
      !-------------------------------------------------------------------------!
-     !  Initialise
+     !  Initialize
      !-------------------------------------------------------------------------!
 
      !-------------------------------------------------------------------------!
@@ -294,6 +293,8 @@
         nlist1         = nlist1 + 1
         ilist1(nlist1) = ipart
       ENDDO
+      nlist2 = 0
+
 #if   __KIND == __SINGLE_PRECISION
      myeps = ppm_myepss
      min_sub => topo%min_subs

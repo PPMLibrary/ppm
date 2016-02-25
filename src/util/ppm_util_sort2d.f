@@ -86,7 +86,7 @@
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), ALLOCATABLE :: work
       ! timer
-      REAL(MK)                               :: t0
+      REAL(ppm_kind_double)                 :: t0
       !  counters
       INTEGER                                :: ipart,ibox,i
       ! number of cells
@@ -109,7 +109,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       ! save input info (substart will reset info to 0)
       info2 = info

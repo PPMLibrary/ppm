@@ -67,6 +67,9 @@
           !!! flag to tell if this topology is defined/in use
           INTEGER                                        :: prec
           !!! numerical precision (ppm_kind) for this topology
+          INTEGER                                        :: decomp
+          !!! Domain decomposition technique for this topology
+          !!! (0 means user specified arguments for ppm_tree)
 
           REAL(ppm_kind_single), DIMENSION(:),   POINTER :: min_physs => NULL()
           !!! minimum of physical extend of the computational domain (single)
@@ -192,9 +195,25 @@
       !!! store the new topology, if it is > size(ppm_topo) then the ppm_topo
       !!! array must be extended
 
+      !----------------------------------------------------------------------
+      !  Define interface to the topoid check routine
+      !----------------------------------------------------------------------
+      INTERFACE ppm_check_topoid
+      !!! checks topology ID
+         MODULE PROCEDURE ppm_check_topoid
+      END INTERFACE
+
       PUBLIC :: ppm_t_topo
       PUBLIC :: ppm_t_ptr_topo
       PUBLIC :: ppm_topo
       PUBLIC :: ppm_next_avail_topo
+      PUBLIC :: ppm_check_topoid
+
+      !----------------------------------------------------------------------
+      !  include the source
+      !----------------------------------------------------------------------
+      CONTAINS
+
+#include "topo/ppm_check_topoid.f"
 
       END MODULE ppm_module_topo_typedef

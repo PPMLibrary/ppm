@@ -42,9 +42,7 @@
       !!! the push, send and pop routine.
       !!!
       !!! The module also holds the needed work arrays for these routines.
-
       USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
-      USE ppm_module_topo_typedef
       USE ppm_module_map_part_util, ONLY : ppm_map_part_eqdistrib,    &
       &   ppm_map_part_cancel,ppm_map_part_get_sub,ppm_map_part_load, &
       &   ppm_map_part_ring_shift,ppm_map_part_store
@@ -53,6 +51,7 @@
       USE ppm_module_map_part_global,ONLY : ppm_map_part_global, &
       &   ppm_map_part_remap
       USE ppm_module_map_part_partial, ONLY : ppm_map_part_partial
+      USE ppm_module_mapping_typedef
       IMPLICIT NONE
 
       PRIVATE

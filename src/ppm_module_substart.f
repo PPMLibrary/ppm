@@ -26,18 +26,11 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-
-      !-------------------------------------------------------------------------
-      !  Define types
-      !-------------------------------------------------------------------------
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
       MODULE ppm_module_substart
       !!! This module provides utility routines.
-
-         IMPLICIT NONE
-
          !----------------------------------------------------------------------
          !  Define interfaces to substart
          !----------------------------------------------------------------------
@@ -45,9 +38,6 @@
             MODULE PROCEDURE substart_s
             MODULE PROCEDURE substart_d
          END INTERFACE
-
-         PRIVATE
-         PUBLIC :: substart
 
          !----------------------------------------------------------------------
          !  include the source

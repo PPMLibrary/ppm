@@ -41,6 +41,12 @@
       USE ppm_module_data
       IMPLICIT NONE
 
+      PRIVATE
+      PUBLIC :: color_print
+      PUBLIC :: factorial_m
+      PUBLIC :: factorial
+      PUBLIC :: binomial
+
       CONTAINS
 
       FUNCTION color_print(text,color)

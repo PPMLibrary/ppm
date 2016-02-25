@@ -76,59 +76,59 @@
             MODULE PROCEDURE search_d
         END INTERFACE
 
-        INTERFACE kdtree2_n_nearest
-            MODULE PROCEDURE kdtree2_n_nearest_s
-            MODULE PROCEDURE kdtree2_n_nearest_d
+        INTERFACE kdtree_n_nearest
+            MODULE PROCEDURE kdtree_n_nearest_s
+            MODULE PROCEDURE kdtree_n_nearest_d
         END INTERFACE
 
-        INTERFACE kdtree2_n_nearest_around_point
-            MODULE PROCEDURE kdtree2_n_nearest_around_point_s
-            MODULE PROCEDURE kdtree2_n_nearest_around_point_d
+        INTERFACE kdtree_n_nearest_around_point
+            MODULE PROCEDURE kdtree_n_nearest_around_point_s
+            MODULE PROCEDURE kdtree_n_nearest_around_point_d
         END INTERFACE
 
-        INTERFACE kdtree2_r_nearest
-            MODULE PROCEDURE kdtree2_r_nearest_s
-            MODULE PROCEDURE kdtree2_r_nearest_d
+        INTERFACE kdtree_r_nearest
+            MODULE PROCEDURE kdtree_r_nearest_s
+            MODULE PROCEDURE kdtree_r_nearest_d
         END INTERFACE
 
-        INTERFACE kdtree2_r_nearest_around_point
-            MODULE PROCEDURE kdtree2_r_nearest_around_point_s
-            MODULE PROCEDURE kdtree2_r_nearest_around_point_d
+        INTERFACE kdtree_r_nearest_around_point
+            MODULE PROCEDURE kdtree_r_nearest_around_point_s
+            MODULE PROCEDURE kdtree_r_nearest_around_point_d
         END INTERFACE
 
-        INTERFACE kdtree2_r_count
-            MODULE PROCEDURE kdtree2_r_count_s
-            MODULE PROCEDURE kdtree2_r_count_d
+        INTERFACE kdtree_r_count
+            MODULE PROCEDURE kdtree_r_count_s
+            MODULE PROCEDURE kdtree_r_count_d
         END INTERFACE
 
-        INTERFACE kdtree2_r_count_around_point
-            MODULE PROCEDURE kdtree2_r_count_around_point_s
-            MODULE PROCEDURE kdtree2_r_count_around_point_d
+        INTERFACE kdtree_r_count_around_point
+            MODULE PROCEDURE kdtree_r_count_around_point_s
+            MODULE PROCEDURE kdtree_r_count_around_point_d
         END INTERFACE
 
-        INTERFACE kdtree2_n_nearest_brute_force
-            MODULE PROCEDURE kdtree2_n_nearest_brute_force_s
-            MODULE PROCEDURE kdtree2_n_nearest_brute_force_d
+        INTERFACE kdtree_n_nearest_brute_force
+            MODULE PROCEDURE kdtree_n_nearest_brute_force_s
+            MODULE PROCEDURE kdtree_n_nearest_brute_force_d
         END INTERFACE
 
-        INTERFACE kdtree2_r_nearest_brute_force
-            MODULE PROCEDURE kdtree2_r_nearest_brute_force_s
-            MODULE PROCEDURE kdtree2_r_nearest_brute_force_d
+        INTERFACE kdtree_r_nearest_brute_force
+            MODULE PROCEDURE kdtree_r_nearest_brute_force_s
+            MODULE PROCEDURE kdtree_r_nearest_brute_force_d
         END INTERFACE
 
         INTERFACE qsort
-            MODULE PROCEDURE kdtree2_util_qsort_s
-            MODULE PROCEDURE kdtree2_util_qsort_d
+            MODULE PROCEDURE kdtree_util_qsort_s
+            MODULE PROCEDURE kdtree_util_qsort_d
         END INTERFACE
 
-        PUBLIC :: kdtree2_n_nearest
-        PUBLIC :: kdtree2_n_nearest_around_point
-        PUBLIC :: kdtree2_r_nearest
-        PUBLIC :: kdtree2_r_nearest_around_point
-        PUBLIC :: kdtree2_r_count
-        PUBLIC :: kdtree2_r_count_around_point
-        PUBLIC :: kdtree2_n_nearest_brute_force
-        PUBLIC :: kdtree2_r_nearest_brute_force
+        PUBLIC :: kdtree_n_nearest
+        PUBLIC :: kdtree_n_nearest_around_point
+        PUBLIC :: kdtree_r_nearest
+        PUBLIC :: kdtree_r_nearest_around_point
+        PUBLIC :: kdtree_r_count
+        PUBLIC :: kdtree_r_count_around_point
+        PUBLIC :: kdtree_n_nearest_brute_force
+        PUBLIC :: kdtree_r_nearest_brute_force
 
         CONTAINS
 

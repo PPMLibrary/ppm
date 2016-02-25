@@ -27,7 +27,7 @@
 
           ! local variables
           INTEGER                               :: ip,iq,ineigh,iunit,di
-          REAL(KIND(1.D0))                      :: t0
+          REAL(ppm_kind_double) :: t0
           REAL(MK)                              :: rr,meanD,nn,rd,rc
           REAL(MK),DIMENSION(ppm_dim)           :: dist
           REAL(MK)                              :: Psi_part,gradPsi,attractive_radius
@@ -41,6 +41,8 @@
           REAL(MK)                              :: rho,coeff,Psi_at_cutoff
           LOGICAL                               :: no_fusion
           INTEGER,DIMENSION(:),POINTER          :: fuse
+
+          REAL(MK), PARAMETER :: big=HUGE(1.0_MK)
 
 
 #if debug_verbosity > 1
@@ -62,7 +64,7 @@
           Psi_global = 0._MK
           Psi_max   = 0._MK
 
-          Particles%h_min     = HUGE(1._MK)
+          Particles%h_min     = big
 
           xp => Get_xp(Particles,with_ghosts=.TRUE.)
           D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
@@ -94,7 +96,7 @@
           attractive_radius = opts%attractive_radius0
           particle_loop: DO ip = 1,Particles%Npart
               Psi_part = 0._MK
-              nn = HUGE(1._MK)
+              nn = big
 
               neighbour_loop: DO ineigh = 1,nvlist(ip)
                   iq = vlist(ineigh,ip)
