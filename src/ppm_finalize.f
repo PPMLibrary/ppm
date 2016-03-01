@@ -135,6 +135,12 @@
       !-------------------------------------------------------------------------
       ppm_initialized = .FALSE.
 
+#ifdef  __MPI3
+      !wait for everyone to call the barrier
+      CALL MPI_Wait(request,MPI_STATUS_IGNORE,info)
+      or_fail_MPI("MPI_Wait")
+#endif
+
       IF (ppm_rank.EQ.0) THEN
          stdout_f('(A)',"***********************************************************")
          CALL ppm_log(caller,cbuf,info)
@@ -163,12 +169,6 @@
          stdout_f('(A)',"***********************************************************")
          CALL ppm_log(caller,cbuf,info)
       ENDIF
-
-#ifdef  __MPI3
-      !wait for everyone to call the barrier
-      CALL MPI_Wait(request,MPI_STATUS_IGNORE,info)
-      or_fail_MPI("MPI_Wait")
-#endif
 
       !-------------------------------------------------------------------------
       !  Return
