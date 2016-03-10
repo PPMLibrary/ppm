@@ -46,10 +46,10 @@
       !-------------------------------------------------------------------------
       CLASS(ppm_htable)      :: table
       !!! The hashtable to create.
+
       INTEGER, INTENT(IN   ) :: nelement
       !!! Number of desired elements.
       INTEGER, INTENT(  OUT) :: info
-
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -110,6 +110,7 @@
       !-------------------------------------------------------------------------
       CLASS(ppm_htable)      :: table
       !!! The hashtable to create. The pointer must not be NULL
+
       INTEGER, INTENT(  OUT) :: info
       !-------------------------------------------------------------------------
       !  Local variables
@@ -150,6 +151,7 @@
           !---------------------------------------------------------------------
           CLASS(ppm_htable),       INTENT(IN   ) :: table
           !!! The hashtable to create. The pointer must not be NULL
+
           INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
           !!! Input key
           INTEGER(ppm_kind_int64), INTENT(IN   ) :: seed
@@ -162,7 +164,6 @@
           !!! jump*h_func might overflow, and as there is no unsigned
           !!! integer the resulting value might be negative and not
           !!! a valid array index
-
           !---------------------------------------------------------------------
           !  Local variables and parameters
           !---------------------------------------------------------------------
@@ -231,6 +232,7 @@
       !---------------------------------------------------------------------
       CLASS(ppm_htable),       INTENT(IN   ) :: table
       !!! The hashtable to create. The pointer must not be NULL
+
       INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
       !!! Input key, which corresponds to address requested
       INTEGER,                 INTENT(IN   ) :: jump
@@ -271,6 +273,7 @@
       !---------------------------------------------------------------------
       CLASS(ppm_htable)                      :: table
       !!! The hashtable
+
       INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
       !!! Key to be stored
       INTEGER,                 INTENT(IN   ) :: value
@@ -278,7 +281,6 @@
       INTEGER,                 INTENT(  OUT) :: info
       !!! Info for whether insertion was successful or not. 0 if SUCCESSFUL
       !!! and -1 otherwise.
-
       !---------------------------------------------------------------------
       !  Local variables
       !---------------------------------------------------------------------
@@ -336,6 +338,7 @@
       !---------------------------------------------------------------------
       CLASS(ppm_htable)      :: table
       !!! The hashtable
+
       INTEGER, INTENT(IN   ) :: key_
       !!! Key to be stored
       INTEGER, INTENT(IN   ) :: value
@@ -343,7 +346,6 @@
       INTEGER, INTENT(  OUT) :: info
       !!! Info for whether insertion was successful or not. 0 if SUCCESSFUL
       !!! and -1 otherwise.
-
       !---------------------------------------------------------------------
       !  Local variables
       !---------------------------------------------------------------------
@@ -371,16 +373,17 @@
       USE ppm_module_substop
 #endif
       IMPLICIT NONE
+
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
       CLASS(ppm_htable),       INTENT(IN   ) :: table
       !!! The hashtable to create. The pointer must not be NULL
+
       INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
       !!! Input key, which the corresponding value is asked for
       INTEGER                                :: value
       !!! Value corresponding to the input key
-
       !---------------------------------------------------------------------
       !  Local variables
       !---------------------------------------------------------------------
@@ -471,15 +474,16 @@
       !---------------------------------------------------------------------
       CLASS(ppm_htable)                      :: table
       !!! The hashtable
+
       INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
       !!! Key to be removed
       INTEGER,                 INTENT(  OUT) :: info
       !!! Info for whether removal was successful or not. 0 if SUCCESSFUL
       !!! and -1 otherwise.
+
       LOGICAL, OPTIONAL,       INTENT(IN   ) :: existed
       !!! User responsibility to sure whether the key exists or not!
       !!! If existed is true, the algorithm does not check its validity
-
       !---------------------------------------------------------------------
       !  Local variables
       !---------------------------------------------------------------------
@@ -553,13 +557,14 @@
       !---------------------------------------------------------------------
       CLASS(ppm_htable)                :: table
       !!! The hashtable
+
       INTEGER,           INTENT(IN   ) :: key_
       !!! Key to be removed
       INTEGER,           INTENT(  OUT) :: info
       !!! Info for whether removal was successful or not. 0 if SUCCESSFUL
       !!! and -1 otherwise.
-      LOGICAL, OPTIONAL, INTENT(IN   ) :: existed
 
+      LOGICAL, OPTIONAL, INTENT(IN   ) :: existed
       !---------------------------------------------------------------------
       !  Local variables
       !---------------------------------------------------------------------
@@ -586,6 +591,7 @@
       USE ppm_module_error
       USE ppm_module_substart
       USE ppm_module_substop
+      USE ppm_module_util_qsort
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
@@ -593,6 +599,7 @@
       !-------------------------------------------------------------------------
       CLASS(ppm_htable)                                :: table
       !!! The hashtable to grow.
+
       INTEGER,                           INTENT(  OUT) :: info
       INTEGER(ppm_kind_int64), OPTIONAL, INTENT(IN   ) :: key_
       !!! Key to be stored
@@ -605,7 +612,9 @@
 
       INTEGER(ppm_kind_int64), DIMENSION(:), ALLOCATABLE :: keys_tmp
       INTEGER,                 DIMENSION(:), ALLOCATABLE :: borders_pos_tmp
-      INTEGER                                            :: nsize,i
+      INTEGER,                 DIMENSION(:), POINTER     :: ranklist
+      INTEGER                                            :: nsize
+      INTEGER                                            :: i,j
 
       CHARACTER(LEN=ppm_char) :: caller='grow_htable'
 
@@ -618,6 +627,10 @@
 
       ALLOCATE(borders_pos_tmp(nsize),SOURCE=table%borders_pos,STAT=info)
       or_fail_alloc("keys_tmp & borders_pos_tmp")
+
+      NULLIFY(ranklist)
+      CALL ppm_util_qsort(keys_tmp,ranklist,info,nsize)
+      or_fail("ppm_util_qsort")
 
       nsize=table%nrow*2
 
@@ -633,12 +646,19 @@
       or_fail("table%create")
 
       DO i=1,SIZE(keys_tmp)
-         IF (keys_tmp(i).EQ.htable_null_li) CYCLE
-         CALL table%insert(keys_tmp(i),borders_pos_tmp(i),info)
+         j=ranklist(i)
+         IF (keys_tmp(j).EQ.htable_null_li) CYCLE
+         CALL table%insert(keys_tmp(j),borders_pos_tmp(j),info)
       ENDDO
 
       DEALLOCATE(keys_tmp,borders_pos_tmp,STAT=info)
       or_fail_dealloc("keys_tmp & borders_pos_tmp")
+
+      !---------------------------------------------------------------------
+      !  Deallocate ranklist array.
+      !---------------------------------------------------------------------
+      CALL ppm_alloc(ranklist,(/0/),ppm_param_dealloc,info)
+      or_fail_dealloc('htable_keys',ppm_error=ppm_error_fatal)
 
       IF (PRESENT(key_)) THEN
          IF (PRESENT(value_)) THEN
@@ -651,6 +671,88 @@
       RETURN
       END SUBROUTINE grow_htable
 
+      SUBROUTINE shrink_htable(table,info,shrinkage_ratio)
+      !!! Based on the number of rows of the table, shrinks the hash table with
+      !!! half a size or more.
+      USE ppm_module_data
+      USE ppm_module_alloc
+      USE ppm_module_error
+      USE ppm_module_substart
+      USE ppm_module_substop
+      USE ppm_module_util_qsort
+      IMPLICIT NONE
+
+      !-------------------------------------------------------------------------
+      !  Arguments
+      !-------------------------------------------------------------------------
+      CLASS(ppm_htable)                :: table
+      !!! The hashtable to shrink.
+
+      INTEGER,           INTENT(  OUT) :: info
+      INTEGER, OPTIONAL, INTENT(IN   ) :: shrinkage_ratio
+      !!! OPTIONAL shrinkage_ratio (positive value).
+      !!! If the size of hash table is shrinkage_ratio times bigger than the
+      !!! real elements inside table, we reduce the table size
+      !-------------------------------------------------------------------------
+      !  Local variables
+      !-------------------------------------------------------------------------
+      REAL(ppm_kind_double) :: t0
+
+      INTEGER(ppm_kind_int64), DIMENSION(:), ALLOCATABLE :: keys_tmp
+      INTEGER,                 DIMENSION(:), ALLOCATABLE :: borders_pos_tmp
+      INTEGER                                            :: shrinkage_ratio_
+      INTEGER,                 DIMENSION(:), POINTER     :: ranklist
+      INTEGER                                            :: nsize,ssize
+      INTEGER                                            :: i,j
+
+      CHARACTER(LEN=ppm_char) :: caller='shrink_htable'
+
+      CALL substart(caller,t0,info)
+
+      shrinkage_ratio_=MERGE(shrinkage_ratio,4,PRESENT(shrinkage_ratio))
+      shrinkage_ratio_=MERGE(4,shrinkage_ratio_,shrinkage_ratio_.LE.0)
+
+      nsize=table%nrow
+      ssize=table%size()
+
+      IF (nsize.GE.shrinkage_ratio_*ssize) THEN
+         ALLOCATE(keys_tmp(nsize),SOURCE=table%keys,STAT=info)
+         or_fail_alloc("keys_tmp")
+
+         ALLOCATE(borders_pos_tmp(nsize),SOURCE=table%borders_pos,STAT=info)
+         or_fail_alloc("keys_tmp & borders_pos_tmp")
+
+         NULLIFY(ranklist)
+         CALL ppm_util_qsort(keys_tmp,ranklist,info,nsize)
+         or_fail("ppm_util_qsort")
+
+         CALL table%destroy(info)
+         or_fail("table%destroy")
+
+         CALL table%create(ssize,info)
+         or_fail("table%create")
+
+         DO i=1,nsize
+            j=ranklist(i)
+            IF (keys_tmp(j).EQ.htable_null_li) CYCLE
+            CALL table%insert(keys_tmp(j),borders_pos_tmp(j),info)
+         ENDDO
+
+         DEALLOCATE(keys_tmp,borders_pos_tmp,STAT=info)
+         or_fail_dealloc("keys_tmp & borders_pos_tmp")
+
+         !---------------------------------------------------------------------
+         !  Deallocate ranklist array.
+         !---------------------------------------------------------------------
+         CALL ppm_alloc(ranklist,(/0/),ppm_param_dealloc,info)
+         or_fail_dealloc('htable_keys',ppm_error=ppm_error_fatal)
+      ENDIF
+
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
+      RETURN
+      END SUBROUTINE shrink_htable
+
       FUNCTION hash_size(table) RESULT(value)
       IMPLICIT NONE
       !---------------------------------------------------------------------
@@ -658,6 +760,7 @@
       !---------------------------------------------------------------------
       CLASS(ppm_htable) :: table
       !!! The hashtable
+
       INTEGER           :: value
       !!! size of the arguments inside the hash table
       !---------------------------------------------------------------------

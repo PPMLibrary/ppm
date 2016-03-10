@@ -42,8 +42,8 @@
         !-------------------------------------------------------------------------
         PRIVATE
 
-        INTEGER,                 PARAMETER :: htable_null    = -1
-        INTEGER(ppm_kind_int64), PARAMETER :: htable_null_li = -1_ppm_kind_int64
+        INTEGER,                 PARAMETER :: htable_null    = -HUGE(1)-1
+        INTEGER(ppm_kind_int64), PARAMETER :: htable_null_li = -HUGE(1_ppm_kind_int64)-1_ppm_kind_int64
         !!! NULL value for hash table
         INTEGER(ppm_kind_int64), PARAMETER :: seed1 = 738235926_ppm_kind_int64
         !!! Hardcoded seed value taken from MurmurHash
@@ -83,6 +83,7 @@
           GENERIC   :: remove => hash_remove,hash_remove_
 
           PROCEDURE :: grow => grow_htable
+          PROCEDURE :: shrink => shrink_htable
 
           PROCEDURE :: size => hash_size
         END TYPE
