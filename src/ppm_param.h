@@ -33,13 +33,13 @@
       !-------------------------------------------------------------------------
       !  Define the precision
       !-------------------------------------------------------------------------
-      INTEGER, PARAMETER :: ppm_kind_double     = KIND(1.0D0) !SELECTED_REAL_KIND(P=15, R=307)
-      INTEGER, PARAMETER :: ppm_kind_single     = KIND(1.0E0) !SELECTED_REAL_KIND(P= 6, R= 37)
-      INTEGER, PARAMETER :: ppm_integer         = 13
-      INTEGER, PARAMETER :: ppm_logical         = 17
-      INTEGER, PARAMETER :: ppm_char            = 256
-      INTEGER, PARAMETER :: ppm_kind_int32      = 4 !SELECTED_INT_KIND(6)
-      INTEGER, PARAMETER :: ppm_kind_int64      = 8 !SELECTED_INT_KIND(12)
+      INTEGER, PARAMETER :: ppm_kind_single = SELECTED_REAL_KIND(P= 6, R= 37) ! 32 BITS. [6 digits, range (10^{-37} , 10^{+37} - 1)].
+      INTEGER, PARAMETER :: ppm_kind_double = SELECTED_REAL_KIND(P=15, R=307) ! 64 BITS. [15 digits, range (10^{-307} , 10^{+307} - 1)].
+      INTEGER, PARAMETER :: ppm_kind_int32  = SELECTED_INT_KIND(9)            ! 32 BITS. 10 digits plus sign. RANGE (-2^{31} , 2^{+31} - 1).
+      INTEGER, PARAMETER :: ppm_kind_int64  = SELECTED_INT_KIND(18)           ! 64 BITS. 19 digits plus sign. RANGE (-2^{63} , 2^{+63} - 1).
+      INTEGER, PARAMETER :: ppm_integer     = 13
+      INTEGER, PARAMETER :: ppm_logical     = 17
+      INTEGER, PARAMETER :: ppm_char        = 256
       !-------------------------------------------------------------------------
       !  Define the supported types
       !-------------------------------------------------------------------------

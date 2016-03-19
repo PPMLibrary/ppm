@@ -70,7 +70,6 @@
 
       lda(1) = table%nrow
       iopt   = ppm_param_alloc_fit
-
       !---------------------------------------------------------------------
       !  Allocate array for hash table keys.
       !---------------------------------------------------------------------
@@ -154,65 +153,40 @@
 
           INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
           !!! Input key
-          INTEGER(ppm_kind_int64), INTENT(IN   ) :: seed
+          INTEGER,                 INTENT(IN   ) :: seed
           !!! Seed to be used for mixing
-          INTEGER(ppm_kind_int64)                :: hash_val
+          INTEGER                                :: hash_val
           !!! Result of the hash function
-          !!!
-          !!! [NOTE]
-          !!! we need to work with 64 bit integers because
-          !!! jump*h_func might overflow, and as there is no unsigned
-          !!! integer the resulting value might be negative and not
-          !!! a valid array index
           !---------------------------------------------------------------------
           !  Local variables and parameters
           !---------------------------------------------------------------------
           INTEGER(ppm_kind_int64), PARAMETER  :: m = 1431374979_ppm_kind_int64
-          INTEGER                             :: h
           INTEGER(ppm_kind_int64)             :: data
+          INTEGER                             :: h
           INTEGER                             :: k
-          INTEGER                             :: len
 
-          len = 4
-
-          h = IEOR(seed, len)
+          ! Initialize the hash to a 'random' value
+          h = IEOR(seed,4)
           data = key
 
-          DO WHILE (len .GE. 4)
-              k = IBITS(data, 0, 8) !data, pos, len. len = 1 always!
-              k = IOR(k, ISHFT(IBITS(data,  8, 8),  8))
-              k = IOR(k, ISHFT(IBITS(data, 16, 8), 16))
-              k = IOR(k, ISHFT(IBITS(data, 24, 8), 24))
+          k = IBITS(data, 0, 8) !data, pos, len. len = 1 always!
+          k = IOR(k, ISHFT(IBITS(data,  8, 8),  8))
+          k = IOR(k, ISHFT(IBITS(data, 16, 8), 16))
+          k = IOR(k, ISHFT(IBITS(data, 24, 8), 24))
 
-              k = k*m
-              k = IEOR(k, ISHFT(k, -24))
-              k = k*m
+          k = k*m
+          k = IEOR(k, ISHFT(k, -24))
+          k = k*m
 
-              h = h*m
-              h = IEOR(h, k)
+          h = h*m
+          h = IEOR(h, k)
 
-              data = data + 4
-              len  = len - 1
-          ENDDO
+          data = data + 4
 
-          SELECT CASE (len)
-          CASE (3)
-             h = IEOR(h, ISHFT(IBITS(data, 16, 8), 16))
-             h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
-             h = IEOR(h, IBITS(data, 0, 8))
-             h = h*m
-
-          CASE (2)
-             h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
-             h = IEOR(h, IBITS(data, 0, 8))
-             h = h*m
-
-          CASE (1)
-             h = IEOR(h, IBITS(data, 0, 8))
-             h = h*m
-
-          END SELECT
-
+          h = IEOR(h, ISHFT(IBITS(data, 16, 8), 16))
+          h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
+          h = IEOR(h, IBITS(data, 0, 8))
+          h = h*m
           h = IEOR(h, ISHFT(h, -13))
           h = h*m
           h = IEOR(h, ISHFT(h, -15))
@@ -221,10 +195,8 @@
           RETURN
       END FUNCTION
 
-      ELEMENTAL FUNCTION h_key(table, key, jump) RESULT(address)
-      !!! Given the key and jump value, returns corresponding address on
-      !!! "borders" array.
-
+      ELEMENTAL FUNCTION h_key1(table,key,seed) RESULT(address)
+      !!! Given the key value, returns corresponding address on the "borders" array.
       IMPLICIT NONE
 
       !---------------------------------------------------------------------
@@ -235,9 +207,36 @@
 
       INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
       !!! Input key, which corresponds to address requested
-      INTEGER,                 INTENT(IN   ) :: jump
-      !!! Jump value for double hashing
+      INTEGER,                 INTENT(IN   ) :: seed
+      !!! Seed to be used for mixing
       INTEGER                                :: address
+      !!! Address that corresponds to given key
+      !---------------------------------------------------------------------
+      !  Local variables
+      !---------------------------------------------------------------------
+      address = table%h_func(key,seed)
+      RETURN
+      END FUNCTION h_key1
+
+      ELEMENTAL FUNCTION h_key2(table,spot1,spot2,jump) RESULT(address)
+      !!! Given the key and jump value, returns corresponding address on
+      !!! "borders" array.
+
+      IMPLICIT NONE
+
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      CLASS(ppm_htable), INTENT(IN   ) :: table
+      !!! The hashtable to create.
+
+      INTEGER,           INTENT(IN   ) :: spot1
+      !!! First spot value to avoid double computing
+      INTEGER,           INTENT(IN   ) :: spot2
+      !!! Second spot value to avoid double computing
+      INTEGER,           INTENT(IN   ) :: jump
+      !!! Jump value for double hashing
+      INTEGER                          :: address
       !!! Address that corresponds to given key
       !---------------------------------------------------------------------
       !  Local variables
@@ -247,12 +246,10 @@
       ! jump*h_func might overflow, and as there is no unsigned
       ! integer the resulting value might be negative and not
       ! a valid array index
-
-      int_addr = 1_ppm_kind_int64 + &
-      & MOD((table%h_func(key,seed1)+jump*table%h_func(key,seed2)),table%nrow)
-      address  = INT(int_addr)
+      int_addr = MOD(INT(spot1,ppm_kind_int64)+INT(spot2,ppm_kind_int64)*INT(jump,ppm_kind_int64),table%nrow)
+      address  = INT(int_addr)+1
       RETURN
-      END FUNCTION h_key
+      END FUNCTION h_key2
 
       SUBROUTINE hash_insert(table, key, value, info)
       !!! Given the key and the value, stores both in the hash table. Info is
@@ -285,7 +282,9 @@
       !  Local variables
       !---------------------------------------------------------------------
       INTEGER :: jump
-      INTEGER :: spot
+      INTEGER ::  spot
+      INTEGER :: fspot
+      INTEGER :: sspot
 
 #ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
@@ -297,10 +296,13 @@
       info = 0
 #endif
       jump = 0
+
+      ! Get the address corresponding to given key
+      fspot=table%h_key(key,seed1)
+      spot=fspot+1
+
       ! Keep on searching withing bounds of hash table.
-      DO WHILE (jump .LT. table%nrow)
-         ! Get the address corresponding to given key
-         spot = table%h_key(key, jump)
+      DO WHILE (jump.LT.table%nrow)
          ! If an empty slot found ...
          IF (table%keys(spot).EQ.htable_null_li) THEN
             ! Store the key and the corresponding value and RETURN.
@@ -315,6 +317,12 @@
          ! If the current slot is occupied, jump to next key that results
          ! in same hash function.
          jump = jump + 1
+         IF (jump.EQ.1) THEN
+            ! Get the address corresponding to given key
+            sspot=table%h_key(key,seed2)
+         ENDIF
+
+         spot=table%h_key(fspot,sspot,jump)
       ENDDO
 
       ! If NOT returned within the while-loop, that means our hash table is
@@ -389,6 +397,10 @@
       !---------------------------------------------------------------------
       INTEGER :: jump
       INTEGER :: spot
+      INTEGER :: fspot
+      INTEGER :: sspot
+
+      LOGICAL :: KeyExist
 
 #ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
@@ -399,26 +411,38 @@
       CALL substart('hash_search',t0,info)
 #endif
 
-      value = htable_null
       jump = 0
+      KeyExist=.TRUE.
+
+      ! Get the other key that results in same hash key as for the input key.
+      fspot=table%h_key(key,seed1)
+       spot=fspot+1
 
       ! Keep on searching while we don't come across a NULL value or we don't
       ! exceed bounds of hash table.
-      loop: DO WHILE(jump .LT. table%nrow)
-          ! Get the other key that results in same hash key as for the input
-          ! key.
-          spot = table%h_key(key, jump)
+      loop: DO WHILE(jump.LT.table%nrow)
           ! If key matches ...
           IF (table%keys(spot).EQ.key) THEN
              ! Set the return value and return
              value = table%borders_pos(spot)
              RETURN
           ELSE IF (table%keys(spot).EQ.htable_null_li) THEN
-             IF (.NOT.ANY(key.EQ.table%keys)) EXIT loop
+             IF (KeyExist) THEN
+                KeyExist=.FALSE.
+                IF (.NOT.ANY(key.EQ.table%keys)) EXIT loop
+             ENDIF
           ENDIF
+
           ! Otherwise, keep on incrementing jump distance
           jump = jump + 1
+          IF (jump.EQ.1) THEN
+             ! Get the address corresponding to given key
+             sspot=table%h_key(key,seed2)
+          ENDIF
+
+          spot=table%h_key(fspot,sspot,jump)
       ENDDO loop
+      value = htable_null
 
 #ifdef __DEBUG
       CALL substop('hash_search',t0,info)
@@ -452,9 +476,7 @@
       RETURN
       END FUNCTION hash_search_
 
-      !TODO check this sub
-      !Yaser
-      !This function PROBABLY suffers from a bug!
+      !TOCHECK
       SUBROUTINE hash_remove(table, key, info,existed)
       !!! Given the key, removes the elements in the hash table. Info is
       !!! set to -1 if the key was NOT found.
@@ -488,7 +510,9 @@
       !  Local variables
       !---------------------------------------------------------------------
       INTEGER :: jump
-      INTEGER :: spot !,spot0
+      INTEGER :: spot
+      INTEGER :: fspot
+      INTEGER :: sspot
 
 #ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
@@ -500,10 +524,13 @@
       IF (PRESENT(existed)) THEN
          IF (existed) THEN
             jump = 0
+
+            ! Get the address corresponding to given key
+            fspot=table%h_key(key,seed1)
+            spot=fspot+1
+
             ! Keep on searching withing bounds of hash table.
             DO WHILE (jump.LT.table%nrow)
-               ! Get the address corresponding to given key
-               spot = table%h_key(key, jump)
                ! If an empty slot found ...
                IF (table%keys(spot).EQ.key) THEN
                   !Remove the key and the corresponding value and RETURN.
@@ -514,6 +541,12 @@
                ! If the current slot is occupied, jump to next key that results
                ! in same hash function.
                jump = jump + 1
+               IF (jump.EQ.1) THEN
+                  ! Get the address corresponding to given key
+                  sspot=table%h_key(key,seed2)
+               ENDIF
+
+               spot=table%h_key(fspot,sspot,jump)
             ENDDO
             ! If NOT returned within the while-loop, that means the key was NOT found
             info = ppm_error_fatal
@@ -522,10 +555,13 @@
       ELSE
          IF (ANY(key.EQ.table%keys)) THEN
             jump = 0
+
+            ! Get the address corresponding to given key
+            fspot=table%h_key(key,seed1)
+            spot=fspot+1
+
             ! Keep on searching withing bounds of hash table.
             DO WHILE (jump.LT.table%nrow)
-               ! Get the address corresponding to given key
-               spot = table%h_key(key, jump)
                ! If an empty slot found ...
                IF (table%keys(spot).EQ.key) THEN
                   !Remove the key and the corresponding value and RETURN.
@@ -536,6 +572,12 @@
                ! If the current slot is occupied, jump to next key that results
                ! in same hash function.
                jump = jump + 1
+               IF (jump.EQ.1) THEN
+                  ! Get the address corresponding to given key
+                  sspot=table%h_key(key,seed2)
+               ENDIF
+
+               spot=table%h_key(fspot,sspot,jump)
             ENDDO
             ! If NOT returned within the while-loop, that means the key was NOT found
             info = ppm_error_fatal

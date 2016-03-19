@@ -45,10 +45,14 @@
         INTEGER,                 PARAMETER :: htable_null    = -HUGE(1)
         INTEGER(ppm_kind_int64), PARAMETER :: htable_null_li = -HUGE(1_ppm_kind_int64)
         !!! NULL value for hash table
-        INTEGER(ppm_kind_int64), PARAMETER :: seed1 = 738235926_ppm_kind_int64
+        INTEGER,                 PARAMETER :: seed1 = 738235926
         !!! Hardcoded seed value taken from MurmurHash
-        INTEGER(ppm_kind_int64), PARAMETER :: seed2 = 1243832038_ppm_kind_int64
+        INTEGER,                 PARAMETER :: seed2 = 1243832038
         !!! Hardcoded seed value taken from MurmurHash
+
+        ! TODO
+        ! Extend the hashtable to account for longer keys (or arbitrary keys)
+        ! This is useful for ppm applications
 
         TYPE ppm_htable
           !---------------------------------------------------------------------
@@ -56,6 +60,7 @@
           !---------------------------------------------------------------------
           INTEGER(ppm_kind_int64), DIMENSION(:), POINTER :: keys => NULL()
           !!! Array for keeping hash table keys.
+          !!! Any key should not be bigger than 4 Bytes (32bits) value
           INTEGER,                 DIMENSION(:), POINTER :: borders_pos => NULL()
           !!! Array for keeping positions of cells on "borders" array.
           !---------------------------------------------------------------------
@@ -68,7 +73,9 @@
           PROCEDURE :: destroy => destroy_htable
 
           PROCEDURE :: h_func
-          PROCEDURE :: h_key
+          PROCEDURE :: h_key1
+          PROCEDURE :: h_key2
+          GENERIC   :: h_key => h_key1,h_key2
 
           PROCEDURE :: hash_insert
           PROCEDURE :: hash_insert_
