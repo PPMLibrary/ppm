@@ -45,9 +45,9 @@
         INTEGER,                 PARAMETER :: htable_null    = -HUGE(1)
         INTEGER(ppm_kind_int64), PARAMETER :: htable_null_li = -HUGE(1_ppm_kind_int64)
         !!! NULL value for hash table
-        INTEGER,                 PARAMETER :: seed1 = 738235926
+        INTEGER(ppm_kind_int64), PARAMETER :: seed1 = 738235926_ppm_kind_int64
         !!! Hardcoded seed value taken from MurmurHash
-        INTEGER,                 PARAMETER :: seed2 = 1243832038
+        INTEGER(ppm_kind_int64), PARAMETER :: seed2 = 1243832038_ppm_kind_int64
         !!! Hardcoded seed value taken from MurmurHash
 
         ! TODO
@@ -66,7 +66,7 @@
           !---------------------------------------------------------------------
           !  Declaration of variables
           !--------------------------------------------------------------------
-          INTEGER                                        :: nrow = 0
+          INTEGER(ppm_kind_int64)                        :: nrow = 0_ppm_kind_int64
           !!! number of rows in hash table
          CONTAINS
           PROCEDURE :: create => create_htable

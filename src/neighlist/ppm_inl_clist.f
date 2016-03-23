@@ -151,8 +151,8 @@
       CALL clist%lookup%create(clist%ncell,info) ! create hash table
       or_fail("create hash table clist%lookup failed.")
 
-      iopt = ppm_param_alloc_fit
-      lda(2) = clist%lookup%nrow
+      iopt  =ppm_param_alloc_fit
+      lda(2)=INT(clist%lookup%nrow)
       ! Number of rows of "borders" array depends on dimensionality.
       IF (ppm_dim.EQ.2) THEN
          lda(1) = 6
@@ -948,9 +948,9 @@
 
       ! In case that htable has been grown
       s=SIZE(clist%borders,DIM=2)
-      IF (clist%lookup%nrow.GT.s) THEN
+      IF (INT(clist%lookup%nrow).GT.s) THEN
          iopt = ppm_param_alloc_grow_preserve
-         lda(2) = clist%lookup%nrow
+         lda(2)=INT(clist%lookup%nrow)
          ! Number of rows of "borders" array depends on dimensionality.
          IF (ppm_dim.EQ.2) THEN
             lda(1) = 6
