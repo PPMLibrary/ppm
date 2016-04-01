@@ -10,22 +10,26 @@
 #
 #  Revisions    : This autoconf was written by Justin Park  8.17.2009
 #                 Revised by Omar Awile
+#                 Revised by Yaser Afshar
+#
 #-------------------------------------------------------------------------
 #  Parallel Particle Mesh Library (PPM)
-#  ETH Zurich
-#  CH-8092 Zurich, Switzerland
+#
+#  MOSAIC Group
+#  Max Planck Institute of Molecular Cell Biology and Genetics
+#  Pfotenhauerstr. 108, 01307 Dresden, Germany
 #-------------------------------------------------------------------------
+
 
 # Initialization
 AC_PREREQ(2.61)
-AC_INIT(PPM, 1.2.2)
+AC_INIT(PPM, 1.2.2, [ppmlibrary@mpi-cbg.de],[],[https://github.com/PPMLibrary/ppm.git])
+
+AC_CONFIG_SRCDIR([src])
+AM_INIT_AUTOMAKE
 
 # Reset existing preprocessing flags
-#touch ./src/ppm_define.h
-#rm ./src/ppm_define.h
-#touch ./src/ppm_define.h
 AC_SUBST(CPPFLAGS,[""])
-
 
 # if MPI is enabled try grabbing those compiler wrappers first
 use_mpi=no

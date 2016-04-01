@@ -142,54 +142,6 @@
       RETURN
       END SUBROUTINE destroy_htable
 
-      ELEMENTAL FUNCTION h_func2(table,key,seed) RESULT(hash_val)
-
-        IMPLICIT NONE
-
-        !---------------------------------------------------------------------
-        !  Arguments
-        !---------------------------------------------------------------------
-        CLASS(ppm_htable),       INTENT(IN   ) :: table
-        !!! The hashtable to create.
-
-        INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
-        !!! Input key (IT CAN NOT BE BIGGER THAN 2^32-1 (32BITS KEY))
-        INTEGER(ppm_kind_int64), INTENT(IN   ) :: seed
-        !!! Seed to be used for mixing
-        INTEGER(ppm_kind_int64)                :: hash_val
-        !!! Result of the hash function
-        !---------------------------------------------------------------------
-        !  Local variables and parameters
-        !---------------------------------------------------------------------
-        INTEGER(ppm_kind_int64), PARAMETER :: two32=2_ppm_kind_int64**32
-        INTEGER(ppm_kind_int64), PARAMETER :: m=1431374979_ppm_kind_int64
-        INTEGER(ppm_kind_int64)            :: h,k
-
-        k=IBITS(key,0,32)
-        ! This multiplication is safe.
-        ! For the biggest 32 bit integer times m, it does not overflow.
-        k=MOD(k*m,two32)
-        k=IEOR(k,ISHFT(k,-24))
-        k=MOD(k*m,two32)
-
-        ! Initialize the hash to a 'random' value
-        h=IEOR(seed,4_ppm_kind_int64)
-        h=MOD(h*m,two32)
-        h=IEOR(h,k)
-
-        h=IEOR(h,ISHFT(IBITS(key,16,8),16))
-        h=IEOR(h,ISHFT(IBITS(key, 8,8), 8))
-        h=IEOR(h,IBITS(key,0,8))
-
-        h=MOD(h*m,two32)
-        h=IEOR(h,ISHFT(h,-13))
-        h=MOD(h*m,two32)
-        h=IEOR(h,ISHFT(h,-15))
-
-        hash_val=IAND(h,table%nrow-1_ppm_kind_int64)
-        RETURN
-      END FUNCTION
-
       ! Note - This code makes an assumption about how your machine behaves -
       ! 1. sizeof(INTEGER(ppm_kind_int64)) == 8
       ! Limitation
@@ -207,12 +159,12 @@
         !!! Input key (64 BITS)
         INTEGER(ppm_kind_int64), INTENT(IN   ) :: seed
         !!! Seed to be used for mixing
-        INTEGER(ppm_kind_int64)              :: hash_val
+        INTEGER(ppm_kind_int64)                :: hash_val
         !!! Result of the hash function
         !---------------------------------------------------------------------
         !  Local variables and parameters
         !---------------------------------------------------------------------
-        INTEGER(ppm_kind_int64), PARAMETER :: two32=2_ppm_kind_int64**32
+        INTEGER(ppm_kind_int64), PARAMETER :: two32=4294967296_ppm_kind_int64
         INTEGER(ppm_kind_int64), PARAMETER :: m = 1540483477_ppm_kind_int64 !0x5bd1e995
         INTEGER(ppm_kind_int64)            :: h,k
 

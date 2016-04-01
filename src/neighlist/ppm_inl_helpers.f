@@ -516,8 +516,6 @@
       !-------------------------------------------------------------------------
           REAL(MK) :: minSideLength
 
-          INTEGER :: i
-
           ! Get maximum side length of the domain
           minSideLength = getMinimumSideLength(domain)
 

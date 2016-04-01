@@ -79,7 +79,6 @@
       !---------------------------------------------------------------------
       REAL(ppm_kind_double)          :: t0
       REAL(MK)                       :: max_size
-      REAL(MK)                       :: size_diff
       REAL(MK), DIMENSION(2*ppm_dim) :: whole_domain
       ! Physical extent of whole domain including ghost layers.
 

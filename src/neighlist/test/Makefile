@@ -16,6 +16,3 @@ $(targets) : $(sources)
 	rm -f __$@.f
 	./$@
 
-clean :
-	rm -f __*
-	rm -f $(targets)

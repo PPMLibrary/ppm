@@ -73,6 +73,7 @@
           PROCEDURE :: destroy => destroy_htable
 
           PROCEDURE :: h_func
+
           PROCEDURE :: h_key1
           PROCEDURE :: h_key2
           GENERIC   :: h_key => h_key1,h_key2
