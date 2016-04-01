@@ -201,33 +201,9 @@
         RETURN
       END FUNCTION h_func
 
-      ELEMENTAL FUNCTION h_key1(table,key,seed) RESULT(address)
-        !!! Given the key value, returns corresponding address on the "borders" array.
-        IMPLICIT NONE
-
-        !---------------------------------------------------------------------
-        !  Arguments
-        !---------------------------------------------------------------------
-        CLASS(ppm_htable),       INTENT(IN   ) :: table
-        !!! The hashtable to create.
-
-        INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
-        !!! Input key
-        INTEGER(ppm_kind_int64), INTENT(IN   ) :: seed
-        !!! Seed to be used for mixing
-        INTEGER(ppm_kind_int64)                :: address
-        !!! Address that corresponds to given key
-        !---------------------------------------------------------------------
-        !  Local variables
-        !---------------------------------------------------------------------
-        address=table%h_func(key,seed)
-        RETURN
-      END FUNCTION h_key1
-
-      ELEMENTAL FUNCTION h_key2(table,spot1,spot2,jump) RESULT(address)
+      ELEMENTAL FUNCTION h_key(table,spot1,spot2,jump) RESULT(address)
         !!! Given the key and jump value, returns corresponding address on
         !!! "borders" array.
-
         IMPLICIT NONE
 
         !---------------------------------------------------------------------
@@ -253,7 +229,7 @@
         ! a valid array index
         address=MOD(spot1+spot2*jump,table%nrow)+1_ppm_kind_int64
       RETURN
-      END FUNCTION h_key2
+      END FUNCTION h_key
 
       SUBROUTINE hash_insert(table,key,value,info)
         !!! Given the key and the value, stores both in the hash table.
@@ -280,7 +256,7 @@
         !!! Value that corresponds to given key
         INTEGER,                 INTENT(  OUT) :: info
         !!! Info for whether insertion was successful or not.
-        !!! 0 if SUCCESSFUL and -1 otherwise.
+        !!! 0 if SUCCESSFUL and ppm_error_fatal otherwise.
         !---------------------------------------------------------------------
         !  Local variables
         !---------------------------------------------------------------------
@@ -301,7 +277,7 @@
         jump=0_ppm_kind_int64
 
         ! Get the address corresponding to given key
-        fspot=table%h_key(key,seed1)
+        fspot=table%h_func(key,seed1)
         spot=fspot+1_ppm_kind_int64
 
         ! Keep on searching withing bounds of hash table.
@@ -311,18 +287,26 @@
               ! Store the key and the corresponding value and RETURN.
               table%keys(spot) = key
               table%borders_pos(spot) = value
+#ifdef __DEBUG
+              GOTO 9999
+#else
               RETURN
+#endif
            !If the key is the same the value should be updated
            ELSE IF (table%keys(spot).EQ.key) THEN
               table%borders_pos(spot) = value
+#ifdef __DEBUG
+              GOTO 9999
+#else
               RETURN
+#endif
            ENDIF
            ! If the current slot is occupied, jump to next key that results
            ! in same hash function.
            jump=jump+1_ppm_kind_int64
            IF (jump.EQ.1_ppm_kind_int64) THEN
               ! Get the address corresponding to given key
-              sspot=table%h_key(key,seed2)
+              sspot=table%h_func(key,seed2)
            ENDIF
 
            spot=table%h_key(fspot,sspot,jump)
@@ -354,8 +338,8 @@
         INTEGER, INTENT(IN   ) :: value
         !!! Value that corresponds to given key
         INTEGER, INTENT(  OUT) :: info
-        !!! Info for whether insertion was successful or not. 0 if SUCCESSFUL
-        !!! and -1 otherwise.
+        !!! Info for whether insertion was successful or not.
+        !!! 0 if SUCCESSFUL.
         !---------------------------------------------------------------------
         !  Local variables
         !---------------------------------------------------------------------
@@ -417,7 +401,7 @@
       KeyExist=.TRUE.
 
       ! Get the other key that results in same hash key as for the input key.
-      fspot=table%h_key(key,seed1)
+      fspot=table%h_func(key,seed1)
       spot =fspot+1_ppm_kind_int64
 
       ! Keep on searching while we don't come across a NULL value or we don't
@@ -427,7 +411,11 @@
           IF (table%keys(spot).EQ.key) THEN
              ! Set the return value and return
              value = table%borders_pos(spot)
+#ifdef __DEBUG
+             GOTO 9999
+#else
              RETURN
+#endif
           ELSE IF (table%keys(spot).EQ.htable_null_li) THEN
              IF (KeyExist) THEN
                 KeyExist=.FALSE.
@@ -439,7 +427,7 @@
           jump=jump+1_ppm_kind_int64
           IF (jump.EQ.1_ppm_kind_int64) THEN
              ! Get the address corresponding to given key
-             sspot=table%h_key(key,seed2)
+             sspot=table%h_func(key,seed2)
           ENDIF
 
           spot=table%h_key(fspot,sspot,jump)
@@ -482,12 +470,8 @@
       !TOCHECK
       SUBROUTINE hash_remove(table,key,info,existed)
       !!! Given the key, removes the elements in the hash table. Info is
-      !!! set to -1 if the key was NOT found.
+      !!! set to ppm_error_fatal if the key was NOT found.
       !!!
-      !!! [NOTE]
-      !!! This routine needs to be very fast, therefor we skip the usual
-      !!! chit-chat and get right to it. (-> no substart,substop unless
-      !!! compiled with __DEBUG flag)
 #ifdef __DEBUG
       USE ppm_module_substart
       USE ppm_module_substop
@@ -504,7 +488,7 @@
       !!! Key to be removed
       INTEGER,                 INTENT(  OUT) :: info
       !!! Info for whether removal was successful or not. 0 if SUCCESSFUL
-      !!! and -1 otherwise.
+      !!! and ppm_error_fatal otherwise.
 
       LOGICAL, OPTIONAL,       INTENT(IN   ) :: existed
       !!! User responsibility to sure whether the key exists or not!
@@ -529,7 +513,7 @@
             jump=0_ppm_kind_int64
 
             ! Get the address corresponding to given key
-            fspot=table%h_key(key,seed1)
+            fspot=table%h_func(key,seed1)
             spot =fspot+1_ppm_kind_int64
 
             ! Keep on searching withing bounds of hash table.
@@ -539,14 +523,18 @@
                   !Remove the key and the corresponding value and RETURN.
                   table%borders_pos(spot)=htable_null
                   table%keys(spot)=htable_null_li
+#ifdef __DEBUG
+                  GOTO 9999
+#else
                   RETURN
+#endif
                ENDIF
                ! If the current slot is occupied, jump to next key that results
                ! in same hash function.
                jump=jump+1_ppm_kind_int64
                IF (jump.EQ.1_ppm_kind_int64) THEN
                   ! Get the address corresponding to given key
-                  sspot=table%h_key(key,seed2)
+                  sspot=table%h_func(key,seed2)
                ENDIF
 
                spot=table%h_key(fspot,sspot,jump)
@@ -554,13 +542,17 @@
             ! If NOT returned within the while-loop, that means the key was NOT found
             info=ppm_error_fatal
          ENDIF
+#ifdef __DEBUG
+         GOTO 9999
+#else
          RETURN
+#endif
       ELSE
          IF (ANY(key.EQ.table%keys)) THEN
             jump=0_ppm_kind_int64
 
             ! Get the address corresponding to given key
-            fspot=table%h_key(key,seed1)
+            fspot=table%h_func(key,seed1)
             spot =fspot+1_ppm_kind_int64
 
             ! Keep on searching withing bounds of hash table.
@@ -570,14 +562,18 @@
                   !Remove the key and the corresponding value and RETURN.
                   table%borders_pos(spot)=htable_null
                   table%keys(spot)=htable_null_li
+#ifdef __DEBUG
+                  GOTO 9999
+#else
                   RETURN
+#endif
                ENDIF
                ! If the current slot is occupied, jump to next key that results
                ! in same hash function.
                jump=jump+1_ppm_kind_int64
                IF (jump.EQ.1_ppm_kind_int64) THEN
                   ! Get the address corresponding to given key
-                  sspot=table%h_key(key,seed2)
+                  sspot=table%h_func(key,seed2)
                ENDIF
 
                spot=table%h_key(fspot,sspot,jump)
@@ -607,7 +603,7 @@
       !!! Key to be removed
       INTEGER,           INTENT(  OUT) :: info
       !!! Info for whether removal was successful or not. 0 if SUCCESSFUL
-      !!! and -1 otherwise.
+      !!! and ppm_error_fatal otherwise.
 
       LOGICAL, OPTIONAL, INTENT(IN   ) :: existed
       !---------------------------------------------------------------------
