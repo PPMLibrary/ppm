@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                    ppm_doio
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -34,7 +34,7 @@
       SUBROUTINE ppm_doio_d(iUnit,adata,actn,dist,iofmt,ioprec,lchar,  &
      &    mptag,info)
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_doio_sc(iUnit,adata,actn,dist,iofmt,ioprec,lchar, & 
+      SUBROUTINE ppm_doio_sc(iUnit,adata,actn,dist,iofmt,ioprec,lchar, &
      &    mptag,info)
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
       SUBROUTINE ppm_doio_dc(iUnit,adata,actn,dist,iofmt,ioprec,lchar, &
@@ -85,6 +85,7 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
+      USE ppm_module_mpi
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION | __KIND == __SINGLE_PRECISION_COMPLEX
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -94,11 +95,8 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-       INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                          , INTENT(IN   ) :: iUnit
       !!! I/O unit (as returned by ppm_io_open).
@@ -147,10 +145,10 @@
       !!! string. In this case the string will be converted back to characters
       !!! before it is written out. `.FALSE.` if it is a true `INTEGER` vector.
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER                          :: reclen
-      REAL(MK)                         :: t0
+      REAL(ppm_kind_double)            :: t0
       LOGICAL                          :: lopen
       INTEGER                          :: ifmt,imode
       INTEGER                          :: info2,info3
@@ -159,40 +157,40 @@
       INTEGER, DIMENSION(2)            :: ldl
       INTEGER                          :: i,iopt,mdata,ndata,nrec
       INTEGER                          :: ibuffer,jbuffer,ii
+
 #if   __KIND == __SINGLE_PRECISION | __KIND == __DOUBLE_PRECISION
-      REAL(MK)   , DIMENSION(:)       , POINTER :: rbuf => NULL()
+      REAL(MK), DIMENSION(:), POINTER :: rbuf
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:)       , POINTER :: rbuf => NULL()
+      COMPLEX(MK), DIMENSION(:), POINTER :: rbuf
 #elif __KIND == __INTEGER
-      INTEGER    , DIMENSION(:)       , POINTER :: rbuf => NULL()
+      INTEGER, DIMENSION(:), POINTER :: rbuf
 #elif __KIND == __LOGICAL
-      LOGICAL    , DIMENSION(:)       , POINTER :: rbuf => NULL()
+      LOGICAL, DIMENSION(:), POINTER :: rbuf
 #endif
 #ifdef __MPI
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: mpstat
       INTEGER                          :: MPTYPE,iproc,rem
       INTEGER                          :: mpreq,jproc
-      INTEGER, DIMENSION(:  ), POINTER :: asize => NULL()
+      INTEGER, DIMENSION(:),   POINTER :: asize => NULL()
 #if   __KIND == __SINGLE_PRECISION | __KIND == __DOUBLE_PRECISION
-      REAL(MK)   , DIMENSION(:)       , POINTER :: abuffer => NULL()
-      REAL(MK)   , DIMENSION(:)       , POINTER :: bbuffer => NULL()
+      REAL(MK), DIMENSION(:), POINTER :: abuffer
+      REAL(MK), DIMENSION(:), POINTER :: bbuffer
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:)       , POINTER :: abuffer => NULL()
-      COMPLEX(MK), DIMENSION(:)       , POINTER :: bbuffer => NULL()
+      COMPLEX(MK), DIMENSION(:), POINTER :: abuffer
+      COMPLEX(MK), DIMENSION(:), POINTER :: bbuffer
 #elif __KIND == __INTEGER
-      INTEGER    , DIMENSION(:)       , POINTER :: abuffer => NULL()
-      INTEGER    , DIMENSION(:)       , POINTER :: bbuffer => NULL()
+      INTEGER, DIMENSION(:), POINTER :: abuffer
+      INTEGER, DIMENSION(:), POINTER :: bbuffer
 #elif __KIND == __LOGICAL
-      LOGICAL    , DIMENSION(:)       , POINTER :: abuffer => NULL()
-      LOGICAL    , DIMENSION(:)       , POINTER :: bbuffer => NULL()
+      LOGICAL, DIMENSION(:), POINTER :: abuffer
+      LOGICAL, DIMENSION(:), POINTER :: bbuffer
 #endif
 #endif
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_doio',t0,info)
 
@@ -264,11 +262,11 @@
       !-------------------------------------------------------------------------
       !  Set pointer to read buffer
       !-------------------------------------------------------------------------
-#if   __KIND == __SINGLE_PRECISION 
+#if   __KIND == __SINGLE_PRECISION
       rbuf => rbuf_s
 #elif __KIND == __DOUBLE_PRECISION
       rbuf => rbuf_d
-#elif __KIND == __SINGLE_PRECISION_COMPLEX 
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
       rbuf => rbuf_sc
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
       rbuf => rbuf_dc
@@ -295,7 +293,7 @@
               !  Read from file
               !-----------------------------------------------------------------
               IF (ifmt .EQ. ppm_param_io_binary) THEN
-                  ibuffer = 0 
+                  ibuffer = 0
                   DO WHILE (ibuffer .LT. mdata)
                       !-----------------------------------------------------
                       !  Read record length from file
@@ -377,7 +375,7 @@
               info = ppm_error_error
               GOTO 9999
           ENDIF
-          
+
 #ifdef __MPI
       !-------------------------------------------------------------------------
       !  CENTRALIZED
@@ -388,13 +386,13 @@
           !---------------------------------------------------------------------
           !  Set buffer pointer
           !---------------------------------------------------------------------
-#if   __KIND == __SINGLE_PRECISION 
+#if   __KIND == __SINGLE_PRECISION
           abuffer => abuffer_s
           bbuffer => bbuffer_s
 #elif __KIND == __DOUBLE_PRECISION
           abuffer => abuffer_d
           bbuffer => bbuffer_d
-#elif __KIND == __SINGLE_PRECISION_COMPLEX 
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
           abuffer => abuffer_sc
           bbuffer => bbuffer_sc
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
@@ -450,7 +448,7 @@
           MPTYPE = MPI_REAL
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
           MPTYPE = MPI_COMPLEX
-#elif __KIND == __DOUBLE_PRECISION 
+#elif __KIND == __DOUBLE_PRECISION
           MPTYPE = MPI_DOUBLE_PRECISION
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
           MPTYPE = MPI_DOUBLE_COMPLEX
@@ -514,7 +512,7 @@
      &                       __LINE__,info)
                       ENDIF
                   ENDDO
-              ENDIF      
+              ENDIF
               !-----------------------------------------------------------------
               !  If one fails, all have to fail
               !-----------------------------------------------------------------
@@ -532,7 +530,7 @@
      &                'Non-matching data found.',__LINE__,info)
                   GOTO 9999
               ENDIF
-                  
+
               !-----------------------------------------------------------------
               !  Allocate receive buffer for the sum
               !-----------------------------------------------------------------
@@ -565,7 +563,7 @@
                   ELSEIF (ifmt .EQ. ppm_param_io_ascii) THEN
                       CALL ppm_io_write_ascii(iUnit,abuffer,iofmt,lchar,info)
                   ENDIF
-              ENDIF    
+              ENDIF
 
               !-----------------------------------------------------------------
               !  If one failed, all have to fail
@@ -641,7 +639,7 @@
                       !---------------------------------------------------------
                       !  Wait for MPI receive to complete
                       !---------------------------------------------------------
-                      CALL MPI_Wait(mpreq,mpstat,info)
+                      CALL MPI_Wait(mpreq,MPI_STATUS_IGNORE,info)
                       !---------------------------------------------------------
                       !  Reallocate and copy buffers
                       !---------------------------------------------------------
@@ -712,7 +710,7 @@
                   IF (mpreq .NE. MPI_REQUEST_NULL) CALL MPI_Cancel(mpreq,info2)
                   GOTO 9999
               ELSE
-                  IF (ppm_rank .NE. 0) CALL MPI_Wait(mpreq,mpstat,info)
+                  IF (ppm_rank .NE. 0) CALL MPI_Wait(mpreq,MPI_STATUS_IGNORE,info)
               ENDIF
 
           !---------------------------------------------------------------------
@@ -756,7 +754,7 @@
               !-----------------------------------------------------------------
               IF (ppm_rank .EQ. 0) THEN
                   IF (ifmt .EQ. ppm_param_io_binary) THEN
-                      ibuffer = 0 
+                      ibuffer = 0
                       DO WHILE (ibuffer .LT. mdata)
                           !-----------------------------------------------------
                           !  Read record length from file
@@ -867,10 +865,10 @@
                       GOTO 9999
                   ENDIF
                   !-------------------------------------------------------------
-                  !  Read first data chunk 
+                  !  Read first data chunk
                   !-------------------------------------------------------------
                   IF (ifmt .EQ. ppm_param_io_binary) THEN
-                      ibuffer = 0 
+                      ibuffer = 0
                       DO WHILE (ibuffer .LT. ndata)
                           !-----------------------------------------------------
                           !  Read record length from file
@@ -1038,7 +1036,7 @@
                       !---------------------------------------------------------
                       !  Wait for MPI send to complete
                       !---------------------------------------------------------
-                      CALL MPI_Wait(mpreq,mpstat,info)
+                      CALL MPI_Wait(mpreq,MPI_STATUS_IGNORE,info)
                       !---------------------------------------------------------
                       !  Reallocate and copy buffers
                       !---------------------------------------------------------
@@ -1119,11 +1117,11 @@
                   IF (mpreq .NE. MPI_REQUEST_NULL) CALL MPI_Cancel(mpreq,info2)
                   GOTO 9999
               ELSE
-                  IF (ppm_rank .NE. 0) CALL MPI_Wait(mpreq,mpstat,info)
+                  IF (ppm_rank .NE. 0) CALL MPI_Wait(mpreq,MPI_STATUS_IGNORE,info)
               ENDIF
 
           ENDIF    ! dist
-   
+
           !---------------------------------------------------------------------
           !  Deallocate data size list
           !---------------------------------------------------------------------

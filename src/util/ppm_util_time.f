@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                    ppm_util_time
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -44,14 +44,14 @@
       !!! [WARNING]
       !!! This routine should not be called by the PPM client developer. Use
       !!! `ppm_time` instead.
-      !-------------------------------------------------------------------------
-      !  Includes
-      !-------------------------------------------------------------------------
-      IMPLICIT NONE
-      INCLUDE 'ppm_param.h'
-#ifdef __MPI
-      INCLUDE 'mpif.h'
+#if   __KIND == __SINGLE_PRECISION
+      USE ppm_module_data, ONLY : ppm_kind_single,ppm_kind_double
+#elif __KIND == __DOUBLE_PRECISION
+      USE ppm_module_data, ONLY : ppm_kind_double
 #endif
+      USE ppm_module_mpi
+      IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Type kind
       !-------------------------------------------------------------------------
@@ -61,6 +61,9 @@
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
+      !  Includes
+      !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), INTENT(  OUT) :: timing
@@ -68,6 +71,9 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
+#if   __KIND == __SINGLE_PRECISION
+      REAL(ppm_kind_double) :: timing_
+#endif
 #ifdef __ETIME
       REAL(MK) :: array(2)
       !-------------------------------------------------------------------------
@@ -80,13 +86,23 @@
       !-------------------------------------------------------------------------
       !  Call the MPI function MPI_Wtime
       !-------------------------------------------------------------------------
+#if   __KIND == __SINGLE_PRECISION
+      timing_ = MPI_Wtime()
+      timing =REAL(timing_,MK)
+#else
       timing = MPI_Wtime()
+#endif
 #else
       !-------------------------------------------------------------------------
       !  Call the C routine: etime to get the cpu time
       !-------------------------------------------------------------------------
 #ifdef __ETIME
+#if   __KIND == __SINGLE_PRECISION
+      timing_ = etime(array)
+      timing =REAL(timing_,MK)
+#else
       timing = etime(array)
+#endif
 #else
       CALL CPU_TIME(timing)
 #endif
@@ -95,7 +111,7 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_util_time_s

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_finalize
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -36,47 +36,63 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data
+      USE ppm_module_data, ONLY : ppm_char,ppm_debug,ppm_initialized,          &
+      &   ppm_stdout,ppm_stderr,ppm_logfile,ppm_error_error,ppm_param_dealloc, &
+      &   ppm_proc_speed,ppm_rank,ppm_kind_double,ppm_comm
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
-!      USE ppm_module_mesh_finalize
+      USE ppm_module_write
+      USE ppm_module_log
+      USE ppm_module_mapping_typedef
+#ifdef __MPI3
+      USE ppm_module_mpi
+#endif
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER, INTENT(OUT) :: info
+      INTEGER, INTENT(  OUT) :: info
       !!! Returns 0 upon success
+
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(1) :: lda
       INTEGER               :: iopt
       INTEGER               :: istat
+#ifdef __MPI3
+      INTEGER               :: request
+#endif
+
       REAL(ppm_kind_double) :: t0
-      LOGICAL               :: isopen
-      CHARACTER(LEN=ppm_char) :: mesg
+
+      LOGICAL :: isopen
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_finalize'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_finalize',t0,info)
-      lda(1) = 0
+      CALL substart(caller,t0,info)
+
+#ifdef __MPI3
+      CALL MPI_Ibarrier(ppm_comm,request,info)
+      or_fail_MPI("MPI_Ibarrier")
+#endif
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_finalize',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 9999
-          ENDIF
+      IF (ppm_debug.GT.0) THEN
+         IF (.NOT.ppm_initialized) THEN
+            fail('Please call ppm_init first!',ppm_err_ppm_noinit)
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -109,54 +125,77 @@
       CALL ppm_alloc(ppm_proc_speed,lda,iopt,info)
       istat = istat + info
 
-      IF (istat .NE. 0) THEN
-          WRITE(mesg,'(A,I3,A)') 'for ',istat,' global arrays. Possible memory leak.'
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_finalize',mesg,__LINE__,info)
-          GOTO 9999
+      IF (istat.NE.0) THEN
+         WRITE(cbuf,'(A,I3,A)') 'for ',istat,' global arrays. Possible memory leak.'
+         fail(cbuf,ppm_err_dealloc)
       ENDIF
 
-!      !-------------------------------------------------------------------------
-!      !  Deallocate mesh structures (from ppm_module_mesh)
-!      !-------------------------------------------------------------------------
-!      CALL ppm_mesh_finalize(info)
-!      IF (info.NE.0) THEN
-!          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,'ppm_finalize',  &
-!     &        'Mesh deallocation failed',__LINE__,info)
-!          GOTO 9999
-!      ENDIF
       !-------------------------------------------------------------------------
       !  Set the global status
       !-------------------------------------------------------------------------
       ppm_initialized = .FALSE.
 
+#ifdef  __MPI3
+      !wait for everyone to call the barrier
+      CALL MPI_Wait(request,MPI_STATUS_IGNORE,info)
+      or_fail_MPI("MPI_Wait")
+#endif
+
+      IF (ppm_rank.EQ.0) THEN
+         stdout_f('(A)',"***********************************************************")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***         Parallel Particle Mesh Library (PPM)        ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***                                                     ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  Thank you for using the PPM library in your work.  ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  Please, acknowledge our efforts by including the   ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  following reference when publishing data obtained  ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  using PPM library:                                 ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***                                                     ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  I. F. Sbalzarini, J. Walther, M. Bergdorf,         ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  S. E. Hieber, E. M. Kotsalis, P. Koumoutsakos,     ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  `J. Comput. Phys.`, 215, pp. 566-588, (2006)       ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***                                                     ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***********************************************************")
+         CALL ppm_log(caller,cbuf,info)
+      ENDIF
+
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_finalize',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Close output units if needed
       !-------------------------------------------------------------------------
-      IF (ppm_stdout .GE. 0) THEN
-          ! do not close it if it is a system standard unit
-          IF (ppm_stdout .NE. 6) THEN
-              INQUIRE(ppm_stdout,opened=isopen)
-              IF (isopen) CLOSE(ppm_stdout)
-          ENDIF
+      IF (ppm_stdout.GE.0) THEN
+         ! do not close it if it is a system standard unit
+         IF (ppm_stdout .NE. 6) THEN
+            INQUIRE(ppm_stdout,OPENED=isopen)
+            IF (isopen) CLOSE(ppm_stdout)
+         ENDIF
       ENDIF
-      IF (ppm_stderr .GE. 0) THEN
-          ! do not close it if it is a system standard unit
-          IF (ppm_stderr .NE. 0) THEN
-              INQUIRE(ppm_stderr,opened=isopen)
-              IF (isopen) CLOSE(ppm_stderr)
-          ENDIF
+      IF (ppm_stderr.GE.0) THEN
+         ! do not close it if it is a system standard unit
+         IF (ppm_stderr .NE. 0) THEN
+            INQUIRE(ppm_stderr,OPENED=isopen)
+            IF (isopen) CLOSE(ppm_stderr)
+         ENDIF
       ENDIF
-      IF (ppm_logfile .GE. 0) THEN
-          INQUIRE(ppm_logfile,opened=isopen)
-          IF (isopen) CLOSE(ppm_logfile)
+      IF (ppm_logfile.GE.0) THEN
+         INQUIRE(ppm_logfile,OPENED=isopen)
+         IF (isopen) CLOSE(ppm_logfile)
       ENDIF
 
       RETURN

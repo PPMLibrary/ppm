@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :             ppm_module_map_part_partial
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -26,7 +26,7 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-     
+
       !-------------------------------------------------------------------------
       !  Define types
       !-------------------------------------------------------------------------
@@ -37,6 +37,11 @@
       !!! This module provides the mapping routines for partial particle
       !!! mapping
          USE ppm_module_topo_typedef
+         USE ppm_module_mapping_typedef
+         IMPLICIT NONE
+
+         PRIVATE
+
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
@@ -44,8 +49,6 @@
          INTEGER, DIMENSION(:), POINTER :: ilist2     => NULL()
          INTEGER, DIMENSION(:), POINTER :: part2proc  => NULL()
          INTEGER, DIMENSION(:), POINTER :: ineighsubs => NULL()
-
-         PRIVATE :: ilist1,ilist2,part2proc,ineighsubs
 
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_partial
@@ -55,8 +58,10 @@
             MODULE PROCEDURE ppm_map_part_partial_s
          END INTERFACE
 
+         PUBLIC :: ppm_map_part_partial
+
          !----------------------------------------------------------------------
-         !  include the source 
+         !  include the source
          !----------------------------------------------------------------------
          CONTAINS
 

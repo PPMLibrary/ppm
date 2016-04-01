@@ -55,15 +55,15 @@ integer                                        :: nterms
 
         use ppm_module_init
         use ppm_module_mktopo
-        
+
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),stat=info)
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         max_phys(ndim) = 1.4_mk
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6) = ppm_param_bcdef_periodic
-        
+
 #ifdef __MPI
         comm = mpi_comm_world
         call mpi_comm_rank(comm,rank,info)
@@ -85,7 +85,7 @@ integer                                        :: nterms
         !----------------
         ! make topology
         !----------------
-        decomp = ppm_param_decomp_cuboid
+        decomp =  ppm_param_decomp_cuboid
         !decomp = ppm_param_decomp_xpencil
         assig  = ppm_param_assign_internal
 
@@ -106,23 +106,17 @@ integer                                        :: nterms
         call ppm_finalize(info)
 
         deallocate(min_phys,max_phys,len_phys)
-
     end finalize
 
-
     setup
-
-
     end setup
-        
 
     teardown
-        
     end teardown
 
     test ghost_mappings
         use ppm_module_io_vtk
-        type(ppm_t_particles_d)         :: Part1
+        type(ppm_t_particles_d),TARGET  :: Part1
         type(ppm_t_field)               :: Field1
         type(ppm_t_field)               :: Field2
         type(ppm_t_field)               :: Field3
@@ -142,6 +136,9 @@ integer                                        :: nterms
         Assert_Equal(info,0)
 
         call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
+        Assert_Equal(info,0)
+
+        CALL Part1%create_neighlist(Part1,info)
         Assert_Equal(info,0)
 
         call Part1%set_cutoff(3._mk * Part1%h_avg,info)
@@ -195,9 +192,9 @@ integer                                        :: nterms
             F3_p(3) = -13._mk
         end foreach
 
-!  print particles to a VTK file
-        CALL ppm_vtk_particles("output",Part1,info)
-        Assert_Equal(info,0)
+        !  print particles to a VTK file
+        !CALL ppm_vtk_particles("output",Part1,info)
+        !Assert_Equal(info,0)
 
 
         !Check that PPM knows that the ghosts are now invalid for all the fields
@@ -208,22 +205,22 @@ integer                                        :: nterms
 
         ! Do a ghost mapping, but only for fields 2 and 3.
         call Part1%map_ghost_get(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Part1%map_ghost_push(info,Field2)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Part1%map_ghost_push(info,Field3)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call Part1%map_ghost_send(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call Part1%map_ghost_pop(info,Field3)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Part1%map_ghost_pop(info,Field2)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call Part1%map_ghost_pop_positions(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         ! Check the states (ghosts should be ok for Field2 and Field3
         ! but not for Field1)
@@ -243,23 +240,27 @@ integer                                        :: nterms
 
         ! Do a partial mapping, but only map fields 2 and 3.
         call Part1%map_positions(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call Part1%map_push(info,Field2)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Part1%map_push(info,Field3)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call Part1%map_send(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
+        !non-blocking
+        !call Part1%map_isend(info)
+        !Assert_Equal(info,0)
+
 
         call Part1%map_pop(info,Field3)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Part1%map_pop(info,Field2)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call Part1%map_pop_positions(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         !Check that are still correct
         foreach p in particles(Part1) with positions(x) sca_fields(F2=Field2) vec_fields(F3=Field3)
@@ -269,34 +270,31 @@ integer                                        :: nterms
             Assert_Equal_Within(F3_p(3), -13._mk,tol)
         end foreach
 
-        call Part1%destroy(info)
-            Assert_Equal(info,0)
+        !call Part1%destroy(info)
+        !Assert_Equal(info,0)
         call Field1%destroy(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field2%destroy(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field3%destroy(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
+
+        call Part1%destroy(info)
+        Assert_Equal(info,0)
 
         end_subroutine()
     end test
 
-!-------------------------------------------------------------
-! test function
-!-------------------------------------------------------------
-pure function f0_test(pos,ndim)
-
+    !-------------------------------------------------------------
+    ! test function
+    !-------------------------------------------------------------
+    pure function f0_test(pos,ndim)
     real(mk)                              :: f0_test
     integer                 ,  intent(in) :: ndim
     real(mk), dimension(ndim), intent(in) :: pos
-
     f0_test =  sin(2._mk*pi*pos(1)) * cos(2._mk*pi*pos(2)) * &
         & sin(2._mk*pi*pos(ndim))
-
     return
-
-end function f0_test
-
-    
+    end function f0_test
 
 end test_suite

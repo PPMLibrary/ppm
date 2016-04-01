@@ -1,16 +1,16 @@
       !------------------------------------------------------------------------!
       !     Subroutine   :                 ppm_interp_to_mesh_all
       !------------------------------------------------------------------------!
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -27,16 +27,17 @@
       ! CH-8092 Zurich, Switzerland
       !------------------------------------------------------------------------!
 
-      SUBROUTINE DTYPE(part_interp_to_mesh_all)(this,Mesh,kernel,info,p2m_bcdef)
+      SUBROUTINE DTYPE(part_interp_to_mesh_all)(this, &
+      &          Mesh,kernel,info,p2m_bcdef)
       !!! This subroutine interpolate all the fields discretized on the particle set to
       !!! a mesh.  It calls this%interp to carry out particle to mesh interpolation.
-      !!! 
+      !!!
       !!! Currently 2 interpolation schemes are supported:
       !!!
       !!! * ppm_param_rmsh_kernel_bsp2
       !!! * ppm_param_rmsh_kernel_mp4
       !!!
-      !!! 
+      !!!
       !!! [TIP]
       !!! There is no need to perform a `ghost_get` before calling this routine
       !!! as the routine calls itself a `ghost_put` to the field after
@@ -54,13 +55,13 @@
       !-------------------------------------------------------------------------!
       ! Arguments
       !-------------------------------------------------------------------------!
-      CLASS(DTYPE(ppm_t_particles))                   :: this
-      CLASS(ppm_t_equi_mesh_)                         :: Mesh
-      INTEGER                     ,     INTENT(IN   ) :: kernel
+      CLASS(DTYPE(ppm_t_particles))                  :: this
+      CLASS(ppm_t_equi_mesh_),         INTENT(INOUT) :: Mesh
+      INTEGER,                         INTENT(IN   ) :: kernel
       !!! Choice of the kernel used to compute the weights.
-      INTEGER                     ,     INTENT(  OUT) :: info
+      INTEGER,                         INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
-      INTEGER, DIMENSION(:  )     , POINTER, OPTIONAL :: p2m_bcdef
+      INTEGER, DIMENSION(:), OPTIONAL, POINTER       :: p2m_bcdef
      !!! Boundary conditions used for the interpolation routines, they may be
      !!! different than the boundary conditions set in the topology.
      !!! The values in this array can be one of:
@@ -70,18 +71,18 @@
      !-------------------------------------------------------------------------!
      ! Local variables
      !-------------------------------------------------------------------------!
-      REAL(MK) , DIMENSION(:,:)     , POINTER  :: xp => NULL()
-      REAL(MK) , DIMENSION(:)       , POINTER  :: wp_s => NULL()
-      REAL(MK) , DIMENSION(:,:)     , POINTER  :: wp_v => NULL()
+!       REAL(MK) , DIMENSION(:,:)     , POINTER  :: xp => NULL()
+!       REAL(MK) , DIMENSION(:)       , POINTER  :: wp_s => NULL()
+!       REAL(MK) , DIMENSION(:,:)     , POINTER  :: wp_v => NULL()
       INTEGER                                  :: kernel_support
       INTEGER,  DIMENSION(ppm_dim+2)           :: ldu
       INTEGER                                  :: ip,ndim
       INTEGER                                  :: nb_part
       ! aliases
-      CLASS(ppm_t_subpatch_),POINTER           :: p    => NULL()
-      CLASS(ppm_t_main_abstr),POINTER          :: abstr=> NULL()
-      CLASS(ppm_t_field_),   POINTER           :: field=> NULL()
-      CLASS(DTYPE(ppm_t_part_prop)_),POINTER   :: prop => NULL()
+!       CLASS(ppm_t_subpatch_),POINTER           :: p    => NULL()
+      CLASS(ppm_t_main_abstr),POINTER          :: abstr
+      CLASS(ppm_t_field_),   POINTER           :: field
+!       CLASS(DTYPE(ppm_t_part_prop)_),POINTER   :: prop => NULL()
 
       start_subroutine("ppm_remesh")
 
@@ -92,7 +93,6 @@
       ppm_rmsh_kernelsize = (/1,2,2,4/)
 
       ndim = ppm_dim
-
 
      !-------------------------------------------------------------------------!
      !  Check arguments
@@ -107,7 +107,6 @@
       !-------------------------------------------------------------------------!
       IF(this%Npart.EQ.0) GOTO 9999
 
-
       !-------------------------------------------------------------------------
       !  Loop through all the fields that are discretized on the
       !  particle set and interpolate them on the mesh
@@ -120,7 +119,7 @@
             SELECT TYPE(field => abstr)
             CLASS IS (ppm_t_field_)
             CALL this%interp_to_mesh(Mesh,field,ppm_param_rmsh_kernel_mp4,info)
-                or_fail("interp_to_mesh")
+            or_fail("interp_to_mesh")
             END SELECT
             abstr => this%field_ptr%next()
         ENDDO

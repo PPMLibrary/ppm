@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_io_write_ascii
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -61,7 +61,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                          , INTENT(IN   ) :: iUnit
       !!! Fortran I/O unit to be used
@@ -86,9 +86,9 @@
       !!! .TRUE. if the integer array actually is a CHARACTER string
       !!! and should be converted back before output.
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                         :: t0
+      REAL(ppm_kind_double) :: t0
       LOGICAL                          :: lfmt
 #if __KIND == __INTEGER
       CHARACTER(LEN=SIZE(adata,1)), POINTER :: cbuf
@@ -96,11 +96,11 @@
 #endif
 
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_io_write_ascii',t0,info)
 

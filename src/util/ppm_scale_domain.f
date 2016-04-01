@@ -22,19 +22,16 @@
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
-      USE ppm_module_check_id
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -52,17 +49,16 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                          :: t0
+      REAL(ppm_kind_double) :: t0
       INTEGER                           :: i,j,k,dim
-      CHARACTER(LEN=ppm_char)           :: mesg
       LOGICAL                           :: valid
-      TYPE(ppm_t_topo)        , POINTER :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_scale_domain',t0,info)
 
@@ -78,19 +74,15 @@
       !  let us tell the compiler what we want to do ... ie. we should show it
       !  that the first dimension is 1) short and either 2 or 3.
       !-------------------------------------------------------------------------
-
-      IF (ppm_dim.EQ.2) THEN
-         dim = 2
-      ELSE
-         dim = 3
-      ENDIF
+      dim=MERGE(2,3,ppm_dim.EQ.2)
 
       !-------------------------------------------------------------------------
       !  based on the topoid we have to scale all or one topology
       !-------------------------------------------------------------------------
       ! TODO: HERE WE MERGED CODE FROM THE DEM SOURCES - IT NEEDS TESTING
       !-------------------------------------------------------------------------
-      IF (topoid.EQ.ppm_param_topo_undefined) THEN
+      SELECT CASE (topoid)
+      CASE (ppm_param_topo_undefined)
          !----------------------------------------------------------------------
          !  scale all topologies
          !----------------------------------------------------------------------
@@ -136,7 +128,7 @@
 #endif
             ENDDO
          ENDDO
-      ELSE
+      CASE DEFAULT
          !----------------------------------------------------------------------
          !  else, scale toplogy with given id
          !----------------------------------------------------------------------
@@ -184,7 +176,7 @@
      &         (topo%max_physs(i) - origo(i))*scale(i) + origo(i)
 #endif
          ENDDO
-      ENDIF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Return

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_map_type_isactive
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -34,29 +34,28 @@
       !!! ghost_get/ghost_put/global or other mapping routines.
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data
+      USE ppm_module_mapping_typedef, ONLY : ppm_map_type
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: map_type
+      INTEGER, INTENT(IN   ) :: map_type
       !!! A map type as defined in ppm_param.h
-      LOGICAL                                 :: is_active
+      LOGICAL                :: is_active
       !!! TRUE if the internal state variable is set to this type
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER               :: info 
-      REAL(ppm_kind_double) :: t0
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       is_active = ppm_map_type.EQ.map_type
-      
+
       END FUNCTION ppm_map_type_isactive

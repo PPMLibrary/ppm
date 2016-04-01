@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_neighlist_clist
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -77,78 +77,85 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_util_rank
-      USE ppm_module_check_id
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:),          POINTER :: xp
+      REAL(MK), DIMENSION(:,:),        POINTER       :: xp
       !!! Particle co-ordinates
-      INTEGER                 , INTENT(IN   )    :: np
+      INTEGER,                         INTENT(IN   ) :: np
       !!! Number of particles
-      INTEGER                 , INTENT(IN   )    :: topoid
+      INTEGER,                         INTENT(IN   ) :: topoid
       !!! ID of current topology
-      REAL(MK), DIMENSION(:)  , INTENT(IN   )    :: cutoff
+      REAL(MK), DIMENSION(:),          INTENT(IN   ) :: cutoff
       !!! Cutoff in all (2,3) space directions. Actual cell size may differ,
       !!! due to round-off, but it always >= cutoff.
-      LOGICAL                 , INTENT(IN   )    :: lsymm
+      LOGICAL,                         INTENT(IN   ) :: lsymm
       !!! Use symmetry?
-      TYPE(ppm_t_clist), DIMENSION(:), POINTER   :: clist
+      TYPE(ppm_t_clist), DIMENSION(:), POINTER       :: clist
       !!! Cell list data structure
-      INTEGER                 , INTENT(  OUT)    :: info
+      INTEGER,                         INTENT(  OUT) :: info
       !!! Returns 0 upon success
-      INTEGER, DIMENSION(:)   , OPTIONAL         :: pidx
+      INTEGER, DIMENSION(:), OPTIONAL                :: pidx
       !!! Indices of those particles that are
       !!! to be ranked. By default, all particles are ranked. If given,
       !!! particle indices in cell list are relative to `xp(:,pidx(:))` and not
       !!! `xp(:,:)`
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      ! timer
-      REAL(MK)                                :: t0
+      TYPE(ppm_t_topo), POINTER :: topo
+
       ! counters
-      REAL(MK), DIMENSION(:,:), POINTER       :: wxp => NULL()
-      ! work array, must be allocated of pidx is passed
-      INTEGER                                 :: idom,jdom,i,npidx,wnp
-      ! extent of cell mesh
-      REAL(MK), DIMENSION(ppm_dim)            :: xmin,xmax
+      REAL(MK), DIMENSION(:,:), POINTER :: wxp
       ! actual cell size
-      REAL(MK), DIMENSION(ppm_dim)            :: min_phys,max_phys
+      REAL(MK), DIMENSION(:),   POINTER :: min_phys
+      ! extent of cell mesh
+      REAL(MK), DIMENSION(:),   POINTER :: xmin,xmax
+
       ! domain extents
-      REAL(MK), DIMENSION(ppm_dim)            :: cellsize
+      REAL(MK), DIMENSION(ppm_dim)      :: cellsize
       ! number of ghostlayers
-      INTEGER, DIMENSION(2*ppm_dim)           :: ngl
+      INTEGER, DIMENSION(2*ppm_dim)     :: ngl
+      ! timer
+      REAL(ppm_kind_double)             :: t0
+      REAL(MK)                          :: eps
+
       ! parameter for alloc
-      INTEGER                                 :: nsbc
-      LOGICAL, DIMENSION(2*ppm_dim)           :: isbc
-      INTEGER                                 :: iopt
-      INTEGER, DIMENSION(2)                   :: ldc
-      LOGICAL                                 :: valid
-      TYPE(ppm_t_topo)          , POINTER     :: topo => NULL()
-      REAL(MK)                                :: eps
-      LOGICAL                                 :: lpidx
+      INTEGER               :: nsbc
+      ! work array, must be allocated of pidx is passed
+      INTEGER               :: idom,jdom,i,npidx,wnp
+      INTEGER               :: iopt
+      INTEGER, DIMENSION(2) :: ldc
+
+      LOGICAL, DIMENSION(2*ppm_dim) :: isbc
+      LOGICAL                       :: valid
+      LOGICAL                       :: lpidx
+
+      CHARACTER(LEN=ppm_char) :: caller = 'ppm_neighlist_clist'
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_neighlist_clist',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
+
 #if   __KIND == __DOUBLE_PRECISION
       eps = ppm_myepsd
 #elif __KIND == __SINGLE_PRECISION
@@ -161,267 +168,210 @@
       !  Allocate or set wxp
       !-------------------------------------------------------------------------
       IF (PRESENT(pidx)) THEN
-          lpidx = .TRUE.
-          npidx = np
-          iopt = ppm_param_alloc_fit
-          ldc(1) = ppm_dim
-          ldc(2) = npidx
-          CALL ppm_alloc(wxp,ldc,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_neighlist_clist',  &
- &                   'work xp array wxp',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          FORALL(i=1:npidx) wxp(:,i) = xp(:,pidx(i))
-          wnp = npidx
+         lpidx = .TRUE.
+         npidx = np
+
+         NULLIFY(wxp)
+         iopt = ppm_param_alloc_fit
+         ldc(1) = ppm_dim
+         ldc(2) = npidx
+         CALL ppm_alloc(wxp,ldc,iopt,info)
+         or_fail_alloc("work xp array wxp",ppm_error=ppm_error_fatal)
+
+         FORALL(i=1:npidx) wxp(1:ppm_dim,i) = xp(1:ppm_dim,pidx(i))
+
+         wnp = npidx
       ELSE
-          lpidx = .FALSE.
-          wxp => xp
-          wnp = np
+         lpidx = .FALSE.
+         wxp => xp
+         wnp = np
       ENDIF
       !-------------------------------------------------------------------------
       !  Allocate clist to the number of subs this processor has
       !-------------------------------------------------------------------------
       IF (ASSOCIATED(clist)) THEN
-          IF (SIZE(clist,1) .NE. topo%nsublist) THEN
-              CALL ppm_clist_destroy(clist,info)
-              IF (info .NE. 0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_sub_failed,'ppm_neighlist_clist',  &
-     &                'Could not destroy old cell list',__LINE__,info)
-                  GOTO 9999
-              ENDIF
-          ENDIF
+         IF (SIZE(clist,1) .NE. topo%nsublist) THEN
+            CALL ppm_clist_destroy(clist,info)
+            or_fail('Could not destroy old cell list')
+         ENDIF
       ENDIF
       IF (.NOT. ASSOCIATED(clist)) THEN
-          ALLOCATE(clist(topo%nsublist), STAT=info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_neighlist_clist',  &
-     &                'cell list array CLIST',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          DO i=1,topo%nsublist
-              NULLIFY(clist(i)%nm)
-              NULLIFY(clist(i)%lpdx)
-              NULLIFY(clist(i)%lhbx)
-          ENDDO
+         ALLOCATE(clist(topo%nsublist),STAT=info)
+         or_fail_alloc('cell list array CLIST',ppm_error=ppm_error_fatal)
+
+         DO i=1,topo%nsublist
+            NULLIFY(clist(i)%nm)
+            NULLIFY(clist(i)%lpdx)
+            NULLIFY(clist(i)%lhbx)
+         ENDDO
       ENDIF
 
 #if   __KIND == __DOUBLE_PRECISION
-      min_phys(:) = topo%min_physd
-      max_phys(:) = topo%max_physd
+      min_phys => topo%min_physd
 #elif __KIND == __SINGLE_PRECISION
-      min_phys(:) = topo%min_physs
-      max_phys(:) = topo%max_physs
+      min_phys => topo%min_physs
 #endif
 
       !-------------------------------------------------------------------------
       ! Determine if there are any (non-)symmetric boundary conditions
       !-------------------------------------------------------------------------
       nsbc = 0
-      isbc(:) = .FALSE. 
+      isbc(:) = .FALSE.
       DO i=1,2*ppm_dim
-          SELECT CASE (topo%bcdef(i))
-          CASE (ppm_param_bcdef_symmetry)
-              nsbc = nsbc + 1
-              isbc(i) = .TRUE.
-          CASE (ppm_param_bcdef_antisymmetry)
-              nsbc = nsbc + 1
-              isbc(i) = .TRUE.
-          CASE (ppm_param_bcdef_neumann)
-              nsbc = nsbc + 1
-              isbc(i) = .TRUE.
-          CASE (ppm_param_bcdef_dirichlet)
-              nsbc = nsbc + 1
-              isbc(i) = .TRUE.
-          END SELECT
+         SELECT CASE (topo%bcdef(i))
+         CASE (ppm_param_bcdef_symmetry)
+            nsbc = nsbc + 1
+            isbc(i) = .TRUE.
+         CASE (ppm_param_bcdef_antisymmetry)
+            nsbc = nsbc + 1
+            isbc(i) = .TRUE.
+         CASE (ppm_param_bcdef_neumann)
+            nsbc = nsbc + 1
+            isbc(i) = .TRUE.
+         CASE (ppm_param_bcdef_dirichlet)
+            nsbc = nsbc + 1
+            isbc(i) = .TRUE.
+         END SELECT
       ENDDO
 
       !-------------------------------------------------------------------------
       !  Loop over all subs of this processor and create cell lists for all
       !  of them. The extent of the cell list mesh is larger than the sub
-      !  (but not on all sides if we are using symmetry). 
+      !  (but not on all sides if we are using symmetry).
       !-------------------------------------------------------------------------
       DO idom=1,topo%nsublist
-          jdom = topo%isublist(idom)
+         jdom = topo%isublist(idom)
 
-          !---------------------------------------------------------------------
-          !  Determine extent of mesh around this sub plus tolerance for
-          !  outer boundaries (to avoid real particles in ghost cells)
-          !---------------------------------------------------------------------
+         !---------------------------------------------------------------------
+         !  Determine extent of mesh around this sub plus tolerance for
+         !  outer boundaries (to avoid real particles in ghost cells)
+         !---------------------------------------------------------------------
 #if   __KIND == __DOUBLE_PRECISION
-              !-----------------------------------------------------------------
-              !  Get sub extent -- 2D double precision
-              !-----------------------------------------------------------------
-              xmin(1) = topo%min_subd(1,jdom)
-              xmax(1) = topo%max_subd(1,jdom)
-              xmin(2) = topo%min_subd(2,jdom)
-              xmax(2) = topo%max_subd(2,jdom)
-          IF (ppm_dim .EQ. 3) THEN
-              !-----------------------------------------------------------------
-              !  Get sub extent -- 3D double precision
-              !-----------------------------------------------------------------
-              xmin(3) = topo%min_subd(3,jdom)
-              xmax(3) = topo%max_subd(3,jdom)
-          ENDIF
+         !-----------------------------------------------------------------
+         !  Get sub extent
+         !-----------------------------------------------------------------
+         xmin => topo%min_subd(:,jdom)
+         xmax => topo%max_subd(:,jdom)
+
 #elif __KIND == __SINGLE_PRECISION
-              !-----------------------------------------------------------------
-              !  Get sub extent -- 2D single precision
-              !-----------------------------------------------------------------
-              xmin(1) = topo%min_subs(1,jdom)
-              xmax(1) = topo%max_subs(1,jdom)
-              xmin(2) = topo%min_subs(2,jdom)
-              xmax(2) = topo%max_subs(2,jdom)
-          IF (ppm_dim .EQ. 3) THEN
-              !-----------------------------------------------------------------
-              !  Get sub extent -- 3D single precision
-              !-----------------------------------------------------------------
-              xmin(3) = topo%min_subs(3,jdom)
-              xmax(3) = topo%max_subs(3,jdom)
-          ENDIF
+         !-----------------------------------------------------------------
+         !  Get sub extent
+         !-----------------------------------------------------------------
+         xmin => topo%min_subs(:,jdom)
+         xmax => topo%max_subs(:,jdom)
 #endif
 
-          !---------------------------------------------------------------------
-          !  Allocate cell number array
-          !---------------------------------------------------------------------
-          iopt = ppm_param_alloc_fit
-          ldc(1) = ppm_dim
-          CALL ppm_alloc(clist(idom)%nm,ldc,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_neighlist_clist',  &
- &                   'Numbers of cells NM',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          !---------------------------------------------------------------------
-          !  Determine number of cell boxes and effective cell size.
-          !---------------------------------------------------------------------
-          DO i=1,ppm_dim
-              ! number of cells based on a cellsize = cutoff 
-              clist(idom)%nm(i) = INT((xmax(i) - xmin(i))/cutoff(i))
-              ! make at least one box
-              IF (clist(idom)%nm(i) .LT. 1) clist(idom)%nm(i) = 1
-              cellsize(i) = (xmax(i) - xmin(i))/REAL(clist(idom)%nm(i),MK)
-          ENDDO
+         !---------------------------------------------------------------------
+         !  Allocate cell number array
+         !---------------------------------------------------------------------
+         iopt = ppm_param_alloc_fit
+         ldc(1) = ppm_dim
+         CALL ppm_alloc(clist(idom)%nm,ldc,iopt,info)
+         or_fail_alloc('Numbers of cells NM',ppm_error=ppm_error_fatal)
 
-          !---------------------------------------------------------------------
-          !  Find out how many ghost layers are needed:
-          !  Do no longer add ghost layers to the domain since this would result
-          !  in errors in the ranking due to nummerical errors
-          !---------------------------------------------------------------------
-          ngl(:) = 0
-          IF (lsymm) THEN                ! EXPLOIT SYMMETRY
-              DO i=1,ppm_dim
-                  ! if we are at are the phys_dom border and have (non-)symmetirc
-                  ! BCs then add a ghost layer
-                  IF ((ABS(xmin(i)-min_phys(i)).LT.eps).AND.isbc((i-1)*2+1)) THEN
-                      ngl(i) = 1
-                  ENDIF
-              ENDDO
-              DO i=ppm_dim+1,2*ppm_dim  ! layers on upper-right side ngl(i) = 1
+         !---------------------------------------------------------------------
+         !  Determine number of cell boxes and effective cell size.
+         !---------------------------------------------------------------------
+         DO i=1,ppm_dim
+            ! number of cells based on a cellsize = cutoff
+            clist(idom)%nm(i) = INT((xmax(i) - xmin(i))/cutoff(i))
+            ! make at least one box
+            IF (clist(idom)%nm(i) .LT. 1) clist(idom)%nm(i) = 1
+            cellsize(i) = (xmax(i) - xmin(i))/REAL(clist(idom)%nm(i),MK)
+         ENDDO
+
+         !---------------------------------------------------------------------
+         !  Find out how many ghost layers are needed:
+         !  Do no longer add ghost layers to the domain since this would result
+         !  in errors in the ranking due to nummerical errors
+         !---------------------------------------------------------------------
+         ngl(:) = 0
+         IF (lsymm) THEN                ! EXPLOIT SYMMETRY
+            DO i=1,ppm_dim
+               ! if we are at are the phys_dom border and have (non-)symmetirc
+               ! BCs then add a ghost layer
+               IF ((ABS(xmin(i)-min_phys(i)).LT.eps).AND.isbc((i-1)*2+1)) THEN
                   ngl(i) = 1
-              ENDDO
-          ELSE                       ! DO NOT EXPLOIT SYMMETRY => ghost layers 
-              DO i=1,2*ppm_dim             ! all around
-                 ngl(i) = 1
-              ENDDO
-          ENDIF
+               ENDIF
+            ENDDO
+            DO i=ppm_dim+1,2*ppm_dim  ! layers on upper-right side ngl(i) = 1
+               ngl(i) = 1
+            ENDDO
+         ELSE                       ! DO NOT EXPLOIT SYMMETRY => ghost layers
+            DO i=1,2*ppm_dim             ! all around
+               ngl(i) = 1
+            ENDDO
+         ENDIF
 
-          !---------------------------------------------------------------------
-          !  Rank the particles in this extended sub
-          !---------------------------------------------------------------------
-          IF (ppm_dim .EQ. 2) THEN
-              CALL ppm_util_rank2d(wxp,wnp,xmin(1:2),xmax(1:2),&
-     &                 clist(idom)%nm(1:2),ngl(1:4),clist(idom)%lpdx,&
-     &                 clist(idom)%lhbx,info)
-              !-----------------------------------------------------------------
-              !  We have to increase nm by the ghost layers to provide the same
-              !  behaviour as before the change of interface of ppm_util_rank
-              !-----------------------------------------------------------------
-              clist(idom)%nm(1) = clist(idom)%nm(1) + ngl(1) + ngl(3)
-              clist(idom)%nm(2) = clist(idom)%nm(2) + ngl(2) + ngl(4)
-          ELSEIF (ppm_dim .EQ. 3) THEN
-              CALL ppm_util_rank3d(wxp,wnp,xmin(1:3),xmax(1:3),&
-     &                 clist(idom)%nm(1:3),ngl(1:6),clist(idom)%lpdx,&
-     &                 clist(idom)%lhbx,info)
-              !-----------------------------------------------------------------
-              !  We have to increase nm by the ghost layers to provide the same
-              !  behaviour as before the change of interface of ppm_util_rank
-              !-----------------------------------------------------------------
-              clist(idom)%nm(1) = clist(idom)%nm(1) + ngl(1) + ngl(4)
-              clist(idom)%nm(2) = clist(idom)%nm(2) + ngl(2) + ngl(5)
-              clist(idom)%nm(3) = clist(idom)%nm(3) + ngl(3) + ngl(6)
-          ENDIF
-          IF (info .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_sub_failed,'ppm_neighlist_clist',   &
-     &                  'ranking of particles failed!',__LINE__,info)
-              GOTO 9999
-          ENDIF
+         !---------------------------------------------------------------------
+         !  Rank the particles in this extended sub
+         !---------------------------------------------------------------------
+         SELECT CASE (ppm_dim)
+         CASE (2)
+            CALL ppm_util_rank2d(wxp,wnp,xmin(1:2),xmax(1:2),   &
+            &    clist(idom)%nm(1:2),ngl(1:4),clist(idom)%lpdx, &
+            &    clist(idom)%lhbx,info)
+            or_fail('ranking of particles failed!')
+            !-----------------------------------------------------------------
+            !  We have to increase nm by the ghost layers to provide the same
+            !  behaviour as before the change of interface of ppm_util_rank
+            !-----------------------------------------------------------------
+            clist(idom)%nm(1) = clist(idom)%nm(1) + ngl(1) + ngl(3)
+            clist(idom)%nm(2) = clist(idom)%nm(2) + ngl(2) + ngl(4)
+
+         CASE (3)
+            CALL ppm_util_rank3d(wxp,wnp,xmin(1:3),xmax(1:3),   &
+            &    clist(idom)%nm(1:3),ngl(1:6),clist(idom)%lpdx, &
+            &    clist(idom)%lhbx,info)
+            or_fail('ranking of particles failed!')
+            !-----------------------------------------------------------------
+            !  We have to increase nm by the ghost layers to provide the same
+            !  behaviour as before the change of interface of ppm_util_rank
+            !-----------------------------------------------------------------
+            clist(idom)%nm(1) = clist(idom)%nm(1) + ngl(1) + ngl(4)
+            clist(idom)%nm(2) = clist(idom)%nm(2) + ngl(2) + ngl(5)
+            clist(idom)%nm(3) = clist(idom)%nm(3) + ngl(3) + ngl(6)
+
+         END SELECT
       ENDDO
       IF (lpidx) THEN
-          iopt = ppm_param_dealloc
-          CALL ppm_alloc(wxp,ldc,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,'ppm_neighlist_clist',  &
- &                   'work xp array wxp',__LINE__,info)
-              GOTO 9999
-          ENDIF
+         iopt = ppm_param_dealloc
+         CALL ppm_alloc(wxp,ldc,iopt,info)
+         or_fail_dealloc('work xp array wxp')
       ELSE
-          NULLIFY(wxp)
+         NULLIFY(wxp)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_neighlist_clist',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_neighlist_clist',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 8888
+             fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
           ENDIF
           IF (SIZE(cutoff,1) .LT. ppm_dim) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_neighlist_clist',  &
-     &            'cutoff must be given in all dimensions',__LINE__,info)
-              GOTO 8888
+             fail('cutoff must be given in all dimensions',exit_point=8888)
           ENDIF
           DO i=1,ppm_dim
-              IF (cutoff(i) .LE. 0.0_MK) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_neighlist_clist',  &
-     &                'cutoff must be >0 in all dimensions',__LINE__,info)
-                  GOTO 8888
-              ENDIF
+             IF (cutoff(i) .LE. 0.0_MK) THEN
+                fail('cutoff must be >0 in all dimensions',exit_point=8888)
+             ENDIF
           ENDDO
           IF (np .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_neighlist_clist',  &
-     &            'np must be >0',__LINE__,info)
-              GOTO 8888
+             fail('np must be >0',exit_point=8888)
           ENDIF
           IF (topoid .EQ. ppm_param_topo_undefined) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_neighlist_clist',  &
-     &            'A defined topology must be given',__LINE__,info)
-              GOTO 8888
+             fail('A defined topology must be given',exit_point=8888)
           ENDIF
           CALL ppm_check_topoid(topoid,valid,info)
           IF (.NOT. valid) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_neighlist_clist',  &
-     &               'topoid out of range',__LINE__,info)
-              GOTO 8888
+             fail('topoid out of range',exit_point=8888)
           ENDIF
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_neighlist_clist_s

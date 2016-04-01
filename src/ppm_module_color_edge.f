@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Subroutine   :                  ppm_module_color_edge
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -31,23 +31,26 @@
       !!! vertices, number of edges, edge list of the graph and optres array
       !!! as input, respectively.
 
+      IMPLICIT NONE
+
+      PRIVATE
       !-------------------------------------------------------------------------
       !  Declaration of types
       !-------------------------------------------------------------------------
       TYPE vertex
       !!! declaration of type: vertex
-          INTEGER :: degree
-          !!! degree of the vertex
-          INTEGER :: color
-          !!! color of the vertex
-          INTEGER :: dsat
-          !!! dsat-value of the vertex
-          LOGICAL :: iscolored
-          !!! TRUE if the vertex is colored
-          INTEGER :: loc_heap
-          !!! location of vertex in heap list
           INTEGER, DIMENSION(:), POINTER :: list => NULL()
           !!! list of vertices that the vertex is connected to
+          INTEGER                        :: degree
+          !!! degree of the vertex
+          INTEGER                        :: color
+          !!! color of the vertex
+          INTEGER                        :: dsat
+          !!! dsat-value of the vertex
+          INTEGER                        :: loc_heap
+          !!! location of vertex in heap list
+          LOGICAL                        :: iscolored
+          !!! TRUE if the vertex is colored
       END TYPE vertex
 
       TYPE list
@@ -59,60 +62,44 @@
       !-------------------------------------------------------------------------
       !  Declaration of arrays
       !-------------------------------------------------------------------------
-      TYPE(vertex), DIMENSION(:), POINTER :: node => NULL()
+      TYPE(vertex), DIMENSION(:),   ALLOCATABLE :: node
       !!! Array of nodes
-      INTEGER, DIMENSION(:), POINTER          :: nelem => NULL()
-      !!! array for number of nodes that are adjacent to each node
-      INTEGER, DIMENSION(:), POINTER          :: offset => NULL()
-      !!! where to put the next node in the adjacency list of another
-      TYPE(list), DIMENSION(:), POINTER       :: edges_per_node => NULL()
+      TYPE(list),   DIMENSION(:),   ALLOCATABLE :: edges_per_node
       !!! number of edges per node
-      TYPE(list), DIMENSION(:), POINTER       :: lists => NULL()
+      TYPE(list),   DIMENSION(:),   ALLOCATABLE :: lists
       !!! array of adjacency lists, one for each node
-      INTEGER, DIMENSION(:,:), POINTER        :: node_sat => NULL()
+      INTEGER,      DIMENSION(:),   ALLOCATABLE :: nelem
+      !!! array for number of nodes that are adjacent to each node
+      INTEGER,      DIMENSION(:),   ALLOCATABLE :: offset
+      !!! where to put the next node in the adjacency list of another
+      INTEGER,      DIMENSION(:,:), ALLOCATABLE :: node_sat
       !!! 2-D array for keeping nodes according to their d-sat values
       !!! and degrees where rows are dsat values and columns are node
       !!! numbers sorted by degree of nodes
-      INTEGER, DIMENSION(:), POINTER          :: size_heap => NULL()
+      INTEGER,      DIMENSION(:),   ALLOCATABLE :: size_heap
       !!! size of the heap for each row (d-sat value)
-      LOGICAL, DIMENSION(:), POINTER          :: used_color => NULL()
+      LOGICAL,      DIMENSION(:),   ALLOCATABLE :: used_color
       !!! Array to be used to count number of distinct colors
 
       !-------------------------------------------------------------------------
       !  Declaration of variables
       !-------------------------------------------------------------------------
-      INTEGER                                 :: nvertices
+      INTEGER                                   :: nvertices
       !!! number of vertices in the graph
-      INTEGER                                 :: nedges
+      INTEGER                                   :: nedges
       !!! number of edges in the graph
-      INTEGER                                 :: max_degree
+      INTEGER                                   :: max_degree
       !!! degree of the graph
-      INTEGER                                 :: ncolor
+      INTEGER                                   :: ncolor
       !!! number of colors to be used
-      INTEGER                                 :: alloc_error
-      !!! flag for allocation error
+
+      INTEGER, DIMENSION(1)                     :: ldc
 
       INTERFACE ppm_color_edge
           MODULE PROCEDURE ppm_color_edge
       END INTERFACE
 
-      !-------------------------------------------------------------------------
-      !  Privatizing variables and arrays of the module
-      !-------------------------------------------------------------------------
-      PRIVATE                                 :: node
-      PRIVATE                                 :: nelem
-      PRIVATE                                 :: offset
-      PRIVATE                                 :: edges_per_node
-      PRIVATE                                 :: lists
-      PRIVATE                                 :: node_sat
-      PRIVATE                                 :: size_heap
-      PRIVATE                                 :: used_color
-      PRIVATE                                 :: nvertices
-      PRIVATE                                 :: nedges
-      PRIVATE                                 :: max_degree
-      PRIVATE                                 :: ncolor
-      PRIVATE                                 :: alloc_error
-
+      PUBLIC :: ppm_color_edge
       !-------------------------------------------------------------------------
       !  Location of subroutine to be used for coloring
       !-------------------------------------------------------------------------

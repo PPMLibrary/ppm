@@ -48,12 +48,12 @@ test_suite ppm_module_ctrl
     gdefault    = 0
     gflag       = 0
     glong_flag  = 0
-    rdefault    = 0
-    rflag       = 0
-    rlong_flag  = 0
-    ddefault    = 0
-    dflag       = 0
-    dlong_flag  = 0
+    rdefault    = 0.
+    rflag       = 0.
+    rlong_flag  = 0.
+    ddefault    = 0._8
+    dflag       = 0._8
+    dlong_flag  = 0._8
     cdefault    = ''
     cflag       = ''
     clong_flag  = ''
@@ -62,12 +62,12 @@ test_suite ppm_module_ctrl
     lelong_flag = .false.
     ldflag      = .false.
     ldlong_flag = .false.
-    pdefault    = (0,0)
-    pflag       = (0,0)
-    plong_flag  = (0,0)
-    xdefault    = (0,0)
-    xflag       = (0,0)
-    xlong_flag  = (0,0)
+    pdefault    = (0.,0.)
+    pflag       = (0.,0.)
+    plong_flag  = (0.,0.)
+    xdefault    = (0._8,0._8)
+    xflag       = (0._8,0._8)
+    xlong_flag  = (0._8,0._8)
     value       = ''
     ok          = .false.
     info        = 0
@@ -145,8 +145,7 @@ test_suite ppm_module_ctrl
     Assert_Equal(info, 0)
   end test
 
-  test multiplied({idefault: 1, iflag: 2},
-                  {idefault: [2,3,4], iflag: [1,3,5]})
+  test multiplied({idefault: 1, iflag: 2},{idefault: [2,3,4], iflag: [1,3,5]})
     IF (idefault .EQ. 1) THEN
        Assert_Equal(iflag,2)
     END IF
@@ -248,7 +247,7 @@ test_suite ppm_module_ctrl
     CALL find_arg(5, ok, value)
     Assert_True(ok)
     Assert_Equal(value, 'finalize')
-    
+
   end test
 
   test integer_args

@@ -1,6 +1,9 @@
 TESTINC=-I../../../include -L../../../lib -lppm
+FC = mpif90 -ffree-form -ffree-line-length-none -ffree-line-length-none
 sources=$(wildcard *.f)
 targets=$(patsubst %.f,%,$(sources))
+LDFLAGS = -L/Users/afshar/Documents/MPI_CBG/mosaic/code/metis4/lib -framework Accelerate
+CPP = cpp-4.9
 
 new : clean all
 
@@ -13,6 +16,3 @@ $(targets) : $(sources)
 	rm -f __$@.f
 	./$@
 
-clean :
-	rm -f __*
-	rm -f $(targets)

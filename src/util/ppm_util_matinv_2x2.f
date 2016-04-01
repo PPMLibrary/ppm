@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_util_matinv_2x2
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -45,7 +45,7 @@
       !!! result. Maybe - after some time - this can be
       !!! removed.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -53,6 +53,7 @@
       USE ppm_module_error
       USE ppm_module_write
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -62,7 +63,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(2,2), INTENT(IN   ) :: Am
       !!! The 2x2 matrix stored in row-major order (i.e. first index is row
@@ -72,18 +73,23 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0,Adet,Adetinv,lmyeps
-      LOGICAL                                 :: correct
+      REAL(ppm_kind_double) :: t0
+      REAL(MK) :: Adet,Adetinv,lmyeps
+
+      LOGICAL :: correct
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_util_matinv'
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_util_matinv_2x2',t0,info)
+      CALL substart(caller,t0,info)
+
 #if   __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif __KIND == __DOUBLE_PRECISION
@@ -99,10 +105,8 @@
       !  Check that Am is invertible
       !-------------------------------------------------------------------------
       IF (Adet .LT. lmyeps) THEN
-          info = ppm_error_warning
-          CALL ppm_error(ppm_err_mat_singul,'ppm_util_matinv_2x2',     &
-     &        'Cannot invert Am!. Returning.',__LINE__,info)
-          GOTO 9999
+         fail('Cannot invert Am!. Returning.',ppm_err_mat_singul, &
+         & ppm_error=ppm_error_warning)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -136,20 +140,18 @@
             correct = .FALSE.
          ENDIF
          IF (.NOT. correct) THEN
-            info = ppm_error_warning
-            CALL ppm_error(ppm_err_test_fail,'ppm_util_matinv_2x2',     &
-     &           'Result is probably wrong!',__LINE__,info)
+            fail('Result is probably wrong!',ppm_err_test_fail, &
+            & exit_point=no,ppm_error=ppm_error_warning)
          ELSE
-            CALL ppm_write(ppm_rank,'ppm_util_matinv_2x2',     &
-     &           'The result is correct up to ppm_eps tolerance',info)
+            stdout("The result is correct up to ppm_eps tolerance")
          ENDIF
       ENDIF
-      
+
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_util_matinv_2x2',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_util_matinv_2x2_s

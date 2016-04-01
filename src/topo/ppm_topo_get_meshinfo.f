@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_get_meshinfo
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -39,7 +39,6 @@
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
-      USE ppm_module_check_id
       USE ppm_module_typedef
       USE ppm_module_alloc
       IMPLICIT NONE
@@ -79,10 +78,10 @@
       !!! *whole* physical domain (i.e. all processors).
       !!! Use `topo%isublist` to find the indeces for the grids on the
       !!! processor
-      INTEGER, DIMENSION(ppm_dim)      , INTENT(  OUT) :: maxndata 
+      INTEGER, DIMENSION(ppm_dim)      , INTENT(  OUT) :: maxndata
       !!! Returns maximum number of grid points over all subdomains
       INTEGER, DIMENSION(:  ), POINTER                 :: isublist
-      !!! list of subs of the current processor. 
+      !!! list of subs of the current processor.
       !!! 1st index: local sub number.
       INTEGER                         ,  INTENT(  OUT) :: nsublist
       !!! number of subs on the current processor.
@@ -94,8 +93,8 @@
       REAL(ppm_kind_double)          :: t0
       INTEGER                        :: i,isub,d
       LOGICAL                        :: valid
-      TYPE(ppm_t_topo),      POINTER :: topo => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER :: mesh => NULL()
+      TYPE(ppm_t_topo),      POINTER :: topo
+      TYPE(ppm_t_equi_mesh), POINTER :: mesh
       INTEGER, DIMENSION(2)          :: lda
       INTEGER                        :: iopt
       !-------------------------------------------------------------------------
@@ -103,7 +102,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_topo_get_meshinfo',t0,info)
 
@@ -118,7 +117,7 @@
 
       topo => ppm_topo(topoid)%t
       mesh => topo%mesh(meshid)
-      
+
       !-------------------------------------------------------------------------
       !  Allocate memory for structures
       !-------------------------------------------------------------------------
@@ -147,7 +146,7 @@
      &        'sub mesh sizes NDATA',__LINE__,info)
           GOTO 9999
       ENDIF
-      
+
       lda(1) = topo%nsublist
       CALL ppm_alloc(isublist,lda,iopt,info)
       IF (info .NE. 0) THEN
@@ -156,15 +155,15 @@
      &        'sub mesh sizes ISUBLIST',__LINE__,info)
           GOTO 9999
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       !  Copy data
       !-------------------------------------------------------------------------
-    
+
       nsublist = topo%nsublist
       FORALL (i=1:nsublist) isublist(i) = topo%isublist(i)
       nm = mesh%Nm
-      FORALL(i=1:topo%nsubs, d=1:ppm_dim) 
+      FORALL(i=1:topo%nsubs, d=1:ppm_dim)
           ndata(d,i) = mesh%nnodes(d,i)
           istart(d,i) = mesh%istart(d,i)
       END FORALL

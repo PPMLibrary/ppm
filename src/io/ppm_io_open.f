@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                    ppm_io_open
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -28,11 +28,11 @@
       !-------------------------------------------------------------------------
 
       SUBROUTINE ppm_io_open(iUnit,filename,actn,posn,pfmt,pmode,info)
-      !!! This routine opens an IO channel for parallel reading and/or writing 
+      !!! This routine opens an IO channel for parallel reading and/or writing
       !!! and associates the given I/O unit with the file indicated.
       !!!
       !!! [NOTE]
-      !!! There are lots of `MPI_Allreduce` and `MPI_Bcast` used for the 
+      !!! There are lots of `MPI_Allreduce` and `MPI_Bcast` used for the
       !!! processors to negotiate a unit number and catch all errors. There must
       !!! be a cheaper way of doing this...
 
@@ -46,15 +46,13 @@
       USE ppm_module_error
       USE ppm_module_write
       USE ppm_module_alloc
+      USE ppm_module_mpi
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-       INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                , INTENT(IN   ) :: actn
       !!! I/O action. One of:
@@ -88,7 +86,7 @@
       INTEGER                , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double)            :: t0
       LOGICAL                          :: lopen,loall
@@ -97,11 +95,11 @@
       INTEGER                          :: maxused,iopt,info2
       INTEGER, DIMENSION(1)            :: ldc
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_io_open',t0,info)
 
@@ -260,7 +258,7 @@
      &                ppm_comm,info)
                   lopen = loall
 #endif
-              ENDDO  
+              ENDDO
 
           !---------------------------------------------------------------------
           !  Everyone checks the ppm unit, Root the F90 unit in addition
@@ -323,7 +321,7 @@
                           IF (ppm_io_unit(iUnit) .GT. 0) lopen = .TRUE.
                       ENDIF
                   ENDIF
-              ENDDO  
+              ENDDO
           ELSE
               lopen = .FALSE.
               INQUIRE(iUnit,OPENED=lopen)

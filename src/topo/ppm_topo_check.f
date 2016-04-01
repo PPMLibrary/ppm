@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_check
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -45,7 +45,6 @@
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
-      USE ppm_module_check_id
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -70,17 +69,21 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                       :: t0
+      TYPE(ppm_t_topo), POINTER :: topo
+
+      REAL(ppm_kind_double) :: t0
+
+      INTEGER, DIMENSION(:), POINTER :: bcdef
       INTEGER                        :: ipart,idom,j,ison
-      LOGICAL                        :: valid
-      INTEGER, DIMENSION(:), POINTER :: bcdef => NULL()
-      TYPE(ppm_t_topo)     , POINTER :: topo  => NULL()
+
+      LOGICAL :: valid
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_topo_check',t0,info)
       topo_ok = .TRUE.
@@ -102,7 +105,8 @@
       !-------------------------------------------------------------------------
       !  Check all particles
       !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 2) THEN
+      SELECT CASE (ppm_dim)
+      CASE (2)
           DO ipart=1,Npart
               ison = 0
               DO j=1,topo%nsublist
@@ -151,7 +155,7 @@
                   GOTO 9999
               ENDIF
           ENDDO
-      ELSEIF (ppm_dim .EQ. 3) THEN
+      CASE (3)
           DO ipart=1,Npart
               ison = 0
               DO j=1,topo%nsublist
@@ -210,7 +214,7 @@
                   GOTO 9999
               ENDIF
           ENDDO
-      END IF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Return

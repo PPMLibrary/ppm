@@ -34,7 +34,7 @@ integer                          :: info
 
     end setup
 !----------------------------------------------
-        
+
 
 !--------------- teardown ---------------------
     teardown
@@ -54,7 +54,6 @@ integer                          :: info
            Assert_Equal(info,0)
            call c_M%push(M,info)
            Assert_Equal(info,0)
-           M => NULL()
        enddo
        call c_M%destroy(info)
        Assert_Equal(info,0)
@@ -65,7 +64,6 @@ integer                          :: info
            M%topoid = i
            call c_M%push(M,info)
            Assert_Equal(info,0)
-           M => NULL()
        enddo
 
        count_el = 0
@@ -114,20 +112,21 @@ integer                          :: info
        Assert_Equal(c_M%nb,0)
     end test
 
-
     test nested_collections
        type(ppm_c_equi_mesh) :: c_M
-       class(ppm_t_equi_mesh_),pointer :: M => NULL()
+       class(ppm_t_equi_mesh_), pointer :: M => NULL()
        class(ppm_t_subpatch_),  pointer :: p => NULL()
-       integer                      :: count_el,total_el=100
+       integer :: count_el,total_el=100
 
        ! build a collection of meshes, each of which has
        ! a collection of subpatches
        do i=1,total_el
            allocate(ppm_t_equi_mesh::M,STAT=info)
            Assert_Equal(info,0)
+
            allocate(ppm_c_subpatch::M%subpatch)
            M%ID = i
+
            do j=1,total_el
                allocate(ppm_t_subpatch::p,STAT=info)
                Assert_Equal(info,0)
@@ -162,8 +161,5 @@ integer                          :: info
        Assert_Equal(info,0)
 
     end test
-
-
-
 
 end test_suite

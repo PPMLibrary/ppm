@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_mesh_finalize
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -34,41 +34,50 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
-      USE ppm_module_data_mesh
-      USE ppm_module_mesh_alloc
       USE ppm_module_alloc
       USE ppm_module_error
       USE ppm_module_substart
       USE ppm_module_substop
+      USE ppm_module_write
+      USE ppm_module_mapping_typedef, ONLY :            &
+      &   ppm_mesh_isendfromsub,ppm_mesh_isendblkstart, &
+      &   ppm_mesh_isendpatchid,ppm_mesh_isendblksize,  &
+      &   ppm_mesh_irecvtosub,ppm_mesh_irecvblkstart,   &
+      &   ppm_mesh_irecvpatchid,ppm_mesh_irecvblksize
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER, INTENT(OUT)    :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(1)   :: lda 
+      REAL(ppm_kind_double)   :: t0
+
+      INTEGER, DIMENSION(1)   :: lda
       INTEGER                 :: iopt
       INTEGER                 :: istat
-      REAL(ppm_kind_double)   :: t0
-      CHARACTER(LEN=ppm_char) :: mesg
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_mesh_finalize'
+
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_mesh_finalize',t0,info)
+      CALL substart(caller,t0,info)
+
       lda(1) = 0
 
       !-------------------------------------------------------------------------
-      !  Deallocate mesh structures 
+      !  Deallocate mesh structures
       !-------------------------------------------------------------------------
       istat = 0
       iopt = ppm_param_dealloc
@@ -85,17 +94,13 @@
       CALL ppm_alloc(ppm_mesh_irecvblksize,lda,iopt,info)
       istat = istat + info
 
-      IF (istat .NE. 0) THEN
-          WRITE(mesg,'(A,I3,A)') 'for ',istat,   &
-     &        ' mesh arrays. Possible memory leak.'
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_mesh_finalize',mesg,__LINE__,info)
+      IF (istat.NE.0) THEN
+         fail(' mesh arrays. Possible memory leak.',ppm_err_dealloc)
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_mesh_finalize',t0,info)
-
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       END SUBROUTINE ppm_mesh_finalize

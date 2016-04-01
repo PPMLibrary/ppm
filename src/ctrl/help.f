@@ -1,87 +1,133 @@
 #define WRAP(a) a
-       DO j=1,WRAP(DTYPE)_args_i
-          IF (WRAP(DTYPE)_args(j)%group .EQ. k   .AND. &
-              WRAP(DTYPE)_args(j)%group_i .EQ. i .AND. &
-             (WRAP(DTYPE)_args(j)%flag_set .OR.        &
-              WRAP(DTYPE)_args(j)%long_flag_set)) THEN
-             WRITE (*,'(A,A)',advance='no') "  ", WRAP(DTYPE)_args(j)%name(1:28)
-             IF (WRAP(DTYPE)_args(j)%help_set) THEN
-                WRITE (*,'(A)',advance='no') "  "
-                CALL break_help(WRAP(DTYPE)_args(j)%help     &
-                     (1:LEN_TRIM(WRAP(DTYPE)_args(j)%help)), &
-                     50, "                                ", 6)
-             ELSE
-                WRITE (*,*) ''
-             END IF
-             IF (WRAP(DTYPE)_args(j)%flag_set) &
-                  WRITE (*,*) "                  short flag :  ", &
+                DO j=1,WRAP(DTYPE)_args_i
+                   IF (WRAP(DTYPE)_args(j)%group .EQ. k  .AND. &
+                   &  WRAP(DTYPE)_args(j)%group_i .EQ. i .AND. &
+                   &  (WRAP(DTYPE)_args(j)%flag_set .OR.       &
+                   &  WRAP(DTYPE)_args(j)%long_flag_set)) THEN
+                      IF (WRAP(DTYPE)_args(j)%help_set) THEN
+                         WRITE (cbuf,'(3A)') "  ", WRAP(DTYPE)_args(j)%name(1:28),"  "
+                         CALL break_help(WRAP(DTYPE)_args(j)%help  &
+                         & (1:LEN_TRIM(WRAP(DTYPE)_args(j)%help)), &
+                         & 50, "                                ", &
+                         & cbuf(1:LEN_TRIM(cbuf)+2),caller)
+                      ELSE
+                         WRITE (cbuf,'(3A)') "  ", WRAP(DTYPE)_args(j)%name(1:28),""
+                         stdout(cbuf)
+                      ENDIF
+                      cbuf=''
+
+                      IF (WRAP(DTYPE)_args(j)%flag_set) THEN
+                         WRITE (scratch,*) TRIM(cbuf),         &
+                         & "                  short flag :  ", &
 #if defined(ARRAY)
-                  WRAP(DTYPE)_args(j)%flag(1:2), " <v1,v2,...>"
+                         & WRAP(DTYPE)_args(j)%flag(1:2), " <v1,v2,...>"
 #elif !defined(__LOGICAL)
-                  WRAP(DTYPE)_args(j)%flag(1:2), " <value>"
+                         & WRAP(DTYPE)_args(j)%flag(1:2), " <value>"
 #else
-                  WRAP(DTYPE)_args(j)%flag(1:2)
+                         & WRAP(DTYPE)_args(j)%flag(1:2)
 #endif
-             IF (WRAP(DTYPE)_args(j)%long_flag_set) &
-                  WRITE (*,*) "                   long flag :  ", &
+                         WRITE (cbuf,'(2A)') TRIM(scratch),''
+                         stdout(cbuf)
+                         cbuf=''
+                      ENDIF
+
+                      IF (WRAP(DTYPE)_args(j)%long_flag_set) THEN
+                         WRITE (scratch,*) TRIM(cbuf),          &
+                         &  "                   long flag :  ", &
 #if defined(ARRAY)
-                  WRAP(DTYPE)_args(j)%long_flag(1:(LEN_TRIM(WRAP(DTYPE)_args(j)%long_flag))), &
-                  " <v1,v2,...>"
+                         &  WRAP(DTYPE)_args(j)%long_flag(1:(LEN_TRIM(WRAP(DTYPE)_args(j)%long_flag))), &
+                         &  " <v1,v2,...>"
 #elif !defined(__LOGICAL)
-                  WRAP(DTYPE)_args(j)%long_flag(1:(LEN_TRIM(WRAP(DTYPE)_args(j)%long_flag))), &
-                  " <value>"
+                         &  WRAP(DTYPE)_args(j)%long_flag(1:(LEN_TRIM(WRAP(DTYPE)_args(j)%long_flag))), &
+                         &  " <value>"
 #else
-                  WRAP(DTYPE)_args(j)%long_flag(1:(LEN_TRIM(WRAP(DTYPE)_args(j)%long_flag)))
+                         &  WRAP(DTYPE)_args(j)%long_flag(1:(LEN_TRIM(WRAP(DTYPE)_args(j)%long_flag)))
 #endif
-             IF (WRAP(DTYPE)_args(j)%ctrl_name_set) &
-                  WRITE (*,*) "           control file name :  ", &
-                  WRAP(DTYPE)_args(j)%ctrl_name(1:LEN_TRIM(WRAP(DTYPE)_args(j)%ctrl_name)), &
+                         WRITE (cbuf,'(2A)') TRIM(scratch),''
+                         stdout(cbuf)
+                         cbuf=''
+                      ENDIF
+
+                      IF (WRAP(DTYPE)_args(j)%ctrl_name_set) THEN
+                         WRITE (scratch,*) TRIM(cbuf),          &
+                         &  "           control file name :  ", &
+                         &  WRAP(DTYPE)_args(j)%ctrl_name(1:LEN_TRIM(WRAP(DTYPE)_args(j)%ctrl_name)), &
 #ifdef ARRAY
-                  " = <v1,v2,...>"
+                         &  " = <v1,v2,...>"
 #else
-                  " = <value>"
+                         &  " = <value>"
 #endif
-             IF (WRAP(DTYPE)_args(j)%default_set) THEN
-                WRITE (*,'(A)',advance='no') "                default value : "
+                         WRITE (cbuf,'(2A)') TRIM(scratch),''
+                         stdout(cbuf)
+                         cbuf=''
+                      ENDIF
+
+                      IF (WRAP(DTYPE)_args(j)%default_set) THEN
 #ifdef __STRING
 #ifdef ARRAY
-                WRITE (*,'(A)',advance='no') ' '
-                DO l=LBOUND(WRAP(DTYPE)_args(j)%default,1), &
-                     UBOUND(WRAP(DTYPE)_args(j)%default,1)
-                   WRITE (*,'(2A)',advance='no') &
-                        WRAP(DTYPE)_args(j)%default(l) &
-                        (1:LEN_TRIM(WRAP(DTYPE)_args(j)%default(l))), &
-                        ', '
-                END DO
-                WRITE (*,'(A)') ''
+                         WRITE (scratch,'(2A)')TRIM(cbuf), &
+                         & "               default value : "
+                         WRITE (cbuf,'(A)') TRIM(scratch)
+                         DO l=LBOUND(WRAP(DTYPE)_args(j)%default,1), &
+                         &    UBOUND(WRAP(DTYPE)_args(j)%default,1)
+                            WRITE (scratch,'(3A)') " ", TRIM(cbuf), &
+                            & WRAP(DTYPE)_args(j)%default(l)        &
+                            & (1:LEN_TRIM(WRAP(DTYPE)_args(j)%default(l)))
+                            WRITE (cbuf,'(2A)') TRIM(scratch),','
+                         END DO
+                         WRITE (scratch,'(A)')cbuf(1:LEN_TRIM(cbuf)-1)
+                         WRITE (cbuf,'(2A)') TRIM(scratch),''
+                         stdout(cbuf)
+                         cbuf=''
 #else
-                WRITE (*,*) WRAP(DTYPE)_args(j)%default &
-                     (1:LEN_TRIM(WRAP(DTYPE)_args(j)%default))
+                         WRITE (scratch,'(2A)')TRIM(cbuf), &
+                         & "               default value : "
+                         WRITE (cbuf,'(4A)') TRIM(scratch), ' ', &
+                         & WRAP(DTYPE)_args(j)%default           &
+                         & (1:LEN_TRIM(WRAP(DTYPE)_args(j)%default)),''
+                         stdout(cbuf)
+                         cbuf=''
 #endif
 #else
-                WRITE(scratch, *) WRAP(DTYPE)_args(j)%default
-                scratch = ADJUSTL(scratch)
-                WRITE(*,*) scratch(1:LEN_TRIM(scratch))
+                         WRITE(scratch, *) WRAP(DTYPE)_args(j)%default
+                         scratch = ADJUSTL(scratch)
+                         WRITE(cbuf1,'(3A)')TRIM(cbuf),        &
+                         & "                default value : ", &
+                         & scratch(1:LEN_TRIM(scratch))
+                         WRITE (cbuf,'(2A)') TRIM(cbuf1),''
+                         stdout(cbuf)
+                         cbuf=''
 #endif
-             END IF
+                      END IF
 #if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
-             IF (WRAP(DTYPE)_args(j)%min_set) THEN
-                WRITE(scratch, *) WRAP(DTYPE)_args(j)%min
-                scratch = ADJUSTL(scratch)
-                WRITE (*,*) "               minimum value :  ", &
-                     scratch(1:LEN_TRIM(scratch))
-             END IF
-             IF (WRAP(DTYPE)_args(j)%max_set) THEN
-                WRITE(scratch, *) WRAP(DTYPE)_args(j)%max
-                scratch = ADJUSTL(scratch)
-                WRITE (*,*) "               maximum value :  ", &
-                     scratch(1:LEN_TRIM(scratch))
-             END IF
+                      IF (WRAP(DTYPE)_args(j)%min_set) THEN
+                         WRITE(scratch, *) WRAP(DTYPE)_args(j)%min
+                         scratch = ADJUSTL(scratch)
+                         WRITE(cbuf1,'(3A)')TRIM(cbuf),        &
+                         & "               minimum value :  ", &
+                         & scratch(1:LEN_TRIM(scratch))
+                         WRITE (cbuf,'(2A)') TRIM(cbuf1),''
+                         stdout(cbuf)
+                         cbuf=''
+                      END IF
+                      IF (WRAP(DTYPE)_args(j)%max_set) THEN
+                         WRITE(scratch, *) WRAP(DTYPE)_args(j)%max
+                         scratch = ADJUSTL(scratch)
+                         WRITE(cbuf1,'(3A)')TRIM(cbuf),        &
+                         & "               maximum value :  ", &
+                         & scratch(1:LEN_TRIM(scratch))
+                         WRITE (cbuf,'(2A)') TRIM(cbuf1),''
+                         stdout(cbuf)
+                         cbuf=''
+                      END IF
 #endif
-             WRITE(*,*) ""
-             CYCLE group_loop
-          END IF
-       END DO
+                      WRITE(cbuf1,'(2A)') TRIM(cbuf),""
+                      WRITE (cbuf,'(A)') TRIM(cbuf1)
+                      stdout(cbuf)
+                      cbuf=''
+                      CYCLE group_loop
+                   END IF
+                END DO
 #undef DTYPE
 #undef __INTEGER
 #undef __LONGINT

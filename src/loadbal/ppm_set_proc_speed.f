@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_set_proc_speed
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -48,7 +48,7 @@
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(0:), INTENT(IN   ) :: proc_speed
       !!! Relative speeds of all processors from 0 to ppm_nproc-1. The numbers
@@ -56,17 +56,18 @@
       INTEGER                , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)               :: t0,lmyeps
-      REAL(ppm_kind_double)  :: rsum
-      INTEGER                :: i
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)              :: lmyeps
+      REAL(ppm_kind_double) :: rsum
+      INTEGER               :: i
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_set_proc_speed',t0,info)
 

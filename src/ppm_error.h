@@ -4,7 +4,7 @@
       !
       !  Purpose      :
       !
-      !  Remarks      : This is a F90 header file and not a cpp header file 
+      !  Remarks      : This is a F90 header file and not a cpp header file
       !                 since the latter would simply do replacements based on
       !                 pattern matching and does not recognize if something is
       !                 a variable name or not.
@@ -16,7 +16,7 @@
       !                 The default error message here should report WHAT HAS
       !                 HAPPENED. Where it happened, why and what the user can
       !                 do about it should be reported in the error message
-      !                 string passed to ppm_error(.). 
+      !                 string passed to ppm_error(.).
       !
       !  References   :
       !
@@ -33,11 +33,11 @@
       !  Added 609.
       !
       !  Revision 1.31  2004/10/28 12:38:19  davidch
-      !  Fixed numerical bug in cell lists that resulted in real 
+      !  Fixed numerical bug in cell lists that resulted in real
       !  particles being treated as ghosts
       !  and vice versa. The new ranking and cell list routines are
       !  supposed to be exact. All
-      !  epsilons that were added to the domains in order to prevent 
+      !  epsilons that were added to the domains in order to prevent
       !  the mentioned problems were
       !  removed since they are no longer needed.
       !  Modified Files:
@@ -260,7 +260,7 @@
       DATA ppm_err_mesg(608)                    /"Test failed"/
       INTEGER, PARAMETER :: ppm_err_converge    = 609
       DATA ppm_err_mesg(609)                    /"Did not converge"/
-      
+
       !-------------------------------------------------------------------------
       !  Decomposition errors:                    701 -- 800
       !-------------------------------------------------------------------------

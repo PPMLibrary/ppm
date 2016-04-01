@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                     ppm_alloc_1dl
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -26,7 +26,30 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-
+#if   __LKIND == __LDA64
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE alloc_1dl_s_(adata,ldl,ldu,iopt,info)
+      !!! (Re)allocates the memory of 1D real single arrays
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE alloc_1dl_d_(adata,ldl,ldu,iopt,info)
+      !!! (Re)allocates the memory of 1D real double arrays
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+      SUBROUTINE alloc_1dl_sc_(adata,ldl,ldu,iopt,info)
+      !!! (Re)allocates the memory of 1D complex single arrays
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+      SUBROUTINE alloc_1dl_dc_(adata,ldl,ldu,iopt,info)
+      !!! (Re)allocates the memory of 1D complex double arrays
+#elif __KIND == __INTEGER
+      SUBROUTINE alloc_1dl_i_(adata,ldl,ldu,iopt,info)
+      !!! (Re)allocates the memory of 1D integer arrays
+#elif __KIND == __LONGINT
+      SUBROUTINE alloc_1dl_li_(adata,ldl,ldu,iopt,info)
+      !!! (Re)allocates the memory of 1D 64bit integer arrays
+#elif __KIND == __LOGICAL
+      SUBROUTINE alloc_1dl_l_(adata,ldl,ldu,iopt,info)
+      !!! (Re)allocates the memory of 1D logical arrays
+#endif
+#else
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE alloc_1dl_s(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 1D real single arrays
@@ -49,6 +72,7 @@
       SUBROUTINE alloc_1dl_l(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 1D logical arrays
 #endif
+#endif
       !!! (pointers) based on absolute lower and upper index bounds.
       !-------------------------------------------------------------------------
       !  Includes
@@ -62,6 +86,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -81,10 +106,17 @@
       LOGICAL                 , DIMENSION(:), POINTER :: adata
 #endif
       !!! Pointer to array which is to be (re)allocated.
+#if   __LKIND == __LDA64
+      INTEGER(ppm_kind_int64), DIMENSION(:)   , INTENT(IN)    :: ldl
+      !!! Lower index limit in leading dim.
+      INTEGER(ppm_kind_int64), DIMENSION(:)   , INTENT(IN)    :: ldu
+      !!! Upper index limit in leading dim. (>ldl(1)).
+#else
       INTEGER, DIMENSION(:)   , INTENT(IN)    :: ldl
       !!! Lower index limit in leading dim.
       INTEGER, DIMENSION(:)   , INTENT(IN)    :: ldu
       !!! Upper index limit in leading dim. (>ldl(1)).
+#endif
       INTEGER                 , INTENT(IN)    :: iopt
       !!! Allocation mode. One of:
       !!! * ppm_param_alloc_fit
@@ -112,18 +144,25 @@
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:), POINTER :: work
 #endif
-      INTEGER               :: i,lda,ldb,ldc,ldd,ldl_new,ldu_new
-      LOGICAL               :: lcopy,lalloc,lrealloc
+#if   __LKIND == __LDA64
+      INTEGER(ppm_kind_int64) :: i,lda,ldb,ldc,ldd,ldl_new,ldu_new
+#else
+      INTEGER :: i,lda,ldb,ldc,ldd,ldl_new,ldu_new
+#endif
+      LOGICAL :: lcopy,lalloc,lrealloc
+#ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
+#endif
+      CHARACTER(LEN=*), PARAMETER :: caller='ppm_alloc_1dl'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
 #ifdef __DEBUG
-      CALL substart('ppm_alloc_1dl',t0,info)
+      CALL substart(caller,t0,info)
 #else
       info = 0
 #endif
@@ -132,7 +171,7 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug.GT.0) THEN
-         CALL ppm_alloc_argcheck('ppm_alloc_1dl',iopt,ldl,1,info,ldu)
+         CALL ppm_alloc_argcheck(caller,iopt,ldl,1,info,ldu)
          IF (info .NE. 0) GOTO 9999
       ENDIF
 
@@ -155,14 +194,14 @@
       work => work_1dl
 #endif
 
-
       !-------------------------------------------------------------------------
       !  Check the allocation type
       !-------------------------------------------------------------------------
       lcopy    = .FALSE.
       lalloc   = .FALSE.
       lrealloc = .FALSE.
-      IF     (iopt.EQ.ppm_param_alloc_fit_preserve) THEN
+      SELECT CASE (iopt)
+      CASE (ppm_param_alloc_fit_preserve)
          !----------------------------------------------------------------------
          !  fit memory and preserve the present contents
          !----------------------------------------------------------------------
@@ -184,7 +223,8 @@
             ldl_new = ldl(1)
             ldu_new = ldu(1)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_alloc_fit) THEN
+
+      CASE (ppm_param_alloc_fit)
          !----------------------------------------------------------------------
          !  fit memory but skip the present contents
          !----------------------------------------------------------------------
@@ -205,7 +245,8 @@
             ldl_new = ldl(1)
             ldu_new = ldu(1)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_alloc_grow_preserve) THEN
+
+      CASE (ppm_param_alloc_grow_preserve)
          !----------------------------------------------------------------------
          !  grow memory and preserve the present contents
          !----------------------------------------------------------------------
@@ -227,7 +268,8 @@
             ldl_new = ldl(1)
             ldu_new = ldu(1)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_alloc_grow) THEN
+
+      CASE (ppm_param_alloc_grow)
          !----------------------------------------------------------------------
          !  grow memory but skip the present contents
          !----------------------------------------------------------------------
@@ -248,40 +290,31 @@
             ldl_new = ldl(1)
             ldu_new = ldu(1)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_dealloc) THEN
+
+      CASE (ppm_param_dealloc)
          !----------------------------------------------------------------------
          !  deallocate
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
             DEALLOCATE(adata,STAT=info)
             NULLIFY(adata)
-            IF (info .NE. 0) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_dealloc,'ppm_alloc_1dl',   &
-     &             'DATA',__LINE__,info)
-            ENDIF
+            or_fail_dealloc('DATA')
          ENDIF
-      ELSE
+
+      CASE DEFAULT
          !----------------------------------------------------------------------
          !  Unknown iopt
          !----------------------------------------------------------------------
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_alloc_1dl',                       &
-     &                  'unknown iopt',__LINE__,info)
-         GOTO 9999
-      ENDIF
+         fail('unknown iopt')
+
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Allocate new memory
       !-------------------------------------------------------------------------
       IF (lalloc) THEN
          ALLOCATE(work(ldl_new:ldu_new),STAT=info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_alloc_1dl',   &
-     &           'WORK',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail_alloc('WORK',ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -300,12 +333,7 @@
       !-------------------------------------------------------------------------
       IF (lrealloc) THEN
          DEALLOCATE(adata,STAT=info)
-         !NULLIFY(adata)
-         IF (info .NE. 0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_dealloc,'ppm_alloc_1dl',   &
-     &           'DATA',__LINE__,info)
-         ENDIF
+         or_fail_dealloc('DATA',exit_point=no)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -318,11 +346,28 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
 #ifdef __DEBUG
-      CALL substop('ppm_alloc_1dl',t0,info)
+      CALL substop(caller,t0,info)
 #endif
       RETURN
+#if   __LKIND == __LDA64
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE alloc_1dl_s_
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE alloc_1dl_d_
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+      END SUBROUTINE alloc_1dl_sc_
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+      END SUBROUTINE alloc_1dl_dc_
+#elif __KIND == __INTEGER
+      END SUBROUTINE alloc_1dl_i_
+#elif __KIND == __LONGINT
+      END SUBROUTINE alloc_1dl_li_
+#elif __KIND == __LOGICAL
+      END SUBROUTINE alloc_1dl_l_
+#endif
+#else
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE alloc_1dl_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -337,4 +382,5 @@
       END SUBROUTINE alloc_1dl_li
 #elif __KIND == __LOGICAL
       END SUBROUTINE alloc_1dl_l
+#endif
 #endif

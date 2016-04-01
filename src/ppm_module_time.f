@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :                  ppm_module_time
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -26,7 +26,7 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-     
+
       !-------------------------------------------------------------------------
       !  Define types
       !-------------------------------------------------------------------------
@@ -36,6 +36,9 @@
       MODULE ppm_module_time
       !!! This module provides the routines
       !!! concerned with load balancing. They are callable by the user.
+
+         IMPLICIT NONE
+
          !----------------------------------------------------------------------
          !  Define interfaces to the timing routine
          !----------------------------------------------------------------------
@@ -46,7 +49,7 @@
 
 
          !----------------------------------------------------------------------
-         !  include the source 
+         !  include the source
          !----------------------------------------------------------------------
          CONTAINS
 

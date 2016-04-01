@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_util_eigen_2sym
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -50,7 +50,7 @@
       !!! For `ppm_debug > 1` the routine checks its own
       !!! result. Maybe - after some time - this can be removed.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -59,6 +59,7 @@
       USE ppm_module_write
       USE ppm_module_util_quadeq_real
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -68,7 +69,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(2,2), INTENT(IN   ) :: Am
       !!! The 2x2 matrix stored in row-major order (i.e. first index is row
@@ -82,20 +83,21 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0,Etmp,a0,lmyeps,sqeps
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)                                :: Etmp,a0,lmyeps,sqeps
       REAL(MK), DIMENSION(2  )                :: row
       REAL(MK), DIMENSION(3  )                :: chp
       INTEGER                                 :: i
       LOGICAL                                 :: correct
       CHARACTER(LEN=ppm_char)                 :: mesg
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_util_eigen_2sym',t0,info)
 #if   __KIND == __SINGLE_PRECISION
@@ -124,7 +126,7 @@
       !-------------------------------------------------------------------------
       !  Solve the quadratic equation chp = 0 for the Eigenvalues
       !-------------------------------------------------------------------------
-      CALL ppm_util_quadeq_real(chp,Eval,sqeps,info) 
+      CALL ppm_util_quadeq_real(chp,Eval,sqeps,info)
       IF (info .NE. 0) THEN
          info = ppm_error_error
          CALL ppm_error(ppm_err_argument,'ppm_util_eigen_2sym',     &
@@ -160,8 +162,8 @@
             !-----------------------------------------------------------------
             !  If elm(1,1) is a pivot, the second row can be eliminated
             !  to all 0 (rows are linearly dependent, otherwise Eval
-            !  would not be an Eigenvalue) by a Gauss step with 
-            !  elm(2,1)/elm(1,1). All we need in this case is the first 
+            !  would not be an Eigenvalue) by a Gauss step with
+            !  elm(2,1)/elm(1,1). All we need in this case is the first
             !  row of A-lambda*I.
             !  If elm(1,1) is not a pivot, we would first flip the rows
             !  and then proceed as above. All we need in this case is
@@ -247,7 +249,7 @@
      &           'tolerance ',sqeps
             CALL ppm_write(ppm_rank,'ppm_util_eigen_2sym',mesg,info)
          ENDIF
-         
+
          !---------------------------------------------------------------------
          !  Check that Eigenvectors are normalized
          !---------------------------------------------------------------------
@@ -287,7 +289,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_util_eigen_2sym',t0,info)

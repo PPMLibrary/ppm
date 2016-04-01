@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :              ppm_module_map_part_util
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -40,6 +40,15 @@
       MODULE ppm_module_map_part_util
       !!! This module provides various particle mapping utility and helper
       !!! routines and their work-arrays.
+         USE ppm_module_mapping_typedef, ONLY : ppm_buffer_set,           &
+         &   ppm_nsendbuffer,ppm_nrecvbuffer, ppm_t_part_mapping_s,       &
+         &   ppm_t_part_mapping_d,ppm_buffer_dim,ppm_buffer_type,         &
+         &   ppm_psendbuffer,ppm_isendlist,ppm_irecvlist,ppm_buffer2part, &
+         &   ppm_sendbuffers,ppm_sendbufferd,ppm_map_type,ppm_nrecvlist,  &
+         &   ppm_nsendlist
+         IMPLICIT NONE
+
+         PRIVATE
 
          !----------------------------------------------------------------------
          !  Work lists
@@ -55,9 +64,9 @@
          INTEGER ,DIMENSION(:), POINTER :: ilist3    => NULL()
          INTEGER ,DIMENSION(:), POINTER :: ilist4    => NULL()
 
-         PRIVATE :: plist_des,plist_act,plist_exc,srlist1,srlist2
-         PRIVATE :: nlist1,nlist2,nlist3,nlist4
-         PRIvATE :: ilist1,ilist2,ilist3,ilist4
+         TYPE(ppm_t_part_mapping_s), POINTER :: map_s => NULL()
+         TYPE(ppm_t_part_mapping_d), POINTER :: map_d => NULL()
+
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_eqdistrib
          !----------------------------------------------------------------------
@@ -103,8 +112,15 @@
             MODULE PROCEDURE ppm_map_part_store
          END INTERFACE
 
+         PUBLIC :: ppm_map_part_eqdistrib
+         PUBLIC :: ppm_map_part_cancel
+         PUBLIC :: ppm_map_part_get_sub
+         PUBLIC :: ppm_map_part_load
+         PUBLIC :: ppm_map_part_ring_shift
+         PUBLIC :: ppm_map_part_store
+
          !----------------------------------------------------------------------
-         !  include the source 
+         !  include the source
          !----------------------------------------------------------------------
          CONTAINS
 

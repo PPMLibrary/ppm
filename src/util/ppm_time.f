@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                     ppm_time
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -53,41 +53,41 @@
       USE ppm_module_error
       USE ppm_module_util_time
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK)               , INTENT(  OUT) :: timing
+      REAL(MK), INTENT(  OUT) :: timing
       !!! Current CPU clock time
-      INTEGER                , INTENT(  OUT) :: info
+      INTEGER,  INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)               :: t0
+      REAL(ppm_kind_double) :: t0
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_time'
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_time',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_time',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 9999
-          ENDIF
+         IF (.NOT. ppm_initialized) THEN
+            fail("Please call ppm_init first!",ppm_err_ppm_noinit)
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -98,8 +98,8 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_time',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_time_s

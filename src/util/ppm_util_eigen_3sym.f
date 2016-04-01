@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_util_eigen_3sym
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -50,7 +50,7 @@
       !!! For `ppm_debug > 1` the routine checks its own
       !!! result. Maybe - after some time - this can be removed.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -68,7 +68,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(3,3), INTENT(IN   ) :: Am
       !!! The 3x3 matrix stored in row-major order (i.e. first index is row
@@ -82,9 +82,10 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0,Etmp,lmyeps,inv,t,sqeps
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)                                :: Etmp,lmyeps,inv,t,sqeps
       REAL(MK)                                :: root_lmyeps
       REAL(MK), DIMENSION(3,3)                :: Udet,As
       REAL(MK), DIMENSION(3  )                :: row
@@ -93,14 +94,15 @@
       INTEGER                                 :: i,j,ip1,np1,np2
       LOGICAL                                 :: correct
       CHARACTER(LEN=ppm_char)                 :: mesg
+      CHARACTER(LEN=ppm_char)                 :: caller='ppm_util_eigen_3sym'
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_util_eigen_3sym',t0,info)
+      CALL substart(caller,t0,info)
 #if   __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif __KIND == __DOUBLE_PRECISION
@@ -114,8 +116,8 @@
       !  Check input arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -141,31 +143,25 @@
       chp(2) =   Udet(1,1)+ Udet(2,2)+ Udet(3,3)
       chp(3) = -(Am(1,1)  + Am(2,2)  + Am(3,3))
       chp(4) = 1.0_MK
-              
+
       !-------------------------------------------------------------------------
       !  Solve the cubic equation chp=0 for the Eigenvalues
       !------------------------------------------------------------------------
       CALL ppm_util_cubeq_real(chp,Eval,sqeps,info)
-      IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,'ppm_util_eigen_3sym',     &
-     &       'Matrix is not symmetric and has complex Eigenvalues. Exiting.',&
-     &       __LINE__,info)
-        GOTO 9999
-      ENDIF
-      
+      or_fail('Matrix is not symmetric and has complex Eigenvalues. Exiting.')
+
       !-------------------------------------------------------------------------
-      !  Sort Eigenvalues 
+      !  Sort Eigenvalues
       !-------------------------------------------------------------------------
       isort(1:3) = (/1,2,3/)
-      IF (Eval(2) .GT. Eval(1)) isort(1:3) = (/2,1,3/)
+      IF (Eval(2).GT.Eval(1)) isort(1:3) = (/2,1,3/)
       IF (Eval(3).GT.Eval(1).AND.Eval(3).GT.Eval(2)) THEN
-        isort(3) = isort(2)
-        isort(2) = isort(1)
-        isort(1) = 3
+         isort(3) = isort(2)
+         isort(2) = isort(1)
+         isort(1) = 3
       ELSEIF (Eval(3).GT.Eval(isort(2))) THEN
-        isort(3) = isort(2)
-        isort(2) = 3
+         isort(3) = isort(2)
+         isort(2) = 3
       ENDIF
       row(1) = Eval(isort(1))
       row(2) = Eval(isort(2))
@@ -178,13 +174,13 @@
       !         2-fold EW: solve system of rank 1
       !         1-fold EW: solve rank 2 systems
       !-------------------------------------------------------------------------
-      IF ((Eval(1).EQ.Eval(2)).AND.(Eval(1).EQ.Eval(3))) THEN
-        Evec(1,1) = 1.0_MK
-        Evec(2,2) = 1.0_MK
-        Evec(3,3) = 1.0_MK
+      IF (ABS(Eval(1)-Eval(2)).LT.lmyeps.AND.ABS(Eval(1)-Eval(3)).LT.lmyeps) THEN
+         Evec(1,1) = 1.0_MK
+         Evec(2,2) = 1.0_MK
+         Evec(3,3) = 1.0_MK
       ELSE
-        i = 1
-        DO WHILE (i .LT. 4)
+         i = 1
+         DO WHILE (i .LT. 4)
             !-----------------------------------------------------------------
             !  Compute the system matrix
             !-----------------------------------------------------------------
@@ -199,7 +195,7 @@
             !  sorted, we only need to compare i to i+1.
             !-----------------------------------------------------------------
             IF (i .LT. 3) THEN
-                IF (Eval(i) .EQ. Eval(ip1)) THEN
+                IF (ABS(Eval(i)-Eval(ip1)).LT.lmyeps) THEN
                     !---------------------------------------------------------
                     !  Double Eigenvalue: All rows of As are linearly
                     !  dependent. Find the one with the pivot element. All
@@ -211,11 +207,7 @@
                         IF (ABS(As(j,2)) .LT. lmyeps) THEN
                             j = 3
                             IF (ABS(As(j,3)) .LT. lmyeps) THEN
-                                info = ppm_error_error
-                                CALL ppm_error(ppm_err_argument,               &
-     &                              'ppm_util_eigen_3sym',                    &
-     &                              'No pivot found. Exiting.',__LINE__,info)
-                                GOTO 9999
+                               fail('No pivot found. Exiting.')
                             ENDIF
                         ENDIF
                     ENDIF
@@ -226,13 +218,14 @@
                     !---------------------------------------------------------
                     np1 = 2
                     np2 = 3
-                    IF (j .EQ. 2) THEN
+                    SELECT CASE (j)
+                    CASE (2)
                         np1 = 3
                         np2 = 1
-                    ELSEIF (j .EQ. 3) THEN
+                    CASE (3)
                         np1 = 1
                         np2 = 2
-                    ENDIF
+                    END SELECT
 
                     !---------------------------------------------------------
                     !  The non-pivotal elements of the solution vector can be
@@ -271,8 +264,7 @@
                     !---------------------------------------------------------
                     !  Normalize the second Eigenvector.
                     !---------------------------------------------------------
-                    inv = Evec(np1,ip1)*Evec(np1,ip1) + 1.0_MK +     &
-     &                    Evec(j  ,ip1)*Evec(j  ,ip1)
+                    inv = Evec(np1,ip1)*Evec(np1,ip1)+1.0_MK+Evec(j,ip1)*Evec(j,ip1)
                     inv = 1.0_MK/SQRT(inv)
                     Evec(np1,ip1) = Evec(np1,ip1)*inv
                     Evec(np2,ip1) =               inv
@@ -292,9 +284,9 @@
                     row(1)  = (As(1,2)*As(2,3)) - (As(1,3)*As(2,2))
                     row(2)  = (As(1,3)*As(2,1)) - (As(1,1)*As(2,3))
                     row(3)  = (As(1,1)*As(2,2)) - (As(1,2)*As(2,1))
-                    IF ((ABS(row(1)).LT.root_lmyeps) .AND.         &
-     &                  (ABS(row(2)).LT.root_lmyeps) .AND.         &
-     &                  (ABS(row(3)).LT.root_lmyeps)) THEN
+                    IF ((ABS(row(1)).LT.root_lmyeps) .AND. &
+                    &   (ABS(row(2)).LT.root_lmyeps) .AND. &
+                    &   (ABS(row(3)).LT.root_lmyeps)) THEN
                         !-----------------------------------------------------
                         !  If rows 1 and 2 are linearly dependent, use
                         !  rows 1 and 3.
@@ -305,8 +297,8 @@
                         row(2)  = (As(1,3)*As(3,1)) - (As(1,1)*As(3,3))
                         row(3)  = (As(1,1)*As(3,2)) - (As(1,2)*As(3,1))
                         IF ((ABS(row(1)).LT.root_lmyeps) .AND.     &
-     &                      (ABS(row(2)).LT.root_lmyeps) .AND.     &
-     &                      (ABS(row(3)).LT.root_lmyeps)) THEN
+                        &   (ABS(row(2)).LT.root_lmyeps) .AND.     &
+                        &   (ABS(row(3)).LT.root_lmyeps)) THEN
                             !-------------------------------------------------
                             !  Third possibility: NOT because another
                             !  linearly independent set of rows is
@@ -327,7 +319,6 @@
                         row(1) = 0.0_MK
                         row(2) = 0.0_MK
                         row(3) = 0.0_MK
-
                     ELSE
                         Etmp   = 1.0_MK/SQRT(Etmp)
                         row(1) = row(1)*Etmp
@@ -354,8 +345,8 @@
                 row(2)  = (As(1,3)*As(2,1)) - (As(1,1)*As(2,3))
                 row(3)  = (As(1,1)*As(2,2)) - (As(1,2)*As(2,1))
                 IF ((ABS(row(1)).LT.root_lmyeps) .AND.        &
-     &              (ABS(row(2)).LT.root_lmyeps) .AND.        &
-     &              (ABS(row(3)).LT.root_lmyeps)) THEN
+                &   (ABS(row(2)).LT.root_lmyeps) .AND.        &
+                &   (ABS(row(3)).LT.root_lmyeps)) THEN
                     !---------------------------------------------------------
                     !  If rows 1 and 2 are linearly dependent, use rows 1 and
                     !  3. These are now guaranteed to be indepentent.
@@ -365,8 +356,8 @@
                     row(2)  = (As(1,3)*As(3,1)) - (As(1,1)*As(3,3))
                     row(3)  = (As(1,1)*As(3,2)) - (As(1,2)*As(3,1))
                     IF ((ABS(row(1)).LT.root_lmyeps) .AND.     &
-     &                  (ABS(row(2)).LT.root_lmyeps) .AND.     &
-     &                  (ABS(row(3)).LT.root_lmyeps)) THEN
+                    &   (ABS(row(2)).LT.root_lmyeps) .AND.     &
+                    &   (ABS(row(3)).LT.root_lmyeps)) THEN
                         !-----------------------------------------------------
                         !  Third possibility: NOT because another
                         !  linearly independent set of rows is
@@ -404,7 +395,7 @@
             ENDIF               ! single or double Eval
         ENDDO                  ! WHILE(i.LT.4)
       ENDIF                     ! triple Eval
-      
+
       !-------------------------------------------------------------------------
       !  Check result if debug is enabled.
       !-------------------------------------------------------------------------
@@ -417,12 +408,9 @@
         IF (Eval(3) .GT. Eval(1)) correct = .FALSE.
         IF (Eval(3) .GT. Eval(2)) correct = .FALSE.
         IF (.NOT. correct) THEN
-            info = ppm_error_warning
-            CALL ppm_error(ppm_err_test_fail,'ppm_util_eigen_3sym',     &
-     &           'Eigenvalues are not sorted correctly!',__LINE__,info)
+          fail('Eigenvalues are not sorted correctly!',ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
         ELSEIF (ppm_debug .GT. 0) THEN
-            CALL ppm_write(ppm_rank,'ppm_util_eigen_3sym',     &
-     &           'Eigenvalues are properly sorted.',info)
+          CALL ppm_write(ppm_rank,caller,'Eigenvalues are properly sorted.',info)
         ENDIF
 
         !---------------------------------------------------------------------
@@ -434,32 +422,25 @@
             IF (ABS(row(1)) .GT. sqeps) THEN
                 correct = .FALSE.
                 WRITE(mesg,'(A,2(A,E12.4))') 'Eigensystem is not correct.', &
-     &              ' Row 1 has error: ',ABS(row(1)),' Tolerance: ',sqeps
-                info = ppm_error_warning
-                CALL ppm_error(ppm_err_test_fail,'ppm_util_eigen_3sym',     &
-     &              mesg,__LINE__,info)
+                &    ' Row 1 has error: ',ABS(row(1)),' Tolerance: ',sqeps
+                fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
             ENDIF
             IF (ABS(row(2)) .GT. sqeps) THEN
                 correct = .FALSE.
                 WRITE(mesg,'(A,2(A,E12.4))') 'Eigensystem is not correct.', &
-     &              ' Row 2 has error: ',ABS(row(2)),' Tolerance: ',sqeps
-                info = ppm_error_warning
-                CALL ppm_error(ppm_err_test_fail,'ppm_util_eigen_3sym',     &
-     &              mesg,__LINE__,info)
+                &    ' Row 2 has error: ',ABS(row(2)),' Tolerance: ',sqeps
+                fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
             ENDIF
             IF (ABS(row(3)) .GT. sqeps) THEN
                 correct = .FALSE.
                 WRITE(mesg,'(A,2(A,E12.4))') 'Eigensystem is not correct.', &
-     &              ' Row 3 has error: ',ABS(row(3)),' Tolerance: ',sqeps
-                info = ppm_error_warning
-                CALL ppm_error(ppm_err_test_fail,'ppm_util_eigen_3sym',     &
-     &              mesg,__LINE__,info)
+                &    ' Row 3 has error: ',ABS(row(3)),' Tolerance: ',sqeps
+                fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
             ENDIF
         ENDDO
         IF (correct .AND. ppm_debug .GT. 0) THEN
-            WRITE(mesg,'(2A,E12.4)') 'Eigendecomposition is correct to ',   &
-     &           'tolerance ',sqeps
-            CALL ppm_write(ppm_rank,'ppm_util_eigen_3sym',mesg,info)
+            WRITE(mesg,'(2A,E12.4)') 'Eigendecomposition is correct to ','tolerance ',sqeps
+            CALL ppm_write(ppm_rank,caller,mesg,info)
         ENDIF
 
         !---------------------------------------------------------------------
@@ -467,18 +448,14 @@
         !---------------------------------------------------------------------
         correct = .TRUE.
         DO i=1,3
-            row(1) = Evec(1,i)*Evec(1,i) + Evec(2,i)*Evec(2,i) +    &
-     &           Evec(3,i)*Evec(3,i)
+            row(1) = Evec(1,i)*Evec(1,i) + Evec(2,i)*Evec(2,i)+Evec(3,i)*Evec(3,i)
             IF (ABS(row(1)-1.0_MK) .GT. lmyeps) correct = .FALSE.
         ENDDO
         IF (.NOT. correct) THEN
-            info = ppm_error_warning
-            CALL ppm_error(ppm_err_test_fail,'ppm_util_eigen_3sym',     &
-     &           'Eigenvectors are not normalized!',__LINE__,info)
+           fail('Eigenvectors are not normalized!',ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
         ELSEIF (ppm_debug .GT. 0) THEN
-            WRITE(mesg,'(2A,E12.4)') 'Eigenvectors are normalized to ',   &
-     &           'tolerance ',lmyeps
-            CALL ppm_write(ppm_rank,'ppm_util_eigen_3sym',mesg,info)
+           WRITE(mesg,'(2A,E12.4)') 'Eigenvectors are normalized to ','tolerance ',lmyeps
+           CALL ppm_write(ppm_rank,caller,mesg,info)
         ENDIF
 
         !---------------------------------------------------------------------
@@ -493,52 +470,43 @@
         row(3) = Evec(1,2)*Evec(1,3)+Evec(2,2)*Evec(2,3)+Evec(3,2)*Evec(3,3)
         IF (ABS(row(1)) .GT. sqeps) THEN
             correct = .FALSE.
-            WRITE(mesg,'(A,2(A,E12.4))') 'Eigenvectors not orthogonal.',  &
-     &           ' 1--2 has error: ',ABS(row(1)),' Tolerance: ',sqeps
-            info = ppm_error_warning
-            CALL ppm_error(ppm_err_test_fail,'ppm_util_eigen_3sym',     &
-     &           mesg,__LINE__,info)
+            WRITE(mesg,'(A,2(A,E12.4))') 'Eigenvectors not orthogonal.', &
+            & ' 1--2 has error: ',ABS(row(1)),' Tolerance: ',sqeps
+            fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
         ENDIF
         IF (ABS(row(2)) .GT. sqeps) THEN
             correct = .FALSE.
             WRITE(mesg,'(A,2(A,E12.4))') 'Eigenvectors not orthogonal.',  &
-     &           ' 1--3 has error: ',ABS(row(2)),' Tolerance: ',sqeps
-            info = ppm_error_warning
-            CALL ppm_error(ppm_err_test_fail,'ppm_util_eigen_3sym',     &
-     &           mesg,__LINE__,info)
+            & ' 1--3 has error: ',ABS(row(2)),' Tolerance: ',sqeps
+            fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
         ENDIF
         IF (ABS(row(3)) .GT. sqeps) THEN
             correct = .FALSE.
             WRITE(mesg,'(A,2(A,E12.4))') 'Eigenvectors not orthogonal.',  &
-     &           ' 2--3 has error: ',ABS(row(3)),' Tolerance: ',sqeps
-            info = ppm_error_warning
-            CALL ppm_error(ppm_err_test_fail,'ppm_util_eigen_3sym',     &
-     &           mesg,__LINE__,info)
+            & ' 2--3 has error: ',ABS(row(3)),' Tolerance: ',sqeps
+            fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
         ENDIF
         IF (correct .AND. ppm_debug .GT. 0) THEN
-            WRITE(mesg,'(2A,E12.4)') 'Eigenvectors are orthogonal to ',   &
-     &           'tolerance ',sqeps
-            CALL ppm_write(ppm_rank,'ppm_util_eigen_3sym',mesg,info)
+            WRITE(mesg,'(2A,E12.4)') 'Eigenvectors are orthogonal to ', &
+            & 'tolerance ',sqeps
+            CALL ppm_write(ppm_rank,caller,mesg,info)
         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_util_eigen_3sym',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF ((ABS(Am(1,2)-Am(2,1)) .GT. lmyeps) .OR.    &
-     &        (ABS(Am(1,3)-Am(3,1)) .GT. lmyeps) .OR.    &
-     &        (ABS(Am(2,3)-Am(3,2)) .GT. lmyeps)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_util_eigen_3sym',     &
-     &           'Matrix Am must be symmetric !',__LINE__,info)
-            GOTO 8888
+         IF ((ABS(Am(1,2)-Am(2,1)) .GT. lmyeps) .OR.    &
+         &   (ABS(Am(1,3)-Am(3,1)) .GT. lmyeps) .OR.    &
+         &   (ABS(Am(2,3)-Am(3,2)) .GT. lmyeps)) THEN
+            fail('Matrix Am must be symmetric !',exit_point=8888)
          ENDIF
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_util_eigen_3sym_s

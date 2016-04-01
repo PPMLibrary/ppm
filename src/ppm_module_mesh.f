@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :               ppm_module_mesh
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -35,11 +35,11 @@
          !----------------------------------------------------------------------
       !   USE ppm_module_mesh_alloc
       !   USE ppm_module_mesh_block_intersect
-         USE ppm_module_mesh_define
-         USE ppm_module_mesh_derive
+         USE ppm_module_mesh_define,  ONLY : ppm_mesh_define
+         USE ppm_module_mesh_derive,  ONLY : ppm_mesh_derive
       !   USE ppm_module_mesh_finalize
-         USE ppm_module_mesh_on_subs
-         USE ppm_module_mesh_store
-
+         USE ppm_module_mesh_on_subs, ONLY : ppm_mesh_on_subs
+!          USE ppm_module_mesh_store,   ONLY : ppm_mesh_store
+         IMPLICIT NONE
 
       END MODULE ppm_module_mesh

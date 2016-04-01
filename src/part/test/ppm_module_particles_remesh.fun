@@ -43,7 +43,7 @@ class(ppm_t_subpatch_),POINTER   :: p => NULL()
 class(ppm_t_subpatch_),POINTER   :: patch => NULL()
 
 integer                          :: mypatchid
-real(mk),dimension(2*ndim)       :: my_patch
+real(mk),dimension(6)       :: my_patch
 real(mk),dimension(ndim)         :: offset
 
 real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
@@ -54,11 +54,11 @@ TYPE(ppm_v_main_abstr)  :: LFields
 
 type(ppm_t_field) ,TARGET :: VField1,VField2,VField3,VField4
 type(ppm_t_field) ,TARGET :: SField1,SField2,SField3,Vol
-type(ppm_t_particles_d) :: Part1
+type(ppm_t_particles_d),TARGET :: Part1
 real(ppm_kind_double),dimension(ndim) :: pos
 real(ppm_kind_double),dimension(ndim) :: cutoff
 real(ppm_kind_double)                 :: voln
-integer :: np_global 
+integer :: np_global
 
 !---------------- init -----------------------
 
@@ -66,10 +66,10 @@ integer :: np_global
 
         use ppm_module_topo_typedef
         use ppm_module_init
-        
+
         allocate(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         ighostsize(1:ndim) = 2
@@ -122,7 +122,7 @@ integer :: np_global
         decomp = ppm_param_decomp_cuboid
         assig  = ppm_param_assign_internal
         topoid = 0
-        sca_ghostsize = 0.07_mk 
+        sca_ghostsize = 0.07_mk
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
 
@@ -141,7 +141,7 @@ integer :: np_global
         !----------------
         ! Add a patch
         !----------------
- 
+
 !not for now... (first try with a mesh that covers the whole domain)
 !               (which is the default, when no patches are defined)
 
@@ -154,7 +154,7 @@ integer :: np_global
         else
             my_patch(1:6) = (/0.15_mk,0.10_mk,0.25_mk,0.89_mk,0.7_mk,0.78_mk/)
         endif
-        call Mesh1%def_patch(my_patch,info) 
+        call Mesh1%def_patch(my_patch,info)
 
         !----------------
         ! Create particles, from a grid + small random displacement
@@ -182,22 +182,22 @@ integer :: np_global
         ! dimensions because the interpolation routines are hard-coded for some
         ! and we want to test them all!
         !----------------
-        call VField1%create(2,info,name='vecField1') 
+        call VField1%create(2,info,name='vecField1')
         call VField1%discretize_on(Part1,info)
-        call VField2%create(3,info,name='vecField2') 
+        call VField2%create(3,info,name='vecField2')
         call VField2%discretize_on(Part1,info)
-        call VField3%create(4,info,name='vecField3') 
+        call VField3%create(4,info,name='vecField3')
         call VField3%discretize_on(Part1,info)
-        call VField4%create(5,info,name='vecField4') 
+        call VField4%create(5,info,name='vecField4')
         call VField4%discretize_on(Part1,info)
 
-        call SField1%create(1,info,name='scaField1') 
+        call SField1%create(1,info,name='scaField1')
         call SField1%discretize_on(Part1,info)
-        call SField2%create(1,info,name='scaField2') 
+        call SField2%create(1,info,name='scaField2')
         call SField2%discretize_on(Part1,info)
-        call SField3%create(1,info,name='scaField3') 
+        call SField3%create(1,info,name='scaField3')
         call SField3%discretize_on(Part1,info)
-        call Vol%create(1,info,name='Part_Volume') 
+        call Vol%create(1,info,name='Part_Volume')
         call Vol%discretize_on(Part1,info)
 
         !----------------
@@ -237,7 +237,7 @@ integer :: np_global
         end_subroutine()
     end setup
 !----------------------------------------------
-        
+
 
 !--------------- teardown ---------------------
     teardown
@@ -264,7 +264,7 @@ integer :: np_global
         !Assert_Equal(info,0)
 
         !----------------
-        ! Remesh the particles 
+        ! Remesh the particles
         ! (this performs the p2m interpolation as well)
         !----------------
         call Part1%interp_to_mesh(Mesh1,VField1,ppm_param_rmsh_kernel_mp4,info)
@@ -318,9 +318,9 @@ integer :: np_global
                 Assert_Equal_Within(V4_p(4), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
                 Assert_Equal_Within(V4_p(5), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
         end foreach
-
+#ifdef __MPI
         CALL MPI_BARRIER(comm,info)
-
+#endif
         end_subroutine()
         !check that we are leaving the test without error
         Assert_Equal(info,0)
@@ -334,7 +334,7 @@ integer :: np_global
         !Assert_Equal(info,0)
 
         !----------------
-        ! Remesh the particles 
+        ! Remesh the particles
         ! (this performs the p2m interpolation as well)
         !----------------
         call Part1%interp_to_mesh_all(Mesh1,ppm_param_rmsh_kernel_mp4,info)
@@ -392,7 +392,9 @@ integer :: np_global
                 Assert_Equal_Within(V4_p(5), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
         end foreach
 
+#ifdef __MPI
         CALL MPI_BARRIER(comm,info)
+#endif
 
         end_subroutine()
         !check that we are leaving the test without error
@@ -439,8 +441,5 @@ pure function is_well_within(pos,patch,cutoff,ndim) RESULT(res)
     res = res .AND. ALL(pos(1:ndim).LE.(patch(ndim+1:2*ndim)-cutoff(1:ndim)))
 
 end function
-    
-
-
 
 end test_suite

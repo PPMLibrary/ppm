@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_topo_dealloc
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -30,7 +30,7 @@
       SUBROUTINE ppm_topo_dealloc(topo,info)
       !!! This routine deallocates all members of a topology object.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -43,24 +43,24 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo)        , INTENT(INOUT) :: topo
+      TYPE(ppm_t_topo), INTENT(INOUT) :: topo
       !!! Topology structure to be deallocated
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,          INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER , DIMENSION(3) :: ldc
       INTEGER                :: iopt
       REAL(ppm_kind_double)  :: t0
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_topo_dealloc',t0,info)
       ldc  = 1
@@ -69,8 +69,6 @@
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-      ENDIF
 
       !-------------------------------------------------------------------------
       !  Deallocate all array members
@@ -112,7 +110,7 @@
       ppm_next_avail_topo = topo%ID
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_topo_dealloc',t0,info)

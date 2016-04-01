@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_get_decomp
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -44,7 +44,6 @@
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
-      USE ppm_module_check_id
       USE ppm_module_alloc
       IMPLICIT NONE
       !-------------------------------------------------------------------------
@@ -98,14 +97,14 @@
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double)     :: t0
       LOGICAL                   :: valid
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
       INTEGER, DIMENSION(2)     :: lda
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_topo_get_decomp',t0,info)
 
@@ -125,25 +124,25 @@
 
       lda(1) = ppm_dim
       lda(2) = topo%nsubs
-      call ppm_alloc(min_sub,lda,ppm_param_alloc_fit,info)
-      call ppm_alloc(max_sub,lda,ppm_param_alloc_fit,info)
-      if (info .NE. 0) then
+      CALL ppm_alloc(min_sub,lda,ppm_param_alloc_fit,info)
+      CALL ppm_alloc(max_sub,lda,ppm_param_alloc_fit,info)
+      IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_get_decomp',     &
      &        'failed to allocate min_sub, max_sub',__LINE__,info)
-          goto 9999
-      endif
+          GOTO 9999
+      ENDIF
       lda(1) = ppm_dim*2
-      call ppm_alloc(subs_bc,lda,ppm_param_alloc_fit,info)
-      if (info .NE. 0) then
+      CALL ppm_alloc(subs_bc,lda,ppm_param_alloc_fit,info)
+      IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_get_decomp',     &
      &        'failed to allocate subs_bc',__LINE__,info)
-          goto 9999
-      endif
+          GOTO 9999
+      ENDIF
       lda(1) = topo%nsubs
-      call ppm_alloc(sub2proc,lda,ppm_param_alloc_fit,info)
-      if (info .NE. 0) then
+      CALL ppm_alloc(sub2proc,lda,ppm_param_alloc_fit,info)
+      if (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_get_decomp',     &
      &        'failed to allocate sub2proc',__LINE__,info)

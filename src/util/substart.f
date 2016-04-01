@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                     substart
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -53,32 +53,32 @@
       !-------------------------------------------------------------------------
       CHARACTER(LEN=*), INTENT(IN   ) :: caller
       !!! Character string with the name of the calling subroutine
-      REAL(MK)        , INTENT(  OUT) :: t0
+      REAL(MK),         INTENT(  OUT) :: t0
       !!! System/cpu time at start of subroutine. Only returned if
       !!! ppm_debug .GT. 0
-      INTEGER         , INTENT(  OUT) :: info
+      INTEGER,          INTENT(  OUT) :: info
       !!! Initialized info for the calling subroutine.
 
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                         :: info2
+      INTEGER :: info2
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       info = ppm_param_success
-      IF     (ppm_debug.GT.1) THEN
+      IF      (ppm_debug.GT.1) THEN
          CALL ppm_util_time(t0)
          CALL ppm_write(ppm_rank,caller,'entering',info2)
-      ELSEIF (ppm_debug.GT.0) THEN
+      ELSE IF (ppm_debug.GT.0) THEN
          CALL ppm_util_time(t0)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE substart_s

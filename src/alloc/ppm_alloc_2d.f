@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_alloc_2d
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -26,7 +26,6 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE alloc_2d_s(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 2D real single arrays
@@ -62,6 +61,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -112,19 +112,26 @@
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:,:), POINTER :: work
 #endif
+
       INTEGER, DIMENSION(2) :: ldb,ldc,lda_new
       INTEGER               :: i,j
+
       LOGICAL               :: lcopy,lalloc,lrealloc
+
+#ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
+#endif
+      CHARACTER(LEN=*), PARAMETER :: caller='ppm_alloc_2d'
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
-#ifdef __DEBUG 
-      CALL substart('ppm_alloc_2d',t0,info)
+#ifdef __DEBUG
+      CALL substart(caller,t0,info)
 #else
       info = 0
 #endif
@@ -133,7 +140,7 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug.GT.0) THEN
-         CALL ppm_alloc_argcheck('ppm_alloc_2d',iopt,lda,2,info)
+         CALL ppm_alloc_argcheck(caller,iopt,lda,2,info)
          IF (info .NE. 0) GOTO 9999
       ENDIF
 
@@ -163,7 +170,8 @@
       lcopy    = .FALSE.
       lalloc   = .FALSE.
       lrealloc = .FALSE.
-      IF     (iopt.EQ.ppm_param_alloc_fit_preserve) THEN
+      SELECT CASE (iopt)
+      CASE (ppm_param_alloc_fit_preserve)
          !----------------------------------------------------------------------
          !  fit memory and preserve the present contents
          !----------------------------------------------------------------------
@@ -174,9 +182,6 @@
                lrealloc = .TRUE.
                lalloc   = .TRUE.
                lcopy    = .TRUE.
-               lda_new(1) = lda(1)
-            ELSE
-               lda_new(1) = ldb(1)
             ENDIF
 
             ldb(2) = SIZE(adata,2)
@@ -184,16 +189,14 @@
                lrealloc = .TRUE.
                lalloc   = .TRUE.
                lcopy    = .TRUE.
-               lda_new(2) = lda(2)
-            ELSE
-               lda_new(2) = ldb(2)
             ENDIF
          ELSE
             lalloc     = .TRUE.
-            lda_new(1) = lda(1)
-            lda_new(2) = lda(2)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_alloc_fit) THEN
+         lda_new(1) = lda(1)
+         lda_new(2) = lda(2)
+
+      CASE (ppm_param_alloc_fit)
          !----------------------------------------------------------------------
          !  fit memory but skip the present contents
          !----------------------------------------------------------------------
@@ -203,25 +206,20 @@
             IF (ldb(1).NE.lda(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
-               lda_new(1) = lda(1)
-            ELSE
-               lda_new(1) = ldb(1)
             ENDIF
 
             ldb(2) = SIZE(adata,2)
             IF (ldb(2).NE.lda(2)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
-               lda_new(2) = lda(2)
-            ELSE
-               lda_new(2) = ldb(2)
             ENDIF
          ELSE
             lalloc     = .TRUE.
-            lda_new(1) = lda(1)
-            lda_new(2) = lda(2)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_alloc_grow_preserve) THEN
+         lda_new(1) = lda(1)
+         lda_new(2) = lda(2)
+
+      CASE (ppm_param_alloc_grow_preserve)
          !----------------------------------------------------------------------
          !  grow memory and preserve the present contents
          !----------------------------------------------------------------------
@@ -254,7 +252,8 @@
             lda_new(1) = lda(1)
             lda_new(2) = lda(2)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_alloc_grow) THEN
+
+      CASE (ppm_param_alloc_grow)
          !----------------------------------------------------------------------
          !  grow memory but skip the present contents
          !----------------------------------------------------------------------
@@ -285,40 +284,31 @@
             lda_new(1) = lda(1)
             lda_new(2) = lda(2)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_dealloc) THEN
+
+      CASE (ppm_param_dealloc)
          !----------------------------------------------------------------------
          !  deallocate
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
             DEALLOCATE(adata,STAT=info)
             NULLIFY(adata)
-            IF (info .NE. 0) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_dealloc,'ppm_alloc_2d',   &
-     &             'DATA',__LINE__,info)
-            ENDIF
+            or_fail_dealloc('DATA')
          ENDIF
-      ELSE
+
+      CASE DEFAULT
          !----------------------------------------------------------------------
          !  Unknown iopt
          !----------------------------------------------------------------------
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_alloc_2d',                       &
-     &                  'unknown iopt',__LINE__,info)
-         GOTO 9999
-      ENDIF
+         fail('unknown iopt')
+
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Allocate new memory
       !-------------------------------------------------------------------------
       IF (lalloc) THEN
          ALLOCATE(work(lda_new(1),lda_new(2)),STAT=info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_alloc_2d',   &
-     &           'WORK',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail_alloc('WORK',ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -339,12 +329,7 @@
       !-------------------------------------------------------------------------
       IF (lrealloc) THEN
          DEALLOCATE(adata,STAT=info)
-         !NULLIFY(adata)
-         IF (info .NE. 0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_alloc,'ppm_alloc_2d',   &
-     &           'DATA',__LINE__,info)
-         ENDIF
+         or_fail_dealloc('DATA',exit_point=no)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -357,9 +342,9 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
 #ifdef __DEBUG
-      CALL substop('ppm_alloc_2d',t0,info)
+      CALL substop(caller,t0,info)
 #endif
       RETURN
 #if   __KIND == __SINGLE_PRECISION

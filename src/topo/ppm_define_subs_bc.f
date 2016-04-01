@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_define_subs_bc
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -46,13 +46,14 @@
       !!! routine might fail (round off errors) and the comparison should be
       !!! replaced by a `ABS(value-target) < epsilon` comparison.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
+      USE ppm_module_mpi
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -62,11 +63,8 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: min_phys
       !!! Min. extent of the physical domain
@@ -85,20 +83,23 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER , DIMENSION(ppm_dim) :: ldc
-      INTEGER                      :: i,iopt
-      REAL(MK)                     :: t0
-      REAL(MK)                     :: lmyeps
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)              :: lmyeps
+
+      INTEGER, DIMENSION(ppm_dim) :: ldc
+      INTEGER                     :: i,iopt
+
+      CHARACTER(LEN=ppm_char) :: caller="ppm_define_subs_bc"
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_define_subs_bc',t0,info)
+      CALL substart(caller,t0,info)
 #if    __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif  __KIND == __DOUBLE_PRECISION
@@ -112,26 +113,21 @@
       ldc(1) = 2*ppm_dim
       ldc(2) = MAX(nsubs,1)
       CALL ppm_alloc(subs_bc,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_define_subs_bc',     &
-     &        'allocation of subs_bc failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc("allocation of subs_bc failed")
 
       !-------------------------------------------------------------------------
-      !  Loop over the global subs and compare their 
+      !  Loop over the global subs and compare their
       !  coordinates with the physical boundary
       !-------------------------------------------------------------------------
       DO i=1,nsubs
          !----------------------------------------------------------------------
          !  compare the west boundary
          !----------------------------------------------------------------------
-         IF (ABS(min_sub(1,i)-min_phys(1)) .LT. lmyeps*(max_sub(1,i)-min_sub(1,i))) THEN 
+         IF (ABS(min_sub(1,i)-min_phys(1)) .LT. lmyeps*(max_sub(1,i)-min_sub(1,i))) THEN
             subs_bc(1,i) = 1
          ELSE
             subs_bc(1,i) = 0
-         ENDIF 
+         ENDIF
 
          !----------------------------------------------------------------------
          !  compare the east boundary
@@ -140,7 +136,7 @@
             subs_bc(2,i) = 1
          ELSE
             subs_bc(2,i) = 0
-         ENDIF 
+         ENDIF
 
          !----------------------------------------------------------------------
          !  compare the south boundary
@@ -149,7 +145,7 @@
             subs_bc(3,i) = 1
          ELSE
             subs_bc(3,i) = 0
-         ENDIF 
+         ENDIF
 
          !----------------------------------------------------------------------
          !  compare the north boundary
@@ -158,7 +154,7 @@
             subs_bc(4,i) = 1
          ELSE
             subs_bc(4,i) = 0
-         ENDIF 
+         ENDIF
 
          !----------------------------------------------------------------------
          !  in three dimensions
@@ -171,7 +167,7 @@
                subs_bc(5,i) = 1
             ELSE
                subs_bc(5,i) = 0
-            ENDIF 
+            ENDIF
 
             !-------------------------------------------------------------------
             !  compare the top boundary
@@ -180,15 +176,15 @@
                subs_bc(6,i) = 1
             ELSE
                subs_bc(6,i) = 0
-            ENDIF 
-         ENDIF 
+            ENDIF
+         ENDIF
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_define_subs_bc',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE define_subsbc_s

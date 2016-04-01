@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Subroutine   :                   ppm_rmsh_comp_weights
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -48,11 +48,10 @@
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_data
-      USE ppm_module_data_mesh
       USE ppm_module_data_rmsh
       USE ppm_module_write
       USE ppm_module_util_time
-      USE ppm_module_check_id
+      USE ppm_module_mapping_typedef
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION
@@ -88,11 +87,11 @@
       !--------------------------------------------------------------------------
       ! Local variables
       !--------------------------------------------------------------------------
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
+      INTEGER,  DIMENSION(:,:)     , POINTER :: istart
       INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
       INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
-      REAL(MK), DIMENSION(:)       , POINTER :: min_phys => NULL()
-      REAL(MK), DIMENSION(:)       , POINTER :: max_phys => NULL()
+      REAL(MK), DIMENSION(:)       , POINTER :: min_phys
+      REAL(MK), DIMENSION(:)       , POINTER :: max_phys
       REAL(MK),  DIMENSION(ppm_dim)           :: dxi,dx
       REAL(MK),  DIMENSION(ppm_dim)           :: len_phys
       REAL(MK)                               :: x1,x2,x3,epsilon
@@ -111,21 +110,21 @@
       INTEGER, DIMENSION(6)                  :: bcdef
       LOGICAL                                :: internal_weights
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
-      REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx1     => NULL()
-      REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx2     => NULL()
-      REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx3     => NULL()
+      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub
+      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub
+      REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx1
+      REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx2
+      REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx3
       REAL(mk)                               :: myeps
       REAL(mk)                               :: tim1s, tim1e
       CHARACTER(len=256)                     :: msg
       LOGICAL                                :: valid
-      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh  => NULL()
-      TYPE(ppm_t_topo)     , POINTER         :: topo    => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
+      TYPE(ppm_t_topo)     , POINTER         :: topo
 
 
       !--------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !--------------------------------------------------------------------------
 
 
@@ -197,15 +196,17 @@
             GOTO 9999
         ENDIF
       ENDIF
+
       topo => ppm_topo(topoid)%t
+
       SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          p_mesh => t
+         p_mesh => t
       END SELECT
       !--------------------------------------------------------------------------
       !  Get istart
       !--------------------------------------------------------------------------
-      istart =>p_mesh%istart
+      istart => p_mesh%istart
 
       !--------------------------------------------------------------------------
       !  Assignment of the useful arrays/scalar
@@ -285,6 +286,7 @@
      max_sub => topo%max_subd
 #endif
 
+     nlist2 = 0
      !--------------------------------------------------------------------------
      !  Loop over the subdomains (since the first domains are most likely
      !  to be empty, we look backwards to reduce the number of elements in

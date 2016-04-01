@@ -56,14 +56,14 @@ integer                                        :: nterms
 
         use ppm_module_init
         use ppm_module_mktopo
-        
+
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),stat=info)
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6) = ppm_param_bcdef_periodic
-        
+
 #ifdef __MPI
         comm = mpi_comm_world
         call mpi_comm_rank(comm,rank,info)
@@ -109,15 +109,15 @@ integer                                        :: nterms
 
 
     end setup
-        
+
 
     teardown
-        
+
     end teardown
 
     test initialize_random
         ! test initialization of particles sampled unif. random
-        type(ppm_t_particles_d)               :: Part1
+        type(ppm_t_particles_d),TARGET :: Part1
 
         call Part1%initialize(np_global,info,topoid=topoid,&
             distrib=ppm_param_part_init_random)
@@ -141,9 +141,9 @@ integer                                        :: nterms
 
     test initialize_cart
         ! test initialization of particles on a grid
-        type(ppm_t_particles_d)               :: Part1
-        class(ppm_t_discr_data),POINTER       :: Prop1=>NULL(),Prop2=>NULL()
-        type(ppm_t_field)                     :: Field1
+        type(ppm_t_particles_d),TARGET   :: Part1
+        class(ppm_t_discr_data),POINTER  :: Prop1=>NULL(),Prop2=>NULL()
+        type(ppm_t_field)                :: Field1
 
 
         call Part1%initialize(np_global,info,topoid=topoid)
@@ -216,11 +216,11 @@ integer                                        :: nterms
             call Part1%destroy_prop(Prop1,info)
             Assert_Equal(info,0)
             SELECT TYPE(Prop1)
-            CLASS IS(ppm_t_part_prop_d) 
+            CLASS IS(ppm_t_part_prop_d)
                 Assert_Equal(Part1%props%get_id(Prop1),-1)
             END SELECT
             SELECT TYPE(Prop2)
-            CLASS IS(ppm_t_part_prop_d) 
+            CLASS IS(ppm_t_part_prop_d)
                 Assert_True(Part1%props%get_id(Prop2).GT.0)
                 wp_id = Part1%props%get_id(Prop2)
                 Assert_Equal(Part1%props%vec(wp_id)%t%lda,1)
@@ -301,7 +301,7 @@ integer                                        :: nterms
 
     test neighlists
         ! test neighbour lists
-        type(ppm_t_particles_d)         :: Part1
+        type(ppm_t_particles_d),TARGET :: Part1
 
         call Part1%destroy(info)
         Assert_Equal(info,0)
@@ -321,7 +321,7 @@ integer                                        :: nterms
 
     test sop_type
         ! test procedures for sop data structures
-        type(ppm_t_sop_d)                 :: Part1_A
+        type(ppm_t_sop_d),target          :: Part1_A
         class(ppm_t_discr_data),  pointer :: Prop1=>NULL(),Prop2=>NULL()
 
         call Part1_A%initialize(np_global,info,topoid=topoid)
@@ -439,6 +439,6 @@ pure function f0_test(pos,ndim)
 
 end function f0_test
 
-    
+
 
 end test_suite

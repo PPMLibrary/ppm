@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                     ppm_util_printstats
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -34,21 +34,20 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_write
+      USE ppm_module_mpi
       USE ppm_module_typedef
       IMPLICIT NONE
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
+
       INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       LOGICAL                , INTENT(IN   ), OPTIONAL :: verbose
       !!! not implemented yet
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3)    :: ldu
       INTEGER                  :: i,isize
@@ -57,9 +56,9 @@
 #endif
       REAL(MK)                 :: t0,t1,t2,t3
       !!! Current CPU clock time
-      CHARACTER(LEN=ppm_char)  :: cbuf,mesg
+      CHARACTER(LEN=ppm_char)  :: mesg
       CHARACTER(LEN=ppm_char)  :: caller = 'ppm_util_printstats'
-      
+
       info = 0
       !-------------------------------------------------------------------------
       !  Call ppm_util_time
@@ -75,27 +74,23 @@
           ppm_tstats_times_avg(1:isize),isize,MPTYPE,MPI_SUM,0,ppm_comm,info)
 
       IF (ppm_rank .eq. 0) THEN
-          CALL ppm_write(ppm_rank,caller,&
-              '----- TIMINGS - [max/avg/min] ----',info)
+          stdout("----- TIMINGS - [max/avg/min] ----")
           DO i = 1,isize
               mesg = ppm_tstats_labels(i)
               t1 = ppm_tstats_times_max(i)
               t2 = ppm_tstats_times_avg(i) / REAL(ppm_nproc,8)
               t3 = ppm_tstats_times_min(i)
 
-              WRITE(cbuf,'(A,A,A)') '  ',TRIM(ADJUSTL(mesg)),':'
-              CALL ppm_write(ppm_rank,caller,cbuf,info)
-              WRITE(cbuf,'(A,3(E11.4,A))') '   ',t1,' / ',t2,' / ',t3
-              CALL ppm_write(ppm_rank,caller,cbuf,info)
+              stdout_f('(A,A,A)',"  ",'TRIM(ADJUSTL(mesg))',":")
+              stdout_f('(A,3(E11.4,A))',"   ",t1," / ",t2," / ",t3)
           ENDDO
-          CALL ppm_write(ppm_rank,caller,'--------------',info)
+          stdout("--------------")
       ENDIF
 #endif
-
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       RETURN
       END SUBROUTINE ppm_util_printstats

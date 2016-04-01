@@ -38,12 +38,13 @@
         !  Used modules
         !-------------------------------------------------------------------------
         USE ppm_module_data
-        USE ppm_module_inl_hash
-        USE ppm_module_alloc
-        USE ppm_module_error
         USE ppm_module_substart
         USE ppm_module_substop
+        USE ppm_module_error
+        USE ppm_module_alloc
+        USE ppm_module_inl_hash
         USE ppm_module_mktopo
+        IMPLICIT NONE
 
         !-------------------------------------------------------------------------
         !  Declaration of parameters
@@ -54,12 +55,12 @@
         !-------------------------------------------------------------------------
         TYPE ppm_clist
 
-            INTEGER, DIMENSION(:,:), POINTER :: borders  => NULL()
+            INTEGER, DIMENSION(:,:), POINTER :: borders => NULL()
             !!! contains the boundaries in the particle rank array separating the
             !!! particles belonging to different cells.
             !!!
             !!! in 2D this is a 6xn_cells array
-            !!! The column indeces of borders(:,k) contain indeces to the rank array 
+            !!! The column indeces of borders(:,k) contain indeces to the rank array
             !!! specifying which particles belong in which subcell of cell k
             !!! -----------
             !!! |2:3 |4:5 |
@@ -77,7 +78,7 @@
             INTEGER, DIMENSION(:),   POINTER :: rankByPos  => NULL()
             ! rank of particles
             INTEGER, DIMENSION(:),   POINTER :: rc_borders => NULL()
-    
+
             !-------------------------------------------------------------------------
             !  Declaration of variables
             !-------------------------------------------------------------------------
@@ -87,8 +88,7 @@
             INTEGER :: ncell            = 0
             INTEGER :: n_real_p         = 0
             INTEGER :: n_all_p          = 0
-            LOGICAL :: grow_htable      = .TRUE.
-    
+
             TYPE(ppm_htable) :: lookup
 
         END TYPE

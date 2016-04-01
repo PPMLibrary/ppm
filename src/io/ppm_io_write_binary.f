@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_io_write_binary
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -60,7 +60,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                          , INTENT(IN   ) :: iUnit
       !!! Fortran I/O unit to be used
@@ -90,9 +90,9 @@
       !!! .TRUE. if the integer array actually is a CHARACTER string
       !!! and should be converted back before output.
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                         :: t0
+      REAL(ppm_kind_double) :: t0
       INTEGER                          :: reclen
 #if __KIND == __INTEGER
       CHARACTER(LEN=SIZE(adata,1)), POINTER :: cbuf
@@ -100,11 +100,11 @@
 #endif
 
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_io_write_binary',t0,info)
       reclen = SIZE(adata,1)
@@ -139,25 +139,25 @@
       !-------------------------------------------------------------------------
       !  Write actual data
       !-------------------------------------------------------------------------
-#if   __KIND == __SINGLE_PRECISION 
+#if   __KIND == __SINGLE_PRECISION
       IF (ioprec .EQ. ppm_param_io_double) THEN
           WRITE(iUnit,ERR=800,IOSTAT=info) REAL(adata,ppm_kind_double)
       ELSE
           WRITE(iUnit,ERR=800,IOSTAT=info) adata
       ENDIF
-#elif __KIND == __DOUBLE_PRECISION 
+#elif __KIND == __DOUBLE_PRECISION
       IF (ioprec .EQ. ppm_param_io_single) THEN
           WRITE(iUnit,ERR=800,IOSTAT=info) REAL(adata,ppm_kind_single)
       ELSE
           WRITE(iUnit,ERR=800,IOSTAT=info) adata
       ENDIF
-#elif __KIND == __SINGLE_PRECISION_COMPLEX 
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
       IF (ioprec .EQ. ppm_param_io_double) THEN
           WRITE(iUnit,ERR=800,IOSTAT=info) CMPLX(adata,KIND=ppm_kind_double)
       ELSE
           WRITE(iUnit,ERR=800,IOSTAT=info) adata
       ENDIF
-#elif __KIND == __DOUBLE_PRECISION_COMPLEX 
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
       IF (ioprec .EQ. ppm_param_io_single) THEN
           WRITE(iUnit,ERR=800,IOSTAT=info) CMPLX(adata,KIND=ppm_kind_single)
       ELSE

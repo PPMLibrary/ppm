@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :              ppm_module_util_dbg
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -36,10 +36,17 @@
 #define __VECTOR 4
 
       MODULE ppm_module_util_dbg
-      !!! This module provides the routines
-      !!! that solve cubic equations with real roots.
+      !!! This Module provides a simple means to visualize particles and
+      !!! domain decompositions for debugging and monitoring purposes.
+      !!!
+      !!! The module is used in conjunction with the ppmdbg.py script.
+      !!! It creates two files with names ppm_dbg_####.sub and ppm_dbg_####.dat
+      !!! That contain the domain decomposition and particle data respectively
+
+         IMPLICIT NONE
+
          !----------------------------------------------------------------------
-         !  Define interfaces to the main topology routine(s)
+         !  Define interfaces to the main routine(s)
          !----------------------------------------------------------------------
          INTERFACE ppm_dbg_print
             MODULE PROCEDURE dbg_print_sca_s

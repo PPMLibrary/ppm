@@ -20,10 +20,10 @@ integer                         :: info
     init
 
         use ppm_module_init
-        
-        tol = epsilon(1.0_mk)
-        tolexp = int(log10(epsilon(1.0_mk)))
-        
+
+        tol = epsilon(1.0_MK)
+        tolexp = int(log10(epsilon(1.0_MK)))
+
         nullify(xp)
 
 #ifdef __MPI
@@ -54,21 +54,21 @@ integer                         :: info
     integer, dimension(1) :: lda
     integer               :: iopt
     integer               :: info
-   
+
     iopt = ppm_param_alloc_fit
     lda(1) = 1024
     call ppm_alloc(wp,lda,iopt,info)
     assert_equal(info,0)
 
     end test
-    
+
     test dealloc
     ! test simple allocation
     use ppm_module_data
     integer, dimension(1) :: lda
     integer               :: iopt
     integer               :: info
-   
+
     iopt = ppm_param_dealloc
     lda(1) = 1024
     call ppm_alloc(wp,lda,iopt,info)

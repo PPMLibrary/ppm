@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
-      !  Subroutine   :                ppm_util_cart2sph  
+      !  Subroutine   :                ppm_util_cart2sph
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -57,10 +57,10 @@
 #endif
 
       !-------------------------------------------------------------------------
-      !  Includes     
+      !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:), INTENT(IN)  :: x
       !!! x coordinates
@@ -85,13 +85,14 @@
       INTEGER, INTENT(OUT)               :: info
       !!! Return status
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER :: i,j,k
-      REAL(MK) :: dx,dy,dz,rad,t0
-      
+      INTEGER :: i
+      REAL(MK) :: dx,dy,dz,rad
+      REAL(ppm_kind_double) :: t0
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_util_cart2sph',t0,info)
 
@@ -104,9 +105,9 @@
       !  Convert
       !-------------------------------------------------------------------------
       DO i=1,n
-         dx  = x(i) - x0 
-         dy  = y(i) - y0 
-         dz  = z(i) - z0 
+         dx  = x(i) - x0
+         dy  = y(i) - y0
+         dz  = z(i) - z0
          rad = SQRT(dx*dx + dy*dy + dz*dz)
          IF (rad.GT.0.0) THEN
             r(i)     = rad
@@ -114,11 +115,11 @@
             theta(i) = ACOS(dz/rad)
          ENDIF
       ENDDO
-      
+
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop('ppm_util_cart2sph',t0,info)
       RETURN
 #if   __KIND == __SINGLE_PRECISION

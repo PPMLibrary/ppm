@@ -1,10 +1,6 @@
 test_suite ppm_module_interp_p2m
 
-
-
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+    USE ppm_module_mpi
 
     integer, parameter              :: debug = 0
     integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
@@ -89,7 +85,7 @@ test_suite ppm_module_interp_p2m
 
 !------------------------------ test setup ------------------------------------
     setup
-        
+
         nullify(xp)
         nullify(wp)
         nullify(field_wp2)
@@ -98,7 +94,7 @@ test_suite ppm_module_interp_p2m
 
         np = 400*nproc
         mp = 0
-        
+
         call random_seed(size=seedsize)
         allocate(seed(seedsize))
         do i=1,seedsize
@@ -108,15 +104,15 @@ test_suite ppm_module_interp_p2m
 
     end setup
 !------------------------------------------------------------------------------
-        
+
 
 !--------------------------- test teardown ------------------------------------
     teardown
-        
+
         use ppm_module_finalize
 
         call ppm_finalize(info)
-        
+
         deallocate(xp,wp,stat=info)
         deallocate(field_wp2,field_wp3,stat=info)
         deallocate(seed)
@@ -152,9 +148,9 @@ test_suite ppm_module_interp_p2m
             max_phys(i) = 1.0_mk
             ghostsize(i) = 2
         enddo
-        
+
         call ppm_init(ndim,mk,tolexp,0,debug,info,99)
-    
+
         allocate(xp(ndim,np),wp(nspec,np),stat=info)
         call random_number(xp)
         wp = 0.0_mk
@@ -178,7 +174,7 @@ test_suite ppm_module_interp_p2m
 
         call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
         &               bcdef,ghostsize,cost,nm,info)
-        
+
         call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
         &               isublist,nsublist,info)
 
@@ -253,7 +249,7 @@ test_suite ppm_module_interp_p2m
         enddo
 
 !        print *, 'Maximum 3rd moment difference / h^3', maxm3/h**3
-        
+
     end test
 !------------------------------------------------------------------------------
 
@@ -272,7 +268,7 @@ test_suite ppm_module_interp_p2m
         integer, dimension(3)            :: maxndata
         integer, dimension(:  ), pointer :: isublist => NULL()
         integer                          :: nsublist
-        
+
         ndim = 3
         nspec = 1
         allocate(bcdef(2*ndim))
@@ -283,9 +279,9 @@ test_suite ppm_module_interp_p2m
             max_phys(i) = 1.0_mk
             ghostsize(i) = 2
         enddo
-        
+
         call ppm_init(ndim,mk,tolexp,0,debug,info,99)
-    
+
         allocate(xp(ndim,np),wp(nspec,np),stat=info)
         call random_number(xp)
         wp = 0.0_mk
@@ -309,10 +305,10 @@ test_suite ppm_module_interp_p2m
 
         call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
         &               bcdef,ghostsize,cost,nm,info)
-        
+
         call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
         &               isublist,nsublist,info)
-        
+
 
         allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
         &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
@@ -393,7 +389,7 @@ test_suite ppm_module_interp_p2m
         enddo
 
 !        print *, 'Maximum 3rd moment difference / h^3', maxm3/h**3
-        
+
     end test
 !------------------------------------------------------------------------------
 

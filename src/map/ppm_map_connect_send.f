@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :               ppm_map_connect_send
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -36,25 +36,25 @@
       !!! integers
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
+      USE ppm_module_mpi
       USE ppm_module_util_invert_list
+      USE ppm_module_mapping_typedef, ONLY : ppm_buffer_set,ppm_buffer2part, &
+      &   ppm_nsendlist,ppm_psendbuffer,ppm_isendlist,ppm_irecvlist
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
 
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(:,:), POINTER       :: cd
       !!! Connection data
@@ -62,7 +62,7 @@
       !!! The leading dimension of cd(:,:)
       INTEGER                , INTENT(INOUT) :: Ncon
       !!! Number of connections
-      INTEGER, DIMENSION(:)  , INTENT(IN   ) :: id
+      INTEGER, DIMENSION(:)  , TARGET        :: id
       !!! Local to global particle number mapping
       INTEGER                , INTENT(IN   ) :: Npart
       !!! Number of particles
@@ -71,40 +71,38 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
+      REAL(ppm_kind_double) :: t0
+
       INTEGER, DIMENSION(3) :: ldu
       INTEGER               :: i,j,k,l,msend,mrecv,iopt,ipos,part,qpart,icon
-      REAL(ppm_kind_double) :: t0
       INTEGER               :: tag,cd_size,ncons_local
       INTEGER               :: hops
-#ifdef __MPI
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
-#endif
+      INTEGER               :: min_,max_
 
+      CHARACTER(LEN=ppm_char) :: caller='ppm_map_connect_send'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_connect_send',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Check if the send buffer is empty
       !-------------------------------------------------------------------------
-      IF (ppm_buffer_set .LT. 1) THEN
-          info = ppm_error_warning
-          CALL ppm_error(ppm_err_buffer_empt,'ppm_map_connect_send',  &
-     &         'No mapping defined!',__LINE__,info)
-          GOTO 9999
+      IF (ppm_buffer_set.LT.1) THEN
+         fail('No mapping defined!', &
+         & ppm_err_buffer_empt,ppm_error=ppm_error_warning)
       ENDIF
 
 #ifndef __MPI
@@ -119,40 +117,20 @@
       iopt = ppm_param_alloc_fit
       ldu(1) = ppm_nsendlist
       CALL ppm_alloc(csend,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'allocating array CSEND',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('allocating array CSEND',ppm_error=ppm_error_fatal)
 
       ldu(1) = ppm_nsendlist
       CALL ppm_alloc(crecv,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'allocating array CRECV',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('allocating array CRECV',ppm_error=ppm_error_fatal)
 
       ldu(1) = ppm_nsendlist
       ldu(2) = Ncon
       CALL ppm_alloc(psend,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'allocating array PSEND',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('allocating array PSEND',ppm_error=ppm_error_fatal)
 
       ldu(1) = Npart
       CALL ppm_alloc(id_send,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'allocating list ID_SEND',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('allocating list ID_SEND',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Initialize the arrays and counter
@@ -214,8 +192,9 @@
          !----------------------------------------------------------------------
          tag = 100
          CALL MPI_SendRecv(csend(k),1,MPI_INTEGER,ppm_isendlist(k),tag, &
-     &                     crecv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag, &
-     &                     ppm_comm,status,info)
+         &                 crecv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag, &
+         &                 ppm_comm,MPI_STATUS_IGNORE,info)
+         or_fail_MPI("MPI_SendRecv")
 
          msend = msend + csend(k)
          mrecv = mrecv + crecv(k)
@@ -231,12 +210,7 @@
       ldu(1) = lda
       ldu(2) = Ncon + mrecv
       CALL ppm_alloc(cd_local,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'allocating connectin array CD_LOCAL',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('allocating connectin array CD_LOCAL',ppm_error=ppm_error_fatal)
 
       cd_local(:,:) = 0
       cd_local(:,1:Ncon) = cd(:,:)
@@ -247,21 +221,11 @@
       iopt = ppm_param_alloc_fit
       ldu(1) = MAXVAL(csend,1)*lda
       CALL ppm_alloc(sendbuffer,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'allocating send buffer SENDBUFFER',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('allocating send buffer SENDBUFFER',ppm_error=ppm_error_fatal)
 
       ldu(1) = MAXVAL(crecv,1)*lda
       CALL ppm_alloc(recvbuffer,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'allocating receive buffer RECVBUFFER',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('allocating receive buffer RECVBUFFER',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Send and receive the connections
@@ -282,10 +246,10 @@
          ENDDO
 
          tag = 200
-         CALL MPI_SendRecv(sendbuffer,csend(k)*lda,MPI_INTEGER,      &
-     &                     ppm_isendlist(k),tag,                     &
-     &                     recvbuffer,crecv(k)*lda,MPI_INTEGER,      &
-     &                     ppm_irecvlist(k),tag,ppm_comm,status,info)
+         CALL MPI_SendRecv(sendbuffer,csend(k)*lda,MPI_INTEGER,         &
+         &    ppm_isendlist(k),tag,recvbuffer,crecv(k)*lda,MPI_INTEGER, &
+         &    ppm_irecvlist(k),tag,ppm_comm,MPI_STATUS_IGNORE,info)
+         or_fail_MPI("MPI_SendRecv")
 
          !----------------------------------------------------------------------
          !  Add the received connections to the connection data array
@@ -312,69 +276,45 @@
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(csend,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'deallocating array CSEND',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('deallocating array CSEND',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(crecv,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'deallocating array CRECV',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('deallocating array CRECV',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(sendbuffer,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'deallocating send buffer SENDBUFFER',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('deallocating send buffer SENDBUFFER',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(recvbuffer,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'deallocating receive buffer RECVBUFFER',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('deallocating receive buffer RECVBUFFER',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Invert list of particles that has been sent away
       !-------------------------------------------------------------------------
       CALL ppm_util_invert_list(id_send,id_inv,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'inverting id list',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail("inverting id list",ppm_error=ppm_error_fatal)
 
       iopt = ppm_param_dealloc
       CALL ppm_alloc(id_send,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'deallocating temporary id list ID_SEND',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('deallocating temporary id list ID_SEND',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Find and mark all orphan connections
       !-------------------------------------------------------------------------
+      min_=LBOUND(id_inv,1)
+      max_=UBOUND(id_inv,1)
+
       icon = 0
       DO j = 1,Ncon
          IF (psend(1,j) .EQ. 1) THEN
              l = 0
              DO i = 1,lda
-                IF ((cd_local(i,j) .GE. LBOUND(id_inv,1)) .AND.  &
-     &              (cd_local(i,j) .LE. UBOUND(id_inv,1))) THEN
-                    IF (id_inv(cd_local(i,j)) .GT. -HUGE(cd_local(i,j))) THEN
-                        l = l + 1
-                    ENDIF
+                IF ((cd_local(i,j) .GE. min_) .AND.  &
+                &   (cd_local(i,j) .LE. max_)) THEN
+                   IF (id_inv(cd_local(i,j)) .GT. -ppm_big_i) THEN
+                      l = l + 1
+                   ENDIF
                 ELSE
-                    l = l + 1
+                   l = l + 1
                 ENDIF
              ENDDO
              IF (l .EQ. lda) THEN
@@ -393,8 +333,8 @@
          DO k = j+1,ncons_local
             l = 0
             DO i = 1,lda
-               IF (cd_local(i,j) .EQ. cd_local(i,k)) THEN
-                   l = l + 1
+               IF (cd_local(i,j).EQ.cd_local(i,k)) THEN
+                  l = l + 1
                ENDIF
             ENDDO
 
@@ -412,12 +352,7 @@
       ldu(2) = ncons_local - icon
       iopt = ppm_param_alloc_fit
       CALL ppm_alloc(cd,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'allocating connection array CD',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('allocating connection array CD',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Go through all connections and save all that are not marked
@@ -435,36 +370,23 @@
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(psend,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'deallocating array PSEND',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      CALL ppm_alloc(cd_local,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_connect_send',  &
-     &        'deallocating connection array CD_LOCAL',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('deallocating array PSEND',ppm_error=ppm_error_fatal)
 
+      CALL ppm_alloc(cd_local,ldu,iopt,info)
+      or_fail_dealloc('deallocating connection array CD_LOCAL',ppm_error=ppm_error_fatal)
 #endif
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_map_connect_send',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
-        IF (Ncon .LT. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_argument,'ppm_map_connect_send', &
-     &          'Number of connections must be >=0',__LINE__,info)
-            GOTO 8888
+        IF (Ncon.LT.0) THEN
+           fail('Number of connections must be >=0', &
+           & exit_point=8888,ppm_error=ppm_error_fatal)
         ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
-
       END SUBROUTINE ppm_map_connect_send

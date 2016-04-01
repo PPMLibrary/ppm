@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_decomp_boxsplit_[s,d]
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -29,16 +29,16 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE decomp_bsplit_s(xp,ppb,npbx,kbox,nbox, &
-     &                                 min_box,max_box,info)
+      &          min_box,max_box,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE decomp_bsplit_d(xp,ppb,npbx,kbox,nbox, &
-     &                                 min_box,max_box,info)
+      &          min_box,max_box,info)
 #endif
       !!! This routine splits a (parent) box in its 4 or 8 children for
       !!! 2D and 3D problems. The particles contained within
       !!! the parent box are sorted into the respective child boxes.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -47,6 +47,7 @@
       USE ppm_module_alloc
       USE ppm_module_util_sort
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -55,53 +56,52 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: kbox
-      !!! ID of the parent box
       REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: xp
       !!! Particle coordinates
+      INTEGER , DIMENSION(:)  , INTENT(INOUT) :: ppb
+      !!! ppb(i_box) returns the first index of the
+      !!! particle in the box of index ibox
+      INTEGER , DIMENSION(:)  , INTENT(INOUT) :: npbx
+      !!! npbx(i_box) returns the number of particles in the box of index ibox
+      INTEGER                 , INTENT(IN   ) :: kbox
+      !!! ID of the parent box
+      INTEGER                 , INTENT(INOUT) :: nbox
+      !!! Current number of boxes
       REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: min_box
       !!! Smallest extremum of the sub-domains
       REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: max_box
       !!! Largest extremum of the sub-domains
-      INTEGER , DIMENSION(:)  , INTENT(INOUT) :: ppb
-      !!! ppb(i_box) returns the first index of the particle in the box of
-      !!! index ibox
-      INTEGER , DIMENSION(:)  , INTENT(INOUT) :: npbx
-      !!! npbx(i_box) returns the number of particles in the box of index ibox
-      INTEGER                 , INTENT(INOUT) :: nbox
-      !!! Current number of boxes
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                        :: t0
-      REAL(MK), DIMENSION(ppm_dim)    :: cen_box
-      INTEGER , DIMENSION(:), POINTER :: npbx_temp => NULL()
-      INTEGER , DIMENSION(ppm_dim)    :: Nm
-      INTEGER                         :: idx,jdx,k,iopt
-      INTEGER , DIMENSION(1)          :: lda ! dummy for ppm_alloc
+      REAL(ppm_kind_double)        :: t0
+      REAL(MK), DIMENSION(ppm_dim) :: cen_box
+
+      INTEGER , DIMENSION(:), ALLOCATABLE :: npbx_temp
+      INTEGER , DIMENSION(ppm_dim)        :: Nm
+      INTEGER                             :: idx,jdx,k
+
+      CHARACTER(LEN=ppm_char) :: caller = 'ppm_decomp_boxsplit'
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_decomp_boxsplit',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -117,17 +117,20 @@
       Nm  = 2
       idx = ppb(kbox)
 
+      ALLOCATE(npbx_temp(PRODUCT(Nm)),STAT=info)
+      or_fail_alloc("Allocation of npbx_temp array failed.")
+
       !-------------------------------------------------------------------------
-      !  Sort the particle in two dimensions 
+      !  Sort the particle in two dimensions
       !-------------------------------------------------------------------------
-      IF (ppm_dim.EQ.2) THEN
+      SELECT CASE (ppm_dim)
+      CASE (2)
          !----------------------------------------------------------------------
          !  in two dimensions
          !----------------------------------------------------------------------
          jdx = idx + npbx(kbox) - 1
-         CALL ppm_util_sort2d(xp(1:2,idx:jdx),npbx(kbox),            &
-     &                        min_box(1:2,kbox),max_box(1:2,kbox), &
-     &                        Nm,npbx_temp,info)
+         CALL ppm_util_sort2d(xp(1:2,idx:jdx),npbx(kbox), &
+         &    min_box(1:2,kbox),max_box(1:2,kbox),Nm,npbx_temp,info)
          IF (info.NE.0) GOTO 9999
 
          !----------------------------------------------------------------------
@@ -168,20 +171,20 @@
          !  Update the box count
          !----------------------------------------------------------------------
          nbox = nbox + 4
-      ELSE
+
+      CASE DEFAULT
          !----------------------------------------------------------------------
          !  in three dimensions
          !----------------------------------------------------------------------
          jdx = idx + npbx(kbox) - 1
-         CALL ppm_util_sort3d(xp(1:3,idx:jdx),npbx(kbox),            &
-     &                        min_box(1:3,kbox),max_box(1:3,kbox), &
-     &                        Nm,npbx_temp,info)
+         CALL ppm_util_sort3d(xp(1:3,idx:jdx),npbx(kbox), &
+         &    min_box(1:3,kbox),max_box(1:3,kbox),Nm,npbx_temp,info)
          IF (info.NE.0) GOTO 9999
 
          ppb(nbox+1)  = ppb(kbox)
          npbx(nbox+1) = npbx_temp(1)
          DO k=2,8
-            ppb(k+nbox)  = ppb(k-1+nbox) + npbx_temp(k-1) 
+            ppb(k+nbox)  = ppb(k-1+nbox) + npbx_temp(k-1)
             npbx(nbox+k) = npbx_temp(k)
          ENDDO
 
@@ -248,35 +251,26 @@
          !  Update the box count
          !----------------------------------------------------------------------
          nbox = nbox + 8
-      ENDIF 
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Deallocate local arrays
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_dealloc
-      lda(1) = 0 ! dummy
-      CALL ppm_alloc(npbx_temp,lda,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_decomp_boxsplit',     &
-     &        'deallocation of decomp_boxsplit failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      DEALLOCATE(npbx_temp, STAT=info)
+      or_fail_dealloc('deallocation of npbx_temp failed')
+
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_decomp_boxsplit',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         IF (kbox.LT.1.OR.kbox.GT.nbox) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_decomp_boxsplit', &
-     &       'kbox must satisfy: 0 < kbox <= nbox',__LINE__,info)
-             GOTO 8888
+           fail('kbox must satisfy: 0 < kbox <= nbox',exit_point=8888,ppm_error=ppm_error_error)
         ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE decomp_bsplit_s

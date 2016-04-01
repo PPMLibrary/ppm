@@ -1,132 +1,122 @@
 #if   __KIND == __SINGLE_PRECISION
-SUBROUTINE part_inits(xp,Npart_global,min_phys,max_phys,info,&
-           &distrib,grid_shift)
+      SUBROUTINE part_inits(xp,Npart_global,min_phys,max_phys,info,&
+      &          distrib,grid_shift)
 #elif __KIND == __DOUBLE_PRECISION
-SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
-           &distrib,grid_shift)
+      SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
+      &          distrib,grid_shift)
 #endif
-    !-----------------------------------------------------------------------
-    ! Set initial particle positions
-    !-----------------------------------------------------------------------
-    USE ppm_module_substart
-    USE ppm_module_substop
-    USE ppm_module_data
-    USE ppm_module_interfaces
-    USE ppm_module_write
-    USE ppm_module_alloc
-    USE ppm_module_error
+      !-----------------------------------------------------------------------
+      ! Set initial particle positions
+      !-----------------------------------------------------------------------
+      USE ppm_module_substart
+      USE ppm_module_substop
+      USE ppm_module_data
+      USE ppm_module_interfaces
+      USE ppm_module_write
+      USE ppm_module_alloc
+      USE ppm_module_error
 #if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
+      INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
+      INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
 
-    !-------------------------------------------------------------------------
-    !  Arguments
-    !-------------------------------------------------------------------------
-    REAL(MK),DIMENSION(:,:), POINTER                       :: xp
-    !!! Data structure containing the particles
-    REAL(MK),DIMENSION(ppm_dim),         INTENT(IN   )     :: min_phys
-    !!! extent of the physical domain.
-    REAL(MK),DIMENSION(ppm_dim),         INTENT(IN   )     :: max_phys
-    !!! extent of the physical domain.
-    INTEGER,                            INTENT(INOUT)      :: Npart_global
-    !!! total number of particles that will be initialized
-    INTEGER,                            INTENT(  OUT)      :: info
-    !!! Return status, on success 0.
-    !-------------------------------------------------------------------------
-    !  Optional arguments
-    !-------------------------------------------------------------------------
-    INTEGER,OPTIONAL,                   INTENT(IN   )      :: distrib
-    !!! type of initial distribution. One of
-    !!! * ppm_param_part_init_cartesian (default)
-    !!! * ppm_param_part_init_random
-    REAL(MK),OPTIONAL,                   INTENT(IN   )     :: grid_shift
-    !!! shifts positions of the particles. Set to 0.5 to place
-    !!! particles in the middle of each cell, set to 0 to place 
-    !!! them in the lower left corner
+      !-------------------------------------------------------------------------
+      !  Arguments
+      !-------------------------------------------------------------------------
+      REAL(MK),DIMENSION(:,:), POINTER                       :: xp
+      !!! Data structure containing the particles
+      REAL(MK),DIMENSION(ppm_dim),         INTENT(IN   )     :: min_phys
+      !!! extent of the physical domain.
+      REAL(MK),DIMENSION(ppm_dim),         INTENT(IN   )     :: max_phys
+      !!! extent of the physical domain.
+      INTEGER,                            INTENT(INOUT)      :: Npart_global
+      !!! total number of particles that will be initialized
+      INTEGER,                            INTENT(  OUT)      :: info
+      !!! Return status, on success 0.
+      !-------------------------------------------------------------------------
+      !  Optional arguments
+      !-------------------------------------------------------------------------
+      INTEGER,OPTIONAL,                   INTENT(IN   )      :: distrib
+      !!! type of initial distribution. One of
+      !!! * ppm_param_part_init_cartesian (default)
+      !!! * ppm_param_part_init_random
+      REAL(MK),OPTIONAL,                   INTENT(IN   )     :: grid_shift
+      !!! shifts positions of the particles. Set to 0.5 to place
+      !!! particles in the middle of each cell, set to 0 to place
+      !!! them in the lower left corner
 
 
-    !-------------------------------------------------------------------------
-    !  Local variables
-    !------------------------------------------------------------------------- 
-    INTEGER                               :: ip,i,j,k,Npart,iopt
-    INTEGER, DIMENSION(3)                 :: nijk
-    INTEGER, DIMENSION(3)                 :: nijk_global
-    CHARACTER(LEN = ppm_char)             :: caller = 'part_init'
-    REAL(MK)                              :: h
-    REAL(MK)                              :: shift
-    REAL(MK),DIMENSION(3)                 :: pos
-    REAL(KIND(1.D0))                      :: t0
-    INTEGER                               :: remaining_rows
+      !-------------------------------------------------------------------------
+      !  Local variables
+      !-------------------------------------------------------------------------
+      INTEGER                               :: ip,i,j,k,Npart,iopt
+      INTEGER, DIMENSION(3)                 :: nijk
+      INTEGER, DIMENSION(3)                 :: nijk_global
 
-    INTEGER                               :: distribution
-    INTEGER                               :: part_seedsize
-    INTEGER,  DIMENSION(3)                :: ldc
-    INTEGER,  DIMENSION(:), POINTER       :: part_seed => NULL()
+      REAL(MK)                              :: h
+      REAL(MK)                              :: shift
+      REAL(MK),DIMENSION(3)                 :: pos
+      REAL(KIND(1.D0))                      :: t0
+      INTEGER                               :: remaining_rows
 
-    REAL(MK), DIMENSION(:  ), POINTER     :: randnb => NULL()
-    REAL(MK),DIMENSION(3)                 :: minphys
-    REAL(MK),DIMENSION(3)                 :: maxphys
-    REAL(MK),DIMENSION(3)                 :: lenphys
+      INTEGER                               :: distribution
+      INTEGER                               :: part_seedsize
+      INTEGER,  DIMENSION(3)                :: ldc
+      INTEGER,  DIMENSION(:), POINTER       :: part_seed => NULL()
 
+      REAL(MK), DIMENSION(:  ), POINTER     :: randnb => NULL()
+      REAL(MK),DIMENSION(3)                 :: minphys
+      REAL(MK),DIMENSION(3)                 :: maxphys
+      REAL(MK),DIMENSION(3)                 :: lenphys
 
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
-
-    IF(PRESENT(distrib)) THEN
-        distribution=distrib
-    ELSE
-        distribution=ppm_param_part_init_cartesian
-    ENDIF
-    IF (PRESENT(grid_shift)) THEN
-        shift = grid_shift
-    ELSE
-        shift = 0.0_mk
-    ENDIF
-    minphys = 0.0_mk
-    maxphys = 0.0_mk
-    minphys(1:ppm_dim) = min_phys(1:ppm_dim)
-    maxphys(1:ppm_dim) = max_phys(1:ppm_dim)
-    lenphys = maxphys - minphys
+      CHARACTER(LEN = ppm_char) :: caller = 'part_init'
+      !-------------------------------------------------------------------------
+      !  Initialise
+      !-------------------------------------------------------------------------
+      CALL substart(caller,t0,info)
 
 
-    h = (PRODUCT(lenphys(1:ppm_dim))/REAL(Npart_global))**(1./REAL(ppm_dim))
-    nijk_global = 1
-    nijk_global(1:ppm_dim) = FLOOR(lenphys(1:ppm_dim)/h)
-    Npart_global = PRODUCT(nijk_global(1:ppm_dim))
-    remaining_rows = MOD(nijk_global(ppm_dim),ppm_nproc)
-    !number of particles along x and z
-    nijk = 1
-    nijk(1:ppm_dim) = nijk_global(1:ppm_dim)
-    !number of particles along y 
-    nijk(2) = nijk_global(ppm_dim)/ppm_nproc
+      distribution=MERGE(distrib,ppm_param_part_init_cartesian,PRESENT(distrib))
 
-    !number of particles on this processor
-    Npart = PRODUCT(nijk)
+      shift =MERGE(grid_shift,0.0_MK,PRESENT(grid_shift))
 
-    !proc 0 takes care of the additional rows (remainder)
-    IF (ppm_rank.EQ.0) THEN
-        Npart = Npart + remaining_rows * nijk(1)*nijk(3)
-    ENDIF
-    iopt = ppm_param_alloc_fit
-    ldc(1) = ppm_dim
-    ldc(2) = Npart
-    CALL ppm_alloc(xp,ldc,iopt,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,&
-            'ppm_alloc_particles (allocate) failed',__LINE__,info)
-        GOTO 9999
-    ENDIF
+      minphys = 0.0_mk
+      maxphys = 0.0_mk
+      minphys(1:ppm_dim) = min_phys(1:ppm_dim)
+      maxphys(1:ppm_dim) = max_phys(1:ppm_dim)
+      lenphys = maxphys - minphys
 
-    !-----------------------------------------------------------------------
-    ! set particles
-    !-----------------------------------------------------------------------
-    ip = 0
-    if_cartesian: IF (distribution .EQ. ppm_param_part_init_cartesian) THEN
+
+      h = (PRODUCT(lenphys(1:ppm_dim))/REAL(Npart_global))**(1./REAL(ppm_dim))
+      nijk_global = 1
+      nijk_global(1:ppm_dim) = FLOOR(lenphys(1:ppm_dim)/h)
+      Npart_global = PRODUCT(nijk_global(1:ppm_dim))
+      remaining_rows = MOD(nijk_global(ppm_dim),ppm_nproc)
+      !number of particles along x and z
+      nijk = 1
+      nijk(1:ppm_dim) = nijk_global(1:ppm_dim)
+      !number of particles along y
+      nijk(2) = nijk_global(ppm_dim)/ppm_nproc
+
+      !number of particles on this processor
+      Npart = PRODUCT(nijk)
+
+      !proc 0 takes care of the additional rows (remainder)
+      IF (ppm_rank.EQ.0) THEN
+          Npart = Npart + remaining_rows * nijk(1)*nijk(3)
+      ENDIF
+      iopt = ppm_param_alloc_fit
+      ldc(1) = ppm_dim
+      ldc(2) = Npart
+      CALL ppm_alloc(xp,ldc,iopt,info)
+      or_fail_alloc('ppm_alloc_particles (allocate) failed')
+
+      !-----------------------------------------------------------------------
+      ! set particles
+      !-----------------------------------------------------------------------
+      ip = 0
+      if_cartesian: IF (distribution .EQ. ppm_param_part_init_cartesian) THEN
         DO k = 1,nijk(3)
             h = lenphys(3)/REAL(nijk(3),MK)
             pos(3) = minphys(3) + h*(k-1) + shift*h
@@ -185,26 +175,18 @@ SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
             ENDDO
         ENDIF
         ENDIF
-    ELSE !random distribution
+      ELSE !random distribution
         iopt = ppm_param_alloc_fit
         ldc(1) = ppm_dim*Npart
         CALL ppm_alloc(randnb,ldc,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,   &
-                &            'allocation failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        or_fail_alloc('allocation failed')
+
         IF (.NOT.ASSOCIATED(part_seed)) THEN
             CALL RANDOM_SEED(SIZE=part_seedsize)
             ldc(1) = part_seedsize
             CALL ppm_alloc(part_seed,ldc,iopt,info)
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_alloc,caller,   &
-                    &            'allocation failed',__LINE__,info)
-                GOTO 9999
-            ENDIF
+            or_fail_alloc('allocation failed')
+
             DO i=1,part_seedsize
                 part_seed(i)=i*i*i*i
             ENDDO
@@ -260,8 +242,8 @@ SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
                     ip = ip + 1
                     ! uniformly random in cells
                     xp(1:ppm_dim,ip) = pos(1:ppm_dim)
-                       
-                        
+
+
                     ! impose periodic boundaries:
                     IF (xp(1,ip) .GE. maxphys(1)) xp(1,ip) = xp(1,ip) - lenphys(1)
                     IF (xp(2,ip) .GE. maxphys(2)) xp(2,ip) = xp(2,ip) - lenphys(2)
@@ -284,20 +266,20 @@ SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
 
         DEALLOCATE(randnb)
 
-    ENDIF if_cartesian
+      ENDIF if_cartesian
 
-    Npart_global = Npart
+      Npart_global = Npart
 
-    !-----------------------------------------------------------------------
-    ! Finalize
-    !-----------------------------------------------------------------------
-    CALL substop(caller,t0,info)
+      !-----------------------------------------------------------------------
+      ! Finalize
+      !-----------------------------------------------------------------------
+      CALL substop(caller,t0,info)
 
-    9999 CONTINUE ! jump here upon error
+      9999 CONTINUE ! jump here upon error
 
 #if   __KIND == __SINGLE_PRECISION
-END SUBROUTINE part_inits
+      END SUBROUTINE part_inits
 #elif __KIND == __DOUBLE_PRECISION
-END SUBROUTINE part_initd
+      END SUBROUTINE part_initd
 #endif
 

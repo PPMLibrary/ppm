@@ -1,16 +1,16 @@
 !-------------------------------------------------------------------------
 !     Test Case   :                   ppm_test_inl
 !-------------------------------------------------------------------------
-! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
 !                    Center for Fluid Dynamics (DTU)
 !
 !
 ! This file is part of the Parallel Particle Mesh Library (PPM).
 !
 ! PPM is free software: you can redistribute it and/or modify
-! it under the terms of the GNU Lesser General Public License 
-! as published by the Free Software Foundation, either 
-! version 3 of the License, or (at your option) any later 
+! it under the terms of the GNU Lesser General Public License
+! as published by the Free Software Foundation, either
+! version 3 of the License, or (at your option) any later
 ! version.
 !
 ! PPM is distributed in the hope that it will be useful,
@@ -125,33 +125,33 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
                     if(jbox.le.0) cycle
                     if(jbox.gt.(product(ncells(:,isub))) ) cycle
 
-                    !  get pointers to first and last particle 
+                    !  get pointers to first and last particle
                     ibegin = clist(isub)%lhbx(cbox)
                     iend   = clist(isub)%lhbx(cbox+1)-1
                     if (iend .lt. ibegin) cycle
 
-                    ! within the box itself use symmetry and avoid adding 
+                    ! within the box itself use symmetry and avoid adding
                     ! the particle itself to its own list
                     if (cbox .eq. jbox) then
                         do ipart=ibegin,iend
 
                             ! translate to real particle index
-                            ip = clist(isub)%lpdx(ipart) 
+                            ip = clist(isub)%lpdx(ipart)
 
                             if (ip .le. npart) then
                                 do jpart=ibegin,iend
 
                                     if (jpart .ne. ipart) then
                                         ! translate to real particle index
-                                        iq = clist(isub)%lpdx(jpart) 
+                                        iq = clist(isub)%lpdx(jpart)
 
                                         ! if not a ghost cell
                                         dist2=&
-                                            sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2) 
+                                            sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
 
                                         cutoff2 = min(rcp(iq),rcp(ip))**2
                                         if (dist2 .le. cutoff2) then
-                                            ! add particle iq to 
+                                            ! add particle iq to
                                             !list of particle ip
                                             nvlist(ip) = nvlist(ip) + 1
                                         endif
@@ -162,25 +162,25 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
 
                         !  for the other boxes check all particles
                     else
-                        ! get pointers to first and last particle 
+                        ! get pointers to first and last particle
                         jbegin = clist(isub)%lhbx(jbox)
                         jend   = clist(isub)%lhbx(jbox+1)-1
                         ! skip this iinter if empty
                         if (jend .lt. jbegin) cycle
                         ! loop over all particles inside this cell
-                        do ipart=ibegin,iend 
+                        do ipart=ibegin,iend
                             ! translate to real particle index
-                            ip = clist(isub)%lpdx(ipart) 
+                            ip = clist(isub)%lpdx(ipart)
                             if (ip .le. npart) then
                                 ! check against all particles in the other cell
                                 do jpart=jbegin,jend
                                     ! translate to real particle index
-                                    iq = clist(isub)%lpdx(jpart) 
+                                    iq = clist(isub)%lpdx(jpart)
                                     dist2=&
-                                        sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2) 
+                                        sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
                                     cutoff2 = min(rcp(iq),rcp(ip))**2
                                     if (dist2 .le. cutoff2) then
-                                        !add particle 
+                                        !add particle
                                         !iq to list of particle ip
                                         nvlist(ip) = nvlist(ip) + 1
                                     endif
@@ -226,31 +226,31 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
 
                     ! determine box indices for this interaction
                     jbox = cbox + (jnd(1,iinter) + n1*jnd(2,iinter))
-                    !  get pointers to first and last particle 
+                    !  get pointers to first and last particle
                     ibegin = clist(isub)%lhbx(cbox)
                     iend   = clist(isub)%lhbx(cbox+1)-1
                     if (iend .lt. ibegin) cycle
 
-                    ! within the box itself use symmetry and avoid adding 
+                    ! within the box itself use symmetry and avoid adding
                     ! the particle itself to its own list
                     if (cbox .eq. jbox) then
                         do ipart=ibegin,iend
 
                             ! translate to real particle index
-                            ip = clist(isub)%lpdx(ipart) 
+                            ip = clist(isub)%lpdx(ipart)
 
                             if (ip .le. npart) then
                                 do jpart=ibegin,iend
 
                                     if (jpart .ne. ipart) then
                                         ! translate to real particle index
-                                        iq = clist(isub)%lpdx(jpart) 
+                                        iq = clist(isub)%lpdx(jpart)
 
                                         dist2=&
-                                            sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2) 
+                                            sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
                                         cutoff2 = min(rcp(iq),rcp(ip))**2
                                         if (dist2 .le. cutoff2) then
-                                            ! add particle iq to 
+                                            ! add particle iq to
                                             ! list of particle ip
                                             nvlist(ip) = nvlist(ip) + 1
                                             vlist(nvlist(ip),ip) = iq
@@ -263,7 +263,7 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
                         !  for the other boxes check all particles
                     else
 
-                        ! get pointers to first and last particle 
+                        ! get pointers to first and last particle
                         jbegin = clist(isub)%lhbx(jbox)
                         jend   = clist(isub)%lhbx(jbox+1)-1
 
@@ -273,20 +273,20 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
                         do ipart=ibegin,iend ! loop over all particles inside this cell
 
                             ! translate to real particle index
-                            ip = clist(isub)%lpdx(ipart) 
+                            ip = clist(isub)%lpdx(ipart)
 
                             if (ip .le. npart) then
                                 ! check against all particles in the other cell
                                 do jpart=jbegin,jend
 
                                     ! translate to real particle index
-                                    iq = clist(isub)%lpdx(jpart) 
+                                    iq = clist(isub)%lpdx(jpart)
 
                                     dist2=&
-                                        sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2) 
+                                        sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
                                     cutoff2 = min(rcp(iq),rcp(ip))**2
                                     if (dist2 .le. cutoff2) then
-                                        ! add particle iq to list 
+                                        ! add particle iq to list
                                         ! of particle ip
                                         nvlist(ip) = nvlist(ip) + 1
                                         vlist(nvlist(ip),ip) = iq
@@ -324,7 +324,7 @@ use ppm_module_inl_vlist
 use old_inl
 
 implicit none
-#include "../../ppm_define.h"
+! #include "../../ppm_define.h"
 #ifdef __MPI
 INCLUDE 'mpif.h'
 #endif
@@ -450,7 +450,7 @@ call ppm_inl_vlist(topoid,xp,np,mp,rcp,skin, &
     & lsymm,ghostlayer,info,vlist,nvlist)
 
 call ppm_topo_get(topoid,topo,info)
-    
+
 call old_inl_vlist_2d(topoid,topo,xp,rcp,max_rcp,np,mp,&
         nvlist2,vlist2,info)
 

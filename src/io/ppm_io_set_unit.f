@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_io_set_unit
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -44,8 +44,9 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER, OPTIONAL, INTENT(IN   ) :: stdout
       !!! Unit number for stdout
@@ -56,18 +57,20 @@
       INTEGER, OPTIONAL, INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      LOGICAL                :: isopen
-      INTEGER                :: info2
-      CHARACTER(LEN=12)      :: cformat
-      CHARACTER(LEN=80)      :: filename
+      INTEGER :: info2
+
+      CHARACTER(LEN=12) :: cformat
+      CHARACTER(LEN=80) :: filename
+
+      LOGICAL :: isopen
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       info2 = 0
 
@@ -75,55 +78,57 @@
       !  Define the file numbering format
       !-------------------------------------------------------------------------
       IF (ppm_nproc.LE.10) THEN
-         cformat = '(A,I1.1,A)' 
+         cformat = '(A,I1.1,A)'
       ELSEIF (ppm_nproc.LE.100) THEN
-         cformat = '(A,I2.2,A)' 
+         cformat = '(A,I2.2,A)'
       ELSEIF (ppm_nproc.LE.1000) THEN
-         cformat = '(A,I3.3,A)' 
+         cformat = '(A,I3.3,A)'
       ELSE
-         cformat = '(A,I4.4,A)' 
-      ENDIF 
+         cformat = '(A,I4.4,A)'
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Test if all units are open and open them if needed
       !-------------------------------------------------------------------------
       IF (PRESENT(stdout)) THEN
-          INQUIRE(stdout,OPENED=isopen)
-          IF (.NOT. isopen) THEN
-              ! just in case all processors share the disk...
-              WRITE(filename,cformat) 'ppm_stdout_',ppm_rank,'.out'
-              OPEN(stdout,FILE=filename,   &
-     &        STATUS='REPLACE',ACTION='WRITE',IOSTAT=info2)
+         INQUIRE(stdout,OPENED=isopen)
+         IF (.NOT. isopen) THEN
+            ! just in case all processors share the disk...
+            WRITE(filename,cformat) 'ppm_stdout_',ppm_rank,'.out'
+            OPEN(stdout,FILE=filename,STATUS='REPLACE',ACTION='WRITE',IOSTAT=info2)
           ENDIF
           ppm_stdout = stdout
       ENDIF
 
       IF (PRESENT(stderr)) THEN
-          INQUIRE(stderr,OPENED=isopen)
-          IF (.NOT. isopen) THEN
-              ! just in case all processors share the disk...
-              WRITE(filename,cformat) 'ppm_stderr_',ppm_rank,'.out'
-              OPEN(stderr,FILE=filename,   &
-     &        STATUS='REPLACE',ACTION='WRITE',IOSTAT=info2)
-          ENDIF
-          ppm_stderr = stderr
+         INQUIRE(stderr,OPENED=isopen)
+         IF (.NOT. isopen) THEN
+            ! just in case all processors share the disk...
+            WRITE(filename,cformat) 'ppm_stderr_',ppm_rank,'.out'
+            OPEN(stderr,FILE=filename,STATUS='REPLACE',ACTION='WRITE',IOSTAT=info2)
+         ENDIF
+         ppm_stderr = stderr
       ENDIF
 
       IF (PRESENT(logfile)) THEN
-          INQUIRE(logfile,OPENED=isopen)
-          IF (.NOT. isopen) THEN
-              ! just in case all processors share the disk...
-              WRITE(filename,cformat) 'ppm_log_',ppm_rank,'.out'
-              OPEN(logfile,FILE=filename,  &
-     &        POSITION='APPEND',ACTION='WRITE',IOSTAT=info2)
-          ENDIF
-          ppm_logfile = logfile
+         SELECT CASE (logfile)
+         ! -1 means: do not write log file
+         CASE (-1)
+         CASE DEFAULT
+            INQUIRE(logfile,OPENED=isopen)
+            IF (.NOT. isopen) THEN
+               ! just in case all processors share the disk...
+               WRITE(filename,cformat) 'ppm_log_',ppm_rank,'.out'
+               OPEN(logfile,FILE=filename,POSITION='APPEND',ACTION='WRITE',IOSTAT=info2)
+            ENDIF
+            ppm_logfile = logfile
+         END SELECT
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       IF (PRESENT(info)) info = info2
       RETURN
       END SUBROUTINE ppm_io_set_unit

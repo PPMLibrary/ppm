@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_util_quadeq_real.f
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -46,7 +46,7 @@
       !!! For `ppm_debug > 1` the routine checks its own  result.
       !!! Maybe - after some time - this can be removed.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -54,6 +54,7 @@
       USE ppm_module_error
       USE ppm_module_write
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -63,7 +64,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(3  ), INTENT(IN   ) :: coef
       !!! Coefficients. The equation being solved is:
@@ -77,21 +78,27 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, ppm_error_error if roots are complex
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0,dis,lmyeps,Lf,stol
+      REAL(ppm_kind_double) :: t0
+      REAL(MK)                                :: dis,lmyeps,Lf,stol
       REAL(MK), DIMENSION(3  )                :: res
+
       INTEGER                                 :: i
-      LOGICAL                                 :: correct
-      CHARACTER(LEN=ppm_char)                 :: mesg
+
+      LOGICAL :: correct
+
+      CHARACTER(LEN=ppm_char) :: msg
+      CHARACTER(LEN=ppm_char) :: caller='ppm_util_quadeq_real'
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_util_quadeq_real',t0,info)
+      CALL substart(caller,t0,info)
+
 #if   __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif __KIND == __DOUBLE_PRECISION
@@ -103,12 +110,12 @@
       !  Check that the equation is quadratic
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Discriminant of the quadratic equation 
+      !  Discriminant of the quadratic equation
       !-------------------------------------------------------------------------
       res(1) = coef(2)*coef(2)
       res(2) = -4.0_MK*coef(1)*coef(3)
@@ -119,20 +126,16 @@
       !-------------------------------------------------------------------------
       qtol = MAX(lmyeps*MAXVAL(res(1:2)),lmyeps)
       IF (ppm_debug .GT. 0) THEN
-         WRITE(mesg,'(A,E12.4)') 'Numerical tolerance: ',qtol
-         CALL ppm_write(ppm_rank,'ppm_util_quadeq_real',mesg,info)
+         stdout_f('(A,E12.4)',"Numerical tolerance: ",qtol)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Check that the equation has only real roots
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-          IF (dis .LT. 0.0_MK) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_util_quadeq_real',     &
-     &            'Equation has complex roots. Exiting.',__LINE__,info)
-              GOTO 9999
-          ENDIF
+         IF (dis .LT. 0.0_MK) THEN
+            fail('Equation has complex roots. Exiting.')
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -146,7 +149,7 @@
             roots(1) = -0.5_MK*coef(2)
             roots(1) = roots(1)/coef(3)
             roots(2) = roots(1)
-         ELSEIF (ABS(coef(2)) .GT. lmyeps) THEN
+         ELSE IF (ABS(coef(2)) .GT. lmyeps) THEN
             roots(1) = -coef(1)/coef(2)
             roots(2) = roots(1)
          ENDIF
@@ -158,14 +161,14 @@
          IF (ABS(coef(3)) .GT. lmyeps) THEN
             IF (coef(2) .LT. 0.0_MK) THEN
                roots(1) = -0.5_MK*(coef(2) - dis)
-            ELSEIF (coef(2) .GT. 0.0_MK) THEN
+            ELSE IF (coef(2) .GT. 0.0_MK) THEN
                roots(1) = -0.5_MK*(coef(2) + dis)
             ELSE
                roots(1) = 0.0_MK
             ENDIF
             roots(2) = coef(1)/roots(1)
             roots(1) = roots(1)/coef(3)
-         ELSEIF (ABS(coef(2)) .GT. lmyeps) THEN
+         ELSE IF (ABS(coef(2)) .GT. lmyeps) THEN
             roots(1) = 0.0_MK
             roots(2) = -coef(1)/coef(2)
          ENDIF
@@ -184,34 +187,28 @@
             stol = MAX(MAXVAL(res)*10.0_MK*lmyeps,lmyeps)
             IF (Lf .GT. stol) THEN
                correct = .FALSE.
-               info = ppm_error_warning
-               WRITE(mesg,'(A,I1,2(A,E12.4))') 'Root ',i,              &
-     &              ' is not correct. Error: ',Lf,' Tolerance: ',stol
-               CALL ppm_error(ppm_err_test_fail,'ppm_util_quadeq_real',&
-     &              mesg,__LINE__,info)
+               WRITE(msg,'(A,I1,2(A,E12.4))') 'Root ',i, &
+               & ' is not correct. Error: ',Lf,' Tolerance: ',stol
+               fail(msg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
             ENDIF
          ENDDO
          IF (correct .AND. ppm_debug .GT. 0) THEN
-            CALL ppm_write(ppm_rank,'ppm_util_quadeq_real',     &
-     &           'Roots are correct to tolerance.',info)
+            stdout("Roots are correct to tolerance.")
          ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_util_quadeq_real',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (ABS(coef(3)) .LT. lmyeps) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_util_quadeq_real',     &
-     &            'Equation is not quadratic. Exiting.',__LINE__,info)
-              GOTO 8888
+             fail('Equation is not quadratic. Exiting.',exit_point=8888)
           ENDIF
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_util_quadeq_real_s

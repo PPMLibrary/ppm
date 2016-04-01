@@ -1,4 +1,4 @@
-     !--*- f90 -*--------------------------------------------------------------     
+     !--*- f90 -*--------------------------------------------------------------
      !  Module   :                  ppm_module_inl_hash
      !-------------------------------------------------------------------------
      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
@@ -29,46 +29,74 @@
       MODULE ppm_module_inl_hash
       !!! This module provides the utility to insert index of a cell and its position
       !!! on 'borders' array, as the range of indices of cells can be very too large
-      !!! to allocate memory space for whole range. Hence, hash table is the 
+      !!! to allocate memory space for whole range. Hence, hash table is the
       !!! workaround for the redundancy in terms of memory consumption.
 
          USE ppm_module_data
          USE ppm_module_alloc
          USE ppm_module_error
+         IMPLICIT NONE
+
         !-------------------------------------------------------------------------
         !  Declaration of parameters
         !-------------------------------------------------------------------------
-        INTEGER,                 PARAMETER                   :: htable_null = -1
+        PRIVATE
+
+        INTEGER,                 PARAMETER :: htable_null    = -HUGE(1)
+        INTEGER(ppm_kind_int64), PARAMETER :: htable_null_li = -HUGE(1_ppm_kind_int64)
         !!! NULL value for hash table
-        INTEGER(ppm_kind_int64), PARAMETER                   :: seed1 = 738235926
+        INTEGER(ppm_kind_int64), PARAMETER :: seed1 = 738235926_ppm_kind_int64
         !!! Hardcoded seed value taken from MurmurHash
-        INTEGER(ppm_kind_int64), PARAMETER                   :: seed2 = 1243832038
+        INTEGER(ppm_kind_int64), PARAMETER :: seed2 = 1243832038_ppm_kind_int64
         !!! Hardcoded seed value taken from MurmurHash
+
+        ! TODO
+        ! Extend the hashtable to account for longer keys (or arbitrary keys)
+        ! This is useful for ppm applications
 
         TYPE ppm_htable
           !---------------------------------------------------------------------
           !  Declaration of arrays
           !---------------------------------------------------------------------
-          INTEGER(ppm_kind_int64),DIMENSION(:),POINTER :: keys => NULL()
+          INTEGER(ppm_kind_int64), DIMENSION(:), POINTER :: keys => NULL()
           !!! Array for keeping hash table keys.
-          INTEGER,        DIMENSION(:), POINTER :: borders_pos => NULL()
+          !!! Any key should not be bigger than 4 Bytes (32bits) value
+          INTEGER,                 DIMENSION(:), POINTER :: borders_pos => NULL()
           !!! Array for keeping positions of cells on "borders" array.
-    
           !---------------------------------------------------------------------
           !  Declaration of variables
           !--------------------------------------------------------------------
-          INTEGER                                              :: nrow = 0
+          INTEGER(ppm_kind_int64)                        :: nrow = 0_ppm_kind_int64
           !!! number of rows in hash table
-!          CONTAINS
-!              PROCEDURE :: create => create_htable
-!              PROCEDURE :: destroy => destroy_htable
-!              PROCEDURE :: insert => hash_insert
-!              FUNCTION :: search => hash_search
+         CONTAINS
+          PROCEDURE :: create => create_htable
+          PROCEDURE :: destroy => destroy_htable
 
+          PROCEDURE :: h_func
+
+          PROCEDURE :: h_key1
+          PROCEDURE :: h_key2
+          GENERIC   :: h_key => h_key1,h_key2
+
+          PROCEDURE :: hash_insert
+          PROCEDURE :: hash_insert_
+          GENERIC   :: insert => hash_insert,hash_insert_
+
+          PROCEDURE :: hash_search
+          PROCEDURE :: hash_search_
+          GENERIC   :: search => hash_search,hash_search_
+
+          PROCEDURE :: hash_remove
+          PROCEDURE :: hash_remove_
+          GENERIC   :: remove => hash_remove,hash_remove_
+
+          PROCEDURE :: grow => grow_htable
+          PROCEDURE :: shrink => shrink_htable
+
+          PROCEDURE :: size => hash_size
         END TYPE
-        PRIVATE :: seed1, seed2
-!        PRIVATE :: create_htable, destroy_htable, hash_insert, hash_search
-!        PRIVATE :: h_func, h_key
+
+        PUBLIC :: ppm_htable,htable_null
 
         CONTAINS
 

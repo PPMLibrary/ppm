@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :           ppm_impose_part_bc
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -47,8 +47,8 @@
       !!! change the order of the IF statements (see code comments) and make
       !!! sure the compiler is not doing something wrong as well! Originally
       !!! when particles would be close/at the boundary, the routine would
-      !!! fail to map all particles, but succed if called a 2nd time. The
-      !!! changed in the order of the IF statements removed this double calling
+      !!! fail to map all particles, but succeed if called a 2nd time. The
+      !!! changes in the order of the IF statements removed this double calling
       !!! sequence.
 
       !-------------------------------------------------------------------------
@@ -58,21 +58,17 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_data
-      USE ppm_module_check_id
       USE ppm_module_topo_typedef
-
       IMPLICIT NONE
-      !-------------------------------------------------------------------------
-      !  Includes
-      !-------------------------------------------------------------------------
-#ifdef __MPI
-      INCLUDE 'mpif.h'
-#endif
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
+      !-------------------------------------------------------------------------
+      !  Includes
+      !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -87,44 +83,49 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                     :: t0
-      INTEGER                      :: i
-      CHARACTER(LEN=ppm_char)      :: mesg
-      LOGICAL                      :: valid
-      REAL(MK), DIMENSION(ppm_dim) :: len_phys,max_phys,min_phys
-      TYPE(ppm_t_topo), POINTER    :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
+
+      REAL(MK), DIMENSION(ppm_dim)    :: len_phys
+      REAL(MK), DIMENSION(:), POINTER :: max_phys,min_phys
+      REAL(ppm_kind_double)           :: t0
+
+      INTEGER :: i
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_impose_part_bc'
+
+      LOGICAL :: valid
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_impose_part_bc',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       topo => ppm_topo(topoid)%t
+
       !-------------------------------------------------------------------------
       !  compute the size of the computational domain
       !-------------------------------------------------------------------------
 #if __KIND == __DOUBLE_PRECISION
-      len_phys(1:ppm_dim) = topo%max_physd(1:ppm_dim) -    &
-     &                      topo%min_physd(1:ppm_dim)
-      max_phys(1:ppm_dim) = topo%max_physd(1:ppm_dim)
-      min_phys(1:ppm_dim) = topo%min_physd(1:ppm_dim)
+      max_phys => topo%max_physd(1:ppm_dim)
+      min_phys => topo%min_physd(1:ppm_dim)
 #else
-      len_phys(1:ppm_dim) = topo%max_physs(1:ppm_dim) -    &
-     &                      topo%min_physs(1:ppm_dim)
-      max_phys(1:ppm_dim) = topo%max_physs(1:ppm_dim)
-      min_phys(1:ppm_dim) = topo%min_physs(1:ppm_dim)
+      max_phys => topo%max_physs(1:ppm_dim)
+      min_phys => topo%min_physs(1:ppm_dim)
 #endif
+
+      len_phys(1:ppm_dim)=max_phys(1:ppm_dim)-min_phys(1:ppm_dim)
 
       !-------------------------------------------------------------------------
       !  wrap the particles on this topology - do that by allowing particles to
@@ -159,7 +160,6 @@
             ENDIF
          ENDDO
       ENDIF
-
       IF (ppm_dim.EQ.3) THEN
          IF (topo%bcdef(5).EQ.ppm_param_bcdef_periodic) THEN
             DO i=1,Npart
@@ -176,25 +176,19 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_impose_part_bc',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         CALL ppm_check_topoid(topoid,valid,info)
         IF (.NOT. valid) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_impose_part_bc',  &
-     &           'topoid is invalid!',__LINE__,info)
-             GOTO 8888
+           fail('topoid is invalid!',exit_point=8888)
         ENDIF
         IF (Npart .LT. 0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_impose_part_bc',  &
-     &           'Npart must be >= 0',__LINE__,info)
-             GOTO 8888
+           fail('Npart must be >= 0',exit_point=8888)
         ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_impose_part_bc_s

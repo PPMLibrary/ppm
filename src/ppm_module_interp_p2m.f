@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :            ppm_module_interp_p2m
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -37,9 +37,20 @@
       MODULE ppm_module_interp_p2m
       !!! Contains the particle to mesh interpolation routines. Currently we
       !!! support 2nd order B-spline and MP4 interpolation schemes.
-        USE ppm_module_topo_typedef
-        USE ppm_module_interfaces
-      
+        !-------------------------------------------------------------------------
+        !  Modules
+        !-------------------------------------------------------------------------
+        USE ppm_module_data
+        USE ppm_module_error
+        USE ppm_module_alloc
+        USE ppm_module_substart
+        USE ppm_module_substop
+        USE ppm_module_interfaces, ONLY : ppm_t_equi_mesh_, &
+        &   ppm_t_field_,ppm_t_subpatch_
+        USE ppm_module_mesh_typedef, ONLY : ppm_t_equi_mesh
+        IMPLICIT NONE
+
+        PRIVATE
         !-----------------------------------------------------------------------
         !  Interface
         !-----------------------------------------------------------------------
@@ -88,7 +99,7 @@
             MODULE PROCEDURE p2m_interp_mp4_sv_3d
             MODULE PROCEDURE p2m_interp_mp4_dv_3d
         END INTERFACE
-        
+
         INTERFACE p2m_interp_bc
             MODULE PROCEDURE p2m_interp_bc_ss_2d
             MODULE PROCEDURE p2m_interp_bc_ds_2d
@@ -99,10 +110,12 @@
             MODULE PROCEDURE p2m_interp_bc_sv_3d
             MODULE PROCEDURE p2m_interp_bc_dv_3d
         END INTERFACE
-        
+
+        PUBLIC :: p2m_interp_mp4
+        PUBLIC :: p2m_interp_bc
+
       CONTAINS
 
-        
 #define __KIND  __SINGLE_PRECISION
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
 #define DTYPE(a) a/**/_s
@@ -122,7 +135,7 @@
 #include "interpolate/p2m_interp_bc.f"
 #undef  __MODE
 #undef  __DIME
-        
+
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA SINGLE
@@ -165,7 +178,7 @@
 #include "interpolate/p2m_interp_bc.f"
 #undef  __MODE
 #undef  __DIME
-        
+
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA DOUBLE
@@ -184,20 +197,16 @@
 #include "interpolate/p2m_interp_bc.f"
 #undef  __MODE
 #undef  __DIME
-#undef  __KIND        
+#undef  __KIND
 #undef  DTYPE
 #undef  DEFINE_MK
 
+#undef __SINGLE_PRECISION
+#undef __DOUBLE_PRECISION
+#undef __2D
+#undef __3D
+#undef __VEC
+#undef __SCA
 
-
-
-
-#undef __SINGLE_PRECISION 
-#undef __DOUBLE_PRECISION 
-#undef __2D               
-#undef __3D               
-#undef __VEC              
-#undef __SCA              
-        
       END MODULE ppm_module_interp_p2m
 

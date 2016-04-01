@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_map_part_remap
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -44,7 +44,6 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_topo_check
-      USE ppm_module_check_id
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -66,13 +65,13 @@
       !  Local variables
       !-------------------------------------------------------------------------
       LOGICAL             :: topo_ok
-      REAL(MK)            :: t0
+      REAL(ppm_kind_double) :: t0
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_map_part_remap',t0,info)
 
@@ -101,7 +100,7 @@
       !-------------------------------------------------------------------------
       !  if topology is ok remap particles otherwise abort remapping
       !-------------------------------------------------------------------------
-      IF(topo_ok) THEN
+      IF (topo_ok) THEN
          CALL ppm_map_part_global(topoid,xp,Npart,info)
       ELSE
          info = ppm_error_error

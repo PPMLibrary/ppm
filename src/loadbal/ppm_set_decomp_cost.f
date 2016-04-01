@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_set_decomp_cost
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -37,7 +37,7 @@
       !!! update method.
       !!!
       !!! [TIP]
-      !!! The user should time (using `ppm_time`) topo_mktopo for the 
+      !!! The user should time (using `ppm_time`) topo_mktopo for the
       !!! topology/topologies considered for dynamic remapping (ppm does not
       !!! know which ones they are). The elapsed time is given to this routine
       !!! to update the internal estimate.
@@ -61,7 +61,9 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_write
+      USE ppm_module_mpi
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -70,14 +72,11 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#ifdef __MPI
-       INCLUDE 'mpif.h'
-#endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK)               , INTENT(IN   ) :: dcost
-      !!! Elapsed time (as measured by `ppm_time`) 
+      !!! Elapsed time (as measured by `ppm_time`)
       !!! for defining the topology/ies of interest on the local processor.
       INTEGER                , INTENT(IN   ) :: method
       !!! How to update the internal estimate.
@@ -92,20 +91,21 @@
       INTEGER                , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)               :: t0,maxcost
+      REAL(ppm_kind_double)  :: t0
+      REAL(MK)               :: maxcost
       REAL(ppm_kind_double)  :: alpha,beta
       CHARACTER(LEN=ppm_char):: mesg
 #ifdef __MPI
       INTEGER                :: MPTYPE
 #endif
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise
+      !  Initialize
       !-------------------------------------------------------------------------
       CALL substart('ppm_set_decomp_cost',t0,info)
 

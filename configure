@@ -5902,6 +5902,33 @@ $as_echo "yes" >&6; }
 #    AC_CHECK_LIB([],[MPI_Init],[
 #                  echo "#define __MPI" >> ./src/ppm_define.h],
 #                  [AC_MSG_ERROR([Cannot build PPM with MPI support like this])])
+
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if your MPI3 functions are usable" >&5
+	  $as_echo_n "checking if your MPI3 functions are usable... " >&6; }
+	  cat > conftest.$ac_ext <<_ACEOF
+
+	  program conftest_prog
+	  include 'mpif.h'
+	  integer :: rank,s,request
+	  call MPI_Init(ierr)
+	  call MPI_Comm_rank(MPI_COMM_WORLD,rank,ierr)
+	  s=rank
+	  call MPI_Ibcast(s,1,MPI_INTEGER,0,MPI_COMM_WORLD,request,ierr)
+	  end program conftest_prog
+_ACEOF
+
+if ac_fn_fc_try_link "$LINENO"; then :
+	CPPFLAGS="$CPPFLAGS -D__MPI3"
+fi
+
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	    $as_echo "yes" >&6; }
+
+
 fi
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'

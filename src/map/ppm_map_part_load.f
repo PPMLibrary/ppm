@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :              ppm_map_part_load
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -33,7 +33,7 @@
       !!! See `ppm_map_part_store` for more information.
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_state
@@ -42,47 +42,49 @@
       USE ppm_module_substart
       USE ppm_module_substop
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  This routine is ALL integer, except the timing variable t0
-      !  We pick double as the precision - no real reason for that 
+      !  We pick double as the precision - no real reason for that
       !-------------------------------------------------------------------------
-      INTEGER, PARAMETER    :: MK = ppm_kind_double
+      INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER, INTENT(OUT)  :: info
+      INTEGER, INTENT(  OUT)  :: info
       !!! Returns stutus, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
+      REAL(ppm_kind_double) :: t0
+
       INTEGER, DIMENSION(1) :: ldu
       INTEGER               :: i,j,k
       INTEGER               :: iopt
-      REAL(MK)              :: t0
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_map_part_load'
+
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_part_load',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_load',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 9999
-          ENDIF
+         IF (.NOT. ppm_initialized) THEN
+            fail('Please call ppm_init first!')
+         ENDIF
       ENDIF
       !-------------------------------------------------------------------------
       !  load the map type (is used in _send() line 229)
       !-------------------------------------------------------------------------
-      ppm_map_type = ppm_map_type_state 
+      ppm_map_type = ppm_map_type_state
 
       !-------------------------------------------------------------------------
       !  load the ppm_nsendlist: the number of processers to send to
@@ -92,12 +94,12 @@
       !-------------------------------------------------------------------------
       !  load the ppm_nsendbuffer: the size of the send buffer - here zero
       !-------------------------------------------------------------------------
-      ppm_nsendbuffer = ppm_nsendbuffer_state 
+      ppm_nsendbuffer = ppm_nsendbuffer_state
 
       !-------------------------------------------------------------------------
       !  load the ppm_buffer_set: the current number of sets stored - here zero
       !-------------------------------------------------------------------------
-      ppm_buffer_set = ppm_buffer_set_state 
+      ppm_buffer_set = ppm_buffer_set_state
 
       !-------------------------------------------------------------------------
       !  load the ppm_psendbuffer:
@@ -106,12 +108,8 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = ppm_nsendlist + 1
       CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_load', &
-     &        'allocation of psendbuffer failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('allocation of psendbuffer failed', &
+      & ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  then load it: pointer to the first particle in the send buffer
@@ -127,15 +125,11 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = SIZE(ppm_buffer2part_state)
       CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_load', &
-     &        'allocation of buffer2part failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
- 
+      or_fail_alloc('allocation of buffer2part failed', &
+      & ppm_error=ppm_error_fatal)
+
       !-------------------------------------------------------------------------
-      !  then load it: pointer to the particle id of the j-th entry in the 
+      !  then load it: pointer to the particle id of the j-th entry in the
       !  send buffer
       !-------------------------------------------------------------------------
       DO k=1,ppm_nsendlist
@@ -145,11 +139,11 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Store the ppm_nrecvlist and ppm_sendlist 
+      !  Store the ppm_nrecvlist and ppm_sendlist
       !-------------------------------------------------------------------------
-      ppm_nrecvlist = ppm_nrecvlist_state 
+      ppm_nrecvlist = ppm_nrecvlist_state
 
-      ppm_nsendlist = ppm_nsendlist_state 
+      ppm_nsendlist = ppm_nsendlist_state
 
       !-------------------------------------------------------------------------
       !  load the receive list
@@ -167,14 +161,17 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = ppm_nsendlist
       CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
+      or_fail_alloc('allocation of ppm_isendlist failed', &
+      & ppm_error=ppm_error_fatal)
+
       DO k=1,ppm_nsendlist
-         ppm_isendlist(k) = ppm_isendlist_state(k) 
+         ppm_isendlist(k) = ppm_isendlist_state(k)
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_map_part_load',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       END SUBROUTINE ppm_map_part_load

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Subroutine   :                   p2m_interp_bsp2
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -56,32 +56,22 @@
 #endif
 #endif
 #endif
-     !!! Particle to mesh interpolation following the 2nd order B-spline scheme.
-     !!!
-     !!! The interpolation scheme is only implemented for 3D spaces. To
-     !!! increase performance the inner loops over the number of properties to
-     !!! be interpolated are unrolled for 2,3,4 and 5-vectors.
-     !!! 
-     !!! [NOTE]
-     !!! This routine only performs the actual interpolation. It should not be
-     !!! called directly by the user but instead the `ppm_interp_m2p`
-     !!! routine should be used with the kernel argument set to 
-     !!! `ppm_param_rmsh_kernel_bsp2`.
-
-
-
-      USE ppm_module_error
-      USE ppm_module_alloc
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_data
-      USE ppm_module_data_rmsh
-      USE ppm_module_data_mesh
-      USE ppm_module_write
-      USE ppm_module_map
-
-
+      !!! Particle to mesh interpolation following the 2nd order B-spline scheme.
+      !!!
+      !!! The interpolation scheme is only implemented for 3D spaces. To
+      !!! increase performance the inner loops over the number of properties to
+      !!! be interpolated are unrolled for 2,3,4 and 5-vectors.
+      !!!
+      !!! [NOTE]
+      !!! This routine only performs the actual interpolation. It should not be
+      !!! called directly by the user but instead the `ppm_interp_m2p`
+      !!! routine should be used with the kernel argument set to
+      !!! `ppm_param_rmsh_kernel_bsp2`.
+      !-------------------------------------------------------------------------
+      !  Modules
+      !-------------------------------------------------------------------------
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -117,123 +107,109 @@
       !!! particle positions
       INTEGER , DIMENSION(:  )       , INTENT(IN   ) :: ghostsize
       !!! The size (width) of the ghost layer
-      REAL(mk), DIMENSION(ppm_dim)   , INTENT(IN   ) :: dx
+      REAL(MK), DIMENSION(ppm_dim)   , INTENT(IN   ) :: dx
       !!! mesh spacing
       INTEGER                        , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !------------------------------------------------------------------------!
       !  Local variables
       !------------------------------------------------------------------------!
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
-      INTEGER,  DIMENSION(:,:)     , POINTER :: ndata    => NULL()
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: min_phys => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: max_phys => NULL()
-      REAL(mk), DIMENSION(ppm_dim)           :: dxi
-      REAL(mk)                               :: dxx,dxy,dxz,dxxi,dxyi,dxzi
-      REAL(mk), DIMENSION(ppm_dim)           :: len_phys
-      REAL(mk)                               :: x1,x2,x3
-      INTEGER                                :: kernel_support
-      INTEGER,  DIMENSION(ppm_dim+2)         :: ldu,ldl
-      INTEGER,  DIMENSION(ppm_dim)           :: Nc
-      INTEGER                                :: i,j,k,l,ii,jj,kk,iidec,maptype
+      REAL(MK), DIMENSION(:)       , POINTER :: min_phys
+      REAL(MK), DIMENSION(:)       , POINTER :: max_phys
+      REAL(MK)                               :: dxxi,dxyi,dxzi
+      INTEGER                                :: i,j,k,l,ii,jj,kk
       INTEGER                                :: xlo,xhi,ylo,yhi,zlo,zhi
-      INTEGER                                :: jjdec,nb_sub,npart,ipart
-      INTEGER                                :: kkdec,ip1,nlist1
-      INTEGER                                :: ip2,ip3,iface
+      INTEGER                                :: ip1,ip2,ip3
       INTEGER                                :: isub,ifrom,ito,ip,iopt,isubl
-      INTEGER                                :: max_partnumber,idom,nlist2,idoml
       INTEGER, DIMENSION(ppm_dim)            :: Nm
       INTEGER                                :: nsubs
-      INTEGER, DIMENSION(6)                  :: bcdef
       INTEGER                                :: iq
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
-      REAL(mk)                               :: myeps
-      REAL(mk)                               :: tim1s, tim1e
-      REAL(mk)                               :: xp1,xp2,xp3
-      REAL(mk)                               :: wx1,wx2,wx3
-      REAL(mk), DIMENSION(ppm_dim)           :: x0
-      REAL(mk)                               :: x01,x02,x03
+      REAL(MK), DIMENSION(:,:),      POINTER :: min_sub
+      REAL(MK), DIMENSION(:,:),      POINTER :: max_sub
+      REAL(MK)                               :: myeps
+      REAL(MK)                               :: tim1s, tim1e
+      REAL(MK)                               :: xp1,xp2,xp3
+      REAL(MK)                               :: wx1,wx2,wx3
+      REAL(MK), DIMENSION(ppm_dim)           :: x0
+      REAL(MK)                               :: x01,x02,x03
       CHARACTER(len=256)                     :: msg
-      TYPE(ppm_t_topo)     , POINTER         :: topo => NULL()
+      TYPE(ppm_t_topo)     , POINTER         :: topo
       !------------------------------------------------------------------------!
       !  Variables for unrolled versions
       !------------------------------------------------------------------------!
-      REAL(mk) :: x10,x11,x12,x13,x20,x21,x22,x23,x30,x31,x32,x33
-      REAL(mk) :: a10,a11,a12,a13,a20,a21,a22,a23,a30,a31,a32,a33
+      REAL(MK) :: x10,x11,x12,x13,x20,x21,x22,x23,x30,x31,x32,x33
+      REAL(MK) :: a10,a11,a12,a13,a20,a21,a22,a23,a30,a31,a32,a33
       INTEGER  :: ip10,ip11,ip12,ip13,ip20,ip21,ip22,ip23,ip30,ip31,ip32,ip33
       INTEGER  :: ldn
-      REAL(mk) :: a10a20a30
-      REAL(mk) :: a10a20a31
-      REAL(mk) :: a10a20a32
-      REAL(mk) :: a10a20a33
-      REAL(mk) :: a10a21a30
-      REAL(mk) :: a10a21a31
-      REAL(mk) :: a10a21a32
-      REAL(mk) :: a10a21a33
-      REAL(mk) :: a10a22a30
-      REAL(mk) :: a10a22a31
-      REAL(mk) :: a10a22a32
-      REAL(mk) :: a10a22a33
-      REAL(mk) :: a10a23a30
-      REAL(mk) :: a10a23a31
-      REAL(mk) :: a10a23a32
-      REAL(mk) :: a10a23a33
-      REAL(mk) :: a11a20a30
-      REAL(mk) :: a11a20a31
-      REAL(mk) :: a11a20a32
-      REAL(mk) :: a11a20a33
-      REAL(mk) :: a11a21a30
-      REAL(mk) :: a11a21a31
-      REAL(mk) :: a11a21a32
-      REAL(mk) :: a11a21a33
-      REAL(mk) :: a11a22a30
-      REAL(mk) :: a11a22a31
-      REAL(mk) :: a11a22a32
-      REAL(mk) :: a11a22a33
-      REAL(mk) :: a11a23a30
-      REAL(mk) :: a11a23a31
-      REAL(mk) :: a11a23a32
-      REAL(mk) :: a11a23a33
-      REAL(mk) :: a12a20a30
-      REAL(mk) :: a12a20a31
-      REAL(mk) :: a12a20a32
-      REAL(mk) :: a12a20a33
-      REAL(mk) :: a12a21a30
-      REAL(mk) :: a12a21a31
-      REAL(mk) :: a12a21a32
-      REAL(mk) :: a12a21a33
-      REAL(mk) :: a12a22a30
-      REAL(mk) :: a12a22a31
-      REAL(mk) :: a12a22a32
-      REAL(mk) :: a12a22a33
-      REAL(mk) :: a12a23a30
-      REAL(mk) :: a12a23a31
-      REAL(mk) :: a12a23a32
-      REAL(mk) :: a12a23a33
-      REAL(mk) :: a13a20a30
-      REAL(mk) :: a13a20a31
-      REAL(mk) :: a13a20a32
-      REAL(mk) :: a13a20a33
-      REAL(mk) :: a13a21a30
-      REAL(mk) :: a13a21a31
-      REAL(mk) :: a13a21a32
-      REAL(mk) :: a13a21a33
-      REAL(mk) :: a13a22a30
-      REAL(mk) :: a13a22a31
-      REAL(mk) :: a13a22a32
-      REAL(mk) :: a13a22a33
-      REAL(mk) :: a13a23a30
-      REAL(mk) :: a13a23a31
-      REAL(mk) :: a13a23a32
-      REAL(mk) :: a13a23a33
+      REAL(MK) :: a10a20a30
+      REAL(MK) :: a10a20a31
+      REAL(MK) :: a10a20a32
+      REAL(MK) :: a10a20a33
+      REAL(MK) :: a10a21a30
+      REAL(MK) :: a10a21a31
+      REAL(MK) :: a10a21a32
+      REAL(MK) :: a10a21a33
+      REAL(MK) :: a10a22a30
+      REAL(MK) :: a10a22a31
+      REAL(MK) :: a10a22a32
+      REAL(MK) :: a10a22a33
+      REAL(MK) :: a10a23a30
+      REAL(MK) :: a10a23a31
+      REAL(MK) :: a10a23a32
+      REAL(MK) :: a10a23a33
+      REAL(MK) :: a11a20a30
+      REAL(MK) :: a11a20a31
+      REAL(MK) :: a11a20a32
+      REAL(MK) :: a11a20a33
+      REAL(MK) :: a11a21a30
+      REAL(MK) :: a11a21a31
+      REAL(MK) :: a11a21a32
+      REAL(MK) :: a11a21a33
+      REAL(MK) :: a11a22a30
+      REAL(MK) :: a11a22a31
+      REAL(MK) :: a11a22a32
+      REAL(MK) :: a11a22a33
+      REAL(MK) :: a11a23a30
+      REAL(MK) :: a11a23a31
+      REAL(MK) :: a11a23a32
+      REAL(MK) :: a11a23a33
+      REAL(MK) :: a12a20a30
+      REAL(MK) :: a12a20a31
+      REAL(MK) :: a12a20a32
+      REAL(MK) :: a12a20a33
+      REAL(MK) :: a12a21a30
+      REAL(MK) :: a12a21a31
+      REAL(MK) :: a12a21a32
+      REAL(MK) :: a12a21a33
+      REAL(MK) :: a12a22a30
+      REAL(MK) :: a12a22a31
+      REAL(MK) :: a12a22a32
+      REAL(MK) :: a12a22a33
+      REAL(MK) :: a12a23a30
+      REAL(MK) :: a12a23a31
+      REAL(MK) :: a12a23a32
+      REAL(MK) :: a12a23a33
+      REAL(MK) :: a13a20a30
+      REAL(MK) :: a13a20a31
+      REAL(MK) :: a13a20a32
+      REAL(MK) :: a13a20a33
+      REAL(MK) :: a13a21a30
+      REAL(MK) :: a13a21a31
+      REAL(MK) :: a13a21a32
+      REAL(MK) :: a13a21a33
+      REAL(MK) :: a13a22a30
+      REAL(MK) :: a13a22a31
+      REAL(MK) :: a13a22a32
+      REAL(MK) :: a13a22a33
+      REAL(MK) :: a13a23a30
+      REAL(MK) :: a13a23a31
+      REAL(MK) :: a13a23a32
+      REAL(MK) :: a13a23a33
 
      !-------------------------------------------------------------------------!
-     !  Initialise
+     !  Initialize
      !-------------------------------------------------------------------------!
 
       CALL substart('p2m_interp_bsp2',t0,info)
@@ -262,9 +238,9 @@
 #endif
 
 
-      dxxi = 1.0_mk/dx(1)
-      dxyi = 1.0_mk/dx(2)
-      IF(ppm_dim.EQ.3) dxzi = 1.0_mk/dx(3)
+      dxxi = 1.0_MK/dx(1)
+      dxyi = 1.0_MK/dx(2)
+      IF(ppm_dim.EQ.3) dxzi = 1.0_MK/dx(3)
 
 
         !----------------------------------------------------------------------!
@@ -296,26 +272,26 @@
                  ip21 = ip20 + 1
                  ip31 = ip30 + 1
 
-                 xp1 = x01-REAL(ip10-1,mk)
-                 xp2 = x02-REAL(ip20-1,mk)
-                 xp3 = x03-REAL(ip30-1,mk)
+                 xp1 = x01-REAL(ip10-1,MK)
+                 xp2 = x02-REAL(ip20-1,MK)
+                 xp3 = x03-REAL(ip30-1,MK)
 
                  x10 = xp1
-                 x11 = x10 - 1.0_mk
+                 x11 = x10 - 1.0_MK
 
                  x20 = xp2
-                 x21 = x20 - 1.0_mk
+                 x21 = x20 - 1.0_MK
 
                  x30 = xp3
-                 x31 = x30 - 1.0_mk
+                 x31 = x30 - 1.0_MK
 
-                 a10 = 1.0_mk - x10
-                 a20 = 1.0_mk - x20
-                 a30 = 1.0_mk - x30
+                 a10 = 1.0_MK - x10
+                 a20 = 1.0_MK - x20
+                 a30 = 1.0_MK - x30
 
-                 a11 = 1.0_mk + x11
-                 a21 = 1.0_mk + x21
-                 a31 = 1.0_mk + x31
+                 a11 = 1.0_MK + x11
+                 a21 = 1.0_MK + x21
+                 a31 = 1.0_MK + x31
 
 
                  a10a20a30 = a10*a20*a30
@@ -416,26 +392,26 @@
                  ip21 = ip20 + 1
                  ip31 = ip30 + 1
 
-                 xp1 = x01-REAL(ip10-1,mk)
-                 xp2 = x02-REAL(ip20-1,mk)
-                 xp3 = x03-REAL(ip30-1,mk)
+                 xp1 = x01-REAL(ip10-1,MK)
+                 xp2 = x02-REAL(ip20-1,MK)
+                 xp3 = x03-REAL(ip30-1,MK)
 
                  x10 = xp1
-                 x11 = x10 - 1.0_mk
+                 x11 = x10 - 1.0_MK
 
                  x20 = xp2
-                 x21 = x20 - 1.0_mk
+                 x21 = x20 - 1.0_MK
 
                  x30 = xp3
-                 x31 = x30 - 1.0_mk
+                 x31 = x30 - 1.0_MK
 
-                 a10 = 1.0_mk - x10
-                 a20 = 1.0_mk - x20
-                 a30 = 1.0_mk - x30
+                 a10 = 1.0_MK - x10
+                 a20 = 1.0_MK - x20
+                 a30 = 1.0_MK - x30
 
-                 a11 = 1.0_mk + x11
-                 a21 = 1.0_mk + x21
-                 a31 = 1.0_mk + x31
+                 a11 = 1.0_MK + x11
+                 a21 = 1.0_MK + x21
+                 a31 = 1.0_MK + x31
 
                  a10a20a30 = a10*a20*a30
                  a10a20a31 = a10*a20*a31
@@ -519,26 +495,26 @@
                  ip21 = ip20 + 1
                  ip31 = ip30 + 1
 
-                 xp1 = x01-REAL(ip10-1,mk)
-                 xp2 = x02-REAL(ip20-1,mk)
-                 xp3 = x03-REAL(ip30-1,mk)
+                 xp1 = x01-REAL(ip10-1,MK)
+                 xp2 = x02-REAL(ip20-1,MK)
+                 xp3 = x03-REAL(ip30-1,MK)
 
                  x10 = xp1
-                 x11 = x10 - 1.0_mk
+                 x11 = x10 - 1.0_MK
 
                  x20 = xp2
-                 x21 = x20 - 1.0_mk
+                 x21 = x20 - 1.0_MK
 
                  x30 = xp3
-                 x31 = x30 - 1.0_mk
+                 x31 = x30 - 1.0_MK
 
-                 a10 = 1.0_mk - x10
-                 a20 = 1.0_mk - x20
-                 a30 = 1.0_mk - x30
+                 a10 = 1.0_MK - x10
+                 a20 = 1.0_MK - x20
+                 a30 = 1.0_MK - x30
 
-                 a11 = 1.0_mk + x11
-                 a21 = 1.0_mk + x21
-                 a31 = 1.0_mk + x31
+                 a11 = 1.0_MK + x11
+                 a21 = 1.0_MK + x21
+                 a31 = 1.0_MK + x31
 
                  a10a20a30 = a10*a20*a30
                  a10a20a31 = a10*a20*a31
@@ -588,26 +564,26 @@
                  ip21 = ip20 + 1
                  ip31 = ip30 + 1
 
-                 xp1 = x01-REAL(ip10-1,mk)
-                 xp2 = x02-REAL(ip20-1,mk)
-                 xp3 = x03-REAL(ip30-1,mk)
+                 xp1 = x01-REAL(ip10-1,MK)
+                 xp2 = x02-REAL(ip20-1,MK)
+                 xp3 = x03-REAL(ip30-1,MK)
 
                  x10 = xp1
-                 x11 = x10 - 1.0_mk
+                 x11 = x10 - 1.0_MK
 
                  x20 = xp2
-                 x21 = x20 - 1.0_mk
+                 x21 = x20 - 1.0_MK
 
                  x30 = xp3
-                 x31 = x30 - 1.0_mk
+                 x31 = x30 - 1.0_MK
 
-                 a10 = 1.0_mk - x10
-                 a20 = 1.0_mk - x20
-                 a30 = 1.0_mk - x30
+                 a10 = 1.0_MK - x10
+                 a20 = 1.0_MK - x20
+                 a30 = 1.0_MK - x30
 
-                 a11 = 1.0_mk + x11
-                 a21 = 1.0_mk + x21
-                 a31 = 1.0_mk + x31
+                 a11 = 1.0_MK + x11
+                 a21 = 1.0_MK + x21
+                 a31 = 1.0_MK + x31
 
                  a10a20a30 = a10*a20*a30
                  a10a20a31 = a10*a20*a31
@@ -656,26 +632,26 @@
               ip21 = ip20 + 1
               ip31 = ip30 + 1
 
-              xp1 = x01-REAL(ip10-1,mk)
-              xp2 = x02-REAL(ip20-1,mk)
-              xp3 = x03-REAL(ip30-1,mk)
+              xp1 = x01-REAL(ip10-1,MK)
+              xp2 = x02-REAL(ip20-1,MK)
+              xp3 = x03-REAL(ip30-1,MK)
 
               x10 = xp1
-              x11 = x10 - 1.0_mk
+              x11 = x10 - 1.0_MK
 
               x20 = xp2
-              x21 = x20 - 1.0_mk
+              x21 = x20 - 1.0_MK
 
               x30 = xp3
-              x31 = x30 - 1.0_mk
+              x31 = x30 - 1.0_MK
 
-              a10 = 1.0_mk - x10
-              a20 = 1.0_mk - x20
-              a30 = 1.0_mk - x30
+              a10 = 1.0_MK - x10
+              a20 = 1.0_MK - x20
+              a30 = 1.0_MK - x30
 
-              a11 = 1.0_mk + x11
-              a21 = 1.0_mk + x21
-              a31 = 1.0_mk + x31
+              a11 = 1.0_MK + x11
+              a21 = 1.0_MK + x21
+              a31 = 1.0_MK + x31
 
               a10a20a30 = a10*a20*a30
               a10a20a31 = a10*a20*a31

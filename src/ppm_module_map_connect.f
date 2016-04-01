@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :            ppm_module_map_connect_distrib
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -26,9 +26,13 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-     
+
       MODULE ppm_module_map_connect
       !!! This module provides the mapping routines for connections
+         IMPLICIT NONE
+
+         PRIVATE
+
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
@@ -42,10 +46,6 @@
          INTEGER, DIMENSION(:)  , POINTER :: tempbuffer => NULL()
          INTEGER, DIMENSION(:,:), POINTER :: cd_local   => NULL()
          INTEGER, DIMENSION(:,:), POINTER :: psend      => NULL()
-
-         PRIVATE :: id_send,id_temp,id_inv,csend,crecv
-         PRIVATE :: sendbuffer,recvbuffer,tempbuffer
-         PRIVATE :: psend,cd_local
 
          !----------------------------------------------------------------------
          !  Define inferface to ppm_map_connect_distrib
@@ -68,8 +68,12 @@
             MODULE PROCEDURE ppm_map_connect_send
          END INTERFACE
 
+         PUBLIC :: ppm_map_connect_distrib
+         PUBLIC :: ppm_map_connect_prune
+         PUBLIC :: ppm_map_connect_send
+
          !----------------------------------------------------------------------
-         !  include the source 
+         !  include the source
          !----------------------------------------------------------------------
          CONTAINS
 

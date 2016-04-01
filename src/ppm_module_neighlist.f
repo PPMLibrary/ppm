@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :                ppm_module_neighlist
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -36,13 +36,29 @@
       MODULE ppm_module_neighlist
       !!! This module provides neighbor
       !!! search routines (cell lists, Verlet lists).
-      
-         USE ppm_module_topo_typedef
-        
 
-         TYPE(ppm_t_clist), DIMENSION(:), POINTER   :: ppm_clist
+         USE ppm_module_topo_typedef, ONLY : ppm_t_topo,ppm_topo,ppm_check_topoid
+         IMPLICIT NONE
+
+         !----------------------------------------------------------------------
+         ! Pointer to cell list (needed to make lists of cell lists)
+         !----------------------------------------------------------------------
+         TYPE ppm_t_clist
+            !!! Cell list data structure
+            INTEGER, DIMENSION(:), POINTER :: nm   => NULL()
+            !!! Number of cells in x,y,(z) direction (including the ghosts
+            !!! cells) in each subdomain.
+            INTEGER, DIMENSION(:), POINTER :: lpdx => NULL()
+            !!! particle index list
+            INTEGER, DIMENSION(:), POINTER :: lhbx => NULL()
+            !!! first particle in each cell
+         END TYPE
+
+         PUBLIC :: ppm_t_clist
+
+         TYPE(ppm_t_clist), DIMENSION(:), POINTER :: ppm_clist => NULL()
+
          PRIVATE :: ppm_clist
-
 
          !----------------------------------------------------------------------
          !  Define interface to ppm_clist_destroy
@@ -71,10 +87,8 @@
             MODULE PROCEDURE ppm_neighlist_vlist_s
          END INTERFACE
 
-
-
          !----------------------------------------------------------------------
-         !  include the source 
+         !  include the source
          !----------------------------------------------------------------------
          CONTAINS
 

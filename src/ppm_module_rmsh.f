@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :                 ppm_module_rmsh
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -42,7 +42,7 @@
       !!! This module contains all interfaces to the remeshing routines. For
       !!! convenience all interpolation modules are `USE`d by this module.
       !!! Therefore its not necessary to include `ppm_module_interp_*` in the
-      !!! client application. 
+      !!! client application.
          !----------------------------------------------------------------------
          !  PPM modules
          !----------------------------------------------------------------------
@@ -50,7 +50,9 @@
          USE ppm_module_interp_p2m
          USE ppm_module_topo_typedef
          USE ppm_module_mesh_typedef
-         
+
+         IMPLICIT NONE
+
         !-----------------------------------------------------------------------
         !  Define interface ppm_rmsh_comp_weights
         !-----------------------------------------------------------------------
@@ -84,7 +86,7 @@
            MODULE PROCEDURE ppm_rmsh_create_part_dvs_3d
            MODULE PROCEDURE ppm_rmsh_create_part_dvv_3d
         END INTERFACE
-       
+
         !-----------------------------------------------------------------------
         !  Define interface ppm_rmsh_remesh
         !-----------------------------------------------------------------------
@@ -104,16 +106,16 @@
         END INTERFACE
 
          !----------------------------------------------------------------------
-         !  include the source 
+         !  include the source
          !----------------------------------------------------------------------
         CONTAINS
 
 #define __KIND  __SINGLE_PRECISION
 #include "rmsh/ppm_rmsh_comp_weights.f"
-#undef  __KIND        
-#define __KIND __DOUBLE_PRECISION 
+#undef  __KIND
+#define __KIND __DOUBLE_PRECISION
 #include "rmsh/ppm_rmsh_comp_weights.f"
-#undef  __KIND        
+#undef  __KIND
 
 #define __KIND  __SINGLE_PRECISION
 #define __DIME  __2D
@@ -137,7 +139,7 @@
 #undef __MODE2
 #undef  __MODE
 #undef  __DIME
-        
+
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA SINGLE
@@ -182,7 +184,7 @@
 #undef __MODE2
 #undef  __MODE
 #undef  __DIME
-        
+
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA DOUBLE
@@ -203,7 +205,7 @@
 #undef __MODE2
 #undef  __MODE
 #undef  __DIME
-#undef  __KIND        
+#undef  __KIND
 
 #define __KIND  __SINGLE_PRECISION
 #define __DIME  __2D
@@ -216,7 +218,7 @@
 #include "rmsh/ppm_rmsh_remesh.f"
 #undef  __MODE
 #undef  __DIME
-        
+
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA SINGLE
@@ -241,7 +243,7 @@
 #include "rmsh/ppm_rmsh_remesh.f"
 #undef  __MODE
 #undef  __DIME
-        
+
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA DOUBLE
@@ -252,7 +254,7 @@
 #include "rmsh/ppm_rmsh_remesh.f"
 #undef  __MODE
 #undef  __DIME
-#undef  __KIND        
+#undef  __KIND
 
 
 #endif

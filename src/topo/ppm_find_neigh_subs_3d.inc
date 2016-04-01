@@ -1,5 +1,5 @@
       !-------------------------------------------------------------------------
-      !  Include file for checking if two subs are neighbors and adding 
+      !  Include file for checking if two subs are neighbors and adding
       !  them to the neighbor lists if they are. This uses symmetry.
       !
       !  INPUT:   INTEGER :: ip,jp -- indices of the two subs, including
@@ -36,7 +36,7 @@
 
 
       !-------------------------------------------------------------------------
-      !  Check for adjacent faces. 
+      !  Check for adjacent faces.
       !-------------------------------------------------------------------------
       IF (mx1.GE.mn1.AND.mx2.GE.mn2.AND.mx3.GE.mn3) THEN
 
@@ -74,18 +74,14 @@
                   ldc(1) = isize + 100
                   ldc(2) = nsubsplus
                   CALL ppm_alloc(ineigh,ldc,iopt,info)
-                  IF (info.NE.0) THEN
-                      info = ppm_error_fatal
-                      CALL ppm_error(ppm_err_alloc,'ppm_find_neigh',  &
-     &                    'allocation of ineigh failed',__LINE__,info)
-                      GOTO 9999
-                  ENDIF
+                  or_fail_alloc("allocation of ineigh failed",ppm_error=ppm_error_fatal)
+
                   !-------------------------------------------------------------
-                  !  Save the size 
+                  !  Save the size
                   !-------------------------------------------------------------
                   isize  = ldc(1)
-              ENDIF 
-      
+              ENDIF
+
               !-----------------------------------------------------------------
               !  Store the neighbour set
               !-----------------------------------------------------------------
@@ -93,6 +89,6 @@
               ineigh(nneigh(ii),ii) = jj
               nneigh(jj)            = nneigh(jj) + 1
               ineigh(nneigh(jj),jj) = ii
-          ENDIF 
-      ENDIF 
+          ENDIF
+      ENDIF
 

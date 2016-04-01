@@ -40,75 +40,78 @@
       USE ppm_module_substart
       USE ppm_module_substop
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(ppm_htable), INTENT(INOUT) :: table
+      CLASS(ppm_htable)      :: table
       !!! The hashtable to create.
-      INTEGER, INTENT(IN   )   :: nelement
-      !!! Number of desired elements.
-      INTEGER, INTENT(  OUT)  :: info
 
+      INTEGER, INTENT(IN   ) :: nelement
+      !!! Number of desired elements.
+      INTEGER, INTENT(  OUT) :: info
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(1) :: lda
-      INTEGER               :: iopt
       REAL(ppm_kind_double) :: t0
 
-      CALL substart('create_htable',t0,info)
+      INTEGER(ppm_kind_int64), DIMENSION(1) :: lda
+      INTEGER(ppm_kind_int64)               :: i
+      INTEGER                               :: iopt
 
-      table%nrow = 2**(CEILING(LOG(REAL(nelement))/LOG(2.0)))
-      
-      lda(1) = table%nrow
-      iopt   = ppm_param_alloc_fit
+      CHARACTER(LEN=ppm_char) :: caller='create_htable'
 
+      CALL substart(caller,t0,info)
+
+      IF (nelement.LE.0) THEN
+         table%nrow = 1_ppm_kind_int64
+      ELSE
+         table%nrow = 2_ppm_kind_int64**(CEILING(LOG(REAL(nelement))/LOG(2.0)))
+      ENDIF
+
+      lda(1)=table%nrow
+      iopt  =ppm_param_alloc_fit
       !---------------------------------------------------------------------
       !  Allocate array for hash table keys.
       !---------------------------------------------------------------------
-      CALL ppm_alloc(table%keys, lda, iopt, info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'create_htable',     &
- &                      'htable_keys',__LINE__,info)
-          GOTO 9999
-      END IF
+      CALL ppm_alloc(table%keys,lda,iopt,info)
+      or_fail_alloc('htable_keys',ppm_error=ppm_error_fatal)
 
       !---------------------------------------------------------------------
       !  Allocate array for positions on "borders" array.
       !---------------------------------------------------------------------
-      CALL ppm_alloc(table%borders_pos, lda, iopt, info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'create_htable',     &
- &                      'htable_borders_pos',__LINE__,info)
-          GOTO 9999
-      END IF
+      CALL ppm_alloc(table%borders_pos,lda,iopt,info)
+      or_fail_alloc('htable_borders_pos',ppm_error=ppm_error_fatal)
 
       !---------------------------------------------------------------------
       !  Set everything to NULL.
       !---------------------------------------------------------------------
-      table%keys        = htable_null
-      table%borders_pos = htable_null
-      
- 9999 CONTINUE
-      CALL substop('create_htable',t0,info)
+      FORALL (i=1_ppm_kind_int64:table%nrow)
+         table%keys(i)        = htable_null_li
+         table%borders_pos(i) = htable_null
+      END FORALL
+
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
+      RETURN
       END SUBROUTINE create_htable
 
-
       SUBROUTINE destroy_htable(table,info)
+
       USE ppm_module_data
       USE ppm_module_alloc
       USE ppm_module_error
       USE ppm_module_substart
       USE ppm_module_substop
       IMPLICIT NONE
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(ppm_htable), INTENT(INOUT) :: table
-      !!! The hashtable to create. The pointer must not be NULL
-      INTEGER, INTENT(OUT)    :: info
+      CLASS(ppm_htable)      :: table
+      !!! The hashtable to create.
+
+      INTEGER, INTENT(  OUT) :: info
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -116,209 +119,257 @@
       INTEGER                 :: iopt
       INTEGER, DIMENSION(1)   :: lda
 
-      CALL substart('destroy_htable',t0,info)
+      CHARACTER(LEN=ppm_char) :: caller='destroy_htable'
 
-      lda = 0
-      iopt = ppm_param_dealloc
+      CALL substart(caller,t0,info)
 
+      iopt=ppm_param_dealloc
+      lda =0
       !---------------------------------------------------------------------
       !  Deallocate array for hash table keys.
       !---------------------------------------------------------------------
-      CALL ppm_alloc(table%keys, lda, iopt, info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_dealloc,'destroy_htable',     &
- &                      'htable_keys',__LINE__,info)
-          GOTO 9999
-      END IF
+      CALL ppm_alloc(table%keys,lda,iopt,info)
+      or_fail_dealloc('htable_keys',ppm_error=ppm_error_fatal)
 
       !---------------------------------------------------------------------
       !  Deallocate array for positions on "borders" array.
       !---------------------------------------------------------------------
-      CALL ppm_alloc(table%borders_pos, lda, iopt, info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_dealloc,'destroy_htable',     &
- &                      'htable_borders_pos',__LINE__,info)
-          GOTO 9999
-      END IF
- 
- 9999 CONTINUE
-      CALL substop('destroy_htable',t0,info)
+      CALL ppm_alloc(table%borders_pos,lda,iopt,info)
+      or_fail_dealloc('htable_borders_pos',ppm_error=ppm_error_fatal)
+
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
+      RETURN
       END SUBROUTINE destroy_htable
 
-      ELEMENTAL FUNCTION h_func(table, key, seed) result(hash_val)
-          IMPLICIT NONE
-      !---------------------------------------------------------------------
-      !  Arguments
-      !---------------------------------------------------------------------
-          TYPE(ppm_htable), INTENT(IN) :: table
-          !!! The hashtable to create. The pointer must not be NULL
-          INTEGER(ppm_kind_int64), INTENT(in) :: key
-          !!! Input key
-          INTEGER(ppm_kind_int64), INTENT(in) :: seed
-          !!! Seed to be used for mixing
-          INTEGER(ppm_kind_int64)             :: hash_val
-          !!! Result of the hash function
-          !!!
-          !!! [NOTE]
-          !!! we need to work with 64 bit integers because
-          !!! jump*h_func might overflow, and as there is no unsigned
-          !!! integer the resulting value might be negative and not
-          !!! a valid array index
+      ! Note - This code makes an assumption about how your machine behaves -
+      ! 1. sizeof(INTEGER(ppm_kind_int64)) == 8
+      ! Limitation
+      ! It will not produce the same results on little-endian and big-endian machines.
+      ELEMENTAL FUNCTION h_func(table,key,seed) RESULT(hash_val)
+        IMPLICIT NONE
 
-      !---------------------------------------------------------------------
-      !  Local variables and parameters
-      !---------------------------------------------------------------------
-          INTEGER(ppm_kind_int64), PARAMETER  :: m = 1431374979
-          INTEGER,                 PARAMETER  :: r = 24
-          INTEGER                             :: h
-          INTEGER(ppm_kind_int64)             :: data
-          INTEGER                             :: k
-          INTEGER                             :: len
+        !---------------------------------------------------------------------
+        !  Arguments
+        !---------------------------------------------------------------------
+        CLASS(ppm_htable),       INTENT(IN   ) :: table
+        !!! The hashtable to create.
 
-          len = 4
+        INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
+        !!! Input key (64 BITS)
+        INTEGER(ppm_kind_int64), INTENT(IN   ) :: seed
+        !!! Seed to be used for mixing
+        INTEGER(ppm_kind_int64)                :: hash_val
+        !!! Result of the hash function
+        !---------------------------------------------------------------------
+        !  Local variables and parameters
+        !---------------------------------------------------------------------
+        INTEGER(ppm_kind_int64), PARAMETER :: two32=4294967296_ppm_kind_int64
+        INTEGER(ppm_kind_int64), PARAMETER :: m = 1540483477_ppm_kind_int64 !0x5bd1e995
+        INTEGER(ppm_kind_int64)            :: h,k
 
-          h = IEOR(seed, len)
-          data = key
+        k=IBITS(key,0,32)
 
-          DO WHILE(len .GE. 4)
-              k = IBITS(data, 0, 8) !data, pos, len. len = 1 always!
-              k = IOR(k, ISHFT(IBITS(data, 8, 8),  8))
-              k = IOR(k, ISHFT(IBITS(data, 16, 8), 16))
-              k = IOR(k, ISHFT(IBITS(data, 24, 8), 24))
+        ! This multiplication is safe.
+        ! For the biggest 32 bit integer times m, it does not overflow.
+        k=MOD(k*m,two32)
+        k=IEOR(k,ISHFT(k,-24))
+        k=MOD(k*m,two32)
 
-              k = k*m
-              k = IEOR(k, ISHFT(k, -1*r))
-              k = k*m
+        ! Initialize the hash to a 'random' value
+        ! 8 is for 8 Bytes key len
+        h=IEOR(seed,8_ppm_kind_int64)
+        h=MOD(h*m,two32)
+        h=IEOR(h,k)
 
-              h = h*m
-              h = IEOR(h, k)
+        k=IBITS(key,32,32)
 
-              data = data + 4
-              len  = len - 1
-          END DO
+        k=MOD(k*m,two32)
+        k=IEOR(k,ISHFT(k,-24))
+        k=MOD(k*m,two32)
 
-          IF    (len .EQ. 3)    THEN
-              h = IEOR(h, ISHFT(IBITS(data, 16, 8), 16))
-              len = len - 1
-          END IF
+        h=MOD(h*m,two32)
+        h=IEOR(h,k)
 
-          IF(len .EQ. 2)    THEN
-              h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
-              len = len - 1
-          END IF
+        ! Do a few final mixes of the hash to ensure the last few
+        ! bytes are well-incorporated.
+        h=IEOR(h,ISHFT(h,-13))
+        h=MOD(h*m,two32)
+        h=IEOR(h,ISHFT(h,-15))
 
-          IF(len .EQ. 1)    THEN
-              h = IEOR(h, IBITS(data, 0, 8))
-              h = h*m
-          END IF
+        hash_val=IAND(h,table%nrow-1_ppm_kind_int64)
+        RETURN
+      END FUNCTION h_func
 
-          h = IEOR(h, ISHFT(h, -13))
-          h = h*m
-          h = IEOR(h, ISHFT(h, -15))
-          h = IAND(h, table%nrow - 1)
+      ELEMENTAL FUNCTION h_key1(table,key,seed) RESULT(address)
+        !!! Given the key value, returns corresponding address on the "borders" array.
+        IMPLICIT NONE
 
-          hash_val = h
-      END FUNCTION
+        !---------------------------------------------------------------------
+        !  Arguments
+        !---------------------------------------------------------------------
+        CLASS(ppm_htable),       INTENT(IN   ) :: table
+        !!! The hashtable to create.
 
-      ELEMENTAL FUNCTION h_key(table, key, jump) result(address)
-      !!! Given the key and jump value, returns corresponding address on
-      !!! "borders" array.
-      IMPLICIT NONE
-      !---------------------------------------------------------------------
-      !  Arguments
-      !---------------------------------------------------------------------
-      TYPE(ppm_htable), INTENT(IN)        :: table
-      !!! The hashtable to create. The pointer must not be NULL
-      INTEGER(ppm_kind_int64), INTENT(in) :: key
-      !!! Input key, which corresponds to address requested
-      INTEGER,                 INTENT(in) :: jump
-      !!! Jump value for double hashing
-      INTEGER(ppm_kind_int64)             :: int_addr
-      ! we need to work with 64 bit integers because
-      ! jump*h_func might overflow, and as there is no unsigned
-      ! integer the resulting value might be negative and not
-      ! a valid array index
-      INTEGER                             :: address
-      !!! Address that corresponds to given key
-      int_addr = 1 + MOD((h_func(table, key, seed1) + jump*h_func(table, key,  &
- &                  seed2)), table%nrow)
-      address = int_addr
-      END FUNCTION h_key
+        INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
+        !!! Input key
+        INTEGER(ppm_kind_int64), INTENT(IN   ) :: seed
+        !!! Seed to be used for mixing
+        INTEGER(ppm_kind_int64)                :: address
+        !!! Address that corresponds to given key
+        !---------------------------------------------------------------------
+        !  Local variables
+        !---------------------------------------------------------------------
+        address=table%h_func(key,seed)
+        RETURN
+      END FUNCTION h_key1
 
-      SUBROUTINE hash_insert(table, key, value, info)
-      !!! Given the key and the value, stores both in the hash table. Info is
-      !!! set to -1 if size of the hash table is not sufficient.
-      !!!
-      !!! [NOTE]
-      !!! This routine needs to be very fast, therefor we skip the usual
-      !!! chit-chat and get right to it. (-> no substart,substop unless
-      !!! compiled with __DEBUG flag)
+      ELEMENTAL FUNCTION h_key2(table,spot1,spot2,jump) RESULT(address)
+        !!! Given the key and jump value, returns corresponding address on
+        !!! "borders" array.
+
+        IMPLICIT NONE
+
+        !---------------------------------------------------------------------
+        !  Arguments
+        !---------------------------------------------------------------------
+        CLASS(ppm_htable),       INTENT(IN   ) :: table
+        !!! The hashtable to create.
+
+        INTEGER(ppm_kind_int64), INTENT(IN   ) :: spot1
+        !!! First spot value to avoid double computing
+        INTEGER(ppm_kind_int64), INTENT(IN   ) :: spot2
+        !!! Second spot value to avoid double computing
+        INTEGER(ppm_kind_int64), INTENT(IN   ) :: jump
+        !!! Jump value for double hashing
+        INTEGER(ppm_kind_int64)                :: address
+        !!! Address that corresponds to given key
+        !---------------------------------------------------------------------
+        !  Local variables
+        !---------------------------------------------------------------------
+        ! we need to work with 64 bit integers because
+        ! jump*h_func might overflow, and as there is no unsigned
+        ! integer the resulting value might be negative and not
+        ! a valid array index
+        address=MOD(spot1+spot2*jump,table%nrow)+1_ppm_kind_int64
+      RETURN
+      END FUNCTION h_key2
+
+      SUBROUTINE hash_insert(table,key,value,info)
+        !!! Given the key and the value, stores both in the hash table.
+        !!!
+        !!! [NOTE]
+        !!! This routine needs to be very fast, therefor we skip the usual
+        !!! chit-chat and get right to it. (-> no substart,substop unless
+        !!! compiled with __DEBUG flag)
 #ifdef __DEBUG
-      USE ppm_module_substart
-      USE ppm_module_substop
+        USE ppm_module_substart
+        USE ppm_module_substop
 #endif
-      IMPLICIT NONE
-      !---------------------------------------------------------------------
-      !  Arguments
-      !---------------------------------------------------------------------
-      TYPE(ppm_htable), INTENT(INOUT)      :: table
-      !!! The hashtable to create. The pointer must not be NULL
-      INTEGER(ppm_kind_int64), INTENT(in)  :: key
-      !!! Key to be stored
-      INTEGER,                 INTENT(in)  :: value
-      !!! Value that corresponds to given key
-      INTEGER,                 INTENT(out) :: info
-      !!! Info for whether insertion was successful or not. 0 if SUCCESSFUL
-      !!! and -1 otherwise.
+        IMPLICIT NONE
 
-      !---------------------------------------------------------------------
-      !  Local variables
-      !---------------------------------------------------------------------
-      INTEGER                              :: jump
-      INTEGER                              :: spot
+        !---------------------------------------------------------------------
+        !  Arguments
+        !---------------------------------------------------------------------
+        CLASS(ppm_htable)                      :: table
+        !!! The hashtable
+
+        INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
+        !!! Key to be stored (The 64 BITS key)
+        INTEGER,                 INTENT(IN   ) :: value
+        !!! Value that corresponds to given key
+        INTEGER,                 INTENT(  OUT) :: info
+        !!! Info for whether insertion was successful or not.
+        !!! 0 if SUCCESSFUL and -1 otherwise.
+        !---------------------------------------------------------------------
+        !  Local variables
+        !---------------------------------------------------------------------
+        INTEGER(ppm_kind_int64) :: jump
+        INTEGER(ppm_kind_int64) :: spot
+        INTEGER(ppm_kind_int64) :: fspot
+        INTEGER(ppm_kind_int64) :: sspot
 
 #ifdef __DEBUG
-      REAL(ppm_kind_double)                 :: t0
-      CALL substart('hash_insert',t0,info)
-#endif
+        REAL(ppm_kind_double) :: t0
 
-      info = 0
-      jump = 0
-      ! Keep on searching withing bounds of hash table.
-      DO WHILE(jump .LT. table%nrow)
-          ! Get the address corresponding to given key
-          spot = h_key(table, key, jump)
-          ! If an empty slot found ...
-          IF(table%keys(spot) .EQ. htable_null)  THEN
+        CHARACTER(LEN=ppm_char) :: caller='hash_insert'
+
+        CALL substart(caller,t0,info)
+#else
+        info=0
+#endif
+        jump=0_ppm_kind_int64
+
+        ! Get the address corresponding to given key
+        fspot=table%h_key(key,seed1)
+        spot=fspot+1_ppm_kind_int64
+
+        ! Keep on searching withing bounds of hash table.
+        DO WHILE (jump.LT.table%nrow)
+           ! If an empty slot found ...
+           IF (table%keys(spot).EQ.htable_null_li) THEN
               ! Store the key and the corresponding value and RETURN.
               table%keys(spot) = key
               table%borders_pos(spot) = value
-              GOTO 9999
-          ! If the current slot is occupied, jump to next key that results
-          ! in same hash function.
-          ELSE
-              jump = jump + 1
-          END IF
-      END DO
+              RETURN
+           !If the key is the same the value should be updated
+           ELSE IF (table%keys(spot).EQ.key) THEN
+              table%borders_pos(spot) = value
+              RETURN
+           ENDIF
+           ! If the current slot is occupied, jump to next key that results
+           ! in same hash function.
+           jump=jump+1_ppm_kind_int64
+           IF (jump.EQ.1_ppm_kind_int64) THEN
+              ! Get the address corresponding to given key
+              sspot=table%h_key(key,seed2)
+           ENDIF
 
-      ! If NOT returned within the while-loop, that means our hash table is
-      ! not sufficiently large. Hence, regrowth will be needed!
-      info = -1
+           spot=table%h_key(fspot,sspot,jump)
+        ENDDO
 
- 9999 CONTINUE
-
+        ! If NOT returned within the while-loop, that means our hash table is
+        ! not sufficiently large. Hence, we should grow the table!
+        CALL table%grow(info,key,value)
 #ifdef __DEBUG
-      CALL substop('hash_insert',t0,info)
-#endif
+        or_fail("table%grow")
 
+      9999 CONTINUE
+        CALL substop(caller,t0,info)
+#endif
+        RETURN
       END SUBROUTINE hash_insert
 
+      SUBROUTINE hash_insert_(table,key_,value,info)
+        IMPLICIT NONE
+
+        !---------------------------------------------------------------------
+        !  Arguments
+        !---------------------------------------------------------------------
+        CLASS(ppm_htable)      :: table
+        !!! The hashtable
+
+        INTEGER, INTENT(IN   ) :: key_
+        !!! Key to be stored
+        INTEGER, INTENT(IN   ) :: value
+        !!! Value that corresponds to given key
+        INTEGER, INTENT(  OUT) :: info
+        !!! Info for whether insertion was successful or not. 0 if SUCCESSFUL
+        !!! and -1 otherwise.
+        !---------------------------------------------------------------------
+        !  Local variables
+        !---------------------------------------------------------------------
+        INTEGER(ppm_kind_int64) :: key
+
+        key=INT(key_,KIND=ppm_kind_int64)
+        CALL table%hash_insert(key,value,info)
+        RETURN
+      END SUBROUTINE hash_insert_
+
 #ifdef __DEBUG
-      FUNCTION hash_search(table,key) result(value)
+      FUNCTION hash_search(table,key) RESULT(value)
 #else
-      ELEMENTAL FUNCTION hash_search(table,key) result(value)
+      ELEMENTAL FUNCTION hash_search(table,key) RESULT(value)
 #endif
       !!! Given the key, searchs the key on the hash table and returns the
       !!! corresponding value.
@@ -332,54 +383,438 @@
       USE ppm_module_substop
 #endif
       IMPLICIT NONE
+
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      TYPE(ppm_htable), INTENT(IN)          :: table
-      !!! The hashtable to create. The pointer must not be NULL
-      INTEGER(ppm_kind_int64), INTENT(in)   :: key
-      !!! Input key, which the corresponding value is asked for
-      INTEGER                               :: value
-      !!! Value corresponding to the input key
+      CLASS(ppm_htable),       INTENT(IN   ) :: table
+      !!! The hashtable to create.
 
+      INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
+      !!! Input key, which its corresponding value is asked for
+      INTEGER                                :: value
+      !!! Value corresponding to the input key
       !---------------------------------------------------------------------
       !  Local variables
       !---------------------------------------------------------------------
-      INTEGER                               :: jump
-      INTEGER                               :: spot
+      INTEGER(ppm_kind_int64) :: jump
+      INTEGER(ppm_kind_int64) :: spot
+      INTEGER(ppm_kind_int64) :: fspot
+      INTEGER(ppm_kind_int64) :: sspot
+
+      LOGICAL :: KeyExist
 
 #ifdef __DEBUG
-      REAL(ppm_kind_double)                 :: t0
-      INTEGER                               :: info
+      REAL(ppm_kind_double) :: t0
+
+      INTEGER :: info
       ! the info and t0 are here only needed in debug mode an
       ! will not be propagated
       CALL substart('hash_search',t0,info)
 #endif
 
-      value = htable_null
-      jump = 0
+      jump=0_ppm_kind_int64
+      KeyExist=.TRUE.
 
-      spot = h_key(table, key, jump)
+      ! Get the other key that results in same hash key as for the input key.
+      fspot=table%h_key(key,seed1)
+      spot =fspot+1_ppm_kind_int64
+
       ! Keep on searching while we don't come across a NULL value or we don't
       ! exceed bounds of hash table.
-      DO WHILE((jump .LT. table%nrow) .AND. (table%keys(spot)  &
-               &.NE. htable_null))
+      loop: DO WHILE(jump.LT.table%nrow)
           ! If key matches ...
-          IF(table%keys(spot) .EQ. key)  THEN
-              ! Set the return value and return
-              value = table%borders_pos(spot)
-              RETURN
+          IF (table%keys(spot).EQ.key) THEN
+             ! Set the return value and return
+             value = table%borders_pos(spot)
+             RETURN
+          ELSE IF (table%keys(spot).EQ.htable_null_li) THEN
+             IF (KeyExist) THEN
+                KeyExist=.FALSE.
+                IF (.NOT.ANY(key.EQ.table%keys)) EXIT loop
+             ENDIF
+          ENDIF
+
           ! Otherwise, keep on incrementing jump distance
-          ELSE
-              jump = jump + 1
-          END IF
-          ! Get the other key that results in same hash key as for the input
-          ! key.
-          spot = h_key(table, key, jump)
-      END DO
+          jump=jump+1_ppm_kind_int64
+          IF (jump.EQ.1_ppm_kind_int64) THEN
+             ! Get the address corresponding to given key
+             sspot=table%h_key(key,seed2)
+          ENDIF
+
+          spot=table%h_key(fspot,sspot,jump)
+      ENDDO loop
+
+      value = htable_null
 
 #ifdef __DEBUG
       CALL substop('hash_search',t0,info)
 #endif
-
+      RETURN
       END FUNCTION hash_search
+
+#ifdef __DEBUG
+      FUNCTION hash_search_(table,key_) RESULT(value)
+#else
+      ELEMENTAL FUNCTION hash_search_(table,key_) RESULT(value)
+#endif
+      IMPLICIT NONE
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      CLASS(ppm_htable), INTENT(IN   ) :: table
+      !!! The hashtable
+      INTEGER,           INTENT(IN   ) :: key_
+      !!! Input key, which the corresponding value is asked for
+      INTEGER                          :: value
+      !!! Value corresponding to the input key
+
+      !---------------------------------------------------------------------
+      !  Local variables
+      !---------------------------------------------------------------------
+      INTEGER(ppm_kind_int64) :: key
+
+      key=INT(key_,KIND=ppm_kind_int64)
+      value=table%hash_search(key)
+      RETURN
+      END FUNCTION hash_search_
+
+      !TOCHECK
+      SUBROUTINE hash_remove(table,key,info,existed)
+      !!! Given the key, removes the elements in the hash table. Info is
+      !!! set to -1 if the key was NOT found.
+      !!!
+      !!! [NOTE]
+      !!! This routine needs to be very fast, therefor we skip the usual
+      !!! chit-chat and get right to it. (-> no substart,substop unless
+      !!! compiled with __DEBUG flag)
+#ifdef __DEBUG
+      USE ppm_module_substart
+      USE ppm_module_substop
+#endif
+      IMPLICIT NONE
+
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      CLASS(ppm_htable)                      :: table
+      !!! The hashtable
+
+      INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
+      !!! Key to be removed
+      INTEGER,                 INTENT(  OUT) :: info
+      !!! Info for whether removal was successful or not. 0 if SUCCESSFUL
+      !!! and -1 otherwise.
+
+      LOGICAL, OPTIONAL,       INTENT(IN   ) :: existed
+      !!! User responsibility to sure whether the key exists or not!
+      !!! If existed is true, the algorithm does not check its validity
+      !---------------------------------------------------------------------
+      !  Local variables
+      !---------------------------------------------------------------------
+      INTEGER(ppm_kind_int64) :: jump
+      INTEGER(ppm_kind_int64) :: spot
+      INTEGER(ppm_kind_int64) :: fspot
+      INTEGER(ppm_kind_int64) :: sspot
+
+#ifdef __DEBUG
+      REAL(ppm_kind_double) :: t0
+
+      CALL substart('hash_remove',t0,info)
+#else
+      info=0
+#endif
+      IF (PRESENT(existed)) THEN
+         IF (existed) THEN
+            jump=0_ppm_kind_int64
+
+            ! Get the address corresponding to given key
+            fspot=table%h_key(key,seed1)
+            spot =fspot+1_ppm_kind_int64
+
+            ! Keep on searching withing bounds of hash table.
+            DO WHILE (jump.LT.table%nrow)
+               ! If an empty slot found ...
+               IF (table%keys(spot).EQ.key) THEN
+                  !Remove the key and the corresponding value and RETURN.
+                  table%borders_pos(spot)=htable_null
+                  table%keys(spot)=htable_null_li
+                  RETURN
+               ENDIF
+               ! If the current slot is occupied, jump to next key that results
+               ! in same hash function.
+               jump=jump+1_ppm_kind_int64
+               IF (jump.EQ.1_ppm_kind_int64) THEN
+                  ! Get the address corresponding to given key
+                  sspot=table%h_key(key,seed2)
+               ENDIF
+
+               spot=table%h_key(fspot,sspot,jump)
+            ENDDO
+            ! If NOT returned within the while-loop, that means the key was NOT found
+            info=ppm_error_fatal
+         ENDIF
+         RETURN
+      ELSE
+         IF (ANY(key.EQ.table%keys)) THEN
+            jump=0_ppm_kind_int64
+
+            ! Get the address corresponding to given key
+            fspot=table%h_key(key,seed1)
+            spot =fspot+1_ppm_kind_int64
+
+            ! Keep on searching withing bounds of hash table.
+            DO WHILE (jump.LT.table%nrow)
+               ! If an empty slot found ...
+               IF (table%keys(spot).EQ.key) THEN
+                  !Remove the key and the corresponding value and RETURN.
+                  table%borders_pos(spot)=htable_null
+                  table%keys(spot)=htable_null_li
+                  RETURN
+               ENDIF
+               ! If the current slot is occupied, jump to next key that results
+               ! in same hash function.
+               jump=jump+1_ppm_kind_int64
+               IF (jump.EQ.1_ppm_kind_int64) THEN
+                  ! Get the address corresponding to given key
+                  sspot=table%h_key(key,seed2)
+               ENDIF
+
+               spot=table%h_key(fspot,sspot,jump)
+            ENDDO
+            ! If NOT returned within the while-loop, that means the key was NOT found
+            info=ppm_error_fatal
+         ENDIF
+      ENDIF
+#ifdef __DEBUG
+      9999 CONTINUE
+      CALL substop('hash_remove',t0,info)
+#endif
+      RETURN
+      END SUBROUTINE hash_remove
+
+      SUBROUTINE hash_remove_(table, key_, info,existed)
+
+      IMPLICIT NONE
+
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      CLASS(ppm_htable)                :: table
+      !!! The hashtable
+
+      INTEGER,           INTENT(IN   ) :: key_
+      !!! Key to be removed
+      INTEGER,           INTENT(  OUT) :: info
+      !!! Info for whether removal was successful or not. 0 if SUCCESSFUL
+      !!! and -1 otherwise.
+
+      LOGICAL, OPTIONAL, INTENT(IN   ) :: existed
+      !---------------------------------------------------------------------
+      !  Local variables
+      !---------------------------------------------------------------------
+      INTEGER(ppm_kind_int64) :: key
+
+      key=INT(key_,KIND=ppm_kind_int64)
+      IF (PRESENT(existed)) THEN
+         CALL table%hash_remove(key,info,existed)
+      ELSE
+         CALL table%hash_remove(key,info)
+      ENDIF
+      RETURN
+      END SUBROUTINE hash_remove_
+
+      SUBROUTINE grow_htable(table,info,key_,value_)
+      !!! Based on the number of rows of the table, creates the hash table with
+      !!! double size.
+      !!!
+      !!! [WARNING]
+      !!! If you allocate a hashtable with more than 2^31-1 elements the hash
+      !!! function will most probably produce incorrect hash keys and fail.
+      USE ppm_module_data
+      USE ppm_module_alloc
+      USE ppm_module_error
+      USE ppm_module_substart
+      USE ppm_module_substop
+      USE ppm_module_util_qsort
+      IMPLICIT NONE
+
+      !-------------------------------------------------------------------------
+      !  Arguments
+      !-------------------------------------------------------------------------
+      CLASS(ppm_htable)                                :: table
+      !!! The hashtable to grow.
+
+      INTEGER,                           INTENT(  OUT) :: info
+      INTEGER(ppm_kind_int64), OPTIONAL, INTENT(IN   ) :: key_
+      !!! Key to be stored
+      INTEGER,                 OPTIONAL, INTENT(IN   ) :: value_
+      !!! Value that corresponds to given key
+      !-------------------------------------------------------------------------
+      !  Local variables
+      !-------------------------------------------------------------------------
+      REAL(ppm_kind_double) :: t0
+
+      INTEGER(ppm_kind_int64), DIMENSION(:), ALLOCATABLE :: keys_tmp
+      INTEGER,                 DIMENSION(:), ALLOCATABLE :: borders_pos_tmp
+      INTEGER,                 DIMENSION(:), POINTER     :: ranklist
+      INTEGER                                            :: nsize
+      INTEGER                                            :: i,j
+
+      CHARACTER(LEN=ppm_char) :: caller='grow_htable'
+
+      CALL substart(caller,t0,info)
+
+      IF (table%nrow*2_ppm_kind_int64.GE.INT(ppm_big_i-1,ppm_kind_int64)) THEN
+         !TOCHCECK
+         fail("hashtable with more than 2^31-1 elements will fail",ppm_error=ppm_error_fatal)
+      ENDIF
+
+      nsize=INT(table%nrow)
+
+      ALLOCATE(keys_tmp(nsize),SOURCE=table%keys,STAT=info)
+      or_fail_alloc("keys_tmp")
+
+      ALLOCATE(borders_pos_tmp(nsize),SOURCE=table%borders_pos,STAT=info)
+      or_fail_alloc("keys_tmp & borders_pos_tmp")
+
+      NULLIFY(ranklist)
+      CALL ppm_util_qsort(keys_tmp,ranklist,info,nsize)
+      or_fail("ppm_util_qsort")
+
+      CALL table%destroy(info)
+      or_fail("table%destroy")
+
+      CALL table%create(nsize*2,info)
+      or_fail("table%create")
+
+      DO i=1,nsize
+         j=ranklist(i)
+         IF (keys_tmp(j).EQ.htable_null_li) CYCLE
+         CALL table%insert(keys_tmp(j),borders_pos_tmp(j),info)
+      ENDDO
+
+      DEALLOCATE(keys_tmp,borders_pos_tmp,STAT=info)
+      or_fail_dealloc("keys_tmp & borders_pos_tmp")
+
+      !---------------------------------------------------------------------
+      !  Deallocate ranklist array.
+      !---------------------------------------------------------------------
+      CALL ppm_alloc(ranklist,(/0/),ppm_param_dealloc,info)
+      or_fail_dealloc('htable_keys',ppm_error=ppm_error_fatal)
+
+      IF (PRESENT(key_)) THEN
+         IF (PRESENT(value_)) THEN
+            CALL table%insert(key_,value_,info)
+         ENDIF
+      ENDIF
+
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
+      RETURN
+      END SUBROUTINE grow_htable
+
+      SUBROUTINE shrink_htable(table,info,shrinkage_ratio)
+      !!! Based on the number of rows of the table, shrinks the hash table with
+      !!! half a size or more.
+      USE ppm_module_data
+      USE ppm_module_alloc
+      USE ppm_module_error
+      USE ppm_module_substart
+      USE ppm_module_substop
+      USE ppm_module_util_qsort
+      IMPLICIT NONE
+
+      !-------------------------------------------------------------------------
+      !  Arguments
+      !-------------------------------------------------------------------------
+      CLASS(ppm_htable)                :: table
+      !!! The hashtable to shrink.
+
+      INTEGER,           INTENT(  OUT) :: info
+      INTEGER, OPTIONAL, INTENT(IN   ) :: shrinkage_ratio
+      !!! OPTIONAL shrinkage_ratio (positive value).
+      !!! If the size of hash table is shrinkage_ratio times bigger than the
+      !!! real elements inside table, we reduce the table size
+      !-------------------------------------------------------------------------
+      !  Local variables
+      !-------------------------------------------------------------------------
+      REAL(ppm_kind_double) :: t0
+
+      INTEGER(ppm_kind_int64), DIMENSION(:), ALLOCATABLE :: keys_tmp
+      INTEGER,                 DIMENSION(:), ALLOCATABLE :: borders_pos_tmp
+      INTEGER                                            :: shrinkage_ratio_
+      INTEGER,                 DIMENSION(:), POINTER     :: ranklist
+      INTEGER                                            :: nsize,ssize
+      INTEGER                                            :: i,j
+
+      CHARACTER(LEN=ppm_char) :: caller='shrink_htable'
+
+      CALL substart(caller,t0,info)
+
+      shrinkage_ratio_=MERGE(shrinkage_ratio,4,PRESENT(shrinkage_ratio))
+      shrinkage_ratio_=MERGE(4,shrinkage_ratio_,shrinkage_ratio_.LE.0)
+
+      nsize=INT(table%nrow)
+      ssize=table%size()
+
+      IF (nsize.GE.shrinkage_ratio_*ssize) THEN
+         ALLOCATE(keys_tmp(nsize),SOURCE=table%keys,STAT=info)
+         or_fail_alloc("keys_tmp")
+
+         ALLOCATE(borders_pos_tmp(nsize),SOURCE=table%borders_pos,STAT=info)
+         or_fail_alloc("keys_tmp & borders_pos_tmp")
+
+         NULLIFY(ranklist)
+         CALL ppm_util_qsort(keys_tmp,ranklist,info,nsize)
+         or_fail("ppm_util_qsort")
+
+         CALL table%destroy(info)
+         or_fail("table%destroy")
+
+         CALL table%create(ssize,info)
+         or_fail("table%create")
+
+         DO i=1,nsize
+            j=ranklist(i)
+            IF (keys_tmp(j).EQ.htable_null_li) CYCLE
+            CALL table%insert(keys_tmp(j),borders_pos_tmp(j),info)
+         ENDDO
+
+         DEALLOCATE(keys_tmp,borders_pos_tmp,STAT=info)
+         or_fail_dealloc("keys_tmp & borders_pos_tmp")
+
+         !---------------------------------------------------------------------
+         !  Deallocate ranklist array.
+         !---------------------------------------------------------------------
+         CALL ppm_alloc(ranklist,(/0/),ppm_param_dealloc,info)
+         or_fail_dealloc('htable_keys',ppm_error=ppm_error_fatal)
+      ENDIF
+
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
+      RETURN
+      END SUBROUTINE shrink_htable
+
+      FUNCTION hash_size(table) RESULT(value)
+      IMPLICIT NONE
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      CLASS(ppm_htable) :: table
+      !!! The hashtable
+
+      INTEGER           :: value
+      !!! size of the arguments inside the hash table
+      !---------------------------------------------------------------------
+      !  Local variables
+      !---------------------------------------------------------------------
+      IF (table%nrow.GT.0) THEN
+         value=COUNT(table%keys.NE.htable_null_li)
+      ELSE
+         value=0
+      ENDIF
+      RETURN
+      END FUNCTION hash_size
+
+

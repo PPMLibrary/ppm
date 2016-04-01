@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :            ppm_module_map_part_ghost
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -26,7 +26,7 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-     
+
       !-------------------------------------------------------------------------
       !  Define types
       !-------------------------------------------------------------------------
@@ -40,15 +40,20 @@
       MODULE ppm_module_map_part_ghost
       !!! This module provides the particle ghost mapping routines and holds the
       !!! temporary work arrays.
+
+         IMPLICIT NONE
+
+         PRIVATE
+
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
          INTEGER, DIMENSION(:), POINTER :: ilist1 => NULL()
          INTEGER, DIMENSION(:), POINTER :: ilist2 => NULL()
          INTEGER, DIMENSION(:), POINTER :: ighost => NULL()
-         LOGICAL, DIMENSION(:), POINTER :: lghost => NULL()
          INTEGER                        :: prev_allocsize
-         PRIVATE :: ilist1,ilist2,ighost,lghost,prev_allocsize
+
+         LOGICAL, DIMENSION(:), POINTER :: lghost => NULL()
 
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_ghost_get
@@ -86,10 +91,14 @@
             MODULE PROCEDURE ppm_map_part_ghost_put
          END INTERFACE
 
-         !----------------------------------------------------------------------
-         !  include the source 
-         !----------------------------------------------------------------------
-         CONTAINS
+         PUBLIC :: ppm_map_part_ghost_get
+         PUBLIC :: ppm_map_part_ghost_pop
+         PUBLIC :: ppm_map_part_ghost_put
+
+      !----------------------------------------------------------------------
+      !  include the source
+      !----------------------------------------------------------------------
+      CONTAINS
 
 #define __KIND __SINGLE_PRECISION
 #include "map/ppm_map_part_ghost_get.f"
