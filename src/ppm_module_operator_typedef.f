@@ -225,7 +225,7 @@ minclude ppm_create_collection_procedures(operator,operator_)
                    fail("single-precision DCops not yet implemented (no big deal: just waiting for templating features...")
 
                 CASE (ppm_param_op_pse)
-                   !allocate(ppm_t_pseop::op_discr,stat=info)
+                   !ALLOCATE(ppm_t_pseop::op_discr,stat=info)
                    fail("PSE method not yet implemented")
 
                 CASE DEFAULT
@@ -249,7 +249,7 @@ minclude ppm_create_collection_procedures(operator,operator_)
                    END SELECT
 
                 CASE (ppm_param_op_pse)
-                   !allocate(ppm_t_pseop::op_discr,stat=info)
+                   !ALLOCATE(ppm_t_pseop::op_discr,stat=info)
                    fail("PSE method not yet implemented")
 
                 CASE (ppm_param_op_fd)

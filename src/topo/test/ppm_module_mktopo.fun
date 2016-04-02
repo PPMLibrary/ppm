@@ -5,48 +5,48 @@ test_suite ppm_module_mktopo
     INCLUDE "mpif.h"
 #endif
 
-integer, parameter              :: debug = 0
-integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-real(mk),parameter              :: pi = 3.1415926535897931_mk
-real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=2
-integer,parameter               :: pdim=2
-integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol
-real(mk)                        :: cutoff = 0.05_mk
-integer                         :: info,comm,rank,nproc
-integer                         :: topoid
-integer                         :: np = 100000
-integer                         :: mp
-integer                         :: newnp
-real(mk),dimension(:,:),pointer :: xp
-real(mk),dimension(:  ),pointer :: rcp
-real(mk),dimension(:,:),pointer :: wp
-real(mk),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
-real(mk),dimension(:  ),pointer :: len_phys
-real(mk),dimension(:  ),pointer :: ghostlayer
-integer, dimension(:  ),pointer :: ghostsize
-integer                         :: i,j,k,sum1,sum2
-integer                         :: p_i
-integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost
-integer, dimension(:  ),pointer :: nm
-integer                         :: seedsize
-integer,  dimension(:),allocatable :: seed
-real(mk), dimension(:),allocatable :: randnb
-integer                          :: isymm = 0
-logical                          :: lsymm = .false.,ok
-real(mk)                         :: t0,t1,t2,t3
+INTEGER, PARAMETER              :: debug = 0
+INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
+REAL(MK),PARAMETER              :: pi = 3.1415926535897931_mk
+REAL(MK),PARAMETER              :: skin = 0._mk
+INTEGER,PARAMETER               :: ndim=2
+INTEGER,PARAMETER               :: pdim=2
+INTEGER                         :: decomp,assig,tolexp
+REAL(MK)                        :: tol
+REAL(MK)                        :: cutoff = 0.05_mk
+INTEGER                         :: info,comm,rank,nproc
+INTEGER                         :: topoid
+INTEGER                         :: np = 100000
+INTEGER                         :: mp
+INTEGER                         :: newnp
+REAL(MK),DIMENSION(:,:),POINTER :: xp
+REAL(MK),DIMENSION(:  ),POINTER :: rcp
+REAL(MK),DIMENSION(:,:),POINTER :: wp
+REAL(MK),DIMENSION(:  ),POINTER :: min_phys,max_phys,h,p_h
+REAL(MK),DIMENSION(:  ),POINTER :: len_phys
+REAL(MK),DIMENSION(:  ),POINTER :: ghostlayer
+INTEGER, DIMENSION(:  ),POINTER :: ghostsize
+INTEGER                         :: i,j,k,sum1,sum2
+INTEGER                         :: p_i
+INTEGER, DIMENSION(6)           :: bcdef
+REAL(MK),DIMENSION(:  ),POINTER :: cost
+INTEGER, DIMENSION(:  ),POINTER :: nm
+INTEGER                         :: seedsize
+INTEGER,  DIMENSION(:),allocatable :: seed
+REAL(MK), DIMENSION(:),allocatable :: randnb
+INTEGER                          :: isymm = 0
+LOGICAL                          :: lsymm = .false.,ok
+REAL(MK)                         :: t0,t1,t2,t3
 
     init
 
-        use ppm_module_data
-        use ppm_module_topo_typedef
-        use ppm_module_init
+        USE ppm_module_data
+        USE ppm_module_topo_typedef
+        USE ppm_module_init
 
-        allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
+        ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
             &         ghostsize(ndim),ghostlayer(2*ndim),&
-            &         nm(ndim),h(ndim),p_h(ndim),stat=info)
+            &         nm(ndim),h(ndim),p_h(ndim),STAT=info)
 
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
@@ -55,70 +55,70 @@ real(mk)                         :: t0,t1,t2,t3
         ghostlayer(1:2*ndim) = cutoff
         bcdef(1:6) = ppm_param_bcdef_periodic
 
-        nullify(xp,rcp,wp)
+        NULLIFY(xp,rcp,wp)
 
 #ifdef __MPI
-        comm = mpi_comm_world
-        call mpi_comm_rank(comm,rank,info)
-        call mpi_comm_size(comm,nproc,info)
+        comm = MPI_COMM_WORLD
+        CALL MPI_Comm_rank(comm,rank,info)
+        CALL MPI_Comm_size(comm,nproc,info)
 #else
         rank = 0
         nproc = 1
 #endif
         tolexp = INT(LOG10(EPSILON(1._mk)))+10
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
     end init
 
 
     finalize
-        use ppm_module_finalize
+        USE ppm_module_finalize
 
-        call ppm_finalize(info)
+        CALL ppm_finalize(info)
 
-        deallocate(min_phys,max_phys,len_phys,ghostsize,nm)
+        DEALLOCATE(min_phys,max_phys,len_phys,ghostsize,nm)
 
     end finalize
 
 
     setup
 
-        call random_seed(size=seedsize)
-        allocate(seed(seedsize))
+        CALL RANDOM_SEED(size=seedsize)
+        ALLOCATE(seed(seedsize))
         do i=1,seedsize
             seed(i)=10+i*i*(rank+1)
         enddo
-        call random_seed(put=seed)
-        allocate(randnb((1+ndim)*np),stat=info)
-        call random_number(randnb)
-        allocate(xp(ndim,np),rcp(np),wp(pdim,np),stat=info)
+        CALL RANDOM_SEED(put=seed)
+        ALLOCATE(randnb((1+ndim)*np),STAT=info)
+        CALL RANDOM_NUMBER(randnb)
+        ALLOCATE(xp(ndim,np),rcp(np),wp(pdim,np),STAT=info)
 
     end setup
 
 
     teardown
 
-        deallocate(xp,rcp,wp,stat=info)
-        deallocate(seed,randnb)
+        DEALLOCATE(xp,rcp,wp,STAT=info)
+        DEALLOCATE(seed,randnb)
 
     end teardown
 
     test cuboid
         ! test cuboid decomposition
 
-        use ppm_module_data
+        USE ppm_module_data
         USE ppm_module_substart
         USE ppm_module_substop
         USE ppm_module_write
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
+        USE ppm_module_topo_typedef
+        USE ppm_module_mktopo
 
         start_subroutine("cuboid")
 
         !----------------
         ! create particles
         !----------------
-        call random_number(xp)
+        CALL RANDOM_NUMBER(xp)
 
         !----------------
         ! make topology
@@ -130,7 +130,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         topoid = 0
 
-        call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
+        CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
         &               cutoff,cost,info)
 
         Assert_Equal(info,0)
@@ -143,16 +143,16 @@ real(mk)                         :: t0,t1,t2,t3
 
     test xp_null_cuboid
       ! ppm trac ticket #93 (https://ppm.inf.ethz.ch/trac/ticket/93)
-      use ppm_module_util_dbg
+      USE ppm_module_util_dbg
 
-      integer :: meshid = -1
+      INTEGER :: meshid = -1
 
-      deallocate(xp)
+      DEALLOCATE(xp)
       xp => null()
 
       nm = 32 * nproc
 
-      call ppm_mktopo(topoid, meshid,     &
+      CALL ppm_mktopo(topoid, meshid,     &
                       xp, 0,              &
                       decomp, assig,      &
                       min_phys, max_phys, &
@@ -161,7 +161,7 @@ real(mk)                         :: t0,t1,t2,t3
 
       Assert_Equal(info, 0)
 
-!       call ppm_dbg_print(topoid,0.0_mk,1,1,info)
+!       CALL ppm_dbg_print(topoid,0.0_mk,1,1,info)
 
     end test
 

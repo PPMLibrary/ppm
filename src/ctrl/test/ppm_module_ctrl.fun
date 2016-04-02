@@ -1,33 +1,47 @@
 test_suite ppm_module_ctrl
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+  INTEGER            :: idefault, iflag,  ilong_flag
+  INTEGER(8)         :: gdefault, gflag,  glong_flag
+  REAL               :: rdefault, rflag,  rlong_flag
+  REAL(8)            :: ddefault, dflag,  dlong_flag
+  CHARACTER(len=256) :: cdefault, cflag,  clong_flag
+  LOGICAL            :: ldefault, leflag, lelong_flag
+  LOGICAL            ::           ldflag, ldlong_flag
+  COMPLEX            :: pdefault, pflag,  plong_flag
+  COMPLEX(8)         :: xdefault, xflag,  xlong_flag
 
-  integer            :: idefault, iflag,  ilong_flag
-  integer(8)         :: gdefault, gflag,  glong_flag
-  real               :: rdefault, rflag,  rlong_flag
-  real(8)            :: ddefault, dflag,  dlong_flag
-  character(len=256) :: cdefault, cflag,  clong_flag
-  logical            :: ldefault, leflag, lelong_flag
-  logical            ::           ldflag, ldlong_flag
-  complex            :: pdefault, pflag,  plong_flag
-  complex(8)         :: xdefault, xflag,  xlong_flag
+  INTEGER,            DIMENSION(3) :: iarray, iaflag, ialflag
+  INTEGER(8),         DIMENSION(3) :: garray, gaflag, galflag
+  REAL,               DIMENSION(3) :: rarray, raflag, ralflag
+  REAL(8),            DIMENSION(3) :: darray, daflag, dalflag
+  CHARACTER(len=256), DIMENSION(3) :: carray, caflag, calflag
+  LOGICAL,            DIMENSION(3) :: larray, laflag, lalflag
+  COMPLEX,            DIMENSION(3) :: parray, paflag, palflag
+  COMPLEX(8),         DIMENSION(3) :: xarray, xaflag, xalflag
 
-  integer,            dimension(3) :: iarray, iaflag, ialflag
-  integer(8),         dimension(3) :: garray, gaflag, galflag
-  real,               dimension(3) :: rarray, raflag, ralflag
-  real(8),            dimension(3) :: darray, daflag, dalflag
-  character(len=256), dimension(3) :: carray, caflag, calflag
-  logical,            dimension(3) :: larray, laflag, lalflag
-  complex,            dimension(3) :: parray, paflag, palflag
-  complex(8),         dimension(3) :: xarray, xaflag, xalflag
+  CHARACTER(len=256) :: value
+  LOGICAL            :: ok
 
-  character(len=256) :: value
-  logical            :: ok
+  INTEGER :: ios, scf
 
-  integer :: info, ios, scf
+  INTEGER, PARAMETER :: debug = 0
+  INTEGER, PARAMETER :: MK = KIND(1.0D0) !KIND(1.0E0)
+  INTEGER, PARAMETER :: ndim=2
+  INTEGER            :: tolexp
+  INTEGER            :: info
 
+  init
+    USE ppm_module_init
+
+    tolexp = INT(LOG10(EPSILON(1.0_MK)))
+    CALL ppm_init(ndim,MK,tolexp,0,debug,info,99)
+  end init
+
+  finalize
+    USE ppm_module_finalize
+
+    CALL ppm_finalize(info)
+  end finalize
 
   setup
     CALL disable_ctrl
@@ -37,7 +51,7 @@ test_suite ppm_module_ctrl
   !         long_flag = '--idefault',     &
   !         ctrl_name = 'idefault',       &
   !         default   = 42,               &
-  !         help      = "Test if integer defaults work.")
+  !         help      = "Test if INTEGER defaults work.")
   end setup
 
   teardown
@@ -79,20 +93,20 @@ test_suite ppm_module_ctrl
     CALL disable_ctrl
     CALL arg(idefault, 'some_int',     &
          flag      = '-i',             &
-         long_flag = '--integer',      &
+         long_flag = '--INTEGER',      &
          ctrl_name = 'some_int',       &
          default   = 42,               &
          min       = 0,                &
          max       = 100,              &
-         help      = "Test if integer printing works.")
-    CALL arg(rdefault, 'some_real',    &
+         help      = "Test if INTEGER printing works.")
+    CALL arg(rdefault, 'some_REAL',    &
          flag      = '-r',             &
-         long_flag = '--real',         &
-         ctrl_name = 'some_real',      &
+         long_flag = '--REAL',         &
+         ctrl_name = 'some_REAL',      &
          default   = 0.1337,           &
          min       = 0.0,              &
          max       = 1.0,              &
-         help      = "Test if real printing works.")
+         help      = "Test if REAL printing works.")
     CALL arg_group("Second Group")
 
     CALL arg(cdefault, 'some_char',    &
@@ -114,15 +128,15 @@ test_suite ppm_module_ctrl
          default   = (/1,2,3/),        &
          min       = 0,                &
          max       = 100,              &
-         help      = "Test if integer array printing works.")
-    CALL arg(rarray, 'real_array',     &
+         help      = "Test if INTEGER array printing works.")
+    CALL arg(rarray, 'REAL_array',     &
          flag      = '-n',             &
-         long_flag = '--real-array',   &
-         ctrl_name = 'real_array',     &
+         long_flag = '--REAL-array',   &
+         ctrl_name = 'REAL_array',     &
          default   = (/1.1,2.2,3.3/),  &
          min       = 0.0,              &
          max       = 3.5,              &
-         help      = "Test if real array printing works.")
+         help      = "Test if REAL array printing works.")
     CALL arg_group("Third Group")
     CALL arg(carray, 'char_array',     &
          flag      = '-o',             &
@@ -250,7 +264,7 @@ test_suite ppm_module_ctrl
 
   end test
 
-  test integer_args
+  test INTEGER_args
     ! define
     CALL arg(idefault,   'idefault',   default   = 42      )
     CALL arg(iflag,      'iflag',      flag      = '-f'    )
@@ -266,7 +280,7 @@ test_suite ppm_module_ctrl
     Assert_Equal(ilong_flag, 42)
   end test
 
-  test integer_array_args
+  test INTEGER_array_args
     ! define
     CALL arg(iarray,  'iarray',  default   = (/1,2,3/))
     CALL arg(iaflag,  'iaflag',  flag      = '-f'     )
@@ -410,7 +424,7 @@ test_suite ppm_module_ctrl
     Assert_Array_Equal(calflag, (/'foo','bar','baz'/))
   end test
 
-  test logical_args
+  test LOGICAL_args
     CALL arg(ldefault,    'ldefault',    default   = .true.)
     CALL arg(leflag,      'leflag',      default   = .false., &
          vtype = enabling_flag, flag      = '-e')
@@ -435,7 +449,7 @@ test_suite ppm_module_ctrl
     Assert_False(ldlong_flag)
   end test
 
-  test logical_array_args
+  test LOGICAL_array_args
     ! define
     CALL arg(larray,  'larray',  default   = (/.true.,.false.,.true./))
     CALL arg(laflag,  'laflag',  flag      = '-f'     )
@@ -451,7 +465,7 @@ test_suite ppm_module_ctrl
     Assert_LArray_Equal(lalflag, (/.true.,.false.,.true./))
   end test
 
-  test complex_args
+  test COMPLEX_args
     ! define
     CALL arg(pdefault,   'pdefault',   default   = (0,1)   )
     CALL arg(pflag,      'pflag',      flag      = '-f'    )
@@ -467,7 +481,7 @@ test_suite ppm_module_ctrl
     Assert_Equal(plong_flag, (0,1))
   end test
 
-  test complex_array_args
+  test COMPLEX_array_args
     ! define
     CALL arg(parray,  'parray',  default   = (/(1,0),(0,1),(-1,0)/))
     CALL arg(paflag,  'paflag',  flag      = '-f'     )
@@ -483,7 +497,7 @@ test_suite ppm_module_ctrl
     Assert_Array_Equal(palflag, (/(1,0),(0,1),(-1,0)/))
   end test
 
-  test dcomplex_args
+  test dCOMPLEX_args
     ! define
     CALL arg(xdefault,   'xdefault',   default   = (0._8,1._8)   )
     CALL arg(xflag,      'xflag',      flag      = '-f'    )
@@ -499,7 +513,7 @@ test_suite ppm_module_ctrl
     Assert_Equal(xlong_flag, (0,1))
   end test
 
-  test dcomplex_array_args
+  test dCOMPLEX_array_args
     ! define
     CALL arg(xarray,  'xarray',  default   = (/(1._8,0._8),(0._8,1._8),(-1._8,0._8)/))
     CALL arg(xaflag,  'xaflag',  flag      = '-f'     )
@@ -596,23 +610,23 @@ test_suite ppm_module_ctrl
   test default_funcs
 #ifdef __F2003
     ! procedure declarations
-    procedure(integer_func)        int_def
-    procedure(integer_func)        revert_on_fail
+    procedure(INTEGER_func)        int_def
+    procedure(INTEGER_func)        revert_on_fail
     procedure(longint_func)        lng_def
     procedure(single_func)         flt_def
     procedure(double_func)         dbl_def
     procedure(string_func)         chr_def
-    procedure(logical_func)        log_def
-    procedure(complex_func)        cpx_def
-    procedure(dcomplex_func)       dcp_def
-    procedure(integer_array_func)  inta_def
+    procedure(LOGICAL_func)        log_def
+    procedure(COMPLEX_func)        cpx_def
+    procedure(dCOMPLEX_func)       dcp_def
+    procedure(INTEGER_array_func)  inta_def
     procedure(longint_array_func)  lnga_def
     procedure(single_array_func)   flta_def
     procedure(double_array_func)   dbla_def
     procedure(string_array_func)   chra_def
-    procedure(logical_array_func)  loga_def
-    procedure(complex_array_func)  cpxa_def
-    procedure(dcomplex_array_func) dcpa_def
+    procedure(LOGICAL_array_func)  loga_def
+    procedure(COMPLEX_array_func)  cpxa_def
+    procedure(dCOMPLEX_array_func) dcpa_def
     ! define
     CALL arg(idefault, 'idefault', default_func = int_def)
     CALL arg(iflag,    'iflag',    default_func = revert_on_fail, &
@@ -662,103 +676,103 @@ test_suite ppm_module_ctrl
 end test_suite
 
 #ifdef __F2003
-logical function int_def(var)
-  integer, pointer, intent(in) :: var
+LOGICAL function int_def(var)
+  INTEGER, POINTER, intent(in) :: var
   var = 42
   int_def = .true.
 end function int_def
 
-logical function revert_on_fail(var)
-  integer, pointer, intent(in) :: var
+LOGICAL function revert_on_fail(var)
+  INTEGER, POINTER, intent(in) :: var
   revert_on_fail = .false.
 end function revert_on_fail
 
-logical function lng_def(var)
-  integer(8), pointer, intent(in) :: var
+LOGICAL function lng_def(var)
+  INTEGER(8), POINTER, intent(in) :: var
   var = 42
   lng_def = .true.
 end function lng_def
 
-logical function flt_def(var)
-  real, pointer, intent(in) :: var
+LOGICAL function flt_def(var)
+  REAL, POINTER, intent(in) :: var
   var = 0.1337
   flt_def = .true.
 end function flt_def
 
-logical function dbl_def(var)
-  real(8), pointer, intent(in) :: var
+LOGICAL function dbl_def(var)
+  REAL(8), POINTER, intent(in) :: var
   var = 0.1337_8
   dbl_def = .true.
 end function dbl_def
 
-logical function chr_def(var)
-  character(len=*), pointer, intent(in) :: var
+LOGICAL function chr_def(var)
+  CHARACTER(len=*), POINTER, intent(in) :: var
   var = "hrkljus"
   chr_def = .true.
 end function chr_def
 
-logical function log_def(var)
-  logical, pointer, intent(in) :: var
+LOGICAL function log_def(var)
+  LOGICAL, POINTER, intent(in) :: var
   var = .true.
   log_def = .true.
 end function log_def
 
-logical function cpx_def(var)
-  complex, pointer, intent(in) :: var
+LOGICAL function cpx_def(var)
+  COMPLEX, POINTER, intent(in) :: var
   var = (0,1)
   cpx_def = .true.
 end function cpx_def
 
-logical function dcp_def(var)
-  complex(8), pointer, intent(in) :: var
+LOGICAL function dcp_def(var)
+  COMPLEX(8), POINTER, intent(in) :: var
   var = (0_8,1_8)
   dcp_def = .true.
 end function dcp_def
 
-logical function inta_def(var)
-  integer, dimension(:), pointer, intent(in) :: var
+LOGICAL function inta_def(var)
+  INTEGER, DIMENSION(:), POINTER, intent(in) :: var
   var = (/1,2,3/)
   inta_def = .true.
 end function inta_def
 
-logical function lnga_def(var)
-  integer(8), dimension(:), pointer, intent(in) :: var
+LOGICAL function lnga_def(var)
+  INTEGER(8), DIMENSION(:), POINTER, intent(in) :: var
   var = (/1,2,3/)
   lnga_def = .true.
 end function lnga_def
 
-logical function flta_def(var)
-  real, dimension(:), pointer, intent(in) :: var
+LOGICAL function flta_def(var)
+  REAL, DIMENSION(:), POINTER, intent(in) :: var
   var = (/1.1,2.2,3.3/)
   flta_def = .true.
 end function flta_def
 
-logical function dbla_def(var)
-  real(8), dimension(:), pointer, intent(in) :: var
+LOGICAL function dbla_def(var)
+  REAL(8), DIMENSION(:), POINTER, intent(in) :: var
   var = (/1.1_8,2.2_8,3.3_8/)
   dbla_def = .true.
 end function dbla_def
 
-logical function chra_def(var)
-  character(len=*), dimension(:), pointer, intent(in) :: var
+LOGICAL function chra_def(var)
+  CHARACTER(len=*), DIMENSION(:), POINTER, intent(in) :: var
   var = (/'foo','bar','baz'/)
   chra_def = .true.
 end function chra_def
 
-logical function loga_def(var)
-  logical, dimension(:), pointer, intent(in) :: var
+LOGICAL function loga_def(var)
+  LOGICAL, DIMENSION(:), POINTER, intent(in) :: var
   var = (/.true.,.false.,.true./)
   loga_def = .true.
 end function loga_def
 
-logical function cpxa_def(var)
-  complex, dimension(:), pointer, intent(in) :: var
+LOGICAL function cpxa_def(var)
+  COMPLEX, DIMENSION(:), POINTER, intent(in) :: var
   var = (/(1,0),(0,1),(-1,0)/)
   cpxa_def = .true.
 end function cpxa_def
 
-logical function dcpa_def(var)
-  complex(8), dimension(:), pointer, intent(in) :: var
+LOGICAL function dcpa_def(var)
+  COMPLEX(8), DIMENSION(:), POINTER, intent(in) :: var
   var = (/(1,0),(0,1),(-1,0)/)
   dcpa_def = .true.
 end function dcpa_def

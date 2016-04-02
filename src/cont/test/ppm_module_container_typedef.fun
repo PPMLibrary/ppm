@@ -1,165 +1,167 @@
 test_suite ppm_module_container_typedef
 
-use ppm_module_interfaces
-use ppm_module_field_typedef
-use ppm_module_mesh_typedef
+  USE ppm_module_interfaces
+  USE ppm_module_field_typedef
+  USE ppm_module_mesh_typedef
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+  INTEGER, PARAMETER :: debug = 0
+  INTEGER, PARAMETER :: MK = KIND(1.0D0) !KIND(1.0E0)
+  INTEGER, PARAMETER :: ndim=2
+  INTEGER            :: tolexp
+  INTEGER            :: info
+  INTEGER            :: i,j,k
 
-integer                          :: i,j,k
-integer                          :: info
+  !---------------- init -----------------------
+  init
+    USE ppm_module_init
 
-!---------------- init -----------------------
+    tolexp = INT(LOG10(EPSILON(1.0_MK)))
+    CALL ppm_init(ndim,MK,tolexp,0,debug,info,99)
+  end init
+  !----------------------------------------------
 
-    init
+  !------------- setup --------------------------
+  setup
+  end setup
+  !----------------------------------------------
 
-    end init
+  !--------------- tearDOwn ---------------------
+  tearDOwn
+  end tearDOwn
+  !----------------------------------------------
 
-!----------------------------------------------
+  !---------------- finalzie --------------------
+  finalize
+    USE ppm_module_finalize
 
-!---------------- finalzie --------------------
+    CALL ppm_finalize(info)
+  end finalize
+  !----------------------------------------------
 
+  test collections_basic_features
+    IMPLICIT NONE
+    TYPE(ppm_c_equi_mesh)            :: c_M
+    CLASS(ppm_t_equi_mesh_), POINTER :: M => NULL()
+    INTEGER                          :: count_el,total_el=1000
 
-    finalize
+    ppm_debug = 0
 
-    end finalize
-
-!----------------------------------------------
-
-!------------- setup --------------------------
-
-    setup
-
-    end setup
-!----------------------------------------------
-
-
-!--------------- teardown ---------------------
-    teardown
-
-    end teardown
-!----------------------------------------------
-
-    test collections_basic_features
-       type(ppm_c_equi_mesh) :: c_M
-       class(ppm_t_equi_mesh_),pointer :: M => NULL()
-       integer                      :: count_el,total_el=1000
-
-       ppm_debug = 0
-
-       do i=1,total_el
-           allocate(ppm_t_equi_mesh::M,STAT=info)
-           Assert_Equal(info,0)
-           call c_M%push(M,info)
-           Assert_Equal(info,0)
-       enddo
-       call c_M%destroy(info)
+    DO i=1,total_el
+       ALLOCATE(ppm_t_equi_mesh::M,STAT=info)
        Assert_Equal(info,0)
 
-       do i=1,total_el
-           allocate(ppm_t_equi_mesh::M,STAT=info)
-           Assert_Equal(info,0)
-           M%topoid = i
-           call c_M%push(M,info)
-           Assert_Equal(info,0)
-       enddo
+       CALL c_M%push(M,info)
+       Assert_Equal(info,0)
+    ENDDO
 
-       count_el = 0
-       M => c_M%begin()
-       do while (associated(M))
-           count_el = count_el + 1
-           M => c_M%next()
-       enddo
-       Assert_Equal(count_el,total_el)
+    CALL c_M%destroy(info)
+    Assert_Equal(info,0)
 
-       ! check that the accessor (at) works
-       M => c_M%at(17)
-       Assert_Equal(M%topoid,17)
-       M => c_M%at(total_el+1)
-       Assert_False(associated(M))
-       M => c_M%at(1)
-       Assert_Equal(M%topoid,1)
-       M => c_M%at(0)
-       Assert_False(associated(M))
-
-       count_el = 0
-       M => c_M%begin()
-       do while (associated(M))
-           count_el = count_el + 1
-           if (mod(count_el,3).eq.0) then
-               call c_M%remove(info)
-               Assert_Equal(info,0)
-           endif
-           M => c_M%next()
-       enddo
-
-       count_el = 0
-       M => c_M%last()
-       do while (associated(M))
-           count_el = count_el + 1
-           M => c_M%prev()
-       enddo
-       Assert_Equal(count_el,total_el-total_el/3)
-
-       M => c_M%begin()
-       do while (associated(M))
-           call c_M%remove(info)
-           Assert_Equal(info,0)
-           M => c_M%next()
-       enddo
-       Assert_Equal(c_M%nb,0)
-    end test
-
-    test nested_collections
-       type(ppm_c_equi_mesh) :: c_M
-       class(ppm_t_equi_mesh_), pointer :: M => NULL()
-       class(ppm_t_subpatch_),  pointer :: p => NULL()
-       integer :: count_el,total_el=100
-
-       ! build a collection of meshes, each of which has
-       ! a collection of subpatches
-       do i=1,total_el
-           allocate(ppm_t_equi_mesh::M,STAT=info)
-           Assert_Equal(info,0)
-
-           allocate(ppm_c_subpatch::M%subpatch)
-           M%ID = i
-
-           do j=1,total_el
-               allocate(ppm_t_subpatch::p,STAT=info)
-               Assert_Equal(info,0)
-               p%meshID = j
-               call M%subpatch%push(p,info)
-               Assert_Equal(info,0)
-           enddo
-           Assert_True(associated(M%subpatch))
-           call c_M%push(M,info)
-           Assert_Equal(info,0)
-       enddo
-
-       !check that the subpatches are still allocated for each mesh
-       i = 1
-       M => c_M%begin()
-       do while (associated(M))
-           Assert_Equal(i,M%ID)
-           j = 1
-           Assert_True(associated(M%subpatch))
-           p => M%subpatch%begin()
-           do while (associated(p))
-               Assert_Equal(j,p%meshID)
-               p => M%subpatch%next()
-               j = j+1
-           enddo
-           Assert_Equal(j-1,total_el)
-           M => c_M%next()
-           i = i +1
-       enddo
-
-       call c_M%destroy(info)
+    DO i=1,total_el
+       ALLOCATE(ppm_t_equi_mesh::M,STAT=info)
        Assert_Equal(info,0)
 
-    end test
+       M%topoid = i
+       CALL c_M%push(M,info)
+       Assert_Equal(info,0)
+    ENDDO
+
+    count_el = 0
+    M => c_M%begin()
+    DO WHILE (ASSOCIATED(M))
+       count_el = count_el + 1
+       M => c_M%next()
+    ENDDO
+    Assert_Equal(count_el,total_el)
+
+    ! check that the accessor (at) works
+    M => c_M%at(17)
+    Assert_Equal(M%topoid,17)
+    M => c_M%at(total_el+1)
+    Assert_False(ASSOCIATED(M))
+    M => c_M%at(1)
+    Assert_Equal(M%topoid,1)
+    M => c_M%at(0)
+    Assert_False(ASSOCIATED(M))
+
+    count_el = 0
+    M => c_M%begin()
+    DO WHILE (ASSOCIATED(M))
+        count_el = count_el + 1
+        if (mod(count_el,3).eq.0) then
+         CALL c_M%remove(info)
+         Assert_Equal(info,0)
+        endif
+        M => c_M%next()
+    ENDDO
+
+    count_el = 0
+    M => c_M%last()
+    DO WHILE (ASSOCIATED(M))
+        count_el = count_el + 1
+        M => c_M%prev()
+    ENDDO
+    Assert_Equal(count_el,total_el-total_el/3)
+
+    M => c_M%begin()
+    DO WHILE (ASSOCIATED(M))
+       CALL c_M%remove(info)
+       Assert_Equal(info,0)
+       M => c_M%next()
+    ENDDO
+    Assert_Equal(c_M%nb,0)
+  end test
+
+  test nested_collections
+    IMPLICIT NONE
+    TYPE(ppm_c_equi_mesh)            :: c_M
+    CLASS(ppm_t_equi_mesh_), POINTER :: M => NULL()
+    CLASS(ppm_t_subpatch_),  POINTER :: p => NULL()
+
+    INTEGER :: count_el,total_el=100
+
+    ! build a collection of meshes, each of which has
+    ! a collection of subpatches
+    DO i=1,total_el
+       ALLOCATE(ppm_t_equi_mesh::M,STAT=info)
+       Assert_Equal(info,0)
+
+       ALLOCATE(ppm_c_subpatch::M%subpatch)
+       M%ID = i
+
+       DO j=1,total_el
+          ALLOCATE(ppm_t_subpatch::p,STAT=info)
+          Assert_Equal(info,0)
+          p%meshID = j
+          CALL M%subpatch%push(p,info)
+          Assert_Equal(info,0)
+       ENDDO
+       Assert_True(ASSOCIATED(M%subpatch))
+       CALL c_M%push(M,info)
+       Assert_Equal(info,0)
+    ENDDO
+
+    !check that the subpatches are still ALLOCATEd for each mesh
+    i = 1
+    M => c_M%begin()
+    DO WHILE (ASSOCIATED(M))
+       Assert_Equal(i,M%ID)
+       j = 1
+       Assert_True(ASSOCIATED(M%subpatch))
+       p => M%subpatch%begin()
+       DO WHILE (ASSOCIATED(p))
+          Assert_Equal(j,p%meshID)
+          p => M%subpatch%next()
+          j = j+1
+       ENDDO
+       Assert_Equal(j-1,total_el)
+       M => c_M%next()
+       i = i +1
+    ENDDO
+
+    CALL c_M%destroy(info)
+    Assert_Equal(info,0)
+
+  end test
 
 end test_suite

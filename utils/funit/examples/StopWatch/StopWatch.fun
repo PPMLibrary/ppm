@@ -1,6 +1,6 @@
 test_suite StopWatch
 
-integer, dimension(8) :: dateAndTime1, dateAndTime2
+INTEGER, DIMENSION(8) :: dateAndTime1, dateAndTime2
 real :: seconds
 
 setup
@@ -10,7 +10,7 @@ setup
 end setup
 
 test SystemDateAndTimeWorks
- call date_and_time(values=dateAndTime1)
+ CALL date_and_time(values=dateAndTime1)
  Assert_True( dateAndTime1(1) /= -huge(0) )
  Assert_True( size(dateAndTime1,1) == 8 )
 end test
@@ -42,13 +42,13 @@ end test
 test InitiallyReturnsZero
   seconds = secSinceLast()
   Assert_Real_Equal( 0.0, seconds )
-  call timeDelay(seconds)
+  CALL timeDelay(seconds)
   seconds = secSinceLast()
   Assert_True( seconds /= 0.0 )
 end test
 
 subroutine timeDelay (sum)
-  integer :: i
+  INTEGER :: i
   real    :: sum
   do i = 1, 1000000
    sum = sum + i
@@ -57,7 +57,7 @@ end subroutine timeDelay
 
 test ComputesSeconds
   seconds = secSinceLast()
-  call timeDelay (seconds)
+  CALL timeDelay (seconds)
   seconds = secSinceLast()
   Assert_True( seconds > 0.0 )
 end test
@@ -67,7 +67,7 @@ test ComputesSecondsSpecial
 
   seconds = secSinceLast()
   dateAndTime1 = last
-  call timeDelay (seconds)
+  CALL timeDelay (seconds)
   seconds = secSinceLast()
   dateAndTime2 = last
   expectedSeconds = secBetween(dateAndTime1,dateAndTime2)

@@ -1,57 +1,53 @@
 test_suite ppm_module_mesh
 
-use ppm_module_mesh_typedef
-use ppm_module_topo_typedef
-use ppm_module_field_typedef
-use ppm_module_mktopo
+USE ppm_module_mesh_typedef
+USE ppm_module_topo_typedef
+USE ppm_module_field_typedef
+USE ppm_module_mktopo
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+INTEGER, PARAMETER              :: debug = 0
+INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
+REAL(MK),PARAMETER              :: pi = ACOS(-1._mk)
+INTEGER,PARAMETER               :: ndim=3
+INTEGER                         :: decomp,assig,tolexp
+INTEGER                         :: info,comm,rank,nproc
+REAL(MK)                        :: tol
+INTEGER                         :: topoid=-1
+REAL(MK),DIMENSION(:  ),POINTER :: min_phys => NULL()
+REAL(MK),DIMENSION(:  ),POINTER :: max_phys => NULL()
 
-integer, parameter              :: debug = 0
-integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-real(mk),parameter              :: pi = ACOS(-1._mk)
-integer,parameter               :: ndim=3
-integer                         :: decomp,assig,tolexp
-integer                         :: info,comm,rank,nproc
-real(mk)                        :: tol
-integer                         :: topoid=-1
-real(mk),dimension(:  ),pointer :: min_phys => NULL()
-real(mk),dimension(:  ),pointer :: max_phys => NULL()
+INTEGER, DIMENSION(:  ),POINTER :: ighostsize => NULL()
+REAL(MK)                        :: sca_ghostsize
 
-integer, dimension(:  ),pointer :: ighostsize => NULL()
-real(mk)                        :: sca_ghostsize
+INTEGER                         :: i,j,k
+INTEGER                         :: nsublist
+INTEGER, DIMENSION(:  ),POINTER :: isublist => NULL()
+INTEGER, DIMENSION(2*ndim)      :: bcdef
+REAL(MK),DIMENSION(:  ),POINTER :: cost => NULL()
+INTEGER, DIMENSION(:  ),POINTER :: nm => NULL()
+REAL(MK),DIMENSION(:  ),POINTER :: h => NULL()
+TYPE(ppm_t_topo),       POINTER :: topo => NULL()
 
-integer                         :: i,j,k
-integer                         :: nsublist
-integer, dimension(:  ),pointer :: isublist => NULL()
-integer, dimension(2*ndim)      :: bcdef
-real(mk),dimension(:  ),pointer :: cost => NULL()
-integer, dimension(:  ),pointer :: nm => NULL()
-real(mk),dimension(:  ),pointer :: h => NULL()
-type(ppm_t_topo),       pointer :: topo => NULL()
+TYPE(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
+INTEGER                          :: ipatch,isub,jsub
+CLASS(ppm_t_subpatch_),POINTER   :: p => NULL()
 
-type(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
-integer                          :: ipatch,isub,jsub
-class(ppm_t_subpatch_),POINTER   :: p => NULL()
+INTEGER                          :: mypatchid
+REAL(MK),DIMENSION(6)       :: my_patch
+REAL(MK),DIMENSION(ndim)         :: offset
 
-integer                          :: mypatchid
-real(mk),dimension(6)       :: my_patch
-real(mk),dimension(ndim)         :: offset
-
-real(mk),dimension(:,:),pointer  :: field2d_1,field2d_2
-real(mk),dimension(:,:,:),pointer:: field3d_1,field3d_2
-real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
+REAL(MK),DIMENSION(:,:),POINTER  :: field2d_1,field2d_2
+REAL(MK),DIMENSION(:,:,:),POINTER:: field3d_1,field3d_2
+REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
 
 !---------------- init -----------------------
 
     init
 
-        use ppm_module_topo_typedef
-        use ppm_module_init
+        USE ppm_module_topo_typedef
+        USE ppm_module_init
 
-        allocate(min_phys(ndim),max_phys(ndim),&
+        ALLOCATE(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
 
         min_phys(1:ndim) = 0.0_mk
@@ -61,14 +57,14 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         tolexp = -12
 
 #ifdef __MPI
-        comm = mpi_comm_world
-        call mpi_comm_rank(comm,rank,info)
-        call mpi_comm_size(comm,nproc,info)
+        comm = MPI_COMM_WORLD
+        CALL MPI_Comm_rank(comm,rank,info)
+        CALL MPI_Comm_size(comm,nproc,info)
 #else
         rank = 0
         nproc = 1
 #endif
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
     end init
 
@@ -78,11 +74,11 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
 
     finalize
-        use ppm_module_finalize
+        USE ppm_module_finalize
 
-        call ppm_finalize(info)
+        CALL ppm_finalize(info)
 
-        deallocate(min_phys,max_phys,ighostsize,h,nm)
+        DEALLOCATE(min_phys,max_phys,ighostsize,h,nm)
 
     end finalize
 
@@ -110,31 +106,31 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         assig  = ppm_param_assign_internal
         topoid = 0
         sca_ghostsize = 0.05_mk
-        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
+        CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
 
         Nm = 125
         offset = 0._mk
-        call Mesh1%create(topoid,offset,info,Nm=Nm)
+        CALL Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
-        call Mesh1%destroy(info)
+        CALL Mesh1%destroy(info)
         Assert_Equal(info,0)
 
         h = (max_phys-min_phys)/Nm
-        call Mesh1%create(topoid,offset,info,h=h)
+        CALL Mesh1%create(topoid,offset,info,h=h)
         Assert_Equal(info,0)
-        call Mesh1%destroy(info)
+        CALL Mesh1%destroy(info)
         Assert_Equal(info,0)
     end test
 
     test mesh_add_patches
-        integer, dimension(2) :: patchid
+        INTEGER, DIMENSION(2) :: patchid
         Nm = 129
         Nm(ndim) = 29
         patchid = (/17,23/)
 
-        call Mesh1%create(topoid,offset,info,Nm=Nm)
+        CALL Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
 
         !One patch
@@ -142,7 +138,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         my_patch(ndim) = 5.1
         my_patch(2*ndim) = 10.0
 
-        call Mesh1%def_patch(my_patch,info,patchid(1))
+        CALL Mesh1%def_patch(my_patch,info,patchid(1))
         Assert_Equal(info,0)
         Assert_True(associated(Mesh1%subpatch))
 
@@ -171,7 +167,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         my_patch(ndim) = 5.1
         my_patch(2*ndim) = 10.0
 
-        call Mesh1%def_patch(my_patch,info,patchid(2))
+        CALL Mesh1%def_patch(my_patch,info,patchid(2))
         Assert_Equal(info,0)
 
 
@@ -180,7 +176,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             Assert_Equal(Mesh1%patch%vec(i)%t%patchid,patchid(i))
         ENDDO
 
-        call Mesh1%destroy(info)
+        CALL Mesh1%destroy(info)
         Assert_Equal(info,0)
 
         Assert_False(associated(Mesh1%subpatch))
@@ -190,7 +186,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         start_subroutine("add_many_patches")
         Nm = 39
         Nm(ndim) = 129
-        call Mesh1%create(topoid,offset,info,Nm=Nm)
+        CALL Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
 
         if (ndim .eq. 2) then
@@ -200,7 +196,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             DO j = 1,Nm(2)/4
                 mypatchid = mypatchid + 1
                 my_patch(1:4) = (/h(1)*i,h(2)*j,h(1)*(i+4),h(2)*(j+4)/)
-                call Mesh1%def_patch(my_patch,info,mypatchid)
+                CALL Mesh1%def_patch(my_patch,info,mypatchid)
                 Assert_Equal(info,0)
                 Assert_True(associated(Mesh1%subpatch))
             ENDDO
@@ -214,7 +210,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
                 mypatchid = mypatchid + 1
                 my_patch(1:6) = (/h(1)*i,h(2)*j,h(3)*k,&
                     h(1)*(i+4),h(2)*(j+4),h(3)*(k+4)/)
-                call Mesh1%def_patch(my_patch,info,mypatchid)
+                CALL Mesh1%def_patch(my_patch,info,mypatchid)
                 Assert_Equal(info,0)
                 Assert_True(associated(Mesh1%subpatch))
             ENDDO
@@ -222,7 +218,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             ENDDO
         endif
 
-        call Mesh1%destroy(info)
+        CALL Mesh1%destroy(info)
         Assert_Equal(info,0)
 
         Assert_False(associated(Mesh1%subpatch))
@@ -233,7 +229,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         !testing for a single patch that covers the whole domain
         Nm = 129
         Nm(ndim) = 65
-        call Mesh1%create(topoid,offset,info,Nm=Nm)
+        CALL Mesh1%create(topoid,offset,info,Nm=Nm)
             Assert_Equal(info,0)
         topo => ppm_topo(Mesh1%topoid)%t
 
@@ -241,7 +237,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         my_patch(1:ndim)        = min_phys(1:ndim)
         my_patch(ndim+1:2*ndim) = max_phys(1:ndim)
 
-        call Mesh1%def_patch(my_patch,info,mypatchid)
+        CALL Mesh1%def_patch(my_patch,info,mypatchid)
             Assert_Equal(info,0)
 
         Assert_True(associated(Mesh1%subpatch))
@@ -254,30 +250,30 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         ENDDO
         Assert_Equal(isub,topo%nsublist)
 
-        call Mesh1%destroy(info)
+        CALL Mesh1%destroy(info)
             Assert_Equal(info,0)
 
         !test the wrapper routine, which does the same thing
-        call Mesh1%create(topoid,offset,info,Nm=Nm)
+        CALL Mesh1%create(topoid,offset,info,Nm=Nm)
             Assert_Equal(info,0)
-        call Mesh1%def_uniform(info)
+        CALL Mesh1%def_uniform(info)
             Assert_Equal(info,0)
-        call Mesh1%destroy(info)
+        CALL Mesh1%destroy(info)
             Assert_Equal(info,0)
     end test
 
     test ghost_mappings
-        type(ppm_t_field) :: Field1,Field2
-        real(ppm_kind_double),dimension(ndim) :: pos
-        integer                             :: p_idx, nb_errors
+        TYPE(ppm_t_field) :: Field1,Field2
+        REAL(ppm_kind_double),DIMENSION(ndim) :: pos
+        INTEGER                             :: p_idx, nb_errors
         CLASS(ppm_t_discr_info_),POINTER    :: dinfo => NULL()
-        logical                             :: assoc
+        LOGICAL                             :: assoc
 
         start_subroutine("test_ghost_mappings")
 
         Nm = 25
         Nm(ndim) = 45
-        call Mesh1%create(topoid,offset,info,Nm=Nm,&
+        CALL Mesh1%create(topoid,offset,info,Nm=Nm,&
         & ghostsize=ighostsize,name='Test_Mesh_1')
         Assert_Equal(info,0)
 
@@ -287,16 +283,16 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
            my_patch(1:6) = (/0.15_mk,0.10_mk,0.41_mk,0.99_mk,0.7_mk,0.78_mk/)
         endif
 
-        call Mesh1%def_patch(my_patch,info)
+        CALL Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
 
-        call Field1%create(2,info,name='vecField')
+        CALL Field1%create(2,info,name='vecField')
         Assert_Equal(info,0)
-        call Field1%discretize_on(Mesh1,info)
+        CALL Field1%discretize_on(Mesh1,info)
         Assert_Equal(info,0)
-        call Field2%create(1,info,name='scaField')
+        CALL Field2%create(1,info,name='scaField')
         Assert_Equal(info,0)
-        call Field2%discretize_on(Mesh1,info)
+        CALL Field2%discretize_on(Mesh1,info)
         Assert_Equal(info,0)
 
 
@@ -396,22 +392,22 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         ENDIF
 
         !Do a ghost mapping
-        call Mesh1%map_ghost_get(info)
+        CALL Mesh1%map_ghost_get(info)
         Assert_Equal(info,0)
 
-        call Field1%map_ghost_push(Mesh1,info)
+        CALL Field1%map_ghost_push(Mesh1,info)
         Assert_Equal(info,0)
-        call Field2%map_ghost_push(Mesh1,info)
+        CALL Field2%map_ghost_push(Mesh1,info)
         Assert_Equal(info,0)
 
-        !call Mesh1%map_send(info)
+        !CALL Mesh1%map_send(info)
         !non-blocking send
-        call Mesh1%map_isend(info)
+        CALL Mesh1%map_isend(info)
         Assert_Equal(info,0)
 
-        call Field2%map_ghost_pop(Mesh1,info)
+        CALL Field2%map_ghost_pop(Mesh1,info)
         Assert_Equal(info,0)
-        call Field1%map_ghost_pop(Mesh1,info)
+        CALL Field1%map_ghost_pop(Mesh1,info)
         Assert_Equal(info,0)
 
         !Now check that the ghost mapping has been done correctly
@@ -443,11 +439,11 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         ENDIF
         Assert_Equal(nb_errors,0)
 
-        call Mesh1%destroy(info)
+        CALL Mesh1%destroy(info)
             Assert_Equal(info,0)
-        call Field1%destroy(info)
+        CALL Field1%destroy(info)
             Assert_Equal(info,0)
-        call Field2%destroy(info)
+        CALL Field2%destroy(info)
             Assert_Equal(info,0)
 
         end_subroutine()
@@ -464,16 +460,16 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 !    test mesh_define
 !        ! a simplistic test for checking if mesh_define is working
 !
-!        use ppm_module_topo_typedef
-!        use ppm_module_mktopo
-!        use ppm_module_map_field
-!        use ppm_module_map_field_global
-!        use ppm_module_mesh_define
-!        use ppm_module_topo_get
-!        use ppm_module_topo_check
+!        USE ppm_module_topo_typedef
+!        USE ppm_module_mktopo
+!        USE ppm_module_map_field
+!        USE ppm_module_map_field_global
+!        USE ppm_module_mesh_define
+!        USE ppm_module_topo_get
+!        USE ppm_module_topo_check
 !
 !
-!        allocate(nm(ndim),stat=info)
+!        ALLOCATE(nm(ndim),STAT=info)
 !        do i=1,ndim
 !            nm(i) = 32*nproc
 !        enddo
@@ -488,27 +484,27 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 !        topoid = 0
 !        meshid = -1
 !
-!        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+!        CALL ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
 !        &               bcdef,ghostsize,cost,nm,info)
 !
-!        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+!        CALL ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
 !                        isublist,nsublist,info)
 !
-!        allocate(field((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+!        ALLOCATE(field((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
 !        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
-!        &        stat=info) ! 2d
-!        allocate(field_ref((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+!        &        STAT=info) ! 2d
+!        ALLOCATE(field_ref((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
 !        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
-!        &        stat=info) ! 2d
+!        &        STAT=info) ! 2d
 !
-!!        allocate(field((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+!!        ALLOCATE(field((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
 !!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
 !!        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
-!!        &       stat=info) ! 3d
-!!        allocate(field_ref((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+!!        &       STAT=info) ! 3d
+!!        ALLOCATE(field_ref((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
 !!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
 !!        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
-!!        &       stat=info) ! 3d
+!!        &       STAT=info) ! 3d
 !
 !        do i=1,ndim
 !            h(i) = (max_phys(i) - min_phys(i)) / real(ndata(i,1)-1,mk)
@@ -516,11 +512,11 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 !
 !        meshid_ref = -1
 !        nm_ref = nm
-!        call ppm_mesh_define(topoid,meshid_ref,nm_ref,istart_ref,ndata_ref,info)
-!        call ppm_map_field_global(topoid,topoid,meshid,meshid_ref,info)
-!        call ppm_map_field_push(topoid,meshid,field,info)
-!        call ppm_map_field_send(info)
-!        call ppm_map_field_pop(topoid,meshid_ref,field_ref,ghostsize,info)
+!        CALL ppm_mesh_define(topoid,meshid_ref,nm_ref,istart_ref,ndata_ref,info)
+!        CALL ppm_map_field_global(topoid,topoid,meshid,meshid_ref,info)
+!        CALL ppm_map_field_push(topoid,meshid,field,info)
+!        CALL ppm_map_field_send(info)
+!        CALL ppm_map_field_pop(topoid,meshid_ref,field_ref,ghostsize,info)
 !
 !
 !        assert_equal(info,0)

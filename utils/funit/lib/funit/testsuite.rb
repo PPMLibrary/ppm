@@ -9,9 +9,9 @@ module Funit
 
   class TestSuite < File
 
-    KEYWORDS = Regexp.union(/^\s*(end\s+)?(setup|teardown|test|init|finalize)/i,
-                            Assertions::ASSERTION_PATTERN)
+    KEYWORDS = Regexp.union(/^\s*(end\s+)?(setup|teardown|test|init|finalize)/i,Assertions::ASSERTION_PATTERN)
     COMMENT_LINE = /^\s*!/
+    FORTRAN_USE = /^\s*USE\s+(\w+)/i
 
     include Funit #FIXME
 
@@ -44,48 +44,49 @@ module Funit
 
     def module_wrapper
       puts <<-MODULE_WRAPPER
-module #{@suite_name}_mod
-contains
-  include '#@suite_name.f'
-end module #{@suite_name}_mod
+
+MODULE #{@suite_name}_mod
+CONTAINS
+  INCLUDE '#@suite_name.f'
+END MODULE #{@suite_name}_mod
 
       MODULE_WRAPPER
     end
 
     def top_wrapper
-      puts "module #{@suite_name}_fun"
+      puts "MODULE #{@suite_name}_fun"
 
+      puts "  USE ppm_module_mpi"
       #FIXME (we want to check if the .fun file is a ppm module file
       # in which case we assume that we want to USE that module)
       # Otherwise, we do nothing and no module is loaded by default.
       if File.exists?("../../#{@suite_name}.f")
-          puts "use #{ @wrap_with_module ? @suite_name+'_mod' : @suite_name }"
+        puts "  USE #{ @wrap_with_module ? @suite_name+'_mod' : @suite_name }"
       end
 
       funit_contents = @suite_content.split("\n")
-      @funit_total_lines = funit_contents.length
-      while (line = funit_contents.shift) && line !~ /^\s*#.*/i
-        puts line
+      while (line = funit_contents.shift) && line !~ /^\s*#.*/i && line !~/^\s*IMPLICIT\s+(\w+)/i && line !~ KEYWORDS
+        puts line if line.match FORTRAN_USE
       end
 
       puts <<-TOP
 
- implicit none
+  IMPLICIT NONE
 
- logical :: noAssertFailed
- integer :: log
+  PRIVATE
 
- public :: test_#@suite_name
+  INTEGER :: numTests         = 0
+  INTEGER :: numAsserts       = 0
+  INTEGER :: numAssertsTested = 0
+  INTEGER :: numFailures      = 0
+  INTEGER :: funit_rank
+  INTEGER :: funit_comm
+  INTEGER :: funit_info
+  INTEGER :: log
 
- private
+  LOGICAL :: noAssertFailed
 
- integer :: numTests          = 0
- integer :: numAsserts        = 0
- integer :: numAssertsTested  = 0
- integer :: numFailures       = 0
- integer :: funit_rank
- integer :: funit_comm
- integer :: funit_info
+  PUBLIC :: test_#@suite_name
 
       TOP
     end
@@ -94,17 +95,20 @@ end module #{@suite_name}_mod
       funit_contents = @suite_content.split("\n")
       @funit_total_lines = funit_contents.length
 
-      while (line = funit_contents.shift) && line !~ /^\s*#.*/i
+      while (line = funit_contents.shift)
+        if line !~ /^\s*use*/i && line.length > 1
+          break
+        end
       end
       funit_contents.unshift line
 
       while (line = funit_contents.shift) && line !~ KEYWORDS
-        puts line
+        puts line if line !~ /\s*MPIF.H*/i && line !~ /\s*IMPLICIT*/i
       end
 
       funit_contents.unshift line
 
-      puts " contains\n\n"
+      puts "CONTAINS\n\n"
 
       while (line = funit_contents.shift)
         case line
@@ -179,7 +183,7 @@ end module #{@suite_name}_mod
         @arglists[@test_name] = argsets
       end
 
-      puts " subroutine #{test_name}\n\n"
+      puts "  SUBROUTINE #{test_name}\n\n"
 
       num_of_asserts = 0
 
@@ -207,52 +211,53 @@ end module #{@suite_name}_mod
         end
       end
 
-      puts " end subroutine #{test_name}\n\n"
+      puts "  END SUBROUTINE #{test_name}\n\n"
     end
 
     def close
-      puts "\n subroutine funit_init"
+      puts "\n"
+      puts "  SUBROUTINE funit_init"
       puts @init
-      puts " end subroutine funit_init\n\n"
+      puts "  END SUBROUTINE funit_init\n\n"
 
-      puts "\n subroutine funit_setup"
+      puts "  SUBROUTINE funit_setup"
       puts @setup
-      puts "  noAssertFailed = .true."
-      puts " end subroutine funit_setup\n\n"
+      puts "  noAssertFailed = .TRUE."
+      puts "  END SUBROUTINE funit_setup\n\n"
 
-      puts "\n subroutine funit_teardown"
+      puts "  SUBROUTINE funit_teardown"
       puts @teardown
-      puts " end subroutine funit_teardown\n\n"
+      puts "  END SUBROUTINE funit_teardown\n\n"
 
-      puts "\n subroutine funit_finalize"
+      puts "  SUBROUTINE funit_finalize"
       puts @finalize
-      puts " end subroutine funit_finalize\n\n"
+      puts "  END SUBROUTINE funit_finalize\n\n"
 
       puts <<-NEXTONE
 
- subroutine test_#{@suite_name}( nTests, nAsserts, nAssertsTested, nFailures, lfh, rank, comm )
+  SUBROUTINE test_#{@suite_name}( nTests, nAsserts, nAssertsTested, nFailures, lfh, rank, comm )
 
-  integer :: nTests
-  integer :: nAsserts
-  integer :: nAssertsTested
-  integer :: nFailures
-  integer :: lfh
-  integer :: rank
-  integer :: comm
+  IMPLICIT NONE
 
-  continue
+  INTEGER :: nTests
+  INTEGER :: nAsserts
+  INTEGER :: nAssertsTested
+  INTEGER :: nFailures
+  INTEGER :: lfh
+  INTEGER :: rank
+  INTEGER :: comm
 
   log = lfh
   funit_rank = rank
   funit_comm = comm
 
-  call funit_init
+  CALL funit_init
 
       NEXTONE
 
       @tests.each do |test_name|
         if @arglists.has_key? test_name then
-          puts "\n  write(log,*) 'starting a test with an arglist...'"
+          puts "\n  WRITE(log,*) 'starting a test with an arglist...'"
           @arglists[test_name].each do |args|
             final_list = [{}]
             args.split(/(?!\[[^\]]*),(?![^\[]*\])/i).each do |arg|
@@ -304,17 +309,19 @@ end module #{@suite_name}_mod
 
       puts <<-LASTONE
 
-  call funit_finalize
+  CALL funit_finalize
 
   nTests          = numTests
   nAsserts        = numAsserts
   nAssertsTested  = numAssertsTested
   nFailures       = numFailures
 
- end subroutine test_#{@suite_name}
+  END SUBROUTINE test_#{@suite_name}
 
-end module #{@suite_name}_fun
+END MODULE #{@suite_name}_fun
+
       LASTONE
+
       puts @trailing_code
       super
     end

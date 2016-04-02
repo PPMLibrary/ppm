@@ -88,7 +88,7 @@
 
           tree => kdtree_create(Particles%xp(1:ppm_dim,1:Particles%Mpart),&
               sort=.TRUE.,rearrange=.TRUE.)
-          allocate(results(knn+1))
+          ALLOCATE(results(knn+1))
 
           !Find nearest particle of each query point
           DO ip=1,Particles%Npart
@@ -105,7 +105,7 @@
           ENDDO
 
           call kdtree_destroy(tree)
-          deallocate(results)
+          DEALLOCATE(results)
 
 
           xp => Set_xp(Particles,read_only=.TRUE.)

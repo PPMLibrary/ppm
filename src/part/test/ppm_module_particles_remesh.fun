@@ -1,73 +1,69 @@
 test_suite ppm_module_particles_remesh
 
-use ppm_module_mesh_typedef
-use ppm_module_topo_typedef
-use ppm_module_field_typedef
-use ppm_module_particles_typedef
-use ppm_module_mktopo
-use ppm_module_io_vtk
+USE ppm_module_mesh_typedef
+USE ppm_module_topo_typedef
+USE ppm_module_field_typedef
+USE ppm_module_particles_typedef
+USE ppm_module_mktopo
+USE ppm_module_io_vtk
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+INTEGER, PARAMETER              :: debug = 0
+INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
+REAL(MK),PARAMETER              :: pi = ACOS(-1._mk)
+INTEGER,PARAMETER               :: ndim=2
+INTEGER                         :: decomp,assig,tolexp
+INTEGER                         :: info,comm,rank,nproc
+REAL(MK)                        :: tol
+INTEGER                         :: topoid=-1
+REAL(MK),DIMENSION(:  ),POINTER :: min_phys => NULL()
+REAL(MK),DIMENSION(:  ),POINTER :: max_phys => NULL()
+REAL(ppm_kind_double)           :: t2,t1
 
-integer, parameter              :: debug = 0
-integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-real(mk),parameter              :: pi = ACOS(-1._mk)
-integer,parameter               :: ndim=2
-integer                         :: decomp,assig,tolexp
-integer                         :: info,comm,rank,nproc
-real(mk)                        :: tol
-integer                         :: topoid=-1
-real(mk),dimension(:  ),pointer :: min_phys => NULL()
-real(mk),dimension(:  ),pointer :: max_phys => NULL()
-real(ppm_kind_double)           :: t2,t1
+INTEGER, DIMENSION(:  ),POINTER :: ighostsize => NULL()
+REAL(MK)                        :: sca_ghostsize
+INTEGER                         :: seedsize
+INTEGER,  DIMENSION(:),allocatable :: seed
 
-integer, dimension(:  ),pointer :: ighostsize => NULL()
-real(mk)                        :: sca_ghostsize
-integer                         :: seedsize
-integer,  dimension(:),allocatable :: seed
+INTEGER                         :: i,j,k
+INTEGER                         :: nsublist
+INTEGER, DIMENSION(:  ),POINTER :: isublist => NULL()
+INTEGER, DIMENSION(2*ndim)      :: bcdef
+REAL(MK),DIMENSION(:  ),POINTER :: cost => NULL()
+INTEGER, DIMENSION(:  ),POINTER :: nm => NULL()
+REAL(MK),DIMENSION(:  ),POINTER :: h => NULL()
+TYPE(ppm_t_topo),       POINTER :: topo => NULL()
 
-integer                         :: i,j,k
-integer                         :: nsublist
-integer, dimension(:  ),pointer :: isublist => NULL()
-integer, dimension(2*ndim)      :: bcdef
-real(mk),dimension(:  ),pointer :: cost => NULL()
-integer, dimension(:  ),pointer :: nm => NULL()
-real(mk),dimension(:  ),pointer :: h => NULL()
-type(ppm_t_topo),       pointer :: topo => NULL()
+TYPE(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
+INTEGER                          :: ipatch,isub,jsub
+CLASS(ppm_t_subpatch_),POINTER   :: p => NULL()
+CLASS(ppm_t_subpatch_),POINTER   :: patch => NULL()
 
-type(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
-integer                          :: ipatch,isub,jsub
-class(ppm_t_subpatch_),POINTER   :: p => NULL()
-class(ppm_t_subpatch_),POINTER   :: patch => NULL()
+INTEGER                          :: mypatchid
+REAL(MK),DIMENSION(6)       :: my_patch
+REAL(MK),DIMENSION(ndim)         :: offset
 
-integer                          :: mypatchid
-real(mk),dimension(6)       :: my_patch
-real(mk),dimension(ndim)         :: offset
-
-real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
+REAL(MK), DIMENSION(:,:), POINTER              :: wp_2r => NULL()
 
 
-class(ppm_t_main_abstr),POINTER  :: abstr_point => NULL()
+CLASS(ppm_t_main_abstr),POINTER  :: abstr_point => NULL()
 TYPE(ppm_v_main_abstr)  :: LFields
 
-type(ppm_t_field) ,TARGET :: VField1,VField2,VField3,VField4
-type(ppm_t_field) ,TARGET :: SField1,SField2,SField3,Vol
-type(ppm_t_particles_d),TARGET :: Part1
-real(ppm_kind_double),dimension(ndim) :: pos
-real(ppm_kind_double),dimension(ndim) :: cutoff
-real(ppm_kind_double)                 :: voln
-integer :: np_global
+TYPE(ppm_t_field) ,TARGET :: VField1,VField2,VField3,VField4
+TYPE(ppm_t_field) ,TARGET :: SField1,SField2,SField3,Vol
+TYPE(ppm_t_particles_d),TARGET :: Part1
+REAL(ppm_kind_double),DIMENSION(ndim) :: pos
+REAL(ppm_kind_double),DIMENSION(ndim) :: cutoff
+REAL(ppm_kind_double)                 :: voln
+INTEGER :: np_global
 
 !---------------- init -----------------------
 
     init
 
-        use ppm_module_topo_typedef
-        use ppm_module_init
+        USE ppm_module_topo_typedef
+        USE ppm_module_init
 
-        allocate(min_phys(ndim),max_phys(ndim),&
+        ALLOCATE(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
 
         min_phys(1:ndim) = 0.0_mk
@@ -77,21 +73,21 @@ integer :: np_global
         tolexp = -12
 
 #ifdef __MPI
-        comm = mpi_comm_world
-        call mpi_comm_rank(comm,rank,info)
-        call mpi_comm_size(comm,nproc,info)
+        comm = MPI_COMM_WORLD
+        CALL MPI_Comm_rank(comm,rank,info)
+        CALL MPI_Comm_size(comm,nproc,info)
 #else
         rank = 0
         nproc = 1
 #endif
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-        call random_seed(size=seedsize)
-        allocate(seed(seedsize))
+        CALL RANDOM_SEED(size=seedsize)
+        ALLOCATE(seed(seedsize))
         do i=1,seedsize
             seed(i)=9+i*(rank+1)
         enddo
-        call random_seed(put=seed)
+        CALL RANDOM_SEED(put=seed)
 
     end init
 
@@ -101,11 +97,11 @@ integer :: np_global
 
 
     finalize
-        use ppm_module_finalize
+        USE ppm_module_finalize
 
-        call ppm_finalize(info)
+        CALL ppm_finalize(info)
 
-        deallocate(min_phys,max_phys,ighostsize,h,nm)
+        DEALLOCATE(min_phys,max_phys,ighostsize,h,nm)
 
     end finalize
 
@@ -123,7 +119,7 @@ integer :: np_global
         assig  = ppm_param_assign_internal
         topoid = 0
         sca_ghostsize = 0.07_mk
-        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
+        CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
 
         !----------------
@@ -135,7 +131,7 @@ integer :: np_global
         ! We get an exact p2m interpolation of 2nd order polynomials
         ! (with Mp4) only if the particles are on Cartesian grid with
         ! the same spacing as the mesh).
-        call Mesh1%create(topoid,offset,info,Nm=Nm,&
+        CALL Mesh1%create(topoid,offset,info,Nm=Nm,&
             ghostsize=ighostsize,name='Test_Mesh_1')
 
         !----------------
@@ -154,27 +150,27 @@ integer :: np_global
         else
             my_patch(1:6) = (/0.15_mk,0.10_mk,0.25_mk,0.89_mk,0.7_mk,0.78_mk/)
         endif
-        call Mesh1%def_patch(my_patch,info)
+        CALL Mesh1%def_patch(my_patch,info)
 
         !----------------
         ! Create particles, from a grid + small random displacement
         !----------------
-        call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
+        CALL Part1%initialize(np_global,info,topoid=topoid,name="Part1")
 
-        allocate(wp_2r(ndim,Part1%Npart))
-!        call random_number(wp_2r)
+        ALLOCATE(wp_2r(ndim,Part1%Npart))
+!        CALL RANDOM_NUMBER(wp_2r)
 !        wp_2r = (wp_2r-0.5_mk)*Part1%h_avg * 0.3_mk
         wp_2r = Part1%h_avg*0.04997_mk
 
-        call Part1%move(wp_2r,info)
-        deallocate(wp_2r)
+        CALL Part1%move(wp_2r,info)
+        DEALLOCATE(wp_2r)
 
         !----------------
         ! Put particles back into the domain and global map them
         !----------------
-        call Part1%apply_bc(info)
+        CALL Part1%apply_bc(info)
 
-        call Part1%map(info,global=.true.,topoid=topoid)
+        CALL Part1%map(info,global=.true.,topoid=topoid)
 
 
         !----------------
@@ -182,23 +178,23 @@ integer :: np_global
         ! dimensions because the interpolation routines are hard-coded for some
         ! and we want to test them all!
         !----------------
-        call VField1%create(2,info,name='vecField1')
-        call VField1%discretize_on(Part1,info)
-        call VField2%create(3,info,name='vecField2')
-        call VField2%discretize_on(Part1,info)
-        call VField3%create(4,info,name='vecField3')
-        call VField3%discretize_on(Part1,info)
-        call VField4%create(5,info,name='vecField4')
-        call VField4%discretize_on(Part1,info)
+        CALL VField1%create(2,info,name='vecField1')
+        CALL VField1%discretize_on(Part1,info)
+        CALL VField2%create(3,info,name='vecField2')
+        CALL VField2%discretize_on(Part1,info)
+        CALL VField3%create(4,info,name='vecField3')
+        CALL VField3%discretize_on(Part1,info)
+        CALL VField4%create(5,info,name='vecField4')
+        CALL VField4%discretize_on(Part1,info)
 
-        call SField1%create(1,info,name='scaField1')
-        call SField1%discretize_on(Part1,info)
-        call SField2%create(1,info,name='scaField2')
-        call SField2%discretize_on(Part1,info)
-        call SField3%create(1,info,name='scaField3')
-        call SField3%discretize_on(Part1,info)
-        call Vol%create(1,info,name='Part_Volume')
-        call Vol%discretize_on(Part1,info)
+        CALL SField1%create(1,info,name='scaField1')
+        CALL SField1%discretize_on(Part1,info)
+        CALL SField2%create(1,info,name='scaField2')
+        CALL SField2%discretize_on(Part1,info)
+        CALL SField3%create(1,info,name='scaField3')
+        CALL SField3%discretize_on(Part1,info)
+        CALL Vol%create(1,info,name='Part_Volume')
+        CALL Vol%discretize_on(Part1,info)
 
         !----------------
         ! Initialize the fields with test functions (polynomials of orders 0,1
@@ -232,7 +228,7 @@ integer :: np_global
         !----------------
         ! Get ghost values for all the fields
         !----------------
-        call Part1%map_ghosts(info)
+        CALL Part1%map_ghosts(info)
 
         end_subroutine()
     end setup
@@ -241,16 +237,16 @@ integer :: np_global
 
 !--------------- teardown ---------------------
     teardown
-        call Mesh1%destroy(info)
-        call SField1%destroy(info)
-        call SField2%destroy(info)
-        call SField3%destroy(info)
-        call VField1%destroy(info)
-        call VField2%destroy(info)
-        call VField3%destroy(info)
-        call VField4%destroy(info)
-        call Vol%destroy(info)
-        call Part1%destroy(info)
+        CALL Mesh1%destroy(info)
+        CALL SField1%destroy(info)
+        CALL SField2%destroy(info)
+        CALL SField3%destroy(info)
+        CALL VField1%destroy(info)
+        CALL VField2%destroy(info)
+        CALL VField3%destroy(info)
+        CALL VField4%destroy(info)
+        CALL Vol%destroy(info)
+        CALL Part1%destroy(info)
 
         NULLIFY(topo)
     end teardown
@@ -267,10 +263,10 @@ integer :: np_global
         ! Remesh the particles
         ! (this performs the p2m interpolation as well)
         !----------------
-        call Part1%interp_to_mesh(Mesh1,VField1,ppm_param_rmsh_kernel_mp4,info)
+        CALL Part1%interp_to_mesh(Mesh1,VField1,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
 
-        call Part1%remesh(Mesh1,ppm_param_rmsh_kernel_mp4,info)
+        CALL Part1%remesh(Mesh1,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
 
         !CALL ppm_vtk_particles("output_after",Part1,info)
@@ -337,13 +333,13 @@ integer :: np_global
         ! Remesh the particles
         ! (this performs the p2m interpolation as well)
         !----------------
-        call Part1%interp_to_mesh_all(Mesh1,ppm_param_rmsh_kernel_mp4,info)
+        CALL Part1%interp_to_mesh_all(Mesh1,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
 
         !here, we could do something, like finite differences on the mesh
         ! (TODO: add a test for that)
 
-        call Part1%recreate_from_mesh(Mesh1,info)
+        CALL Part1%recreate_from_mesh(Mesh1,info)
             Assert_Equal(info,0)
 
         !CALL ppm_vtk_particles("output_after",Part1,info)
@@ -405,25 +401,25 @@ integer :: np_global
 ! test function
 !-------------------------------------------------------------
 pure function f_cst(pos,ndim) RESULT(res)
-    real(mk)                              :: res
-    integer                 ,  intent(in) :: ndim
-    real(mk), dimension(ndim), intent(in) :: pos
+    REAL(MK)                              :: res
+    INTEGER                 ,  intent(in) :: ndim
+    REAL(MK), DIMENSION(ndim), intent(in) :: pos
 
     res =  42._mk
 end function
 
 pure function f_lin(pos,ndim) RESULT(res)
-    real(mk)                              :: res
-    integer                 ,  intent(in) :: ndim
-    real(mk), dimension(ndim), intent(in) :: pos
+    REAL(MK)                              :: res
+    INTEGER                 ,  intent(in) :: ndim
+    REAL(MK), DIMENSION(ndim), intent(in) :: pos
 
     res =  1.337_mk + pos(1) + 10._mk*pos(2) + 100._mk*pos(ndim)
 end function
 
 pure function f_sq(pos,ndim) RESULT(res)
-    real(mk)                              :: res
-    integer                 ,  intent(in) :: ndim
-    real(mk), dimension(ndim), intent(in) :: pos
+    REAL(MK)                              :: res
+    INTEGER                 ,  intent(in) :: ndim
+    REAL(MK), DIMENSION(ndim), intent(in) :: pos
 
     res =  pos(1)**2 + 10._mk*pos(2)**2 + 100._mk*pos(ndim)**2
 end function
@@ -431,11 +427,11 @@ end function
 !!! check whether a particle is within a patch and more than a cutoff
 !!! distance away from its boundaries.
 pure function is_well_within(pos,patch,cutoff,ndim) RESULT(res)
-    logical                               :: res
-    real(mk), dimension(ndim), intent(in) :: pos
-    real(mk), dimension(2*ndim),intent(in):: patch
-    real(mk), dimension(ndim), intent(in) :: cutoff
-    integer                 ,  intent(in) :: ndim
+    LOGICAL                               :: res
+    REAL(MK), DIMENSION(ndim), intent(in) :: pos
+    REAL(MK), DIMENSION(2*ndim),intent(in):: patch
+    REAL(MK), DIMENSION(ndim), intent(in) :: cutoff
+    INTEGER                 ,  intent(in) :: ndim
 
     res = ALL(pos(1:ndim).GE.(patch(1:ndim)+cutoff(1:ndim)))
     res = res .AND. ALL(pos(1:ndim).LE.(patch(ndim+1:2*ndim)-cutoff(1:ndim)))

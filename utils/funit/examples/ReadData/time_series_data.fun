@@ -1,6 +1,6 @@
 test_suite time_series_data
 
-  character(len=10), parameter :: FILE = 'values.txt'
+  character(len=10), PARAMETER :: FILE = 'values.txt'
 
 setup
   open(8, file=FILE)
@@ -10,7 +10,7 @@ setup
 end setup
 
 test load_time_series_data_from_file
-  call read_time_series( FILE )
+  CALL read_time_series( FILE )
   Assert_Equal(         2006, ts_data(1)%date_time%year )
   Assert_Equal(            9, ts_data(1)%date_time%month )
   Assert_Equal(           30, ts_data(1)%date_time%day )
@@ -26,7 +26,7 @@ test load_time_series_data_from_file
 end test
 
 teardown
-  call system('/bin/rm '//FILE)
+  CALL system('/bin/rm '//FILE)
 end teardown
 
 end test_suite

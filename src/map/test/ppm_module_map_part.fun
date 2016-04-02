@@ -1,55 +1,51 @@
 test_suite ppm_module_map_part
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
-
-integer, parameter              :: debug = 0
-integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-real(mk),parameter              :: pi = 3.1415926535897931_mk
-real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=2
-integer,parameter               :: pdim=2
-integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol
-real(mk)                        :: min_rcp = 0.01_mk
-real(mk)                        :: max_rcp = 0.1_mk
-integer                         :: info,comm,rank,nproc
-integer                         :: topoid
-integer, parameter              :: np_init = 10000
-integer                         :: np,mp
-integer                         :: newnp
-real(mk),dimension(:,:),pointer :: xp => NULL()
-real(mk),dimension(:  ),pointer :: rcp => NULL()
-real(mk),dimension(:,:),pointer :: wp => NULL()
-real(mk),dimension(:  ),pointer :: min_phys => NULL()
-real(mk),dimension(:  ),pointer :: max_phys => NULL()
-real(mk),dimension(:  ),pointer :: h => NULL()
-real(mk),dimension(:  ),pointer :: p_h => NULL()
-real(mk),dimension(:  ),pointer :: len_phys => NULL()
-real(mk),dimension(:  ),pointer :: ghostlayer => NULL()
-integer, dimension(:  ),pointer :: ghostsize => NULL()
-integer                         :: i,j,k,sum1,sum2
-integer                         :: p_i
-integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost => NULL()
-integer, dimension(:  ),pointer :: nm => NULL()
-integer                         :: seedsize
-integer,  dimension(:),allocatable :: seed
-real(mk), dimension(:),allocatable :: randnb
-integer                          :: isymm = 0
-logical                          :: lsymm = .false.,ok
-real(mk)                         :: t0,t1,t2,t3
+  INTEGER, PARAMETER              :: debug = 0
+  INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
+  REAL(MK),PARAMETER              :: pi = 3.1415926535897931_mk
+  REAL(MK),PARAMETER              :: skin = 0._mk
+  INTEGER,PARAMETER               :: ndim=2
+  INTEGER,PARAMETER               :: pdim=2
+  INTEGER                         :: decomp,assig,tolexp
+  REAL(MK)                        :: tol
+  REAL(MK)                        :: min_rcp = 0.01_mk
+  REAL(MK)                        :: max_rcp = 0.1_mk
+  INTEGER                         :: info,comm,rank,nproc
+  INTEGER                         :: topoid
+  INTEGER, PARAMETER              :: np_init = 10000
+  INTEGER                         :: np,mp
+  INTEGER                         :: newnp
+  REAL(MK),DIMENSION(:,:),POINTER :: xp => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: rcp => NULL()
+  REAL(MK),DIMENSION(:,:),POINTER :: wp => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: min_phys => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: max_phys => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: h => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: p_h => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: len_phys => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: ghostlayer => NULL()
+  INTEGER, DIMENSION(:  ),POINTER :: ghostsize => NULL()
+  INTEGER                         :: i,j,k,sum1,sum2
+  INTEGER                         :: p_i
+  INTEGER, DIMENSION(6)           :: bcdef
+  REAL(MK),DIMENSION(:  ),POINTER :: cost => NULL()
+  INTEGER, DIMENSION(:  ),POINTER :: nm => NULL()
+  INTEGER                         :: seedsize
+  INTEGER,  DIMENSION(:),allocatable :: seed
+  REAL(MK), DIMENSION(:),allocatable :: randnb
+  INTEGER                          :: isymm = 0
+  LOGICAL                          :: lsymm = .false.,ok
+  REAL(MK)                         :: t0,t1,t2,t3
 
     init
 
-        use ppm_module_data
-        use ppm_module_topo_typedef
-        use ppm_module_init
+        USE ppm_module_data
+        USE ppm_module_topo_typedef
+        USE ppm_module_init
 
-        allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
+        ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
         &         ghostsize(ndim),ghostlayer(2*ndim),&
-        &         nm(ndim),h(ndim),p_h(ndim),stat=info)
+        &         nm(ndim),h(ndim),p_h(ndim),STAT=info)
 
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
@@ -57,30 +53,30 @@ real(mk)                         :: t0,t1,t2,t3
         ghostsize(1:ndim) = 2
         ghostlayer(1:2*ndim) = max_rcp
         bcdef(1:6) = ppm_param_bcdef_periodic
-        tol = epsilon(1.0_mk)
-        tolexp = int(log10(epsilon(1.0_mk)))
+        tol = EPSILON(1.0_mk)
+        tolexp = INT(LOG10(EPSILON(1.0_MK)))
 
-        nullify(xp,rcp,wp)
+        NULLIFY(xp,rcp,wp)
 
 #ifdef __MPI
-        comm = mpi_comm_world
-        call mpi_comm_rank(comm,rank,info)
-        call mpi_comm_size(comm,nproc,info)
+        comm = MPI_COMM_WORLD
+        CALL MPI_Comm_rank(comm,rank,info)
+        CALL MPI_Comm_size(comm,nproc,info)
 #else
         rank = 0
         nproc = 1
 #endif
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
     end init
 
 
     finalize
-        use ppm_module_finalize
+        USE ppm_module_finalize
 
-        call ppm_finalize(info)
+        CALL ppm_finalize(info)
 
-        deallocate(min_phys,max_phys,len_phys,ghostsize,nm)
+        DEALLOCATE(min_phys,max_phys,len_phys,ghostsize,nm)
 
     end finalize
 
@@ -88,25 +84,25 @@ real(mk)                         :: t0,t1,t2,t3
     setup
 
         np = np_init
-        call random_seed(size=seedsize)
-        allocate(seed(seedsize))
-        allocate(randnb((1+ndim)*np),stat=info)
+        CALL RANDOM_SEED(size=seedsize)
+        ALLOCATE(seed(seedsize))
+        ALLOCATE(randnb((1+ndim)*np),STAT=info)
         do i=1,seedsize
            seed(i)=10+i*i*(rank+1)
         enddo
-        call random_seed(put=seed)
-        call random_number(randnb)
+        CALL RANDOM_SEED(put=seed)
+        CALL RANDOM_NUMBER(randnb)
 
-        allocate(xp(ndim,np),rcp(np),wp(pdim,np),stat=info)
+        ALLOCATE(xp(ndim,np),rcp(np),wp(pdim,np),STAT=info)
 
     end setup
 
 
     teardown
 
-        deallocate(xp,rcp,wp,stat=info)
-        deallocate(seed,randnb)
-        IF (associated(cost)) deallocate(cost)
+        DEALLOCATE(xp,rcp,wp,STAT=info)
+        DEALLOCATE(seed,randnb)
+        IF (associated(cost)) DEALLOCATE(cost)
         cost => NULL()
 
     end teardown
@@ -114,10 +110,10 @@ real(mk)                         :: t0,t1,t2,t3
     test global
         ! test global mapping
 
-        use ppm_module_data
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
+        USE ppm_module_data
+        USE ppm_module_topo_typedef
+        USE ppm_module_mktopo
+        USE ppm_module_topo_check
 
         !----------------
         ! create particles
@@ -149,8 +145,8 @@ real(mk)                         :: t0,t1,t2,t3
             enddo
         enddo
 
-        call random_number(xp)
-        call random_number(wp)
+        CALL RANDOM_NUMBER(xp)
+        CALL RANDOM_NUMBER(wp)
 
         !----------------
         ! make topology
@@ -161,18 +157,18 @@ real(mk)                         :: t0,t1,t2,t3
 
         topoid = 0
 
-        call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
+        CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
         &               max_rcp,cost,info)
 
-        call ppm_map_part_global(topoid,xp,np,info)
-        call ppm_map_part_push(rcp,np,info)
-        call ppm_map_part_push(wp,pdim,np,info)
-        call ppm_map_part_send(np,newnp,info)
-        call ppm_map_part_pop(wp,pdim,np,newnp,info)
-        call ppm_map_part_pop(rcp,np,newnp,info)
-        call ppm_map_part_pop(xp,ndim,np,newnp,info)
+        CALL ppm_map_part_global(topoid,xp,np,info)
+        CALL ppm_map_part_push(rcp,np,info)
+        CALL ppm_map_part_push(wp,pdim,np,info)
+        CALL ppm_map_part_send(np,newnp,info)
+        CALL ppm_map_part_pop(wp,pdim,np,newnp,info)
+        CALL ppm_map_part_pop(rcp,np,newnp,info)
+        CALL ppm_map_part_pop(xp,ndim,np,newnp,info)
 
-        call ppm_topo_check(topoid,xp,newnp,ok,info)
+        CALL ppm_topo_check(topoid,xp,newnp,ok,info)
 
         assert_true(ok)
 
@@ -181,10 +177,10 @@ real(mk)                         :: t0,t1,t2,t3
     test partial
         ! test partial mapping
 
-        use ppm_module_data
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
+        USE ppm_module_data
+        USE ppm_module_topo_typedef
+        USE ppm_module_mktopo
+        USE ppm_module_topo_check
 
         !----------------
         ! create particles
@@ -213,22 +209,22 @@ real(mk)                         :: t0,t1,t2,t3
         topoid = 0
 
 
-        call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
+        CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
         &               max_rcp,cost,info)
 
-        call ppm_map_part_global(topoid,xp,np,info)
-        call ppm_map_part_push(rcp,np,info)
-        call ppm_map_part_push(wp,pdim,np,info)
-        call ppm_map_part_send(np,newnp,info)
-        call ppm_map_part_pop(wp,pdim,np,newnp,info)
-        call ppm_map_part_pop(rcp,np,newnp,info)
-        call ppm_map_part_pop(xp,ndim,np,newnp,info)
+        CALL ppm_map_part_global(topoid,xp,np,info)
+        CALL ppm_map_part_push(rcp,np,info)
+        CALL ppm_map_part_push(wp,pdim,np,info)
+        CALL ppm_map_part_send(np,newnp,info)
+        CALL ppm_map_part_pop(wp,pdim,np,newnp,info)
+        CALL ppm_map_part_pop(rcp,np,newnp,info)
+        CALL ppm_map_part_pop(xp,ndim,np,newnp,info)
         np=newnp
 
         ! move all particles
-        deallocate(randnb)
-        allocate(randnb((1+ndim)*np))
-        call random_number(randnb)
+        DEALLOCATE(randnb)
+        ALLOCATE(randnb((1+ndim)*np))
+        CALL RANDOM_NUMBER(randnb)
 
         do i=1,np
             do j=1,ndim
@@ -238,16 +234,16 @@ real(mk)                         :: t0,t1,t2,t3
         enddo
 
         ! do local mapping
-        call ppm_map_part_partial(topoid,xp,np,info)
-        call ppm_map_part_push(rcp,np,info)
-        call ppm_map_part_push(wp,pdim,np,info)
-        call ppm_map_part_send(np,newnp,info)
-        call ppm_map_part_pop(wp,pdim,np,newnp,info)
-        call ppm_map_part_pop(rcp,np,newnp,info)
-        call ppm_map_part_pop(xp,ndim,np,newnp,info)
+        CALL ppm_map_part_partial(topoid,xp,np,info)
+        CALL ppm_map_part_push(rcp,np,info)
+        CALL ppm_map_part_push(wp,pdim,np,info)
+        CALL ppm_map_part_send(np,newnp,info)
+        CALL ppm_map_part_pop(wp,pdim,np,newnp,info)
+        CALL ppm_map_part_pop(rcp,np,newnp,info)
+        CALL ppm_map_part_pop(xp,ndim,np,newnp,info)
         np=newnp
 
-        call ppm_topo_check(topoid,xp,np,ok,info)
+        CALL ppm_topo_check(topoid,xp,np,ok,info)
         assert_true(ok)
 
     end test
@@ -255,20 +251,20 @@ real(mk)                         :: t0,t1,t2,t3
     test ghost_get
         ! test ghost get and how it treats pbc
         ! Ticket #32
-        use ppm_module_data
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        integer                         :: npart = 1
-        integer                         :: newnpart
-        integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk), parameter             :: gl = 0.1_mk
+        USE ppm_module_data
+        USE ppm_module_topo_typedef
+        USE ppm_module_mktopo
+        USE ppm_module_topo_check
+        USE ppm_module_util_dbg
+          INTEGER                         :: npart = 1
+          INTEGER                         :: newnpart
+          INTEGER                         :: mpart
+          REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
+          REAL(MK), PARAMETER             :: gl = 0.1_mk
 
         if (nproc.GT.1) return
 
-        allocate(p(ndim,npart))
+        ALLOCATE(p(ndim,npart))
         p(1,1) = 0.05_mk
         p(2,1) = 0.05_mk
         bcdef(1:6) = ppm_param_bcdef_periodic
@@ -282,48 +278,48 @@ real(mk)                         :: t0,t1,t2,t3
 
         topoid = 0
 
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
         &               gl,cost,info)
 
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        CALL ppm_map_part_global(topoid,p,npart,info)
+        CALL ppm_map_part_send(npart,newnpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
         npart=newnpart
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
+        !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
+        !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
 
     end test
 
     test pbc_and_map_load
         ! test ghost get map load and periodic BC
 
-        use ppm_module_data
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        integer                         :: npart = 8
-        integer                         :: newnpart
-        integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk),dimension(:)  ,pointer :: w => NULL()
-        real(mk),dimension(2)           :: check
-        real(mk), parameter             :: gl = 0.1_mk
+        USE ppm_module_data
+        USE ppm_module_topo_typedef
+        USE ppm_module_mktopo
+        USE ppm_module_topo_check
+        USE ppm_module_util_dbg
+          INTEGER                         :: npart = 8
+          INTEGER                         :: newnpart
+          INTEGER                         :: mpart
+          REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
+          REAL(MK),DIMENSION(:)  ,POINTER :: w => NULL()
+          REAL(MK),DIMENSION(2)           :: check
+          REAL(MK), PARAMETER             :: gl = 0.1_mk
 
         if (nproc.GT.1) return
 
-        allocate(p(ndim,npart),w(npart))
+        ALLOCATE(p(ndim,npart),w(npart))
         p(1,1) = 0.05_mk  ! left
         p(2,1) = 0.5_mk
         p(1,2) = 0.95_mk  ! right
@@ -355,43 +351,43 @@ real(mk)                         :: t0,t1,t2,t3
 
         topoid = 0
 
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
         &               gl,cost,info)
 
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(w,npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        CALL ppm_map_part_global(topoid,p,npart,info)
+        CALL ppm_map_part_push(w,npart,info)
+        CALL ppm_map_part_send(npart,newnpart,info)
+        CALL ppm_map_part_pop(w,npart,newnpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
         npart=newnpart
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
+        !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(w,npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        CALL ppm_map_part_push(w,npart,info)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_pop(w,npart,mpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
-        call ppm_map_part_store(info)
+        !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
+        CALL ppm_map_part_store(info)
 
-        call ppm_map_part_ghost_put(topoid,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_ghost_pop(w,1,npart,mpart,info)
+        CALL ppm_map_part_ghost_put(topoid,info)
+        CALL ppm_map_part_push(w,npart,info)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_ghost_pop(w,1,npart,mpart,info)
 
-        call ppm_map_part_load(info)
-        call ppm_map_part_push(p,ndim,npart,info,.TRUE.)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        CALL ppm_map_part_load(info)
+        CALL ppm_map_part_push(p,ndim,npart,info,.TRUE.)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
+        !CALL ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
         assert_equal(mpart-npart,4+3*4) ! check number of ghosts
 
@@ -454,18 +450,18 @@ real(mk)                         :: t0,t1,t2,t3
         check(2) = -0.05_mk
         assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
-        deallocate(w)
+        DEALLOCATE(w)
 
     end test
 
     function found_ghost(ghosts,n,cp)
-    real(mk),dimension(2,n),intent(in) :: ghosts
-    integer                ,intent(in) :: n
-    real(mk),dimension(2)  ,intent(in) :: cp
-    logical                 :: found_ghost
+      REAL(MK),DIMENSION(2,n),intent(in) :: ghosts
+      INTEGER                ,intent(in) :: n
+      REAL(MK),DIMENSION(2)  ,intent(in) :: cp
+    LOGICAL                 :: found_ghost
 
-    integer                 :: i
-    integer                 :: found
+      INTEGER                 :: i
+      INTEGER                 :: found
 
     found_ghost = .false.
 
@@ -484,20 +480,20 @@ real(mk)                         :: t0,t1,t2,t3
 
     test getsymbc
         ! tests symmetric boundary conditions and ghost get
-        use ppm_module_data
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        integer                         :: npart = 1
-        integer                         :: newnpart
-        integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk), parameter             :: gl = 0.1_mk
+        USE ppm_module_data
+        USE ppm_module_topo_typedef
+        USE ppm_module_mktopo
+        USE ppm_module_topo_check
+        USE ppm_module_util_dbg
+          INTEGER                         :: npart = 1
+          INTEGER                         :: newnpart
+          INTEGER                         :: mpart
+          REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
+          REAL(MK), PARAMETER             :: gl = 0.1_mk
 
         if (nproc.GT.1) return
 
-        allocate(p(ndim,npart))
+        ALLOCATE(p(ndim,npart))
         p(1,1) = 0.05_mk
         p(2,1) = 0.05_mk
         bcdef(1:6) = ppm_param_bcdef_symmetry
@@ -511,48 +507,48 @@ real(mk)                         :: t0,t1,t2,t3
 
         topoid = 0
 
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
         &               gl,cost,info)
 
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        CALL ppm_map_part_global(topoid,p,npart,info)
+        CALL ppm_map_part_send(npart,newnpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
         npart=newnpart
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
+        !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
+        !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
 
     end test
 
     test get_mixed_bc
         ! tests symmetric and periodic BC conditions and ghost get
-        use ppm_module_data
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        integer                         :: npart = 256
-        integer                         :: snpart = 16
-        integer                         :: newnpart
-        integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk), parameter             :: gl = 0.1_mk
-        real(mk)                        :: h
+        USE ppm_module_data
+        USE ppm_module_topo_typedef
+        USE ppm_module_mktopo
+        USE ppm_module_topo_check
+        USE ppm_module_util_dbg
+          INTEGER                         :: npart = 256
+          INTEGER                         :: snpart = 16
+          INTEGER                         :: newnpart
+          INTEGER                         :: mpart
+          REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
+          REAL(MK), PARAMETER             :: gl = 0.1_mk
+          REAL(MK)                        :: h
 
         if (nproc.GT.1) return
 
         h = len_phys(1)/(snpart)
-        allocate(p(ndim,npart))
+        ALLOCATE(p(ndim,npart))
         k = 0
         do i=1,snpart
             do j=1,snpart
@@ -576,25 +572,25 @@ real(mk)                         :: t0,t1,t2,t3
 
         topoid = 0
 
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
         &               gl,cost,info)
 
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        CALL ppm_map_part_global(topoid,p,npart,info)
+        CALL ppm_map_part_send(npart,newnpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
         npart=newnpart
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
 
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
         assert_equal(mpart-npart,104)
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart,mpart)
+        !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart,mpart)
 
 
     end test
@@ -602,22 +598,22 @@ real(mk)                         :: t0,t1,t2,t3
     test symbc_and_map_load
         ! test ghost get map load and sym BC
 
-        use ppm_module_data
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        integer                         :: npart = 2
-        integer                         :: newnpart
-        integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk),dimension(:)  ,pointer :: w => NULL()
-        real(mk),dimension(2)           :: check
-        real(mk), parameter             :: gl = 0.1_mk
+        USE ppm_module_data
+        USE ppm_module_topo_typedef
+        USE ppm_module_mktopo
+        USE ppm_module_topo_check
+        USE ppm_module_util_dbg
+          INTEGER                         :: npart = 2
+          INTEGER                         :: newnpart
+          INTEGER                         :: mpart
+          REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
+          REAL(MK),DIMENSION(:)  ,POINTER :: w => NULL()
+          REAL(MK),DIMENSION(2)           :: check
+          REAL(MK), PARAMETER             :: gl = 0.1_mk
 
         if (nproc.GT.1) return
 
-        allocate(p(ndim,npart),w(npart))
+        ALLOCATE(p(ndim,npart),w(npart))
         p(1,1) = 0.05_mk  ! left
         p(2,1) = 0.5_mk
         p(1,2) = 0.95_mk  ! right
@@ -642,49 +638,49 @@ real(mk)                         :: t0,t1,t2,t3
 
         topoid = 0
 
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
         &               gl,cost,info)
 
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(w,npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        CALL ppm_map_part_global(topoid,p,npart,info)
+        CALL ppm_map_part_push(w,npart,info)
+        CALL ppm_map_part_send(npart,newnpart,info)
+        CALL ppm_map_part_pop(w,npart,newnpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
         npart=newnpart
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
+        !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(w,npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        CALL ppm_map_part_push(w,npart,info)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_pop(w,npart,mpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
-        call ppm_map_part_store(info)
+        !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
+        CALL ppm_map_part_store(info)
 
-        call ppm_map_part_ghost_put(topoid,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_ghost_pop(w,1,npart,mpart,info)
+        CALL ppm_map_part_ghost_put(topoid,info)
+        CALL ppm_map_part_push(w,npart,info)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_ghost_pop(w,1,npart,mpart,info)
 
         p(1,1) = p(1,1)-0.01_mk
         p(2,1) = p(2,1)+0.1_mk
         p(1,2) = p(1,2)+0.01_mk
         p(2,2) = p(2,2)+0.1_mk
 
-        call ppm_map_part_load(info)
-        call ppm_map_part_push(p,ndim,npart,info,.TRUE.)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        CALL ppm_map_part_load(info)
+        CALL ppm_map_part_push(p,ndim,npart,info,.TRUE.)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
+        !CALL ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
         assert_equal(mpart-npart,2) ! check number of ghosts
 
@@ -699,7 +695,7 @@ real(mk)                         :: t0,t1,t2,t3
         assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
 
-        deallocate(w)
+        DEALLOCATE(w)
 
 
     end test
@@ -707,22 +703,22 @@ real(mk)                         :: t0,t1,t2,t3
     test symbc_and_map_load2
         ! another test ghost get map load and sym BC
 
-        use ppm_module_data
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        integer                         :: npart = 2
-        integer                         :: newnpart
-        integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk),dimension(:)  ,pointer :: w => NULL()
-        real(mk),dimension(2)           :: check
-        real(mk), parameter             :: gl = 0.1_mk
+        USE ppm_module_data
+        USE ppm_module_topo_typedef
+        USE ppm_module_mktopo
+        USE ppm_module_topo_check
+        USE ppm_module_util_dbg
+          INTEGER                         :: npart = 2
+          INTEGER                         :: newnpart
+          INTEGER                         :: mpart
+          REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
+          REAL(MK),DIMENSION(:)  ,POINTER :: w => NULL()
+          REAL(MK),DIMENSION(2)           :: check
+          REAL(MK), PARAMETER             :: gl = 0.1_mk
 
         if (nproc.GT.1) return
 
-        allocate(p(ndim,npart),w(npart))
+        ALLOCATE(p(ndim,npart),w(npart))
         p(1,1) = 0.5_mk   ! bottom
         p(2,1) = 0.05_mk
         p(1,2) = 0.5_mk   ! top
@@ -743,49 +739,49 @@ real(mk)                         :: t0,t1,t2,t3
 
         topoid = 0
 
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
         &               gl,cost,info)
 
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(w,npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        CALL ppm_map_part_global(topoid,p,npart,info)
+        CALL ppm_map_part_push(w,npart,info)
+        CALL ppm_map_part_send(npart,newnpart,info)
+        CALL ppm_map_part_pop(w,npart,newnpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
         npart=newnpart
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
+        !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(w,npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        CALL ppm_map_part_push(w,npart,info)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_pop(w,npart,mpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
-        call ppm_map_part_store(info)
+        !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
+        CALL ppm_map_part_store(info)
 
-        call ppm_map_part_ghost_put(topoid,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_ghost_pop(w,1,npart,mpart,info)
+        CALL ppm_map_part_ghost_put(topoid,info)
+        CALL ppm_map_part_push(w,npart,info)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_ghost_pop(w,1,npart,mpart,info)
 
         p(1,1) = p(1,1)+0.1_mk
         p(2,1) = p(2,1)+0.01_mk
         p(1,2) = p(1,2)-0.1_mk
         p(2,2) = p(2,2)+0.01_mk
 
-        call ppm_map_part_load(info)
-        call ppm_map_part_push(p,ndim,npart,info,.TRUE.)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        CALL ppm_map_part_load(info)
+        CALL ppm_map_part_push(p,ndim,npart,info,.TRUE.)
+        CALL ppm_map_part_send(npart,mpart,info)
+        CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+        CALL ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
+        !CALL ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
         assert_equal(mpart-npart,2) ! check number of ghosts
 
@@ -799,7 +795,7 @@ real(mk)                         :: t0,t1,t2,t3
         check(2) =  1.04_mk
         assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
-        deallocate(w)
+        DEALLOCATE(w)
 
     end test
 

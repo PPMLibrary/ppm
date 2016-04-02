@@ -1,9 +1,9 @@
-from mpl_toolkits.mplot3d import Axes3D 
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Polygon
 from matplotlib.colors import *
 import matplotlib.cm as cm
-import matplotlib.pyplot as plt 
-import numpy as np 
+import matplotlib.pyplot as plt
+import numpy as np
 import sys
 
 # should do it for now, but should be replaced by a generic implementation that
@@ -61,7 +61,7 @@ def sub2cube(minc,maxc):
     f3z = np.array([z1,z2])
     f3y,f3z = np.meshgrid(f3y,f3z)
 
-    
+
     # right face
     f4x = np.array([[x2,x2],[x2,x2]])
     f4y = np.array([y1,y2])
@@ -97,12 +97,12 @@ def gl2cube(minc,maxc,bc,halo):
 def plotsub3(ax,f,cpu):
     nc = len(cmap.keys())
     for i in range(6):
-        ax.plot_surface(f[i][0],f[i][1],f[i][2],alpha=0.05,color=cmap[cpu%(nc+1)+1]) 
+        ax.plot_surface(f[i][0],f[i][1],f[i][2],alpha=0.05,color=cmap[cpu%(nc+1)+1])
 
 def plotgl3(ax,gl):
     for i in range(6):
         ax.plot_surface(gl[i][0],gl[i][1],gl[i][2],alpha=0.02,\
-                color='k',linewidth=0) 
+                color='k',linewidth=0)
 
 def plotsub2(ax,f,cpu):
     nc = len(cmap.keys())
@@ -126,7 +126,7 @@ def plotdat3(ax,x,y,z,tag):
 def main():
     subfilen = sys.argv[1]
     datfilen = sys.argv[2]
-    
+
     fig = plt.figure()
 
     subfile = open(subfilen)
@@ -185,8 +185,8 @@ def main():
             c.append(int(r[3]))
         plotdat3(ax,x,y,z,c)
     datfile.close()
-   
-    
+
+
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     if dim == 3:

@@ -1,134 +1,121 @@
 test_suite ppm_module_timestats
 
+  INTEGER, PARAMETER              :: debug = 0
+  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !kind(1.0e0)
+  INTEGER,PARAMETER               :: ndim=2
+  INTEGER                         :: decomp,assig,tolexp
+  REAL(MK)                        :: tol
+  INTEGER                         :: info,comm,rank,nproc
+  INTEGER                         :: topoid
+  INTEGER                         :: np = 1000
+  REAL(MK),DIMENSION(:,:),POINTER :: xp => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: min_phys => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: max_phys => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: len_phys => NULL()
+  INTEGER                         :: i,j,k
+  INTEGER, DIMENSION(6)           :: bcdef
+  REAL(MK),DIMENSION(:  ),POINTER :: cost => NULL()
+  REAL(MK)                        :: latency,bandwidth
+  LOGICAL                         :: ok
 
+  init
+    USE ppm_module_data
+    USE ppm_module_init
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+    ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),STAT=info)
 
-integer, parameter              :: debug = 0
-integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-integer,parameter               :: ndim=2
-integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol
-integer                         :: info,comm,rank,nproc
-integer                         :: topoid
-integer                         :: np = 1000
-real(mk),dimension(:,:),pointer :: xp => NULL()
-real(mk),dimension(:  ),pointer :: min_phys => NULL()
-real(mk),dimension(:  ),pointer :: max_phys => NULL()
-real(mk),dimension(:  ),pointer :: len_phys => NULL()
-integer                         :: i,j,k
-integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost => NULL()
-real(mk)                        :: latency,bandwidth
-logical                         :: ok
+    min_phys(1:ndim) = 0.0_MK
+    max_phys(1:ndim) = 1.0_MK
+    len_phys(1:ndim) = max_phys-min_phys
+    bcdef(1:6) = ppm_param_bcdef_periodic
+    tol = EPSILON(1.0_MK)
+    tolexp = int(log10(EPSILON(1.0_MK)))
 
-    init
-
-        use ppm_module_data
-        use ppm_module_init
-
-        allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
-            &         stat=info)
-
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
-        len_phys(1:ndim) = max_phys-min_phys
-        bcdef(1:6) = ppm_param_bcdef_periodic
-        tol = epsilon(1.0_mk)
-        tolexp = int(log10(epsilon(1.0_mk)))
-
-        nullify(xp)
+    NULLIFY(xp)
 
 #ifdef __MPI
-        comm = mpi_comm_world
-        call mpi_comm_rank(comm,rank,info)
-        call mpi_comm_size(comm,nproc,info)
+    comm = MPI_COMM_WORLD
+    CALL MPI_Comm_rank(comm,rank,info)
+    CALL MPI_Comm_size(comm,nproc,info)
 #else
-        rank = 0
-        nproc = 1
+    rank = 0
+    nproc = 1
 #endif
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-    end init
-
-
-    finalize
-        use ppm_module_finalize
-
-        call ppm_finalize(info)
-
-        deallocate(min_phys,max_phys,len_phys)
-
-    end finalize
+  end init
 
 
-    setup
+  finalize
+    USE ppm_module_finalize
 
-        allocate(xp(ndim,np),stat=info)
+    CALL ppm_finalize(info)
 
-    end setup
-
-
-    teardown
-
-        deallocate(xp,stat=info)
-
-    end teardown
-
-    test netstat
-        ! test netstat
-
-        use ppm_module_data
-        use ppm_module_mktopo
-        use ppm_module_topo_check
-        use ppm_module_test
-        integer :: test1,test2
-        real(mk) :: time
-
-        !----------------
-        ! create particles
-        !----------------
-
-        call part_init(xp,np,min_phys,max_phys,info)
+    DEALLOCATE(min_phys,max_phys,len_phys)
+  end finalize
 
 
-        !----------------
-        ! make topology
-        !----------------
-        decomp = ppm_param_decomp_cuboid
-        !decomp = ppm_param_decomp_xpencil
-        assig  = ppm_param_assign_internal
+  setup
+    ALLOCATE(xp(ndim,np),STAT=info)
+  end setup
 
-        topoid = 0
+  teardown
+    DEALLOCATE(xp,STAT=info)
+  end teardown
 
-        call ppm_tstats_setup(2,info)
-        Assert_Equal(info,0)
-        call ppm_tstats_add('test1',test1,info)
-        Assert_Equal(info,0)
-        call ppm_tstats_add('test2',test2,info)
-        Assert_Equal(info,0)
+  test netstat
+    ! test netstat
 
-        call ppm_tstats_tic(test1,1,info)
-        Assert_Equal(info,0)
-        call ppm_tstats_tic(test2,1,info)
-        Assert_Equal(info,0)
-        call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
-        &               0.1_mk,cost,info)
-        Assert_Equal(info,0)
-        call ppm_tstats_toc(test2,1,time,info)
-        Assert_Equal(info,0)
-        call ppm_tstats_toc(test1,1,time,info)
-        Assert_Equal(info,0)
+    USE ppm_module_data
+    USE ppm_module_MKtopo
+    USE ppm_module_topo_check
+    USE ppm_module_test
+    IMPLICIT NONE
 
-        call ppm_tstats_collect('time.dat',info)
-        Assert_Equal(info,0)
+    INTEGER :: test1,test2
+    REAL(MK) :: time
 
-        if (ppm_rank.EQ.0) then
-           Open(unit=42, file='time.dat')
-           Close(unit=42, status='Delete')
-        endif
+    !----------------
+    ! create particles
+    !----------------
 
-    end test
+    CALL part_init(xp,np,min_phys,max_phys,info)
+
+
+    !----------------
+    ! make topology
+    !----------------
+    decomp = ppm_param_decomp_cuboid
+    !decomp = ppm_param_decomp_xpencil
+    assig  = ppm_param_assign_internal
+
+    topoid = 0
+
+    CALL ppm_tstats_setup(2,info)
+    Assert_Equal(info,0)
+    CALL ppm_tstats_add('test1',test1,info)
+    Assert_Equal(info,0)
+    CALL ppm_tstats_add('test2',test2,info)
+    Assert_Equal(info,0)
+
+    CALL ppm_tstats_tic(test1,1,info)
+    Assert_Equal(info,0)
+    CALL ppm_tstats_tic(test2,1,info)
+    Assert_Equal(info,0)
+    CALL ppm_MKtopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef,0.1_MK,cost,info)
+    Assert_Equal(info,0)
+    CALL ppm_tstats_toc(test2,1,time,info)
+    Assert_Equal(info,0)
+    CALL ppm_tstats_toc(test1,1,time,info)
+    Assert_Equal(info,0)
+
+    CALL ppm_tstats_collect('time.dat',info)
+    Assert_Equal(info,0)
+
+    IF (ppm_rank.EQ.0) THEN
+       Open(UNIT=42, file='time.dat')
+       Close(UNIT=42, STATUS='Delete')
+    ENDIF
+
+  end test
 end test_suite

@@ -8,10 +8,6 @@ test_suite ppm_module_vbp_particles
   USE ppm_module_interfaces
   USE ppm_module_data
 
-#ifdef __MPI
-  INCLUDE "mpif.h"
-#endif
-
   INTEGER, PARAMETER              :: debug = 0
   INTEGER, PARAMETER              :: MK = ppm_kind_double
   REAL(MK),PARAMETER              :: tol=EPSILON(1._MK)*100

@@ -14,7 +14,7 @@ prog_source_dirs = ['.']
 use_mpi = false
 mpi_flags = ''
 procs = "1"
-  
+
 opts = GetoptLong.new(
  ['--help',    '-h', GetoptLong::NO_ARGUMENT],
  ['--clean',   '-c', GetoptLong::NO_ARGUMENT],

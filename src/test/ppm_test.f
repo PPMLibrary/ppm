@@ -28,11 +28,11 @@
       !-------------------------------------------------------------------------
 program ppm_test_CASE
 
-    use ppm_module_core
-    use ppm_module_typedef
-    use ppm_module_mktopo
-    use ppm_module_init
-    use ppm_module_finalize
+    USE ppm_module_core
+    USE ppm_module_typedef
+    USE ppm_module_mktopo
+    USE ppm_module_init
+    USE ppm_module_finalize
     USE ppm_module_mpi
     implicit none
 
@@ -74,12 +74,12 @@ program ppm_test_CASE
     !================
     ! setup
     !================
-    tol = 10.0_mk*epsilon(1.0_mk)
-    tolexp = int(log10(epsilon(1.0_mk)))
+    tol = 10.0_mk*EPSILON(1.0_mk)
+    tolexp = int(log10(EPSILON(1.0_mk)))
     ndim = 2
     nspec = 1
 
-    allocate(min_phys(ndim),max_phys(ndim),ghostsize(ndim),&
+    ALLOCATE(min_phys(ndim),max_phys(ndim),ghostsize(ndim),&
    &         nm(ndim),h(ndim),p_h(ndim),field_x(ndim),stat=info)
 
     do i=1,ndim
@@ -104,12 +104,12 @@ program ppm_test_CASE
     np = npgrid**2
     mp = 0
 
-    allocate(xp(ndim,np),wp(nspec,np),stat=info)
+    ALLOCATE(xp(ndim,np),wp(nspec,np),stat=info)
     xp = 0.0_mk
     wp = 0.0_mk
 
 
-    allocate(nm(ndim),stat=info)
+    ALLOCATE(nm(ndim),stat=info)
     do i=1,ndim
         nm(i) = ngrid
     enddo
@@ -157,7 +157,7 @@ program ppm_test_CASE
     call MPI_Finalize(info)
 #endif
 
-    deallocate(xp,wp,field_wp,min_phys,max_phys,ghostsize,nm)
+    DEALLOCATE(xp,wp,field_wp,min_phys,max_phys,ghostsize,nm)
 
     print *, 'done.'
 

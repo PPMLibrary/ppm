@@ -1,7 +1,4 @@
 test_suite ppm_module_util_qsort
-#ifdef __MPI
-  INCLUDE "mpif.h"
-#endif
 
   INTEGER, PARAMETER :: debug = 0
   INTEGER, PARAMETER :: MK = KIND(1.0D0) !KIND(1.0E0)

@@ -6,10 +6,6 @@ USE ppm_module_field_typedef
 USE ppm_module_particles_typedef
 USE ppm_module_mktopo
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
-
 INTEGER, PARAMETER              :: debug = 0
 INTEGER, PARAMETER              :: mk = KIND(1.0d0) !KIND(1.0e0)
 REAL(MK),PARAMETER              :: pi = ACOS(-1._MK)

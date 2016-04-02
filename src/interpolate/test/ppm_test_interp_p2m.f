@@ -28,14 +28,14 @@
       !-------------------------------------------------------------------------
 program ppm_test_interp_p2m
 
-    use ppm_module_typedef
-    use ppm_module_mktopo
-    use ppm_module_topo_get
-    use ppm_module_interp_m2p
-    use ppm_module_interp_p2m
-    use ppm_module_init
-    use ppm_module_finalize
-    use ppm_module_map
+    USE ppm_module_typedef
+    USE ppm_module_mktopo
+    USE ppm_module_topo_get
+    USE ppm_module_interp_m2p
+    USE ppm_module_interp_p2m
+    USE ppm_module_init
+    USE ppm_module_finalize
+    USE ppm_module_map
     USE ppm_module_mpi
     implicit none
 
@@ -73,14 +73,14 @@ program ppm_test_interp_p2m
     !----------------
     ! setup
     !----------------
-    tol = 10.0_mk*epsilon(1.0_mk)
-    tolexp = int(log10(epsilon(1.0_mk)))
+    tol = 10.0_mk*EPSILON(1.0_mk)
+    tolexp = int(log10(EPSILON(1.0_mk)))
     ndim = 2
     nspec = 1
     data ((alpha(ai,aj), ai=1,2), aj=1,nmom) /0,0, 1,0, 0,1, 2,0, 0,2, &
    &                                          1,1, 3,0, 0,3, 2,1, 1,2/
 
-    allocate(min_phys(ndim),max_phys(ndim),ghostsize(ndim),&
+    ALLOCATE(min_phys(ndim),max_phys(ndim),ghostsize(ndim),&
    &         nm(ndim),h(ndim),field_x(ndim),stat=info)
 
     do i=1,ndim
@@ -105,7 +105,7 @@ program ppm_test_interp_p2m
     np = 400
     mp = 0
 
-    allocate(xp(ndim,np),wp(nspec,np),stat=info)
+    ALLOCATE(xp(ndim,np),wp(nspec,np),stat=info)
     !call random_seed(put=(/17,42/))
     call random_number(xp)
     wp = 0.0_mk
@@ -120,7 +120,7 @@ program ppm_test_interp_p2m
     topoid = 0
     meshid = -1
 
-    allocate(minsub(ndim,1),maxsub(ndim,1),sub2proc(1),cost(1),stat=info)
+    ALLOCATE(minsub(ndim,1),maxsub(ndim,1),sub2proc(1),cost(1),stat=info)
 
     cost(1) = 1.0_mk
 
@@ -131,7 +131,7 @@ program ppm_test_interp_p2m
 
     sub2proc(1) = 0
 
-    allocate(nm(ndim),stat=info)
+    ALLOCATE(nm(ndim),stat=info)
     do i=1,ndim
         nm(i) = 32
     enddo
@@ -140,9 +140,9 @@ program ppm_test_interp_p2m
     &               ghostsize,cost,istart,ndata,nm,info,user_minsub=minsub,   &
     &               user_maxsub=maxsub,user_nsubs=1,user_sub2proc=sub2proc)
 
-    allocate(field_wp(nspec,(1-ghostsize(1)):(ndata(1,1)+ghostsize(1)),         &
+    ALLOCATE(field_wp(nspec,(1-ghostsize(1)):(ndata(1,1)+ghostsize(1)),         &
     &        (1-ghostsize(2)):(ndata(2,1)+ghostsize(2)),1),stat=info) ! 2d
-    !allocate(field_wp(nspec,ndata(1,1),ndata(2,1),ndata(3,1),1),stat=info) ! 3d
+    !ALLOCATE(field_wp(nspec,ndata(1,1),ndata(2,1),ndata(3,1),1),stat=info) ! 3d
 
     do i=1,ndim
         h(i) = (max_phys(i) - min_phys(i)) / real(ndata(i,1)-1,mk)
@@ -227,7 +227,7 @@ program ppm_test_interp_p2m
     call MPI_Finalize(info)
 #endif
 
-    deallocate(xp,wp,field_wp,min_phys,max_phys,ghostsize,nm)
+    DEALLOCATE(xp,wp,field_wp,min_phys,max_phys,ghostsize,nm)
 
     print *, 'done.'
 

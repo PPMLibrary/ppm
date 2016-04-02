@@ -7,10 +7,6 @@ USE ppm_module_particles_typedef
 USE ppm_module_mktopo
 USE ppm_module_io_vtk
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
-
 INTEGER, PARAMETER              :: debug = 0
 INTEGER, PARAMETER              :: MK = KIND(1.0D0) !KIND(1.0E0)
 REAL(MK),PARAMETER              :: pi = ACOS(-1._MK)
@@ -69,7 +65,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
         tolexp = -12
 
 #ifdef __MPI
-        comm = mpi_comm_world
+        comm = MPI_COMM_WORLD
         CALL MPI_Comm_rank(comm,rank,info)
         CALL MPI_Comm_size(comm,nproc,info)
 #else

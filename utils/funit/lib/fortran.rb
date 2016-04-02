@@ -15,8 +15,8 @@ module Fortran
                 :ignore_modules => %r{ },
                 :ignore_symlinks => true }
 
-    USE_MODULE_REGEX = /^\s*use\s+(\w+)/i
-    MODULE_DEF_REGEX = /^\s*module\s+(\w+)/i
+    USE_MODULE_REGEX = /^\s*USE\s+(\w+)/i
+    MODULE_DEF_REGEX = /^\s*MODULE\s+(\w+)/i
 
     FILE_EXTENSION = /\.f$/i
 
@@ -81,8 +81,7 @@ module Fortran
           end
           next
         end
-        output = output + " \\\n " +
-                 @hash[use].gsub(FILE_EXTENSION, ".o").gsub(%r|^.*/|,'' )
+        output = output + " \\\n " + @hash[use].gsub(FILE_EXTENSION, ".o").gsub(%r|^.*/|,'' )
       end
       output+"\n"
     end

@@ -1,56 +1,52 @@
 test_suite ppm_module_mesh_mappings
 
-use ppm_module_mesh_typedef
-use ppm_module_topo_typedef
-use ppm_module_field_typedef
-use ppm_module_mktopo
-use ppm_module_topo_alloc
+USE ppm_module_mesh_typedef
+USE ppm_module_topo_typedef
+USE ppm_module_field_typedef
+USE ppm_module_mktopo
+USE ppm_module_topo_alloc
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+INTEGER, PARAMETER              :: debug = 0
+INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
+REAL(MK),PARAMETER              :: pi = ACOS(-1._mk)
+INTEGER,PARAMETER               :: ndim=2
+INTEGER                         :: decomp,assig,tolexp
+INTEGER                         :: info,comm,rank,nproc
+REAL(MK)                        :: tol
+INTEGER                         :: topoid=-1
+REAL(MK),DIMENSION(:  ),POINTER :: min_phys => NULL()
+REAL(MK),DIMENSION(:  ),POINTER :: max_phys => NULL()
 
-integer, parameter              :: debug = 0
-integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-real(mk),parameter              :: pi = ACOS(-1._mk)
-integer,parameter               :: ndim=2
-integer                         :: decomp,assig,tolexp
-integer                         :: info,comm,rank,nproc
-real(mk)                        :: tol
-integer                         :: topoid=-1
-real(mk),dimension(:  ),pointer :: min_phys => NULL()
-real(mk),dimension(:  ),pointer :: max_phys => NULL()
+INTEGER, DIMENSION(:  ),POINTER :: ighostsize => NULL()
+REAL(MK)                        :: sca_ghostsize
+LOGICAL                         :: unifpatch
 
-integer, dimension(:  ),pointer :: ighostsize => NULL()
-real(mk)                        :: sca_ghostsize
-logical                         :: unifpatch
+INTEGER                         :: i,j,k,sizex,sizey
+INTEGER                         :: nsublist
+INTEGER, DIMENSION(:  ),POINTER :: isublist => NULL()
+INTEGER, DIMENSION(2*ndim)      :: bcdef
+INTEGER                         :: bcdefX,bcdefY
+REAL(MK),DIMENSION(:  ),POINTER :: cost => NULL()
+INTEGER, DIMENSION(:  ),POINTER :: nm => NULL()
+REAL(MK),DIMENSION(:  ),POINTER :: h => NULL()
+TYPE(ppm_t_topo),       POINTER :: topo => NULL()
 
-integer                         :: i,j,k,sizex,sizey
-integer                         :: nsublist
-integer, dimension(:  ),pointer :: isublist => NULL()
-integer, dimension(2*ndim)      :: bcdef
-integer                         :: bcdefX,bcdefY
-real(mk),dimension(:  ),pointer :: cost => NULL()
-integer, dimension(:  ),pointer :: nm => NULL()
-real(mk),dimension(:  ),pointer :: h => NULL()
-type(ppm_t_topo),       pointer :: topo => NULL()
+TYPE(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
+INTEGER                          :: ipatch,isub,jsub
+CLASS(ppm_t_subpatch_),POINTER   :: p => NULL()
 
-type(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
-integer                          :: ipatch,isub,jsub
-class(ppm_t_subpatch_),POINTER   :: p => NULL()
-
-integer                          :: mypatchid
-real(mk),dimension(6)            :: my_patch
-real(mk),dimension(ndim)         :: offset
+INTEGER                          :: mypatchid
+REAL(MK),DIMENSION(6)            :: my_patch
+REAL(MK),DIMENSION(ndim)         :: offset
 
 !---------------- init -----------------------
 
     init
 
-        use ppm_module_topo_typedef
-        use ppm_module_init
+        USE ppm_module_topo_typedef
+        USE ppm_module_init
 
-        allocate(min_phys(ndim),max_phys(ndim),&
+        ALLOCATE(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
 
         min_phys(1:ndim) = 0.0_mk
@@ -60,14 +56,14 @@ real(mk),dimension(ndim)         :: offset
         tolexp = -12
 
 #ifdef __MPI
-        comm = mpi_comm_world
-        call mpi_comm_rank(comm,rank,info)
-        call mpi_comm_size(comm,nproc,info)
+        comm = MPI_COMM_WORLD
+        CALL MPI_Comm_rank(comm,rank,info)
+        CALL MPI_Comm_size(comm,nproc,info)
 #else
         rank = 0
         nproc = 1
 #endif
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
     end init
 
@@ -77,11 +73,11 @@ real(mk),dimension(ndim)         :: offset
 
 
     finalize
-        use ppm_module_finalize
+        USE ppm_module_finalize
 
-        call ppm_finalize(info)
+        CALL ppm_finalize(info)
 
-        deallocate(min_phys,max_phys,ighostsize,h,nm)
+        DEALLOCATE(min_phys,max_phys,ighostsize,h,nm)
 
     end finalize
 
@@ -107,11 +103,11 @@ real(mk),dimension(ndim)         :: offset
     test ghost_mappings_basics({decomp: [ppm_param_decomp_cuboid]}, sizex:[69,70], sizey:[77,78,81,82],unifpatch: [.true.,.false.]})
 
 
-        type(ppm_t_field) :: Field1,Field2
-        real(ppm_kind_double),dimension(ndim) :: pos
-        integer                             :: p_idx, nb_errors
+        TYPE(ppm_t_field) :: Field1,Field2
+        REAL(ppm_kind_double),DIMENSION(ndim) :: pos
+        INTEGER                             :: p_idx, nb_errors
         CLASS(ppm_t_discr_info_),POINTER    :: dinfo => NULL()
-        logical                             :: assoc
+        LOGICAL                             :: assoc
 
         start_subroutine("ghost_mappings_basics")
 
@@ -124,7 +120,7 @@ real(mk),dimension(ndim)         :: offset
             stdout("STARTING test with decomp = ",decomp,topoid,sizex,sizey)
         endif
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
         offset = 0._mk
         Nm(ndim) = 65
@@ -134,13 +130,13 @@ real(mk),dimension(ndim)         :: offset
         topoid = 0
         sca_ghostsize = REAL(MAXVAL(ighostsize),MK)/MAXVAL(Nm)
 
-        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
+        CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
             Assert_Equal(info,0)
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
-        call Mesh1%create(topoid,offset,info,Nm=Nm,&
+        CALL Mesh1%create(topoid,offset,info,Nm=Nm,&
             ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
 
@@ -152,17 +148,17 @@ real(mk),dimension(ndim)         :: offset
                 my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,&
                     0.99_mk,0.7_mk,0.78_mk/)
             endif
-            call Mesh1%def_patch(my_patch,info)
+            CALL Mesh1%def_patch(my_patch,info)
             Assert_Equal(info,0)
         ENDIF
 
-        call Field1%create(2,info,name='vecField')
+        CALL Field1%create(2,info,name='vecField')
             Assert_Equal(info,0)
-        call Field1%discretize_on(Mesh1,info)
+        CALL Field1%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
-        call Field2%create(1,info,name='scaField')
+        CALL Field2%create(1,info,name='scaField')
             Assert_Equal(info,0)
-        call Field2%discretize_on(Mesh1,info)
+        CALL Field2%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
 
 
@@ -263,25 +259,25 @@ real(mk),dimension(ndim)         :: offset
         ENDIF
 
         !Do a ghost mapping
-        call Mesh1%map_ghost_get(info)
+        CALL Mesh1%map_ghost_get(info)
             Assert_Equal(info,0)
 
-        call Field1%map_ghost_push(Mesh1,info)
+        CALL Field1%map_ghost_push(Mesh1,info)
             Assert_Equal(info,0)
-        call Field2%map_ghost_push(Mesh1,info)
+        CALL Field2%map_ghost_push(Mesh1,info)
             Assert_Equal(info,0)
 
-        !call Mesh1%map_send(info)
+        !CALL Mesh1%map_send(info)
         !non-blocking send
-        call Mesh1%map_isend(info)
+        CALL Mesh1%map_isend(info)
         Assert_Equal(info,0)
 
-        call Field2%map_ghost_pop(Mesh1,info)
+        CALL Field2%map_ghost_pop(Mesh1,info)
         Assert_Equal(info,0)
-        call Field1%map_ghost_pop(Mesh1,info)
+        CALL Field1%map_ghost_pop(Mesh1,info)
         Assert_Equal(info,0)
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
         !Now check that the ghost mapping has been done correctly
         ! by comparing the values of all nodes (incl. ghosts) to the
@@ -312,36 +308,36 @@ real(mk),dimension(ndim)         :: offset
         ENDIF
         Assert_Equal(nb_errors,0)
 
-        call Mesh1%destroy(info)
+        CALL Mesh1%destroy(info)
             Assert_Equal(info,0)
-        call Field1%destroy(info)
+        CALL Field1%destroy(info)
             Assert_Equal(info,0)
-        call Field2%destroy(info)
+        CALL Field2%destroy(info)
             Assert_Equal(info,0)
 
-        call ppm_topo_dealloc(ppm_topo(topoid)%t,info)
+        CALL ppm_topo_dealloc(ppm_topo(topoid)%t,info)
             Assert_Equal(info,0)
-        deallocate(ppm_topo(topoid)%t,STAT=info)
+        DEALLOCATE(ppm_topo(topoid)%t,STAT=info)
             Assert_Equal(info,0)
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
         if (ppm_debug.ge.1 .and. rank.eq.0) then
             stdout("FINISHED test with decomp = ",decomp,topoid)
         endif
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
         end_subroutine()
     end test
 
     !test ghost_mappings_bcdef({decomp: [ppm_param_decomp_cuboid], sizex:[69], sizey:[77], bcdefX: [ppm_param_bcdef_periodic,ppm_param_bcdef_symmetry,ppm_param_bcdef_freespace], bcdefY: [ppm_param_bcdef_periodic,ppm_param_bcdef_symmetry,ppm_param_bcdef_freespace],unifpatch: [.true.,.false.]})
     test ghost_mappings_bcdef({decomp: [ppm_param_decomp_cuboid], sizex:[69,70,71,72,73,75,123], sizey:[77,83,93,111], bcdefX: [ppm_param_bcdef_periodic,ppm_param_bcdef_freespace], bcdefY: [ppm_param_bcdef_periodic,ppm_param_bcdef_freespace],unifpatch: [.true.,.false.]})
-        type(ppm_t_field) :: Field1,Field2
-        real(ppm_kind_double),dimension(ndim) :: pos
-        integer                             :: p_idx, nb_errors
+        TYPE(ppm_t_field) :: Field1,Field2
+        REAL(ppm_kind_double),DIMENSION(ndim) :: pos
+        INTEGER                             :: p_idx, nb_errors
         CLASS(ppm_t_discr_info_),POINTER    :: dinfo => NULL()
-        logical                             :: assoc
+        LOGICAL                             :: assoc
 
         start_subroutine("ghost_mappings_bcdef")
 
@@ -369,13 +365,13 @@ real(mk),dimension(ndim)         :: offset
         topoid = 0
         sca_ghostsize = REAL(MAXVAL(ighostsize),MK)/MAXVAL(Nm)
 
-        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
+        CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
             Assert_Equal(info,0)
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
-        call Mesh1%create(topoid,offset,info,Nm=Nm,&
+        CALL Mesh1%create(topoid,offset,info,Nm=Nm,&
             ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
 
@@ -387,23 +383,23 @@ real(mk),dimension(ndim)         :: offset
                 my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
             endif
 
-            call Mesh1%def_patch(my_patch,info)
+            CALL Mesh1%def_patch(my_patch,info)
             Assert_Equal(info,0)
         endif
 
-        call Field1%create(2,info,name='vecField')
+        CALL Field1%create(2,info,name='vecField')
             Assert_Equal(info,0)
-        call Field1%discretize_on(Mesh1,info)
+        CALL Field1%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
-        call Field2%create(1,info,name='scaField')
+        CALL Field2%create(1,info,name='scaField')
             Assert_Equal(info,0)
-        call Field2%discretize_on(Mesh1,info)
+        CALL Field2%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
 
         if (ppm_debug.GE.1) then
             topo => ppm_topo(Mesh1%topoid)%t
 #ifdef __MPI
-            call MPI_BARRIER(comm,info)
+            CALL MPI_BARRIER(comm,info)
 #endif
             stdout("NB subdomains =  ",topo%nsubs)
             do i = 1,topo%nsublist
@@ -417,7 +413,7 @@ real(mk),dimension(ndim)         :: offset
                 stdout("********************************")
             enddo
 #ifdef __MPI
-            call MPI_BARRIER(comm,info)
+            CALL MPI_BARRIER(comm,info)
 #endif
             stdout("NB patch =  ",Mesh1%npatch)
             stdout("NB subpatch =  ",Mesh1%subpatch%nb)
@@ -439,7 +435,7 @@ real(mk),dimension(ndim)         :: offset
                 p => Mesh1%subpatch%next()
             enddo
 #ifdef __MPI
-            call MPI_BARRIER(comm,info)
+            CALL MPI_BARRIER(comm,info)
 #endif
         endif
 
@@ -556,30 +552,30 @@ real(mk),dimension(ndim)         :: offset
         ENDIF
 
         !Do a ghost mapping
-        call Mesh1%map_ghost_get(info)
+        CALL Mesh1%map_ghost_get(info)
         Assert_Equal(info,0)
 
-        call Field1%map_ghost_push(Mesh1,info)
+        CALL Field1%map_ghost_push(Mesh1,info)
         Assert_Equal(info,0)
-        call Field2%map_ghost_push(Mesh1,info)
+        CALL Field2%map_ghost_push(Mesh1,info)
         Assert_Equal(info,0)
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
 
-        !call Mesh1%map_send(info)
+        !CALL Mesh1%map_send(info)
         !non-blocking send
-        call Mesh1%map_isend(info)
+        CALL Mesh1%map_isend(info)
         Assert_Equal(info,0)
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
-        call Field2%map_ghost_pop(Mesh1,info)
+        CALL Field2%map_ghost_pop(Mesh1,info)
         Assert_Equal(info,0)
-        call Field1%map_ghost_pop(Mesh1,info)
+        CALL Field1%map_ghost_pop(Mesh1,info)
         Assert_Equal(info,0)
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
 
         !Now check that the ghost mapping has been done correctly
@@ -614,29 +610,29 @@ real(mk),dimension(ndim)         :: offset
         Assert_Equal(nb_errors,0)
 
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
 
-        call Mesh1%destroy(info)
+        CALL Mesh1%destroy(info)
             Assert_Equal(info,0)
-        call Field1%destroy(info)
+        CALL Field1%destroy(info)
             Assert_Equal(info,0)
-        call Field2%destroy(info)
+        CALL Field2%destroy(info)
             Assert_Equal(info,0)
 
-        call ppm_topo_dealloc(ppm_topo(topoid)%t,info)
+        CALL ppm_topo_dealloc(ppm_topo(topoid)%t,info)
             Assert_Equal(info,0)
-        deallocate(ppm_topo(topoid)%t,STAT=info)
+        DEALLOCATE(ppm_topo(topoid)%t,STAT=info)
             Assert_Equal(info,0)
 
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
         if (ppm_debug.ge.1 .and. rank.eq.0) then
             stdout("FINISHED test with decomp = ",decomp,topoid)
         endif
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+        CALL MPI_BARRIER(comm,info)
 #endif
         end_subroutine()
     end test

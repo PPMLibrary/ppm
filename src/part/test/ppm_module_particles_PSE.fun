@@ -1,62 +1,58 @@
 test_suite ppm_module_particles_PSE
 
-use ppm_module_particles_typedef
-use ppm_module_topo_typedef
-use ppm_module_field_typedef
-use ppm_module_operator_typedef
-use ppm_module_interfaces
-use ppm_module_data
+USE ppm_module_particles_typedef
+USE ppm_module_topo_typedef
+USE ppm_module_field_typedef
+USE ppm_module_operator_typedef
+USE ppm_module_interfaces
+USE ppm_module_data
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+INTEGER, PARAMETER              :: debug = 0
+INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
+REAL(MK),PARAMETER              :: tol=EPSILON(1._mk)*100
+REAL(MK),PARAMETER              :: pi = ACOS(-1._mk)
+REAL(MK),PARAMETER              :: skin = 0._mk
+INTEGER,PARAMETER               :: ndim=2
+INTEGER                         :: decomp,assig,tolexp
+INTEGER                         :: info,comm,rank,nproc,topoid
+INTEGER                         :: np_global = 3000
+REAL(MK),PARAMETER              :: cutoff = 0.15_mk
+REAL(MK),DIMENSION(:,:),POINTER :: xp=>NULL()
+REAL(MK),DIMENSION(:  ),POINTER :: min_phys=>NULL(),max_phys=>NULL()
+REAL(MK),DIMENSION(:  ),POINTER :: len_phys=>NULL()
+INTEGER                         :: i,j,k,ip,wp_id
+INTEGER                         :: nstep
+INTEGER,DIMENSION(3)            :: ldc
+INTEGER, DIMENSION(6)           :: bcdef
+REAL(MK),DIMENSION(:  ),POINTER :: cost=>NULL()
+INTEGER                         :: isymm = 0
+REAL(MK)                        :: t0,t1,t2,t3
+INTEGER                         :: seedsize
+INTEGER,  DIMENSION(:),allocatable :: seed
+INTEGER, DIMENSION(:),POINTER   :: nvlist=>NULL()
+INTEGER, DIMENSION(:,:),POINTER :: vlist=>NULL()
+REAL(MK)                        :: err
 
-integer, parameter              :: debug = 0
-integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-real(mk),parameter              :: tol=epsilon(1._mk)*100
-real(mk),parameter              :: pi = ACOS(-1._mk)
-real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=2
-integer                         :: decomp,assig,tolexp
-integer                         :: info,comm,rank,nproc,topoid
-integer                         :: np_global = 3000
-real(mk),parameter              :: cutoff = 0.15_mk
-real(mk),dimension(:,:),pointer :: xp=>NULL()
-real(mk),dimension(:  ),pointer :: min_phys=>NULL(),max_phys=>NULL()
-real(mk),dimension(:  ),pointer :: len_phys=>NULL()
-integer                         :: i,j,k,ip,wp_id
-integer                         :: nstep
-integer,dimension(3)            :: ldc
-integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost=>NULL()
-integer                         :: isymm = 0
-real(mk)                        :: t0,t1,t2,t3
-integer                         :: seedsize
-integer,  dimension(:),allocatable :: seed
-integer, dimension(:),pointer   :: nvlist=>NULL()
-integer, dimension(:,:),pointer :: vlist=>NULL()
-real(mk)                        :: err
+INTEGER, DIMENSION(:), POINTER                 :: wp_1i => NULL()
+INTEGER, DIMENSION(:,:), POINTER               :: wp_2i => NULL()
+INTEGER(ppm_kind_int64),DIMENSION(:),  POINTER :: wp_1li => NULL()
+INTEGER(ppm_kind_int64),DIMENSION(:,:),POINTER :: wp_2li => NULL()
+REAL(MK), DIMENSION(:),   POINTER              :: wp_1r => NULL()
+REAL(MK), DIMENSION(:,:), POINTER              :: wp_2r => NULL()
+complex(mk), DIMENSION(:),   POINTER           :: wp_1c => NULL()
+complex(mk), DIMENSION(:,:), POINTER           :: wp_2c => NULL()
+LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
 
-integer, dimension(:), pointer                 :: wp_1i => NULL()
-integer, dimension(:,:), pointer               :: wp_2i => NULL()
-integer(ppm_kind_int64),dimension(:),  pointer :: wp_1li => NULL()
-integer(ppm_kind_int64),dimension(:,:),pointer :: wp_2li => NULL()
-real(mk), dimension(:),   pointer              :: wp_1r => NULL()
-real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
-complex(mk), dimension(:),   pointer           :: wp_1c => NULL()
-complex(mk), dimension(:,:), pointer           :: wp_2c => NULL()
-logical, dimension(:),   pointer               :: wp_1l => NULL()
-
-integer, dimension(:),allocatable              :: degree,order
-real(ppm_kind_double),dimension(:),allocatable :: coeffs
-integer                                        :: nterms
+INTEGER, DIMENSION(:),allocatable              :: degree,order
+REAL(ppm_kind_double),DIMENSION(:),allocatable :: coeffs
+INTEGER                                        :: nterms
 
     init
 
-        use ppm_module_init
-        use ppm_module_mktopo
+        USE ppm_module_init
+        USE ppm_module_mktopo
 
-        allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),stat=info)
+        ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),STAT=info)
 
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
@@ -64,22 +60,22 @@ integer                                        :: nterms
         bcdef(1:6) = ppm_param_bcdef_periodic
 
 #ifdef __MPI
-        comm = mpi_comm_world
-        call mpi_comm_rank(comm,rank,info)
-        call mpi_comm_size(comm,nproc,info)
+        comm = MPI_COMM_WORLD
+        CALL MPI_Comm_rank(comm,rank,info)
+        CALL MPI_Comm_size(comm,nproc,info)
 #else
         rank = 0
         nproc = 1
 #endif
-        tolexp = int(log10(epsilon(1._mk)))+10
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        tolexp = int(log10(EPSILON(1._mk)))+10
+        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-        call random_seed(size=seedsize)
-        allocate(seed(seedsize))
+        CALL RANDOM_SEED(size=seedsize)
+        ALLOCATE(seed(seedsize))
         do i=1,seedsize
             seed(i)=10+i*i*(rank+1)
         enddo
-        call random_seed(put=seed)
+        CALL RANDOM_SEED(put=seed)
 
         !----------------
         ! make topology
@@ -90,16 +86,16 @@ integer                                        :: nterms
 
         topoid = 0
 
-        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
+        CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
     end init
 
 
     finalize
-        use ppm_module_finalize
+        USE ppm_module_finalize
 
-        call ppm_finalize(info)
+        CALL ppm_finalize(info)
 
-        deallocate(min_phys,max_phys,len_phys)
+        DEALLOCATE(min_phys,max_phys,len_phys)
 
     end finalize
 
@@ -115,10 +111,10 @@ integer                                        :: nterms
     end teardown
 
     test PSE_client
-        type(ppm_t_particles_d),TARGET  :: Part1
-        type(ppm_t_field)               :: Field1
-        type(ppm_t_field)               :: Field2
-        type(ppm_t_operator)            :: Laplacian
+        TYPE(ppm_t_particles_d),TARGET  :: Part1
+        TYPE(ppm_t_field)               :: Field1
+        TYPE(ppm_t_field)               :: Field2
+        TYPE(ppm_t_operator)            :: Laplacian
         CLASS(ppm_t_operator_discr),POINTER   :: DCop => NULL()
         CLASS(ppm_t_operator_discr),POINTER   :: PSEop => NULL()
         TYPE(ppm_t_options_op)          :: opts_op
@@ -127,30 +123,30 @@ integer                                        :: nterms
         !--------------------------
         !Define Fields
         !--------------------------
-        call Field1%create(5,info,name="Concentration") !vector field
+        CALL Field1%create(5,info,name="Concentration") !vector field
         Assert_Equal(info,0)
 
-        call Part1%initialize(np_global,info,topoid=topoid)
+        CALL Part1%initialize(np_global,info,topoid=topoid)
         Assert_Equal(info,0)
 
         CALL Part1%create_neighlist(Part1,info)
         Assert_Equal(info,0)
 
-        call Part1%set_cutoff(3._mk * Part1%h_avg,info)
+        CALL Part1%set_cutoff(3._mk * Part1%h_avg,info)
         Assert_Equal(info,0)
 
-        allocate(wp_2r(ndim,Part1%Npart))
-        call random_number(wp_2r)
+        ALLOCATE(wp_2r(ndim,Part1%Npart))
+        CALL RANDOM_NUMBER(wp_2r)
         wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.15_mk
-        call Part1%move(wp_2r,info)
+        CALL Part1%move(wp_2r,info)
         Assert_Equal(info,0)
-        deallocate(wp_2r)
-        call Part1%apply_bc(info)
+        DEALLOCATE(wp_2r)
+        CALL Part1%apply_bc(info)
         Assert_Equal(info,0)
-        call Part1%map(info,global=.true.,topoid=topoid)
+        CALL Part1%map(info,global=.true.,topoid=topoid)
         Assert_Equal(info,0)
 
-        call Field1%discretize_on(Part1,info)
+        CALL Field1%discretize_on(Part1,info)
         Assert_Equal(info,0)
 
 
@@ -163,17 +159,17 @@ integer                                        :: nterms
             w_p(5) = SQRT(SUM(x_p(1:ndim)**2))
         end foreach
 
-        !call Part1%print_info(info)
+        !CALL Part1%print_info(info)
 
-        call Part1%map_ghosts(info)
+        CALL Part1%map_ghosts(info)
         Assert_Equal(info,0)
 
-        call Part1%comp_neighlist(info)
+        CALL Part1%comp_neighlist(info)
         Assert_Equal(info,0)
 
 
         nterms=ndim
-        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        ALLOCATE(degree(nterms*ndim),coeffs(nterms),order(nterms))
         if (ndim .eq. 2) then
                degree =  (/2,0,   0,2/)
         else
@@ -181,32 +177,32 @@ integer                                        :: nterms
         endif
         coeffs = 1.0_mk
 
-        call Laplacian%create(ndim,coeffs,degree,info,name="Laplacian")
+        CALL Laplacian%create(ndim,coeffs,degree,info,name="Laplacian")
         Assert_Equal(info,0)
 
-        call opts_op%create(ppm_param_op_dcpse,info,order=2,c=0.5D0)
+        CALL opts_op%create(ppm_param_op_dcpse,info,order=2,c=0.5D0)
             or_fail("failed to initialize option object for operator")
 
-        call Laplacian%discretize_on(Part1,DCop,opts_op,info)
+        CALL Laplacian%discretize_on(Part1,DCop,opts_op,info)
         Assert_Equal(info,0)
         Assert_True(associated(DCop))
-        !call Laplacian%discretize_on(Part1,PSEop,info,method="PSE")
+        !CALL Laplacian%discretize_on(Part1,PSEop,info,method="PSE")
         !Assert_Equal(info,0)
         !Assert_True(associated(PSEop))
 
-        call DCop%compute(Field1,Field2,info)
+        CALL DCop%compute(Field1,Field2,info)
         Assert_Equal(info,0)
 
 
-        call DCop%destroy(info)
+        CALL DCop%destroy(info)
         Assert_Equal(info,0)
-        call Laplacian%destroy(info)
+        CALL Laplacian%destroy(info)
         Assert_Equal(info,0)
-        call Part1%destroy(info)
+        CALL Part1%destroy(info)
         Assert_Equal(info,0)
-        call Field1%destroy(info)
+        CALL Field1%destroy(info)
         Assert_Equal(info,0)
-        deallocate(degree,coeffs,order)
+        DEALLOCATE(degree,coeffs,order)
         CALL opts_op%destroy(info)
             or_fail("failed to destroy opts_op")
         end_subroutine()
@@ -216,9 +212,9 @@ integer                                        :: nterms
 !-------------------------------------------------------------
 pure function f0_test(pos,ndim)
 
-    real(mk)                              :: f0_test
-    integer                 ,  intent(in) :: ndim
-    real(mk), dimension(ndim), intent(in) :: pos
+    REAL(MK)                              :: f0_test
+    INTEGER                 ,  intent(in) :: ndim
+    REAL(MK), DIMENSION(ndim), intent(in) :: pos
 
     f0_test =  sin(2._mk*pi*pos(1)) * cos(2._mk*pi*pos(2)) * &
         & sin(2._mk*pi*pos(ndim))

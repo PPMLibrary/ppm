@@ -34,8 +34,8 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
         nvlist,vlist,info)
 
 
-    use ppm_module_typedef
-    use ppm_module_neighlist
+    USE ppm_module_typedef
+    USE ppm_module_neighlist
     implicit none
 
 
@@ -93,11 +93,11 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
     !reallocate nvlist only if the number of particles has changed
     if (associated(nvlist)) then
         if (size(nvlist).lt.npart) then
-            deallocate(nvlist)
-            allocate(nvlist(npart),stat=info)
+            DEALLOCATE(nvlist)
+            ALLOCATE(nvlist(npart),stat=info)
         endif
     else
-        allocate(nvlist(npart),stat=info)
+        ALLOCATE(nvlist(npart),stat=info)
     endif
 
     ! reset nvlist
@@ -199,11 +199,11 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
     maxvlen = maxval(nvlist)
     if (associated(vlist)) then
         if(size(vlist,1).lt.maxvlen .or. size(vlist,2).lt.npart) then
-            deallocate(vlist)
-            allocate(vlist(maxvlen,npart),stat=info)
+            DEALLOCATE(vlist)
+            ALLOCATE(vlist(maxvlen,npart),stat=info)
         endif
     else
-        allocate(vlist(maxvlen,npart),stat=info)
+        ALLOCATE(vlist(maxvlen,npart),stat=info)
     endif
 
     ! reset nvlist
@@ -314,13 +314,13 @@ program ppm_test_inl
 !                           cutoff radii are uniformly random
 !-------------------------------------------------------------------------
 
-use ppm_module_typedef
-use ppm_module_mktopo
-use ppm_module_topo_get
-use ppm_module_init
-use ppm_module_finalize
-use ppm_module_core
-use ppm_module_inl_vlist
+USE ppm_module_typedef
+USE ppm_module_mktopo
+USE ppm_module_topo_get
+USE ppm_module_init
+USE ppm_module_finalize
+USE ppm_module_core
+USE ppm_module_inl_vlist
 use old_inl
 
 implicit none
@@ -364,13 +364,13 @@ logical                          :: lsymm = .false.,ok
 !----------------
 ! setup
 !----------------
-tol = 10.0_mk*epsilon(1.0_mk)
-tolexp = int(log10(epsilon(1.0_mk)))
+tol = 10.0_mk*EPSILON(1.0_mk)
+tolexp = int(log10(EPSILON(1.0_mk)))
 min_rcp = 0.01_mk
 max_rcp = 0.1_mk
 np=npgrid*npgrid
 
-allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
+ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
     &         ghostlayer(2*ndim),&
     &         h(ndim),p_i(ndim),p_h(ndim),stat=info)
 
@@ -383,17 +383,17 @@ bcdef(1:6) = ppm_param_bcdef_periodic
 nullify(xp,rcp)
 
 #ifdef __MPI
-comm = mpi_comm_world
+comm = MPI_COMM_WORLD
 call mpi_init(info)
-call mpi_comm_rank(comm,rank,info)
+CALL MPI_Comm_rank(comm,rank,info)
 #else
 rank = 0
 #endif
 call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
 call random_seed(size=seedsize)
-allocate(seed(seedsize))
-allocate(randnb((ndim+1)*np),stat=info)
+ALLOCATE(seed(seedsize))
+ALLOCATE(randnb((ndim+1)*np),stat=info)
 do i=1,seedsize
     seed(i)=10+i*i*(rank+1)
 enddo
@@ -404,7 +404,7 @@ call random_number(randnb)
 ! create particles on a grid
 !----------------
 
-allocate(xp(ndim,np),rcp(np),stat=info)
+ALLOCATE(xp(ndim,np),rcp(np),stat=info)
 xp = 0.0_mk
 rcp = 0.0_mk
 
@@ -426,7 +426,7 @@ assig  = ppm_param_assign_internal
 topoid = 0
 
 decomp = ppm_param_decomp_user_defined
-allocate(minsub(ndim,4),maxsub(ndim,4),sub2proc(4),cost(4),stat=info)
+ALLOCATE(minsub(ndim,4),maxsub(ndim,4),sub2proc(4),cost(4),stat=info)
 
 cost = 1.0_mk; sub2proc = 0
 minsub(1:ndim,1)=0._mk; maxsub(1:ndim,1)=0.5_mk
@@ -533,7 +533,7 @@ call ppm_finalize(info)
 call MPI_finalize(info)
 #endif
 
-deallocate(xp,rcp,min_phys,max_phys,len_phys,minsub,maxsub,cost,sub2proc)
+DEALLOCATE(xp,rcp,min_phys,max_phys,len_phys,minsub,maxsub,cost,sub2proc)
 
 if (rank.eq.0) print *, 'done.'
 

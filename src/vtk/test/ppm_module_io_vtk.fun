@@ -1,161 +1,147 @@
 test_suite ppm_module_io_vtk
 
+  INTEGER, PARAMETER              :: debug = 0
+  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !kind(1.0e0)
+  REAL(MK),PARAMETER              :: pi = 3.1415926535897931_MK
+  INTEGER,PARAMETER               :: ndim=3
+  INTEGER                         :: decomp,assig,tolexp
+  REAL(MK)                        :: tol,min_rcp,max_rcp
+  INTEGER                         :: info,comm,rank,nproc
+  REAL(MK),DIMENSION(:  ),POINTER :: min_phys => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: max_phys => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: len_phys => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: ghostlayer => NULL()
+  INTEGER                         :: i,j,k,sum1,sum2
+  INTEGER, DIMENSION(ndim*2)      :: bcdef
+  REAL(MK),DIMENSION(:  ),POINTER :: cost => NULL()
+  INTEGER                         :: seedsize
+  INTEGER,  DIMENSION(:),ALLOCATABLE :: seed
+  REAL(MK), DIMENSION(:),ALLOCATABLE :: randnb
+  INTEGER                          :: isymm = 0
+  LOGICAL                          :: lsymm = .false.,ok
+  REAL(MK)                         :: t0,t1,t2,t3
+  REAL(MK)                         :: eps
 
+  init
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+    USE ppm_module_data
+    USE ppm_module_topo_typedef
+    USE ppm_module_init
 
-integer, parameter              :: debug = 0
-integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-real(mk),parameter              :: pi = 3.1415926535897931_mk
-integer,parameter               :: ndim=3
-integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol,min_rcp,max_rcp
-integer                         :: info,comm,rank,nproc
-real(mk),dimension(:  ),pointer :: min_phys => NULL()
-real(mk),dimension(:  ),pointer :: max_phys => NULL()
-real(mk),dimension(:  ),pointer :: len_phys => NULL()
-real(mk),dimension(:  ),pointer :: ghostlayer => NULL()
-integer                         :: i,j,k,sum1,sum2
-integer, dimension(ndim*2)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost => NULL()
-integer                         :: seedsize
-integer,  dimension(:),allocatable :: seed
-real(mk), dimension(:),allocatable :: randnb
-integer                          :: isymm = 0
-logical                          :: lsymm = .false.,ok
-real(mk)                         :: t0,t1,t2,t3
-real(mk)                         :: eps
+    ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),ghostlayer(2*ndim),STAT=info)
 
-    init
+    min_phys(1:ndim) = 0.0_MK
+    max_phys(1:ndim) = 1.0_MK
+    len_phys(1:ndim) = max_phys-min_phys
+    ghostlayer(1:2*ndim) = max_rcp
+    bcdef(1:ndim) = ppm_param_bcdef_periodic
 
-        use ppm_module_data
-        use ppm_module_topo_typedef
-        use ppm_module_init
-
-        allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
-            &         ghostlayer(2*ndim),stat=info)
-
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
-        len_phys(1:ndim) = max_phys-min_phys
-        ghostlayer(1:2*ndim) = max_rcp
-        bcdef(1:ndim) = ppm_param_bcdef_periodic
-
-        eps = epsilon(1.0_mk)
-        tolexp = int(log10(epsilon(1.0_mk)))
+    eps = EPSILON(1.0_MK)
+    tolexp = int(log10(EPSILON(1.0_MK)))
 
 #ifdef __MPI
-        comm = mpi_comm_world
-        call mpi_comm_rank(comm,rank,info)
-        call mpi_comm_size(comm,nproc,info)
+    comm = MPI_COMM_WORLD
+    CALL MPI_Comm_rank(comm,rank,info)
+    CALL MPI_Comm_size(comm,nproc,info)
 #else
-        rank = 0
-        nproc = 1
+    rank = 0
+    nproc = 1
 #endif
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-    end init
-
-
-    finalize
-        use ppm_module_finalize
-
-        call ppm_finalize(info)
-
-        deallocate(min_phys,max_phys,len_phys)
-
-    end finalize
+    CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
+  end init
 
 
-    setup
+  finalize
+    USE ppm_module_finalize
 
-        call random_seed(size=seedsize)
-        allocate(seed(seedsize))
-        do i=1,seedsize
-            seed(i)=10+i*i*(rank+1)
-        enddo
-        call random_seed(put=seed)
+    CALL ppm_finalize(info)
 
+    DEALLOCATE(min_phys,max_phys,len_phys)
 
-    end setup
+  end finalize
 
 
-    teardown
+  setup
 
-        deallocate(seed)
+    CALL RANDOM_SEED(size=seedsize)
+    ALLOCATE(seed(seedsize))
+    DO i=1,seedsize
+      seed(i)=10+i*i*(rank+1)
+    ENDDO
+    CALL RANDOM_SEED(put=seed)
 
-    end teardown
+  end setup
 
-    test vtkparticles
-        use ppm_module_topo_typedef
-        use ppm_module_interfaces
-        use ppm_module_particles_typedef
-        use ppm_module_field_typedef
-        use ppm_module_mktopo
-        use ppm_module_map
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        use ppm_module_test
+  teardown
 
-        integer                         :: topoid
-        integer                         :: npart
-        integer                         :: mpart
-        integer                         :: newnpart
-        integer                         :: oldip,ip = -1
-        real(mk),dimension(:,:),pointer :: xp => NULL()
-        real(mk),dimension(:),pointer   :: wp => NULL()
-        integer ,dimension(:),pointer   :: ra => NULL()
-        real(mk)                        :: cutoff = 0.001_mk
-        real(mk)                        :: h
-        type(ppm_t_particles_d),TARGET  :: particles
-        type(ppm_t_field)               :: Field1
-        class(ppm_t_discr_data),pointer :: Prop1 => NULL()
-        integer                         :: i,j
-        CHARACTER(LEN=32)               :: fname
+    DEALLOCATE(seed)
 
-        start_subroutine("vtk")
+  end teardown
 
-        npart=100
-        bcdef(1:ndim) = ppm_param_bcdef_freespace
-        decomp = ppm_param_decomp_cuboid
-        assig  = ppm_param_assign_internal
+  test vtkparticles
+    USE ppm_module_topo_typedef
+    USE ppm_module_interfaces
+    USE ppm_module_particles_typedef
+    USE ppm_module_field_typedef
+    USE ppm_module_MKtopo
+    USE ppm_module_map
+    USE ppm_module_topo_check
+    USE ppm_module_util_dbg
+    USE ppm_module_test
 
-        topoid = 0
-        call ppm_mktopo(topoid,decomp,assig,min_phys,&
-            max_phys,bcdef,cutoff,cost,info)
-            assert_equal(info,0)
+    INTEGER                         :: topoid
+    INTEGER                         :: npart
+    INTEGER                         :: mpart
+    INTEGER                         :: newnpart
+    INTEGER                         :: oldip,ip = -1
+    REAL(MK),DIMENSION(:,:),POINTER :: xp => NULL()
+    REAL(MK),DIMENSION(:),POINTER   :: wp => NULL()
+    INTEGER ,DIMENSION(:),POINTER   :: ra => NULL()
+    REAL(MK)                        :: cutoff = 0.001_MK
+    REAL(MK)                        :: h
+    TYPE(ppm_t_particles_d),TARGET  :: particles
+    TYPE(ppm_t_field)               :: Field1
+    CLASS(ppm_t_discr_data),POINTER :: Prop1 => NULL()
+    INTEGER                         :: i,j
+    CHARACTER(LEN=32)               :: fname
 
-        call Field1%create(ndim,info,name="F_vec") !vector field
-            assert_equal(info,0)
+    start_subroutine("vtk")
 
-        !initialize particles on a grid
-        call particles%initialize(npart,info,topoid=topoid, &
-            distrib=ppm_param_part_init_cartesian)
-            assert_equal(info,0)
+    npart=100
+    bcdef(1:ndim) = ppm_param_bcdef_freespace
+    decomp = ppm_param_decomp_cuboid
+    assig  = ppm_param_assign_internal
 
-        !define a property on the particle set by discretizing a Field on it
-        call Field1%discretize_on(particles,info)
-            assert_equal(info,0)
+    topoid = 0
+    CALL ppm_MKtopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
+    Assert_Equal(info,0)
 
-        !define a property directly
-        call particles%create_prop(info,discr_data=Prop1,dtype=ppm_type_real,&
-            name='test_r',zero=.true.)
-            assert_equal(info,0)
+    CALL Field1%create(ndim,info,name="F_vec") !vector field
+    Assert_Equal(info,0)
 
-        foreach p in particles(particles) with positions(x) sca_fields(F2=Prop1) vec_fields(F1=Field1)
-            F1_p(1:ndim) = 10._mk * x_p(1:ndim)
-            F2_p         = 42._mk
-        end foreach
+    !initialize particles on a grid
+    CALL particles%initialize(npart,info,topoid=topoid,distrib=ppm_param_part_init_cartesian)
+    Assert_Equal(info,0)
 
-        fname = 'test'
-        !call ppm_vtk_particles(fname,particles,info)
-        !assert_equal(info,0)
+    !define a property on the particle set by discretizing a Field on it
+    CALL Field1%discretize_on(particles,info)
+    Assert_Equal(info,0)
 
-        end_subroutine()
-    end test
+    !define a property directly
+    CALL particles%create_prop(info,discr_data=Prop1,dtype=ppm_type_real,name='test_r',zero=.TRUE.)
+    Assert_Equal(info,0)
 
+    foreach p in particles(particles) with positions(x) sca_fields(F2=Prop1) vec_fields(F1=Field1)
+      F1_p(1:ndim) = 10._MK * x_p(1:ndim)
+      F2_p         = 42._MK
+    end foreach
 
+    fname = 'test'
+    !CALL ppm_vtk_particles(fname,particles,info)
+    !Assert_Equal(info,0)
+
+    end_subroutine()
+  end test
 
 end test_suite

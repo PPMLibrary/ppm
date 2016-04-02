@@ -13,11 +13,8 @@ module Funit
       USE <%= File.basename(test_suite) %>_fun
       <% end -%>
 
+      USE ppm_module_mpi
       IMPLICIT NONE
-
-      <% if use_mpi -%>
-      INCLUDE 'mpif.h'
-      <% end -%>
 
       INTEGER, DIMENSION(<%=test_suites.size%>) :: numTests, numAsserts, numAssertsTested, numFailures
       CHARACTER(LEN=100)                        :: log_file_name
@@ -54,14 +51,12 @@ module Funit
       WRITE(log,*)
       WRITE(log,*) "<%= File.basename(test_suite) %> test suite:"
 
-      CALL test_<%= File.basename(test_suite) %> &
-        ( numTests(<%= i+1 %>), numAsserts(<%= i+1 %>), numAssertsTested(<%= i+1 %>), &
-          numFailures(<%= i+1 %>), log, rank, comm)
+      CALL test_<%= File.basename(test_suite) %> ( numTests(<%= i+1 %>), numAsserts(<%= i+1 %>), numAssertsTested(<%= i+1 %>), numFailures(<%= i+1 %>), log, rank, comm)
 
       WRITE(*,1) rank, numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
-         numTests(<%= i+1 %>)-numFailures(<%= i+1 %>), numTests(<%= i+1 %>)
+      &          numTests(<%= i+1 %>)-numFailures(<%= i+1 %>), numTests(<%= i+1 %>)
       WRITE(log,1) rank, numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
-        numTests(<%= i+1 %>)-numFailures(<%= i+1 %>), numTests(<%= i+1 %>)
+      &            numTests(<%= i+1 %>)-numFailures(<%= i+1 %>), numTests(<%= i+1 %>)
 
       <%= i+1 %> format('[',i0,'] Passed ',i0,' of ',i0,' possible asserts comprising ',i0,' of ',i0,' tests.')
 

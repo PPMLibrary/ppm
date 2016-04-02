@@ -35,8 +35,8 @@ subroutine old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
 
 #undef __3D
 
-    use ppm_module_typedef
-    use ppm_module_neighlist
+    USE ppm_module_typedef
+    USE ppm_module_neighlist
     implicit none
 
 
@@ -80,10 +80,10 @@ subroutine old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
         !---------------------------------------------------------------------!
         ! first fill an array with the new and old particles
         !---------------------------------------------------------------------!
-        allocate(all_xp(ndim,mblue+nred),stat=info)
-        if(associated(nvlist_cross)) deallocate(nvlist_cross)
-        allocate(nvlist_cross(nred),stat=info)
-        if(associated(vlist_cross)) deallocate(vlist_cross)
+        ALLOCATE(all_xp(ndim,mblue+nred),stat=info)
+        if(associated(nvlist_cross)) DEALLOCATE(nvlist_cross)
+        ALLOCATE(nvlist_cross(nred),stat=info)
+        if(associated(vlist_cross)) DEALLOCATE(vlist_cross)
 
         all_xp(1:ndim,1:nred) = xp_red(1:ndim,1:nred)
         all_xp(1:ndim,nred+1:nred+mblue) = xp_blue(1:ndim,1:mblue)
@@ -203,7 +203,7 @@ subroutine old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
         !! allocate verlet list length
         !!--------------------------------------------------------------------!
         maxvlen = maxval(nvlist_cross)
-        allocate(vlist_cross(maxvlen,nred),stat=info)
+        ALLOCATE(vlist_cross(maxvlen,nred),stat=info)
 
         ! initialise nvlist_cross to zero
         do ip = 1,nred
@@ -298,7 +298,7 @@ subroutine old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
 
 
         9999 continue ! jump here upon error
-        deallocate(all_xp)
+        DEALLOCATE(all_xp)
 
 end subroutine old_xset_vlist_2d
 
@@ -311,13 +311,13 @@ program ppm_test_xset
 !                           cutoff radii are uniformly random
 !-------------------------------------------------------------------------
 
-use ppm_module_typedef
-use ppm_module_mktopo
-use ppm_module_topo_get
-use ppm_module_init
-use ppm_module_finalize
-use ppm_module_core
-use ppm_module_inl_xset_vlist
+USE ppm_module_typedef
+USE ppm_module_mktopo
+USE ppm_module_topo_get
+USE ppm_module_init
+USE ppm_module_finalize
+USE ppm_module_core
+USE ppm_module_inl_xset_vlist
 use old_xset
 
 implicit none
@@ -363,12 +363,12 @@ logical                          :: lsymm = .false.,ok
 !----------------
 ! setup
 !----------------
-tol = 10.0_mk*epsilon(1.0_mk)
-tolexp = int(log10(epsilon(1.0_mk)))
+tol = 10.0_mk*EPSILON(1.0_mk)
+tolexp = int(log10(EPSILON(1.0_mk)))
 min_rcp = 0.01_mk
 max_rcp = 0.1_mk
 
-allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
+ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
     &         ghostsize(ndim),ghostlayer(2*ndim),&
     &         nm(ndim),h(ndim),p_h(ndim),stat=info)
 
@@ -381,17 +381,17 @@ bcdef(1:6) = ppm_param_bcdef_periodic
 
 
 #ifdef __MPI
-comm = mpi_comm_world
+comm = MPI_COMM_WORLD
 call mpi_init(info)
-call mpi_comm_rank(comm,rank,info)
+CALL MPI_Comm_rank(comm,rank,info)
 #else
 rank = 0
 #endif
 call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
 call random_seed(size=seedsize)
-allocate(seed(seedsize))
-allocate(randnb((ndim)*nred),stat=info)
+ALLOCATE(seed(seedsize))
+ALLOCATE(randnb((ndim)*nred),stat=info)
 do i=1,seedsize
     seed(i)=10+i*i*(rank+1)
 enddo
@@ -402,8 +402,8 @@ call random_number(randnb)
 ! create particles
 !----------------
 
-allocate(xp_red(ndim,nred),stat=info)
-allocate(xp_blue(ndim,nblue),rcp_blue(nblue),stat=info)
+ALLOCATE(xp_red(ndim,nred),stat=info)
+ALLOCATE(xp_blue(ndim,nblue),rcp_blue(nblue),stat=info)
 xp_red = 0.0_mk
 xp_blue = 0.0_mk
 rcp_blue = 0.0_mk
@@ -415,8 +415,8 @@ do i=1,nred
     enddo
 enddo
 
-deallocate(randnb)
-allocate(randnb((1+ndim)*nblue),stat=info)
+DEALLOCATE(randnb)
+ALLOCATE(randnb((1+ndim)*nblue),stat=info)
 call random_number(randnb)
 do i=1,nblue
     do j=1,ndim
@@ -527,8 +527,8 @@ call ppm_finalize(info)
 call mpi_finalize(info)
 #endif
 
-!deallocate(xp_red,min_phys,max_phys,len_phys,ghostsize,nm)
-!deallocate(xp_blue,rcp_blue,nvlist,nvlist2,vlist,vlist2)
+!DEALLOCATE(xp_red,min_phys,max_phys,len_phys,ghostsize,nm)
+!DEALLOCATE(xp_blue,rcp_blue,nvlist,nvlist2,vlist,vlist2)
 
 if (rank.eq.0) print *, 'done.'
 

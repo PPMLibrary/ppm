@@ -5,7 +5,7 @@ test_suite ppm_module_interp_p2m
     integer, parameter              :: debug = 0
     integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 #ifdef __MPI
-    integer, parameter              :: comm = mpi_comm_world
+    integer, parameter              :: comm = MPI_COMM_WORLD
 #endif
     integer                         :: ndim
     integer                         :: nspec
@@ -53,18 +53,18 @@ test_suite ppm_module_interp_p2m
     & 3,0,0, 0,3,0, 0,0,3, 0,1,2, 0,2,1, 1,2,0, 1,0,2, 2,1,0, 2,0,1/
 !-------------------------- init testsuit -------------------------------------
     init
-        use ppm_module_data
+        USE ppm_module_data
 
-        tol = 100.0_mk*epsilon(1.0_mk)
-        tolexp = int(log10(epsilon(1.0_mk)))
+        tol = 100.0_mk*EPSILON(1.0_mk)
+        tolexp = int(log10(EPSILON(1.0_mk)))
 
-        allocate(min_phys(3),max_phys(3),ghostsize(3),&
+        ALLOCATE(min_phys(3),max_phys(3),ghostsize(3),&
         &         nm(3),h(3),field_x(3),stat=info)
 
 
 #ifdef __MPI
-        call mpi_comm_rank(comm,rank,info)
-        call mpi_comm_size(comm,nproc,info)
+        CALL MPI_Comm_rank(comm,rank,info)
+        CALL MPI_Comm_size(comm,nproc,info)
 #else
         nproc = 1
         rank = 0
@@ -77,7 +77,7 @@ test_suite ppm_module_interp_p2m
 !------------------------- finalize testsuit ----------------------------------
     finalize
 
-        deallocate(min_phys,max_phys,ghostsize,nm)
+        DEALLOCATE(min_phys,max_phys,ghostsize,nm)
 
     end finalize
 !------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ test_suite ppm_module_interp_p2m
         mp = 0
 
         call random_seed(size=seedsize)
-        allocate(seed(seedsize))
+        ALLOCATE(seed(seedsize))
         do i=1,seedsize
             seed(i)=10+i*i*(rank+1)
         enddo
@@ -109,15 +109,15 @@ test_suite ppm_module_interp_p2m
 !--------------------------- test teardown ------------------------------------
     teardown
 
-        use ppm_module_finalize
+        USE ppm_module_finalize
 
         call ppm_finalize(info)
 
-        deallocate(xp,wp,stat=info)
-        deallocate(field_wp2,field_wp3,stat=info)
-        deallocate(seed)
-        deallocate(cost)
-        deallocate(bcdef)
+        DEALLOCATE(xp,wp,stat=info)
+        DEALLOCATE(field_wp2,field_wp3,stat=info)
+        DEALLOCATE(seed)
+        DEALLOCATE(cost)
+        DEALLOCATE(bcdef)
 
     end teardown
 !------------------------------------------------------------------------------
@@ -125,14 +125,14 @@ test_suite ppm_module_interp_p2m
 
 !------------------------------------------------------------------------------
     test p2m_mp4_2d
-        use ppm_module_topo_typedef
-        use ppm_module_data
-        use ppm_module_mktopo
-        use ppm_module_topo_get
-        use ppm_module_interp_p2m
-        use ppm_module_init
-        use ppm_module_finalize
-        use ppm_module_map
+        USE ppm_module_topo_typedef
+        USE ppm_module_data
+        USE ppm_module_mktopo
+        USE ppm_module_topo_get
+        USE ppm_module_interp_p2m
+        USE ppm_module_init
+        USE ppm_module_finalize
+        USE ppm_module_map
 
         implicit none
         integer, dimension(2)            :: maxndata
@@ -140,7 +140,7 @@ test_suite ppm_module_interp_p2m
         integer                          :: nsublist
         ndim = 2
         nspec = 1
-        allocate(bcdef(2*ndim))
+        ALLOCATE(bcdef(2*ndim))
         bcdef(1:2*ndim) = ppm_param_bcdef_freespace
         kernel = ppm_param_rmsh_kernel_mp4
         do i=1,ndim
@@ -151,7 +151,7 @@ test_suite ppm_module_interp_p2m
 
         call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-        allocate(xp(ndim,np),wp(nspec,np),stat=info)
+        ALLOCATE(xp(ndim,np),wp(nspec,np),stat=info)
         call random_number(xp)
         wp = 0.0_mk
 
@@ -167,7 +167,7 @@ test_suite ppm_module_interp_p2m
 
 
 
-        allocate(nm(ndim),stat=info)
+        ALLOCATE(nm(ndim),stat=info)
         do i=1,ndim
             nm(i) = 16*nproc
         enddo
@@ -179,7 +179,7 @@ test_suite ppm_module_interp_p2m
         &               isublist,nsublist,info)
 
 
-        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        ALLOCATE(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
         &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
         &        stat=info) ! 2d
 
@@ -255,14 +255,14 @@ test_suite ppm_module_interp_p2m
 
 !------------------------------------------------------------------------------
     test p2m_mp4_3d
-        use ppm_module_topo_typedef
-        use ppm_module_data
-        use ppm_module_mktopo
-        use ppm_module_topo_get
-        use ppm_module_interp_p2m
-        use ppm_module_init
-        use ppm_module_finalize
-        use ppm_module_map
+        USE ppm_module_topo_typedef
+        USE ppm_module_data
+        USE ppm_module_mktopo
+        USE ppm_module_topo_get
+        USE ppm_module_interp_p2m
+        USE ppm_module_init
+        USE ppm_module_finalize
+        USE ppm_module_map
 
         implicit none
         integer, dimension(3)            :: maxndata
@@ -271,7 +271,7 @@ test_suite ppm_module_interp_p2m
 
         ndim = 3
         nspec = 1
-        allocate(bcdef(2*ndim))
+        ALLOCATE(bcdef(2*ndim))
         bcdef(1:2*ndim) = ppm_param_bcdef_freespace
         kernel = ppm_param_rmsh_kernel_mp4
         do i=1,ndim
@@ -282,7 +282,7 @@ test_suite ppm_module_interp_p2m
 
         call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-        allocate(xp(ndim,np),wp(nspec,np),stat=info)
+        ALLOCATE(xp(ndim,np),wp(nspec,np),stat=info)
         call random_number(xp)
         wp = 0.0_mk
 
@@ -298,7 +298,7 @@ test_suite ppm_module_interp_p2m
 
 
 
-        allocate(nm(ndim),stat=info)
+        ALLOCATE(nm(ndim),stat=info)
         do i=1,ndim
             nm(i) = 16*nproc
         enddo
@@ -310,7 +310,7 @@ test_suite ppm_module_interp_p2m
         &               isublist,nsublist,info)
 
 
-        allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        ALLOCATE(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
         &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
         &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
         &       stat=info) ! 3d

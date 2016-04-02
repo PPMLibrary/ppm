@@ -1,503 +1,483 @@
 test_suite ppm_module_neighlist
-use ppm_module_interfaces
+  USE ppm_module_interfaces
 
+  INTEGER, PARAMETER              :: debug = 0
+  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
+  REAL(MK),PARAMETER              :: pi = 3.1415926535897931_MK
+  REAL(MK),PARAMETER              :: skin = 0._MK
+  INTEGER,PARAMETER               :: ndim=2
+  INTEGER,PARAMETER               :: pdim=2
+  INTEGER                         :: decomp,assig,tolexp
+  REAL(MK)                        :: tol,min_rcp,max_rcp
+  INTEGER                         :: info,comm,rank,nproc
+  INTEGER                         :: topoid
+  INTEGER                         :: np = 100000
+  INTEGER                         :: npart
+  INTEGER                         :: mp
+  INTEGER                         :: newnp
+  REAL(MK),DIMENSION(:,:),POINTER :: xp => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: rcp => NULL()
+  REAL(MK),DIMENSION(:,:),POINTER :: wp => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: min_phys => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: max_phys => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: h => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: p_h => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: len_phys => NULL()
+  REAL(MK),DIMENSION(:  ),POINTER :: ghostlayer => NULL()
+  INTEGER, DIMENSION(:  ),POINTER :: ghostsize => NULL()
+  INTEGER                         :: i,j,k,sum1,sum2
+  INTEGER                         :: p_i
+  INTEGER, DIMENSION(6)           :: bcdef
+  REAL(MK),DIMENSION(:  ),POINTER :: cost => NULL()
+  INTEGER, DIMENSION(:  ),POINTER :: nm => NULL()
+  INTEGER                         :: seedsize
+  INTEGER,  DIMENSION(:),ALLOCATABLE :: seed
+  REAL(MK), DIMENSION(:),ALLOCATABLE :: randnb
+  INTEGER                          :: isymm = 0
+  LOGICAL                          :: lsymm = .FALSE.,ok
+  REAL(MK)                         :: t0,t1,t2,t3
+  REAL(MK)                         :: eps
 
+  init
+    USE ppm_module_topo_typedef
+    USE ppm_module_init
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+    ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
+    &     ghostsize(ndim),ghostlayer(2*ndim),&
+    &     nm(ndim),h(ndim),p_h(ndim),STAT=info)
 
-integer, parameter              :: debug = 0
-integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-real(mk),parameter              :: pi = 3.1415926535897931_mk
-real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=2
-integer,parameter               :: pdim=2
-integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol,min_rcp,max_rcp
-integer                         :: info,comm,rank,nproc
-integer                         :: topoid
-integer                         :: np = 100000
-integer                         :: npart
-integer                         :: mp
-integer                         :: newnp
-real(mk),dimension(:,:),pointer :: xp => NULL()
-real(mk),dimension(:  ),pointer :: rcp => NULL()
-real(mk),dimension(:,:),pointer :: wp => NULL()
-real(mk),dimension(:  ),pointer :: min_phys => NULL()
-real(mk),dimension(:  ),pointer :: max_phys => NULL()
-real(mk),dimension(:  ),pointer :: h => NULL()
-real(mk),dimension(:  ),pointer :: p_h => NULL()
-real(mk),dimension(:  ),pointer :: len_phys => NULL()
-real(mk),dimension(:  ),pointer :: ghostlayer => NULL()
-integer, dimension(:  ),pointer :: ghostsize => NULL()
-integer                         :: i,j,k,sum1,sum2
-integer                         :: p_i
-integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost => NULL()
-integer, dimension(:  ),pointer :: nm => NULL()
-integer                         :: seedsize
-integer,  dimension(:),allocatable :: seed
-real(mk), dimension(:),allocatable :: randnb
-integer                          :: isymm = 0
-logical                          :: lsymm = .false.,ok
-real(mk)                         :: t0,t1,t2,t3
-real(mk)                         :: eps
+    min_phys(1:ndim) = 0.0_MK
+    max_phys(1:ndim) = 1.0_MK
+    len_phys(1:ndim) = max_phys-min_phys
+    ghostsize(1:ndim) = 2
+    ghostlayer(1:2*ndim) = max_rcp
+    bcdef(1:6) = ppm_param_bcdef_periodic
 
-    init
+    eps = EPSILON(1.0_MK)
+    tolexp = INT(LOG10(EPSILON(1.0_MK)))
 
-        use ppm_module_topo_typedef
-        use ppm_module_init
-
-        allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
-            &         ghostsize(ndim),ghostlayer(2*ndim),&
-            &         nm(ndim),h(ndim),p_h(ndim),stat=info)
-
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
-        len_phys(1:ndim) = max_phys-min_phys
-        ghostsize(1:ndim) = 2
-        ghostlayer(1:2*ndim) = max_rcp
-        bcdef(1:6) = ppm_param_bcdef_periodic
-
-        eps = epsilon(1.0_mk)
-        tolexp = int(log10(epsilon(1.0_mk)))
-
-        nullify(xp,rcp,wp)
+    NULLIFY(xp,rcp,wp)
 
 #ifdef __MPI
-        comm = mpi_comm_world
-        call mpi_comm_rank(comm,rank,info)
-        call mpi_comm_size(comm,nproc,info)
+    comm = MPI_COMM_WORLD
+    CALL MPI_Comm_rank(comm,rank,info)
+    CALL MPI_Comm_size(comm,nproc,info)
 #else
-        rank = 0
-        nproc = 1
+    rank = 0
+    nproc = 1
 #endif
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
+  end init
 
-    end init
+  finalize
+    USE ppm_module_finalize
 
+    CALL ppm_finalize(info)
 
-    finalize
-        use ppm_module_finalize
-
-        call ppm_finalize(info)
-
-        deallocate(min_phys,max_phys,len_phys,ghostsize,nm)
-
-    end finalize
+    DEALLOCATE(min_phys,max_phys,len_phys,ghostsize,nm)
+  end finalize
 
 
-    setup
+  setup
+    CALL RANDOM_SEED(size=seedsize)
+    ALLOCATE(seed(seedsize))
+    ALLOCATE(randnb((1+ndim)*np),STAT=info)
+    DO i=1,seedsize
+        seed(i)=10+i*i*(rank+1)
+    ENDDO
+    CALL RANDOM_SEED(PUT=seed)
+    CALL RANDOM_NUMBER(randnb)
 
-        call random_seed(size=seedsize)
-        allocate(seed(seedsize))
-        allocate(randnb((1+ndim)*np),stat=info)
-        do i=1,seedsize
-            seed(i)=10+i*i*(rank+1)
-        enddo
-        call random_seed(put=seed)
-        call random_number(randnb)
-
-        allocate(xp(ndim,np),rcp(np),wp(pdim,np),stat=info)
-
-    end setup
+    ALLOCATE(xp(ndim,np),rcp(np),wp(pdim,np),STAT=info)
+  end setup
 
 
-    teardown
+  teardown
+    DEALLOCATE(xp,rcp,wp,STAT=info)
+    DEALLOCATE(seed,randnb)
+  end teardown
 
-        deallocate(xp,rcp,wp,stat=info)
-        deallocate(seed,randnb)
+  test memleak
+    USE ppm_module_topo_typedef
+    USE ppm_module_MKtopo
+    USE ppm_module_map
+    USE ppm_module_topo_check
+    USE ppm_module_util_dbg
+    USE ppm_module_test
 
-    end teardown
+    INTEGER             :: mpart
+    INTEGER             :: newnpart
+    INTEGER             :: oldip,ip = -1
+    REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
+    REAL(MK),DIMENSION(ndim)    :: cp
+    REAL(MK)            :: gl = 0.001_MK
+    REAL(MK), PARAMETER         :: skin = 0.0_MK
+    REAL(MK)            :: h
+    INTEGER, DIMENSION(:),POINTER   :: nvlist => NULL()
+    INTEGER, DIMENSION(:,:),POINTER :: vlist => NULL()
+    INTEGER             :: snpart
+    INTEGER             :: i,j,k
+    INTEGER, DIMENSION(:),POINTER   :: pidx => NULL()
+    TYPE(ppm_t_clist),DIMENSION(:),POINTER :: clist => NULL()
 
-    test memleak
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_map
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        use ppm_module_test
+    npart=1000
+    CALL part_init(p,npart,min_phys,max_phys,info,&
+    &    ppm_param_part_init_cartesian,0.5_MK)
+    h = 2.0_MK*(len_phys(1)/(sqrt(real(npart,mk))))
+    gl = 0.0_MK
+    bcdef(1:6) = ppm_param_bcdef_freespace
+    NULLIFY(nvlist,vlist,pidx)
 
-        integer                         :: mpart
-        integer                         :: newnpart
-        integer                         :: oldip,ip = -1
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk),dimension(ndim)        :: cp
-        real(mk)                        :: gl = 0.001_mk
-        real(mk), parameter             :: skin = 0.0_mk
-        real(mk)                        :: h
-        integer, dimension(:),pointer   :: nvlist => NULL()
-        integer, dimension(:,:),pointer :: vlist => NULL()
-        integer                         :: snpart
-        integer                         :: i,j,k
-        integer, dimension(:),pointer   :: pidx => NULL()
-        type(ppm_t_clist),dimension(:),pointer :: clist => NULL()
+    !----------------
+    ! make topology
+    !----------------
+    decomp = ppm_param_decomp_cuboid
+    assig  = ppm_param_assign_internal
 
-        npart=1000
-        CALL part_init(p,npart,min_phys,max_phys,info,&
-        &    ppm_param_part_init_cartesian,0.5_mk)
-        h = 2.0_mk*(len_phys(1)/(sqrt(real(npart,mk))))
-        gl = 0.0_mk
-        bcdef(1:6) = ppm_param_bcdef_freespace
-        nullify(nvlist,vlist,pidx)
+    topoid = 0
 
-        !----------------
-        ! make topology
-        !----------------
-        decomp = ppm_param_decomp_cuboid
-        assig  = ppm_param_assign_internal
+    CALL ppm_MKtopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl+skin,cost,info)
 
-        topoid = 0
-
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl+skin,cost,info)
-
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
-        npart=newnpart
+    CALL ppm_map_part_global(topoid,p,npart,info)
+    CALL ppm_map_part_send(npart,newnpart,info)
+    CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+    npart=newnpart
 
 
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl+skin,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+    CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl+skin,info)
+    CALL ppm_map_part_send(npart,mpart,info)
+    CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
-        !call ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
+    CALL ppm_topo_check(topoid,p,npart,ok,info)
+    !CALL ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
 
-        allocate(pidx(npart))
-        forall(k=1:npart) pidx(k) = k
+    ALLOCATE(pidx(npart))
+    FORALL(k=1:npart) pidx(k) = k
 
-        call ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,&
-        &                        vlist,nvlist,info,pidx,npart,clist)
-        assert_equal(info,0)
+    CALL ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,vlist,nvlist,info,pidx,npart,clist)
+    assert_equal(info,0)
 
-        call ppm_clist_destroy(clist,info)
-        assert_equal(info,0)
+    CALL ppm_clist_destroy(clist,info)
+    assert_equal(info,0)
 
-    end test
+  end test
 
-    !uncomment for longer, more thorough testing.
-    !test stack_overflow({npart: [10,1000,10000,100000,1000000,10000000]})
-    test stack_overflow({npart: [10,1000,10000,100000]})
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_map
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        use ppm_module_test
+  !uncomment for longer, more thorough testing.
+  !test stack_overflow({npart: [10,1000,10000,100000,1000000,10000000]})
+  test stack_overflow({npart: [10,1000,10000,100000]})
+    USE ppm_module_topo_typedef
+    USE ppm_module_MKtopo
+    USE ppm_module_map
+    USE ppm_module_topo_check
+    USE ppm_module_util_dbg
+    USE ppm_module_test
 
-        integer                         :: mpart
-        integer                         :: newnpart
-        integer                         :: oldip,ip = -1
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk),dimension(ndim)        :: cp
-        real(mk)                        :: gl = 0.001_mk
-        real(mk), parameter             :: skin = 0.0_mk
-        real(mk)                        :: h
-        integer, dimension(:),pointer   :: nvlist => NULL()
-        integer, dimension(:,:),pointer :: vlist => NULL()
-        integer                         :: snpart
-        integer                         :: i,j,k
-        integer, dimension(:),pointer   :: pidx
+    INTEGER             :: mpart
+    INTEGER             :: newnpart
+    INTEGER             :: oldip,ip = -1
+    REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
+    REAL(MK),DIMENSION(ndim)    :: cp
+    REAL(MK)            :: gl = 0.001_MK
+    REAL(MK), PARAMETER         :: skin = 0.0_MK
+    REAL(MK)            :: h
+    INTEGER, DIMENSION(:),POINTER   :: nvlist => NULL()
+    INTEGER, DIMENSION(:,:),POINTER :: vlist => NULL()
+    INTEGER             :: snpart
+    INTEGER             :: i,j,k
+    INTEGER, DIMENSION(:),POINTER   :: pidx
 
-        CALL part_init(p,npart,min_phys,max_phys,info,&
-        &    ppm_param_part_init_cartesian,0.5_mk)
-        !print *,npart
-        h = 2.0_mk*(len_phys(1)/(sqrt(real(npart,mk))))
-        gl = 0.0_mk
-        bcdef(1:6) = ppm_param_bcdef_freespace
-        nullify(nvlist,vlist,pidx)
+    CALL part_init(p,npart,min_phys,max_phys,info,&
+    &    ppm_param_part_init_cartesian,0.5_MK)
+    !print *,npart
+    h = 2.0_MK*(len_phys(1)/(sqrt(real(npart,mk))))
+    gl = 0.0_MK
+    bcdef(1:6) = ppm_param_bcdef_freespace
+    NULLIFY(nvlist,vlist,pidx)
 
-        !----------------
-        ! make topology
-        !----------------
-        decomp = ppm_param_decomp_cuboid
-        assig  = ppm_param_assign_internal
+    !----------------
+    ! make topology
+    !----------------
+    decomp = ppm_param_decomp_cuboid
+    assig  = ppm_param_assign_internal
 
-        topoid = 0
+    topoid = 0
 
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl+skin,cost,info)
+    CALL ppm_MKtopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl+skin,cost,info)
 
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
-        npart=newnpart
+    CALL ppm_map_part_global(topoid,p,npart,info)
+    CALL ppm_map_part_send(npart,newnpart,info)
+    CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+    npart=newnpart
 
 
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl+skin,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+    CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl+skin,info)
+    CALL ppm_map_part_send(npart,mpart,info)
+    CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
-        !call ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
+    CALL ppm_topo_check(topoid,p,npart,ok,info)
+    !CALL ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
 
-        allocate(pidx(npart))
-        forall(k=1:npart) pidx(k) = k
+    ALLOCATE(pidx(npart))
+    FORALL(k=1:npart) pidx(k) = k
 
-        call ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,&
-        &                        vlist,nvlist,info)!,pidx)
+    CALL ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,&
+    &            vlist,nvlist,info)!,pidx)
 
-        assert_equal(info,0)
-        deallocate(p,vlist,nvlist,pidx)
-    end test
+    assert_equal(info,0)
+    deALLOCATE(p,vlist,nvlist,pidx)
+  end test
 
-    test symbcvlistsize
-        ! tests symmetric boundary conditions and vlist size/content
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        use ppm_module_map
-        !integer                         :: npart = 20**2
-        integer                         :: npart = 20
-        integer                         :: newnpart
-        integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk),dimension(  :),pointer :: w => NULL()
-        real(mk), parameter             :: gl = 0.1_mk
-        real(mk)                        :: h
-        real(mk), parameter             :: skin = 0.01_mk
-        integer, dimension(:),pointer   :: nvlist => NULL()
-        integer, dimension(:,:),pointer :: vlist => NULL()
+  test symbcvlistsize
+    ! tests symmetric boundary conditions and vlist size/content
+    USE ppm_module_topo_typedef
+    USE ppm_module_MKtopo
+    USE ppm_module_topo_check
+    USE ppm_module_util_dbg
+    USE ppm_module_map
+    !  INTEGER             :: npart = 20**2
+    INTEGER             :: npart = 20
+    INTEGER             :: newnpart
+    INTEGER             :: mpart
+    REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
+    REAL(MK),DIMENSION(  :),POINTER :: w => NULL()
+    REAL(MK), PARAMETER         :: gl = 0.1_MK
+    REAL(MK)            :: h
+    REAL(MK), PARAMETER         :: skin = 0.01_MK
+    INTEGER, DIMENSION(:),POINTER   :: nvlist => NULL()
+    INTEGER, DIMENSION(:,:),POINTER :: vlist => NULL()
 
-        allocate(p(2,npart))
-        h = 0.05_mk
-        do i=1,npart
-            p(1,i) = h/2.0_mk + h*(i-1)
-            p(2,i) = h/2.0_mk
-        enddo
+    ALLOCATE(p(2,npart))
+    h = 0.05_MK
+    DO i=1,npart
+        p(1,i) = h/2.0_MK + h*(i-1)
+        p(2,i) = h/2.0_MK
+    ENDDO
 
-        bcdef(1:2) = ppm_param_bcdef_freespace
-        bcdef(3:4) = ppm_param_bcdef_symmetry
-        bcdef(5:6) = ppm_param_bcdef_freespace
+    bcdef(1:2) = ppm_param_bcdef_freespace
+    bcdef(3:4) = ppm_param_bcdef_symmetry
+    bcdef(5:6) = ppm_param_bcdef_freespace
 
-        allocate(w(npart))
-        w(:) = rank+1
+    ALLOCATE(w(npart))
+    w(:) = rank+1
 #ifdef __MPI
-        call MPI_BARRIER(comm,info)
+    CALL MPI_BARRIER(comm,info)
 #endif
-        !----------------
-        ! make topology
-        !----------------
-        decomp = ppm_param_decomp_ypencil
-        !decomp = ppm_param_decomp_cuboid
-        assig  = ppm_param_assign_internal
+    !----------------
+    ! make topology
+    !----------------
+    decomp = ppm_param_decomp_ypencil
+    !decomp = ppm_param_decomp_cuboid
+    assig  = ppm_param_assign_internal
 
-        topoid = 0
+    topoid = 0
 
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl,cost,info)
+    CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl,cost,info)
 
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(w,npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
-        npart=newnpart
+    CALL ppm_map_part_global(topoid,p,npart,info)
+    CALL ppm_map_part_push(w,npart,info)
+    CALL ppm_map_part_send(npart,newnpart,info)
+    CALL ppm_map_part_pop(w,npart,newnpart,info)
+    CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+    npart=newnpart
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+    CALL ppm_topo_check(topoid,p,npart,ok,info)
 
-        assert_true(ok)
-        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
+    assert_true(ok)
+    !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(w,npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+    CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
+    CALL ppm_map_part_push(w,npart,info)
+    CALL ppm_map_part_send(npart,mpart,info)
+    CALL ppm_map_part_pop(w,npart,mpart,info)
+    CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
+    CALL ppm_topo_check(topoid,p,npart,ok,info)
 
-        assert_true(ok)
-        call ppm_neighlist_vlist(topoid,p,mpart,gl/2.0_mk,skin,.TRUE.,&
-        &                        vlist,nvlist,info)
+    assert_true(ok)
+    CALL ppm_neighlist_vlist(topoid,p,mpart,gl/2.0_MK,skin,.TRUE.,&
+    &            vlist,nvlist,info)
 
-        !call ppm_dbg_print(topoid,gl,1,nvlist,info,p,npart,mpart)
+    !CALL ppm_dbg_print(topoid,gl,1,nvlist,info,p,npart,mpart)
 
-        assert_equal(vlist(1,1),21)
-        if (nproc.eq.2) then
-           !assert_equal(vlist(2,1),31)
-           !assert_equal(vlist(2,10),40)
-           !assert_equal(vlist(1,20),30)
-        endif
-        assert_equal(vlist(1,10),30)
+    assert_equal(vlist(1,1),21)
+    IF (nproc.EQ.2) THEN
+       !assert_equal(vlist(2,1),31)
+       !assert_equal(vlist(2,10),40)
+       !assert_equal(vlist(1,20),30)
+    ENDIF
+    assert_equal(vlist(1,10),30)
+  end test
 
-    end test
+  test symBC_neighlist
+    ! tests symmetric boundary conditions and ghost get
+    USE ppm_module_topo_typedef
+    USE ppm_module_MKtopo
+    USE ppm_module_map
+    USE ppm_module_topo_check
+    USE ppm_module_util_dbg
 
+    INTEGER             :: npart = 4
+    INTEGER             :: newnpart
+    INTEGER             :: mpart
+    INTEGER             :: oldip,ip = -1
+    REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
+    REAL(MK),DIMENSION(ndim)    :: cp
+    REAL(MK), PARAMETER         :: gl = 0.1_MK
+    REAL(MK), PARAMETER         :: skin = 0.05_MK
+    INTEGER, DIMENSION(:),POINTER   :: nvlist => NULL()
+    INTEGER, DIMENSION(:,:),POINTER :: vlist => NULL()
 
-    test symBC_neighlist
-        ! tests symmetric boundary conditions and ghost get
-        use ppm_module_topo_typedef
-        use ppm_module_mktopo
-        use ppm_module_map
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
+    ALLOCATE(p(ndim,npart))
+    p(1,1) = 0.05_MK
+    p(2,1) = 0.5_MK
+    p(1,2) = 0.5_MK
+    p(2,2) = 0.05_MK
+    p(1,3) = 0.05_MK
+    p(2,3) = 0.05_MK
+    p(1,4) = 0.5_MK
+    p(2,4) = 0.95_MK
 
-        integer                         :: npart = 4
-        integer                         :: newnpart
-        integer                         :: mpart
-        integer                         :: oldip,ip = -1
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk),dimension(ndim)        :: cp
-        real(mk), parameter             :: gl = 0.1_mk
-        real(mk), parameter             :: skin = 0.05_mk
-        integer, dimension(:),pointer   :: nvlist => NULL()
-        integer, dimension(:,:),pointer :: vlist => NULL()
+    bcdef(1:6) = ppm_param_bcdef_symmetry
+    NULLIFY(nvlist,vlist)
 
-        allocate(p(ndim,npart))
-        p(1,1) = 0.05_mk
-        p(2,1) = 0.5_mk
-        p(1,2) = 0.5_mk
-        p(2,2) = 0.05_mk
-        p(1,3) = 0.05_mk
-        p(2,3) = 0.05_mk
-        p(1,4) = 0.5_mk
-        p(2,4) = 0.95_mk
+    !----------------
+    ! make topology
+    !----------------
+    decomp = ppm_param_decomp_cuboid
+    !decomp = ppm_param_decomp_xpencil
+    assig  = ppm_param_assign_internal
 
-        bcdef(1:6) = ppm_param_bcdef_symmetry
-        nullify(nvlist,vlist)
+    topoid = 0
 
-        !----------------
-        ! make topology
-        !----------------
-        decomp = ppm_param_decomp_cuboid
-        !decomp = ppm_param_decomp_xpencil
-        assig  = ppm_param_assign_internal
+    CALL ppm_MKtopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+    &           gl+skin,cost,info)
 
-        topoid = 0
-
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl+skin,cost,info)
-
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
-        npart=newnpart
+    CALL ppm_map_part_global(topoid,p,npart,info)
+    CALL ppm_map_part_send(npart,newnpart,info)
+    CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+    npart=newnpart
 
 
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl+skin,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+    CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl+skin,info)
+    CALL ppm_map_part_send(npart,mpart,info)
+    CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
-        !call ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
+    CALL ppm_topo_check(topoid,p,npart,ok,info)
+    !CALL ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
 
-        call ppm_neighlist_vlist(topoid,p,mpart,gl,skin,.TRUE.,&
-        &                        vlist,nvlist,info)
+    CALL ppm_neighlist_vlist(topoid,p,mpart,gl,skin,.TRUE.,&
+    &            vlist,nvlist,info)
 
-        !do i=1,mpart
-        !    print *,i,p(:,i)
-        !    do j=1,nvlist(i)
-        !        print *,'    ',vlist(j,i)
-        !    enddo
-        !enddo
+    !DO i=1,mpart
+    !    print *,i,p(:,i)
+    !    DO j=1,nvlist(i)
+    !    print *,'    ',vlist(j,i)
+    !    ENDDO
+    !ENDDO
 
-        ! do the tests
-        ! p(1)
-        cp(1) = -0.05_mk
-        cp(2) = 0.5_mk
-        ip = -1
-        do i=npart+1,mpart
-            if ((abs(p(1,i)-cp(1)).lt.eps).and.&
-            &   (abs(p(2,i)-cp(2)).lt.eps)) then
-                ip = i
-                exit
-            endif
-        enddo
-        if (nproc.eq.1) then
-           assert_false(ip.eq.-1)
-           assert_true((vlist(1,1).eq.ip).or.(vlist(1,ip).eq.1))
-        endif
-        ! p(2)
-        cp(1) = 0.5_mk
-        cp(2) = -0.05_mk
-        ip = -1
-        do i=npart+1,mpart
-            if ((abs(p(1,i)-cp(1)).lt.eps).and.&
-            &   (abs(p(2,i)-cp(2)).lt.eps)) then
-                ip = i
-                exit
-            endif
-        enddo
-        if (nproc.eq.1) then
-           assert_false(ip.eq.-1)
-           assert_true((vlist(1,2).eq.ip).or.(vlist(1,ip).eq.2))
-        endif
-        ! p(3)
-        cp(1) = 0.05_mk
-        cp(2) = -0.05_mk
-        ip = -1
-        do i=npart+1,mpart
-            if ((abs(p(1,i)-cp(1)).lt.eps).and.&
-            &   (abs(p(2,i)-cp(2)).lt.eps)) then
-                ip = i
-                exit
-            endif
-        enddo
-        if (nproc.eq.1) then
-           assert_false(ip.eq.-1)
-           ok = (vlist(1,3).eq.ip).or.&
-           &    (vlist(2,3).eq.ip).or.&
-           &    (vlist(1,ip).eq.3).or.&
-           &    (vlist(2,ip).eq.3)
-           assert_true(ok)
-        endif
+    ! DO the tests
+    ! p(1)
+    cp(1) = -0.05_MK
+    cp(2) = 0.5_MK
+    ip = -1
+    DO i=npart+1,mpart
+        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
+        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+          ip = i
+          exit
+        ENDIF
+    ENDDO
+    IF (nproc.eq.1) THEN
+       assert_false(ip.eq.-1)
+       assert_true((vlist(1,1).eq.ip).or.(vlist(1,ip).eq.1))
+    ENDIF
+    ! p(2)
+    cp(1) = 0.5_MK
+    cp(2) = -0.05_MK
+    ip = -1
+    DO i=npart+1,mpart
+        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
+        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+        ip = i
+        exit
+        ENDIF
+    ENDDO
+    IF (nproc.eq.1) THEN
+       assert_false(ip.eq.-1)
+       assert_true((vlist(1,2).eq.ip).or.(vlist(1,ip).eq.2))
+    ENDIF
+    ! p(3)
+    cp(1) = 0.05_MK
+    cp(2) = -0.05_MK
+    ip = -1
+    DO i=npart+1,mpart
+        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
+        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+        ip = i
+        exit
+        ENDIF
+    ENDDO
+    IF (nproc.eq.1) THEN
+       assert_false(ip.eq.-1)
+       ok = (vlist(1,3).eq.ip).or.&
+       &    (vlist(2,3).eq.ip).or.&
+       &    (vlist(1,ip).eq.3).or.&
+       &    (vlist(2,ip).eq.3)
+       assert_true(ok)
+    ENDIF
 
-        cp(1) = -0.05_mk
-        cp(2) = 0.05_mk
-        ip = -1
-        do i=npart+1,mpart
-            if ((abs(p(1,i)-cp(1)).lt.eps).and.&
-            &   (abs(p(2,i)-cp(2)).lt.eps)) then
-                ip = i
-                exit
-            endif
-        enddo
-        if (nproc.eq.1) then
-           assert_false(ip.eq.-1)
-           ok = (vlist(1,3).eq.ip).or.&
-           &    (vlist(2,3).eq.ip).or.&
-           &    (vlist(1,ip).eq.3).or.&
-           &    (vlist(2,ip).eq.3)
-           assert_true(ok)
-        endif
-        cp(1) = -0.05_mk
-        cp(2) = -0.05_mk
-        ip = -1
-        do i=npart+1,mpart
-            if ((abs(p(1,i)-cp(1)).lt.eps).and.&
-            &   (abs(p(2,i)-cp(2)).lt.eps)) then
-                ip = i
-                exit
-            endif
-        enddo
-        if (nproc.eq.1) then
-           assert_false(ip.eq.-1)
-           ok = (vlist(1,3).eq.ip).or.&
-           &    (vlist(2,3).eq.ip).or.&
-           &    (vlist(1,ip).eq.3).or.&
-           &    (vlist(2,ip).eq.3)
-           assert_true(ok)
-        endif
+    cp(1) = -0.05_MK
+    cp(2) = 0.05_MK
+    ip = -1
+    DO i=npart+1,mpart
+        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
+        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+        ip = i
+        exit
+        ENDIF
+    ENDDO
+    IF (nproc.eq.1) THEN
+       assert_false(ip.eq.-1)
+       ok = (vlist(1,3).eq.ip).or.&
+       &    (vlist(2,3).eq.ip).or.&
+       &    (vlist(1,ip).eq.3).or.&
+       &    (vlist(2,ip).eq.3)
+       assert_true(ok)
+    ENDIF
+    cp(1) = -0.05_MK
+    cp(2) = -0.05_MK
+    ip = -1
+    DO i=npart+1,mpart
+        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
+        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+        ip = i
+        exit
+        ENDIF
+    ENDDO
+    IF (nproc.eq.1) THEN
+       assert_false(ip.eq.-1)
+       ok = (vlist(1,3).eq.ip).or.&
+       &    (vlist(2,3).eq.ip).or.&
+       &    (vlist(1,ip).eq.3).or.&
+       &    (vlist(2,ip).eq.3)
+       assert_true(ok)
+    ENDIF
 
-        ! p(4)
-        cp(1) = 0.5_mk
-        cp(2) = 1.05_mk
-        ip = -1
-        do i=npart+1,mpart
-            if ((abs(p(1,i)-cp(1)).lt.eps).and.&
-            &   (abs(p(2,i)-cp(2)).lt.eps)) then
-                ip = i
-                exit
-            endif
-        enddo
-        if (nproc.eq.1) then
-           assert_false(ip.eq.-1)
-           assert_true((vlist(1,4).eq.ip).or.(vlist(1,ip).eq.4))
-        endif
-    end test
+    ! p(4)
+    cp(1) = 0.5_MK
+    cp(2) = 1.05_MK
+    ip = -1
+    DO i=npart+1,mpart
+        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
+        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+        ip = i
+        exit
+        ENDIF
+    ENDDO
+    IF (nproc.eq.1) THEN
+       assert_false(ip.eq.-1)
+       assert_true((vlist(1,4).eq.ip).or.(vlist(1,ip).eq.4))
+    ENDIF
+  end test
 
 end test_suite

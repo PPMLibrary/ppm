@@ -1,24 +1,38 @@
 test_suite ppm_module_inl_hash
-#ifdef __MPI
-  include "mpif.h"
-#endif
 
-  TYPE(ppm_htable), POINTER :: ht
-
+  INTEGER, PARAMETER :: debug = 0
+  INTEGER, PARAMETER :: MK = KIND(1.0D0) !KIND(1.0E0)
+  INTEGER, PARAMETER :: ndim=2
+  INTEGER            :: tolexp
   INTEGER            :: info
   INTEGER, PARAMETER :: size = 200
 
+  TYPE(ppm_htable), POINTER :: ht
+
+  init
+    USE ppm_module_init
+
+    tolexp = INT(LOG10(EPSILON(1.0_MK)))
+    CALL ppm_init(ndim,MK,tolexp,0,debug,info,99)
+  end init
+
   setup
-  NULLIFY(ht)
-  ALLOCATE(ht)
+    NULLIFY(ht)
+    ALLOCATE(ht)
   end setup
 
   teardown
-  IF (ASSOCIATED(ht)) THEN
-     DEALLOCATE(ht)
-     NULLIFY(ht)
-  ENDIF
+    IF (ASSOCIATED(ht)) THEN
+       DEALLOCATE(ht)
+       NULLIFY(ht)
+    ENDIF
   end teardown
+
+  finalize
+    USE ppm_module_finalize
+
+    CALL ppm_finalize(info)
+  end finalize
 
   test basic
     USE ppm_module_data
@@ -73,7 +87,7 @@ test_suite ppm_module_inl_hash
     DO i=1,9990,10
        CALL ht%insert(INT(i,KIND=8), i*i+1, info)
        assert_true(info.EQ.0)
-       !check the interface for both integer(kind=4) and integer(kind=8)
+       !check the interface for both INTEGER(kind=4) and INTEGER(kind=8)
        CALL ht%insert(i+1, i*i+1+1, info)
        assert_true(info.EQ.0)
     ENDDO

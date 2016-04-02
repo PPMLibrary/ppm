@@ -1,81 +1,67 @@
 test_suite ppm_module_alloc
 
+  INTEGER, PARAMETER              :: debug = 0
+  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !kind(1.0e0)
+  INTEGER, PARAMETER              :: ndim=2
+  INTEGER                         :: tolexp
+  INTEGER                         :: nproc,rank,comm
+  REAL(MK),DIMENSION(:,:),POINTER :: xp => NULL()
+  REAL(MK),DIMENSION(:),POINTER   :: wp => NULL()
+  REAL(MK)                        :: t0
+  REAL(MK)                        :: tol
+  INTEGER                         :: info
 
+  init
+    USE ppm_module_init
 
-#ifdef __MPI
-    INCLUDE "mpif.h"
-#endif
+    tol = EPSILON(1.0_MK)
+    tolexp = INT(LOG10(EPSILON(1.0_MK)))
 
-integer, parameter              :: debug = 0
-integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-integer,parameter               :: ndim=2
-integer                         :: tolexp
-integer                         :: nproc,rank,comm
-real(mk),dimension(:,:),pointer :: xp => NULL()
-real(mk),dimension(:),pointer   :: wp => NULL()
-real(mk)                        :: t0
-real(mk)                        :: tol
-integer                         :: info
-
-    init
-
-        use ppm_module_init
-
-        tol = epsilon(1.0_MK)
-        tolexp = int(log10(epsilon(1.0_MK)))
-
-        nullify(xp)
+    NULLIFY(xp)
 
 #ifdef __MPI
-        comm = mpi_comm_world
-        call mpi_comm_rank(comm,rank,info)
-        call mpi_comm_size(comm,nproc,info)
+    comm = MPI_COMM_WORLD
+    CALL MPI_Comm_rank(comm,rank,info)
+    CALL MPI_Comm_size(comm,nproc,info)
 #else
-        rank = 0
-        nproc = 1
+    rank = 0
+    nproc = 1
 #endif
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
+  end init
 
-    end init
+  finalize
+    USE ppm_module_finalize
 
+    CALL ppm_finalize(info)
+  end finalize
 
-    finalize
-        use ppm_module_finalize
-
-        call ppm_finalize(info)
-
-    end finalize
-
-
-
-    test alloc
+  test alloc
     ! test simple allocation
-    use ppm_module_data
-    integer, dimension(1) :: lda
-    integer               :: iopt
-    integer               :: info
+    USE ppm_module_data
+    IMPLICIT NONE
+    INTEGER, DIMENSION(1) :: lda
+    INTEGER               :: iopt
+    INTEGER               :: info
 
     iopt = ppm_param_alloc_fit
     lda(1) = 1024
-    call ppm_alloc(wp,lda,iopt,info)
+    CALL ppm_alloc(wp,lda,iopt,info)
     assert_equal(info,0)
 
-    end test
+  end test
 
-    test dealloc
+  test dealloc
     ! test simple allocation
-    use ppm_module_data
-    integer, dimension(1) :: lda
-    integer               :: iopt
-    integer               :: info
+    USE ppm_module_data
+    IMPLICIT NONE
+    INTEGER, DIMENSION(1) :: lda
+    INTEGER               :: iopt
+    INTEGER               :: info
 
     iopt = ppm_param_dealloc
     lda(1) = 1024
-    call ppm_alloc(wp,lda,iopt,info)
+    CALL ppm_alloc(wp,lda,iopt,info)
     assert_equal(info,0)
-
-    end test
-
-
-
+  end test
 end test_suite

@@ -301,7 +301,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           INTEGER, DIMENSION(:), POINTER :: index_del_parts
 
-          INTEGER :: i,ip,Npart,del_part,lda
+          INTEGER :: i,ip,Npart,lda
 
           start_subroutine("part_del_parts")
 
@@ -322,12 +322,12 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           ENDDO
 
           !Yaser
-          !In order to make this implementation correct I have done
-          !sorted the delted particles and will get rid of them in
+          !In order to make this implementation correct I have
+          !sorted the deleted particles and will get rid of them in
           !descending order so the order of particles will not
           !deteriorate the deletion of the rest
           NULLIFY(index_del_parts)
-          CALL ppm_util_qsort(list_del_parts,index_del_parts,info)
+          CALL ppm_util_qsort(list_del_parts,index_del_parts,info,nb_del)
           or_fail("ppm_util_qsort")
 
           !-----------------------------------------------------------------
@@ -335,67 +335,81 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-----------------------------------------------------------------
           Npart = Pc%Npart
 
-          del_part = 0
-
-          DO i=nb_del,1,-1
-             ip = list_del_parts(index_del_parts(i))
+          DO i=1,nb_del
+             ip = list_del_parts(index_del_parts(nb_del-i+1))
 
              ! copying particles from the end of xp to the index that has
              ! to be removed
              Pc%xp(1:ppm_dim,ip) = Pc%xp(1:ppm_dim,Npart-i+1)
+          ENDDO !i=1,nb_del
 
-             del_part = del_part + 1
-
-             prop => Pc%props%begin()
-             DO WHILE (ASSOCIATED(prop))
-                IF (prop%flags(ppm_ppt_partial)) THEN
-
-                   lda = prop%lda
-
-                   IF (lda.GE.2) THEN
-                      SELECT CASE (prop%data_type)
-                      CASE (ppm_type_int)
+          prop => Pc%props%begin()
+          DO WHILE (ASSOCIATED(prop))
+             IF (prop%flags(ppm_ppt_partial)) THEN
+                lda = prop%lda
+                IF (lda.GE.2) THEN
+                   SELECT CASE (prop%data_type)
+                   CASE (ppm_type_int)
+                      DO i=1,nb_del
+                         ip = list_del_parts(index_del_parts(nb_del-i+1))
                          prop%data_2d_i(1:lda,ip) =prop%data_2d_i(1:lda,Npart-i+1)
-
-                      CASE (ppm_type_longint)
+                      ENDDO !i=1,nb_del
+                   CASE (ppm_type_longint)
+                      DO i=1,nb_del
+                         ip = list_del_parts(index_del_parts(nb_del-i+1))
                          prop%data_2d_li(1:lda,ip)=prop%data_2d_li(1:lda,Npart-i+1)
-
-                      CASE (ppm_type_real,ppm_type_real_single)
+                      ENDDO !i=1,nb_del
+                   CASE (ppm_type_real,ppm_type_real_single)
+                      DO i=1,nb_del
+                         ip = list_del_parts(index_del_parts(nb_del-i+1))
                          prop%data_2d_r(1:lda,ip) =prop%data_2d_r(1:lda,Npart-i+1)
-
-                      CASE (ppm_type_comp,ppm_type_comp_single)
+                      ENDDO !i=1,nb_del
+                   CASE (ppm_type_comp,ppm_type_comp_single)
+                      DO i=1,nb_del
+                         ip = list_del_parts(index_del_parts(nb_del-i+1))
                          prop%data_2d_c(1:lda,ip) =prop%data_2d_c(1:lda,Npart-i+1)
-
-                      CASE (ppm_type_logical )
+                      ENDDO !i=1,nb_del
+                   CASE (ppm_type_logical )
+                      DO i=1,nb_del
+                         ip = list_del_parts(index_del_parts(nb_del-i+1))
                          prop%data_2d_l(1:lda,ip) =prop%data_2d_l(1:lda,Npart-i+1)
-
-                      END SELECT
-                   ELSE
-                      SELECT CASE (prop%data_type)
-                      CASE (ppm_type_int)
+                      ENDDO !i=1,nb_del
+                   END SELECT
+                ELSE
+                   SELECT CASE (prop%data_type)
+                   CASE (ppm_type_int)
+                      DO i=1,nb_del
+                         ip = list_del_parts(index_del_parts(nb_del-i+1))
                          prop%data_1d_i(ip) =prop%data_1d_i(Npart-i+1)
-
-                      CASE (ppm_type_longint)
+                      ENDDO !i=1,nb_del
+                   CASE (ppm_type_longint)
+                      DO i=1,nb_del
+                         ip = list_del_parts(index_del_parts(nb_del-i+1))
                          prop%data_1d_li(ip)=prop%data_1d_li(Npart-i+1)
-
-                      CASE (ppm_type_real,ppm_type_real_single)
+                      ENDDO !i=1,nb_del
+                   CASE (ppm_type_real,ppm_type_real_single)
+                      DO i=1,nb_del
+                         ip = list_del_parts(index_del_parts(nb_del-i+1))
                          prop%data_1d_r(ip) =prop%data_1d_r(Npart-i+1)
-
-                      CASE (ppm_type_comp,ppm_type_comp_single)
+                      ENDDO !i=1,nb_del
+                   CASE (ppm_type_comp,ppm_type_comp_single)
+                      DO i=1,nb_del
+                         ip = list_del_parts(index_del_parts(nb_del-i+1))
                          prop%data_1d_c(ip) =prop%data_1d_c(Npart-i+1)
-
-                      CASE (ppm_type_logical )
+                      ENDDO !i=1,nb_del
+                   CASE (ppm_type_logical )
+                      DO i=1,nb_del
+                         ip = list_del_parts(index_del_parts(nb_del-i+1))
                          prop%data_1d_l(ip) =prop%data_1d_l(Npart-i+1)
-
-                      END SELECT
-                   ENDIF
-                   prop => Pc%props%next()
+                      ENDDO !i=1,nb_del
+                   END SELECT
                 ENDIF
-             ENDDO !WHILE (ASSOCIATED(prop))
-          ENDDO !i=nb_del,1,-1
+             ENDIF
+             prop => Pc%props%next()
+          ENDDO !WHILE (ASSOCIATED(prop))
 
           !New number of particles, after deleting some
-          Pc%Npart = Npart - del_part
+          Pc%Npart = Npart - nb_del
 
           CALL ppm_alloc(index_del_parts,ldc,ppm_param_dealloc,info)
           or_fail_dealloc("index_del_parts")

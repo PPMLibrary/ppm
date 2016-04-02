@@ -29,7 +29,7 @@ test RoeAvgKnown
 end test
 
 test CentralFluxKnown
-  call CentralFlux( leftState, rightState, interfaceFlux )
+  CALL CentralFlux( leftState, rightState, interfaceFlux )
   Assert_Equal_Within( 0.25, interfaceFlux, 0.001 )
   Assert_Equal_Within( 0.25, interfaceFlux, 0.00000001 )
   Assert_Equal( 0.25, interfaceFlux )
@@ -37,13 +37,13 @@ end test
 
 test RoeFluxExpansionShock
   leftState = -1
-  call RoeFlux( leftState, rightState, interfaceFlux )
+  CALL RoeFlux( leftState, rightState, interfaceFlux )
   Assert_Equal( 0.5, interfaceFlux )
 end test
 
 test RoeFluxZero
   rightState = 0
-  call RoeFlux( leftState, rightState, interfaceFlux )
+  CALL RoeFlux( leftState, rightState, interfaceFlux )
   Assert_Real_Equal( 0, interfaceFlux )
   Assert_Equal( 0, interfaceFlux )
 end test
