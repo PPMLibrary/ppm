@@ -73,7 +73,7 @@ $(warning Checking for directories...)
 $(shell test -d $(OBJ_DIR) || mkdir $(OBJ_DIR))
 $(shell test -d $(MODULES_DIR) || mkdir -p $(MODULES_DIR))
 $(shell test -d $(builddir)/lib || mkdir $(builddir)/lib)
-$(shell test -d $(libdir) || mkdir $(libdir))
+$(shell test -d $(libdir) || mkdir -p $(libdir))
 $(shell test -e $(LOG) && rm $(LOG))
 $(warning done.)
 
