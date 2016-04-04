@@ -30,6 +30,7 @@ AM_INIT_AUTOMAKE
 # Reset existing preprocessing flags
 AC_SUBST(CPPFLAGS,[""])
 
+
 # if MPI is enabled try grabbing those compiler wrappers first
 use_mpi=no
 AC_ARG_ENABLE([mpi],
