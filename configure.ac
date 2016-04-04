@@ -20,7 +20,6 @@
 #  Pfotenhauerstr. 108, 01307 Dresden, Germany
 #-------------------------------------------------------------------------
 
-
 # Initialization
 AC_PREREQ(2.61)
 AC_INIT(PPM, 1.2.2, [ppmlibrary@mpi-cbg.de],[],[https://github.com/PPMLibrary/ppm.git])
