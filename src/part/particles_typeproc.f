@@ -942,7 +942,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              END SELECT
           CASE (2)
              SELECT CASE (Field%data_type)
-             CASE (ppm_type_real)
+             CASE (ppm_type_real,ppm_type_real_single)
                 foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
                    w_p(1) = 0._MK
                    w_p(2) = 0._MK
@@ -950,7 +950,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              END SELECT
           CASE (3)
              SELECT CASE (Field%data_type)
-             CASE (ppm_type_real)
+             CASE (ppm_type_real,ppm_type_real_single)
                 foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
                    w_p(1) = 0._MK
                    w_p(2) = 0._MK
@@ -959,7 +959,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              END SELECT
           CASE (4)
              SELECT CASE (Field%data_type)
-             CASE (ppm_type_real)
+             CASE (ppm_type_real,ppm_type_real_single)
                 foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
                    w_p(1) = 0._MK
                    w_p(2) = 0._MK
@@ -969,7 +969,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              END SELECT
           CASE (5)
              SELECT CASE (Field%data_type)
-             CASE (ppm_type_real)
+             CASE (ppm_type_real,ppm_type_real_single)
                 foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
                    w_p(1) = 0._MK
                    w_p(2) = 0._MK
@@ -980,7 +980,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              END SELECT
           CASE DEFAULT
              SELECT CASE (Field%data_type)
-             CASE (ppm_type_real)
+             CASE (ppm_type_real,ppm_type_real_single)
                 foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
                    w_p(1:lda) = 0._MK
                 end foreach
