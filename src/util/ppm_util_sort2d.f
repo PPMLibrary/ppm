@@ -67,6 +67,8 @@
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: xp
       !!! Particle coordinates, sorted upon output
+      INTEGER                 , INTENT(IN   ) :: Np
+      !!! Number of particles
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: xmin
       !!! Minimum extent of cell mesh
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: xmax
@@ -75,8 +77,6 @@
       !!! Number of cells in each direction
       INTEGER , DIMENSION(:)  , INTENT(INOUT) :: npbx
       !!! Number of particles in each box
-      INTEGER                 , INTENT(IN   ) :: Np
-      !!! Number of particles
       INTEGER                 , INTENT(INOUT) :: info
       !!! If info = 1 on input the extent of the particles will be checked.
       !!!
@@ -84,24 +84,26 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), ALLOCATABLE :: work
       ! timer
       REAL(ppm_kind_double)                 :: t0
+
+      REAL(MK), DIMENSION(:,:), ALLOCATABLE :: work
+
       !  counters
-      INTEGER                                :: ipart,ibox,i
+      INTEGER                        :: ipart,ibox,i
       ! number of cells
-      INTEGER                                :: nbox
+      INTEGER                        :: nbox
       ! dimensions for alloc
-      INTEGER, DIMENSION(2)                  :: lda
-      INTEGER                                :: iopt
+      INTEGER, DIMENSION(2)          :: lda
+      INTEGER                        :: iopt
       ! index list of particles in cells (allocated within rank2d)
-      INTEGER, DIMENSION(:), POINTER         :: lpdx
+      INTEGER, DIMENSION(:), POINTER :: lpdx
       ! pointer to first particle in each cell (allocated within rank2d)
-      INTEGER, DIMENSION(:), POINTER         :: lhbx
+      INTEGER, DIMENSION(:), POINTER :: lhbx
       ! dummy array to store the number of ghost layers (0)
-      INTEGER, DIMENSION(4)                  :: Ngl
+      INTEGER, DIMENSION(4)          :: Ngl
       ! local info level
-      INTEGER                                :: info2
+      INTEGER                        :: info2
 
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_util_sort'
       !-------------------------------------------------------------------------

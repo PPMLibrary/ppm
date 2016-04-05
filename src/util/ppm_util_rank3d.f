@@ -98,24 +98,25 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      ! cell mesh spacing
-      REAL(MK) :: rdx,rdy,rdz
-      ! non-dimensional extent of mesh
-      REAL(MK) :: x0,y0,z0
-      ! mean number of particles per cell
-      REAL(MK) :: mean
       ! timer
       REAL(ppm_kind_double) :: t0
+      ! cell mesh spacing
+      REAL(MK)              :: rdx,rdy,rdz
+      ! non-dimensional extent of mesh
+      REAL(MK)              :: x0,y0,z0
+      ! mean number of particles per cell
+      REAL(MK)              :: mean
+
       ! local info level
-      INTEGER               :: info2
+      INTEGER                            :: info2
       ! counters
-      INTEGER               :: i,j,k,icount,ipart,icorr
-      INTEGER               :: n2,nbox,ibox
+      INTEGER                            :: i,j,k,icount,ipart,icorr
+      INTEGER                            :: n2,nbox,ibox
       ! total number of cells in each direction (including ghost layers)
-      INTEGER, DIMENSION(3) :: nmtot
+      INTEGER, DIMENSION(3)              :: nmtot
       ! dimensions for allocate
-      INTEGER, DIMENSION(1) :: ldc
-      INTEGER               :: iopt
+      INTEGER, DIMENSION(1)              :: ldc
+      INTEGER                            :: iopt
 
       ! work arrays: box idx of each particle, write pointer, number of
       ! particles per box
@@ -152,7 +153,7 @@
 
       !TODO
       !One should fix all the INTEGER numbers!
-      IF (REAL(nmtot(1),MK)*REAL(nmtot(2),MK).GE.REAL(ppm_big_i-1,MK)) THEN
+      IF (REAL(nmtot(1),MK)*REAL(nmtot(2),MK)*REAL(nmtot(3),MK).GE.REAL(ppm_big_i-1,MK)) THEN
          stdout("INTEGER Overflow!")
          fail("INTEGER Overflow!",ppm_error=ppm_error_fatal)
       ENDIF

@@ -96,14 +96,14 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      ! cell mesh spacing
-      REAL(MK) :: rdx,rdy
-      ! non-dimensional extent of mesh
-      REAL(MK) :: x0,y0
-      ! mean number of particles per cell
-      REAL(MK) :: mean
       ! timer
       REAL(ppm_kind_double) :: t0
+      ! cell mesh spacing
+      REAL(MK)              :: rdx,rdy
+      ! non-dimensional extent of mesh
+      REAL(MK)              :: x0,y0
+      ! mean number of particles per cell
+      REAL(MK)              :: mean
 
       ! local info level
       INTEGER                            :: info2

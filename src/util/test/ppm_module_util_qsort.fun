@@ -59,26 +59,18 @@ test_suite ppm_module_util_qsort
     CALL ppm_util_time(t2)
     Assert_Equal(info,0)
 
-#ifdef __MPI
     IF (ppm_rank.EQ.0) THEN
-#endif
-    stdout("time spent on qsort1=",'t2-t1')
-#ifdef __MPI
+       stdout("time spent on qsort1=",'t2-t1')
     ENDIF
-#endif
 
     CALL ppm_util_time(t1)
     CALL ppm_util_qsort(arrayA,info,nsize)
     CALL ppm_util_time(t2)
     Assert_Equal(info,0)
 
-#ifdef __MPI
     IF (ppm_rank.EQ.0) THEN
-#endif
-    stdout("time spent on qsort2 in-place=",'t2-t1')
-#ifdef __MPI
+       stdout("time spent on qsort2 in-place=",'t2-t1')
     ENDIF
-#endif
 
     DEALLOCATE(arrayA,STAT=info)
     Assert_Equal(info,0)

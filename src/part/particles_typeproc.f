@@ -311,6 +311,10 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           check_associated(<#Pc%xp#>, &
           & 'Pc structure had not been defined. Call allocate first')
 
+          check_true(<#Pc%Npart.GE.nb_del#>,&
+          & "Number of particles to delete is bigger than total number of particles!")
+
+
           prop => Pc%props%begin()
           DO WHILE (ASSOCIATED(prop))
              IF (.NOT.prop%flags(ppm_ppt_partial)) THEN
@@ -900,6 +904,9 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           end_subroutine()
       END SUBROUTINE
 
+      ! TODO
+      ! Currentlt it only take care of real data type property
+      ! One should take care of the other data types
       SUBROUTINE DTYPE(part_prop_zero)(this,Field,info)
           !!! Reset values of a property to zero
           !!! (a bit unrolled)
@@ -910,6 +917,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !  Arguments
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles))      :: this
+
           CLASS(ppm_t_field_), TARGET        :: Field
 
           INTEGER,             INTENT(  OUT) :: info
@@ -918,44 +926,63 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !-------------------------------------------------------------------------
           INTEGER :: lda
 
+
           start_subroutine("part_prop_zero")
 
           lda = Field%lda
           SELECT CASE(lda)
           CASE (1)
-              foreach p in particles(this) with sca_fields(w=Field) prec(DTYPE(prec))
-                  w_p = 0._MK
-              end foreach
+             SELECT CASE (Field%data_type)
+             CASE (ppm_type_real)
+                foreach p in particles(this) with sca_fields(w=Field) prec(DTYPE(prec))
+                   w_p = 0._MK
+                end foreach
+             END SELECT
           CASE (2)
-              foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                  w_p(1) = 0._MK
-                  w_p(2) = 0._MK
-              end foreach
+             SELECT CASE (Field%data_type)
+             CASE (ppm_type_real)
+                foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
+                   w_p(1) = 0._MK
+                   w_p(2) = 0._MK
+                end foreach
+             END SELECT
           CASE (3)
-              foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                  w_p(1) = 0._MK
-                  w_p(2) = 0._MK
-                  w_p(3) = 0._MK
-              end foreach
+             SELECT CASE (Field%data_type)
+             CASE (ppm_type_real)
+                foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
+                   w_p(1) = 0._MK
+                   w_p(2) = 0._MK
+                   w_p(3) = 0._MK
+                end foreach
+             END SELECT
           CASE (4)
-              foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                  w_p(1) = 0._MK
-                  w_p(2) = 0._MK
-                  w_p(3) = 0._MK
-                  w_p(4) = 0._MK
-              end foreach
+             SELECT CASE (Field%data_type)
+             CASE (ppm_type_real)
+                foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
+                   w_p(1) = 0._MK
+                   w_p(2) = 0._MK
+                   w_p(3) = 0._MK
+                   w_p(4) = 0._MK
+                end foreach
+             END SELECT
           CASE (5)
-              foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                  w_p(1) = 0._MK
-                  w_p(2) = 0._MK
-                  w_p(3) = 0._MK
-                  w_p(4) = 0._MK
-                  w_p(5) = 0._MK
-              end foreach
+             SELECT CASE (Field%data_type)
+             CASE (ppm_type_real)
+                foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
+                   w_p(1) = 0._MK
+                   w_p(2) = 0._MK
+                   w_p(3) = 0._MK
+                   w_p(4) = 0._MK
+                   w_p(5) = 0._MK
+                end foreach
+             END SELECT
           CASE DEFAULT
-              foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                  w_p(1:lda) = 0._MK
-              end foreach
+             SELECT CASE (Field%data_type)
+             CASE (ppm_type_real)
+                foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
+                   w_p(1:lda) = 0._MK
+                end foreach
+             END SELECT
           END SELECT
 
           end_subroutine()
