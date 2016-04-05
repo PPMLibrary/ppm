@@ -29,13 +29,13 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_util_unique_s(inlist,outlist,info,outlistsize)
+      SUBROUTINE ppm_util_unique_s(inlist,outlist,info,inlistSize,outlistsize)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_util_unique_d(inlist,outlist,info,outlistsize)
+      SUBROUTINE ppm_util_unique_d(inlist,outlist,info,inlistSize,outlistsize)
 #elif __KIND == __INTEGER
-      SUBROUTINE ppm_util_unique_i(inlist,outlist,info,outlistsize)
+      SUBROUTINE ppm_util_unique_i(inlist,outlist,info,inlistSize,outlistsize)
 #elif __KIND == __LONGINT
-      SUBROUTINE ppm_util_unique_li(inlist,outlist,info,outlistsize)
+      SUBROUTINE ppm_util_unique_li(inlist,outlist,info,inlistSize,outlistSize)
 #endif
       !!! Taking the input List of values, create the sorted unique list
       !-------------------------------------------------------------------------
@@ -78,7 +78,9 @@
 #endif
       INTEGER,                INTENT(OUT)   :: info
       !!! Return status, 0 on success
-      INTEGER, OPTIONAL,      INTENT(  OUT) :: outlistsize
+      INTEGER, OPTIONAL,      INTENT(IN   ) :: inlistSize
+      !!! Size of the elements in the input array to make unique
+      INTEGER, OPTIONAL,      INTENT(  OUT) :: outlistSize
       !!! size of the unique elements
 
       !-------------------------------------------------------------------------
@@ -89,7 +91,8 @@
       REAL(MK)              :: ppm_myeps
 #endif
 
-      INTEGER                         :: insize
+      INTEGER                         :: inSize
+      INTEGER                         :: outSize
       INTEGER,  DIMENSION(:), POINTER :: indxlist
       INTEGER, DIMENSION(1)           :: ldu
       INTEGER                         :: iopt
@@ -108,8 +111,12 @@
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
-      insize=SIZE(inlist,DIM=1)
-      IF (insize.EQ.0) GOTO 9999
+      IF (PRESENT(inlistSize)) THEN
+         inSize=inlistSize
+      ELSE
+         inSize=SIZE(inlist,DIM=1)
+      ENDIF
+      IF (inSize.EQ.0) GOTO 9999
 
 #if   __KIND == __SINGLE_PRECISION
       ppm_myeps=ppm_myepss
@@ -118,11 +125,11 @@
 #endif
 
       NULLIFY(indxlist)
-      CALL ppm_util_qsort(inlist,indxlist,info,insize)
+      CALL ppm_util_qsort(inlist,indxlist,info,inSize)
       or_fail("ppm_util_qsort")
 
-      outlistsize=1
-      DO i=2,insize
+      outSize=1
+      DO i=2,inSize
 #if   __KIND == __SINGLE_PRECISION || __KIND == __DOUBLE_PRECISION
          ! If the difference between two elements is less than Floating point tolerance
          ! then I would consider them as equal
@@ -133,18 +140,18 @@
             MASK(indxlist(i))=.FALSE.
          ELSE
             MASK(indxlist(i))=.TRUE.
-            outlistsize=outlistsize+1
+            outSize=outSize+1
          ENDIF
       ENDDO
 
-      iopt=ppm_param_alloc_grow
-      ldu=outlistsize
+      iopt=ppm_param_alloc_fit
+      ldu=outSize
       CALL ppm_alloc(outlist,ldu,iopt,info)
       or_fail_alloc("outlist")
 
       outlist(1)=inlist(indxlist(1))
       j=1
-      DO i=2,insize
+      DO i=2,inSize
          IF (MASK(i)) THEN
             j=j+1
             outlist(j)=inlist(indxlist(i))
@@ -155,6 +162,8 @@
       iopt=ppm_param_dealloc
       CALL ppm_alloc(indxlist,ldu,iopt,info)
       or_fail_dealloc("indxlist")
+
+      IF (PRESENT(outlistSize)) outlistSize=outSize
 
       !-------------------------------------------------------------------------
       !  Return

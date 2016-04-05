@@ -61,12 +61,22 @@ test_suite ppm_module_util_unique
 
     NULLIFY(UarrayA)
     CALL ppm_util_time(t1)
-    CALL ppm_util_unique(arrayA,UarrayA,info,unsize)
+    CALL ppm_util_unique(arrayA,UarrayA,info,outlistSize=unsize)
     CALL ppm_util_time(t2)
     Assert_Equal(info,0)
 
     IF (ppm_rank.EQ.0) THEN
        stdout("The time spent on the unique routine for an INTEGER array of size ",nsize," is =",'t2-t1')
+       stdout("The size of the output unique array is =",unsize)
+    ENDIF
+
+    CALL ppm_util_time(t1)
+    CALL ppm_util_unique(arrayA,UarrayA,info,inlistSize=nsize/3,outlistSize=unsize)
+    CALL ppm_util_time(t2)
+    Assert_Equal(info,0)
+
+    IF (ppm_rank.EQ.0) THEN
+       stdout("The time spent on the unique routine for an INTEGER array of size ",'nsize/3'," is =",'t2-t1')
        stdout("The size of the output unique array is =",unsize)
     ENDIF
 
@@ -81,7 +91,7 @@ test_suite ppm_module_util_unique
 
     NULLIFY(UarrayAR)
     CALL ppm_util_time(t1)
-    CALL ppm_util_unique(arrayAR,UarrayAR,info,unsize)
+    CALL ppm_util_unique(arrayAR,UarrayAR,info,outlistSize=unsize)
     CALL ppm_util_time(t2)
     Assert_Equal(info,0)
 

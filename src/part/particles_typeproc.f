@@ -276,7 +276,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-------------------------------------------------------------------------
           !  Modules
           !-------------------------------------------------------------------------
-          USE ppm_module_util_qsort
+          USE ppm_module_util_unique, ONLY : ppm_util_unique
           IMPLICIT NONE
 
           DEFINE_MK()
@@ -299,9 +299,12 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
 
-          INTEGER, DIMENSION(:), POINTER :: index_del_parts
+          INTEGER, DIMENSION(:), POINTER :: unique_del_parts
 
-          INTEGER :: i,ip,Npart,lda
+          INTEGER                        :: i
+          INTEGER                        :: ip
+          INTEGER                        :: Npart,lda
+          INTEGER                        :: nb_del_parts
 
           start_subroutine("part_del_parts")
 
@@ -312,8 +315,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           & 'Pc structure had not been defined. Call allocate first')
 
           check_true(<#Pc%Npart.GE.nb_del#>,&
-          & "Number of particles to delete is bigger than total number of particles!")
-
+          & "Number of particles to delete is bigger than the total number of particles!")
 
           prop => Pc%props%begin()
           DO WHILE (ASSOCIATED(prop))
@@ -326,21 +328,21 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           ENDDO
 
           !Yaser
-          !In order to make this implementation correct I have
-          !sorted the deleted particles and will get rid of them in
+          !In order to make this implementation correct I have a unique
+          !sorted deleted particles and will get rid of them in
           !descending order so the order of particles will not
           !deteriorate the deletion of the rest
-          NULLIFY(index_del_parts)
-          CALL ppm_util_qsort(list_del_parts,index_del_parts,info,nb_del)
-          or_fail("ppm_util_qsort")
+          NULLIFY(unique_del_parts)
+          CALL ppm_util_unique(list_del_parts,unique_del_parts,info,nb_del,nb_del_parts)
+          or_fail("ppm_util_unique")
 
           !-----------------------------------------------------------------
           !  Delete particles
           !-----------------------------------------------------------------
           Npart = Pc%Npart
 
-          DO i=1,nb_del
-             ip = list_del_parts(index_del_parts(nb_del-i+1))
+          DO i=1,nb_del_parts
+             ip = unique_del_parts(nb_del_parts-i+1)
 
              ! copying particles from the end of xp to the index that has
              ! to be removed
@@ -354,58 +356,58 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
                 IF (lda.GE.2) THEN
                    SELECT CASE (prop%data_type)
                    CASE (ppm_type_int)
-                      DO i=1,nb_del
-                         ip = list_del_parts(index_del_parts(nb_del-i+1))
+                      DO i=1,nb_del_parts
+                         ip = unique_del_parts(nb_del_parts-i+1)
                          prop%data_2d_i(1:lda,ip) =prop%data_2d_i(1:lda,Npart-i+1)
-                      ENDDO !i=1,nb_del
+                      ENDDO !i=1,nb_del_parts
                    CASE (ppm_type_longint)
-                      DO i=1,nb_del
-                         ip = list_del_parts(index_del_parts(nb_del-i+1))
+                      DO i=1,nb_del_parts
+                         ip = unique_del_parts(nb_del_parts-i+1)
                          prop%data_2d_li(1:lda,ip)=prop%data_2d_li(1:lda,Npart-i+1)
-                      ENDDO !i=1,nb_del
+                      ENDDO !i=1,nb_del_parts
                    CASE (ppm_type_real,ppm_type_real_single)
-                      DO i=1,nb_del
-                         ip = list_del_parts(index_del_parts(nb_del-i+1))
+                      DO i=1,nb_del_parts
+                         ip = unique_del_parts(nb_del_parts-i+1)
                          prop%data_2d_r(1:lda,ip) =prop%data_2d_r(1:lda,Npart-i+1)
-                      ENDDO !i=1,nb_del
+                      ENDDO !i=1,nb_del_parts
                    CASE (ppm_type_comp,ppm_type_comp_single)
-                      DO i=1,nb_del
-                         ip = list_del_parts(index_del_parts(nb_del-i+1))
+                      DO i=1,nb_del_parts
+                         ip = unique_del_parts(nb_del_parts-i+1)
                          prop%data_2d_c(1:lda,ip) =prop%data_2d_c(1:lda,Npart-i+1)
-                      ENDDO !i=1,nb_del
+                      ENDDO !i=1,nb_del_parts
                    CASE (ppm_type_logical )
-                      DO i=1,nb_del
-                         ip = list_del_parts(index_del_parts(nb_del-i+1))
+                      DO i=1,nb_del_parts
+                         ip = unique_del_parts(nb_del_parts-i+1)
                          prop%data_2d_l(1:lda,ip) =prop%data_2d_l(1:lda,Npart-i+1)
-                      ENDDO !i=1,nb_del
+                      ENDDO !i=1,nb_del_parts
                    END SELECT
                 ELSE
                    SELECT CASE (prop%data_type)
                    CASE (ppm_type_int)
-                      DO i=1,nb_del
-                         ip = list_del_parts(index_del_parts(nb_del-i+1))
+                      DO i=1,nb_del_parts
+                         ip = unique_del_parts(nb_del_parts-i+1)
                          prop%data_1d_i(ip) =prop%data_1d_i(Npart-i+1)
-                      ENDDO !i=1,nb_del
+                      ENDDO !i=1,nb_del_parts
                    CASE (ppm_type_longint)
-                      DO i=1,nb_del
-                         ip = list_del_parts(index_del_parts(nb_del-i+1))
+                      DO i=1,nb_del_parts
+                         ip = unique_del_parts(nb_del_parts-i+1)
                          prop%data_1d_li(ip)=prop%data_1d_li(Npart-i+1)
-                      ENDDO !i=1,nb_del
+                      ENDDO !i=1,nb_del_parts
                    CASE (ppm_type_real,ppm_type_real_single)
-                      DO i=1,nb_del
-                         ip = list_del_parts(index_del_parts(nb_del-i+1))
+                      DO i=1,nb_del_parts
+                         ip = unique_del_parts(nb_del_parts-i+1)
                          prop%data_1d_r(ip) =prop%data_1d_r(Npart-i+1)
-                      ENDDO !i=1,nb_del
+                      ENDDO !i=1,nb_del_parts
                    CASE (ppm_type_comp,ppm_type_comp_single)
-                      DO i=1,nb_del
-                         ip = list_del_parts(index_del_parts(nb_del-i+1))
+                      DO i=1,nb_del_parts
+                         ip = unique_del_parts(nb_del_parts-i+1)
                          prop%data_1d_c(ip) =prop%data_1d_c(Npart-i+1)
-                      ENDDO !i=1,nb_del
+                      ENDDO !i=1,nb_del_parts
                    CASE (ppm_type_logical )
-                      DO i=1,nb_del
-                         ip = list_del_parts(index_del_parts(nb_del-i+1))
+                      DO i=1,nb_del_parts
+                         ip = unique_del_parts(nb_del_parts-i+1)
                          prop%data_1d_l(ip) =prop%data_1d_l(Npart-i+1)
-                      ENDDO !i=1,nb_del
+                      ENDDO !i=1,nb_del_parts
                    END SELECT
                 ENDIF
              ENDIF
@@ -413,10 +415,10 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           ENDDO !WHILE (ASSOCIATED(prop))
 
           !New number of particles, after deleting some
-          Pc%Npart = Npart - nb_del
+          Pc%Npart = Npart - nb_del_parts
 
-          CALL ppm_alloc(index_del_parts,ldc,ppm_param_dealloc,info)
-          or_fail_dealloc("index_del_parts")
+          CALL ppm_alloc(unique_del_parts,ldc,ppm_param_dealloc,info)
+          or_fail_dealloc("unique_del_parts")
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_del_parts)
