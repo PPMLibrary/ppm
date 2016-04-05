@@ -72,78 +72,91 @@
             !  Print the defines and log them
             !-------------------------------------------------------------------------
 #ifdef __MPI
-            IF (ppm_debug .GT. 0) THEN
+            IF (ppm_debug.GT.0) THEN
                CALL ppm_write(ppm_rank,caller,'__MPI defined',info)
             ENDIF
             CALL ppm_log(caller,'__MPI defined',info)
+#ifdef __MPI3
+            IF (ppm_debug.GT.0) THEN
+               CALL ppm_write(ppm_rank,caller,'__MPI3 defined',info)
+            ENDIF
+            CALL ppm_log(caller,'__MPI3 defined',info)
+#endif
+#endif
+#ifdef __F2003
+            IF (ppm_debug.GT.0) THEN
+               CALL ppm_write(ppm_rank,caller,'__F2003 defined',info)
+            ENDIF
+            CALL ppm_log(caller,'__F2003 defined',info)
+#ifdef __TIFF
+            IF (ppm_debug.GT.0) THEN
+               CALL ppm_write(ppm_rank,caller,'__TIFF defined',info)
+            ENDIF
+            CALL ppm_log(caller,'__TIFF defined',info)
+#endif
 #endif
 #ifdef __Linux
-            IF (ppm_debug .GT. 0) THEN
+            IF (ppm_debug.GT.0) THEN
                CALL ppm_write(ppm_rank,caller,'__Linux defined',info)
             ENDIF
             CALL ppm_log(caller,'__Linux defined',info)
 #endif
 #ifdef __VECTOR
-            IF (ppm_debug .GT. 0) THEN
+            IF (ppm_debug.GT.0) THEN
                CALL ppm_write(ppm_rank,caller,'__VECTOR defined',info)
             ENDIF
             CALL ppm_log(caller,'__VECTOR defined',info)
 #endif
 #ifdef __SXF90
-            IF (ppm_debug .GT. 0) THEN
+            IF (ppm_debug.GT.0) THEN
                CALL ppm_write(ppm_rank,caller,'__SXF90 defined',info)
             ENDIF
             CALL ppm_log(caller,'__SXF90 defined',info)
 #endif
 #ifdef __ETIME
-            IF (ppm_debug .GT. 0) THEN
+            IF (ppm_debug.GT.0) THEN
                CALL ppm_write(ppm_rank,caller,'__ETIME defined',info)
             ENDIF
             CALL ppm_log(caller,'__ETIME defined',info)
 #endif
 #ifdef __METIS
-            IF (ppm_debug .GT. 0) THEN
+            IF (ppm_debug.GT.0) THEN
                CALL ppm_write(ppm_rank,caller,'__METIS defined',info)
             ENDIF
             CALL ppm_log(caller,'__METIS defined',info)
 #endif
 #ifdef __FFTW
-            IF (ppm_debug .GT. 0) THEN
+            IF (ppm_debug.GT.0) THEN
                CALL ppm_write(ppm_rank,caller,'__FFTW defined',info)
             ENDIF
             CALL ppm_log(caller,'__FFTW defined',info)
 #endif
 #ifdef __HYPRE
-            IF (ppm_debug .GT. 0) THEN
+            IF (ppm_debug.GT.0) THEN
                CALL ppm_write(ppm_rank,caller,'__HYPRE defined',info)
             ENDIF
             CALL ppm_log(caller,'__HYPRE defined',info)
 #endif
 #ifdef __XLF
-            IF (ppm_debug .GT. 0) THEN
+            IF (ppm_debug.GT.0) THEN
                CALL ppm_write(ppm_rank,caller,'__XLF defined',info)
             ENDIF
             CALL ppm_log(caller,'__XLF defined',info)
 #endif
 #ifdef __MATHKEISAN
-            IF (ppm_debug .GT. 0) THEN
+            IF (ppm_debug.GT.0) THEN
                CALL ppm_write(ppm_rank,caller,    &
                & '__MATHKEISAN defined',info)
             ENDIF
             CALL ppm_log(caller,'__MATHKEISAN defined',info)
 #endif
 #ifdef __CRAYFISHPACK
-            IF (ppm_debug .GT. 0) THEN
+            IF (ppm_debug.GT.0) THEN
                CALL ppm_write(ppm_rank,caller,    &
                &  '__CRAYFISHPACK defined',info)
             ENDIF
             CALL ppm_log(caller,'__CRAYFISHPACK defined',info)
 #endif
-            IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,caller,    &
-               &    'See ppm_define.h for descriptions.',info)
-            ENDIF
-
             !-------------------------------------------------------------------------
             !  Return
             !-------------------------------------------------------------------------

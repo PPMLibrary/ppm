@@ -122,15 +122,8 @@ if test "x${use_mpi}" = xyes; then
                      call MPI_Init(ierr)
                      end program conftest_prog],
                      [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__MPI"])],
-#                     [echo "#define __MPI" >> ./src/ppm_define.h],
                      [AC_MSG_ERROR([Cannot build PPM with MPI support like this])])
     AC_MSG_RESULT([yes])
-#    AC_CHECK_LIB([],[MPI_Init],[
-#                  echo "#define __MPI" >> ./src/ppm_define.h],
-#                  [AC_MSG_ERROR([Cannot build PPM with MPI support like this])])
-
-
-
 fi
 AC_LANG([C])
 

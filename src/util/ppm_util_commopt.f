@@ -37,10 +37,6 @@
       !!! using the Vizing approximation to the minimal edge
       !!! coloring problem of the processor topology graph.
       !!!
-      !!! [NOTE]
-      !!! The current implementation relies on external routine written in C++
-      !!! and its Fortran wrapper.
-      !!!
       !!! Reference: V.G. Vizing, On an estimate of the chromatic class
       !!! of a p-graph. Discret. Analiz. 3, 1964, pp.25-30.
       !!! (In Russian).
@@ -72,7 +68,7 @@
 
       REAL(ppm_kind_double) :: t0
 
-      INTEGER, DIMENSION(2)                :: ldu
+      INTEGER, DIMENSION(1)                :: ldu
       INTEGER                              :: iopt
       ! number of neighborhood relations in total
       INTEGER                              :: nlinks
@@ -88,13 +84,17 @@
       ! all neighbors of all processors. 1st index: neighbor nr., 2nd:
       ! processor rank
       INTEGER, DIMENSION(:,:), ALLOCATABLE :: ineighprocs
-      INTEGER                              :: i,j,maxneigh,isize,ii,isin
+
+      INTEGER, DIMENSION(:),   ALLOCATABLE :: counts
+      INTEGER, DIMENSION(:),   ALLOCATABLE :: displ
+      INTEGER                              :: i
+      INTEGER                              :: j
+      INTEGER                              :: ii
+      INTEGER                              :: maxneigh,isize,isin
       ! processor ranks
       INTEGER                              :: p1,p2
       ! min and max of assigned colors
       INTEGER                              :: mincolor,maxcolor
-
-      LOGICAL :: valid
 
       CHARACTER(LEN=*), PARAMETER :: caller="ppm_util_commopt"
 
@@ -121,46 +121,47 @@
       !  Check if there are more than 1 processor. If not, we are done
       !-------------------------------------------------------------------------
       IF (ppm_nproc.LT.2) THEN
-          !---------------------------------------------------------------------
-          !  Allocate memory for communication protocols
-          !---------------------------------------------------------------------
-          iopt   = ppm_param_alloc_fit
-          ldu(1) = 1
-          CALL ppm_alloc(topo%icommseq,ldu,iopt,info)
-          or_fail_alloc("communication sequence PPM_ICOMMSEQ",ppm_error=ppm_error_fatal)
+         !---------------------------------------------------------------------
+         !  Allocate memory for communication protocols
+         !---------------------------------------------------------------------
+         iopt = ppm_param_alloc_fit
+         ldu  = 1
+         CALL ppm_alloc(topo%icommseq,ldu,iopt,info)
+         or_fail_alloc("communication sequence PPM_ICOMMSEQ",ppm_error=ppm_error_fatal)
 
-          !---------------------------------------------------------------------
-          !  Set the trivial protocol: only myself
-          !---------------------------------------------------------------------
-          topo%ncommseq = 1
-          topo%icommseq(1) = ppm_rank
-          GOTO 9999
+         !---------------------------------------------------------------------
+         !  Set the trivial protocol: only myself
+         !---------------------------------------------------------------------
+         topo%ncommseq = 1
+         topo%icommseq = ppm_rank
+         GOTO 9999
       ENDIF
 
 #ifdef __MPI
-
       !-------------------------------------------------------------------------
       !  Allocate memory for number of neighbors
       !-------------------------------------------------------------------------
-      ldu(1) = ppm_nproc
       ALLOCATE(nneighprocs(ppm_nproc),STAT=info)
-      or_fail_alloc("number of neighbors NNEIGHPROCS",ppm_error=ppm_error_fatal)
+      or_fail_alloc("Failed to allocate number of neighbors NNEIGHPROCS",ppm_error=ppm_error_fatal)
+
+      nneighprocs=0
+
+      ALLOCATE(displ(ppm_nproc),counts(ppm_nproc),STAT=info)
+      or_fail_alloc("displ, counts",ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Rank 0 receives the numbers of neighbors from all other processors
       !-------------------------------------------------------------------------
-      maxneigh = 0
-      IF (ppm_rank.GT.0) THEN
-         CALL MPI_Send(topo%nneighproc,1,MPI_INTEGER,0,ppm_rank,ppm_comm,info)
-      ELSE
-         nneighprocs(1) = topo%nneighproc
-         maxneigh = nneighprocs(1)
-         DO i=1,ppm_nproc-1
-            CALL MPI_Recv(nneighprocs(i+1),1,MPI_INTEGER,i,i,ppm_comm, &
-            &    MPI_STATUS_IGNORE,info)
-            IF (nneighprocs(i+1).GT.maxneigh) maxneigh=nneighprocs(i+1)
-         ENDDO
-      ENDIF
+      CALL MPI_Gather(topo%nneighproc,1,MPI_INTEGER,nneighprocs,1,MPI_INTEGER,0,ppm_comm,info)
+      or_fail_MPI("MPI_Gather")
+
+      maxneigh=MAXVAL(nneighprocs)
+
+      counts=maxneigh
+
+      DO i=1,ppm_nproc
+         displ(i)=(i-1)*maxneigh
+      ENDDO
 
       !-------------------------------------------------------------------------
       !  Allocate memory for neighbor lists
@@ -171,17 +172,9 @@
       !-------------------------------------------------------------------------
       !  Rank 0 receives all neighbor lists
       !-------------------------------------------------------------------------
-      IF (ppm_rank.GT.0) THEN
-         CALL MPI_Send(topo%ineighproc(1:topo%nneighproc),topo%nneighproc, &
-         &    MPI_INTEGER,0,ppm_rank,ppm_comm,info)
-      ELSE
-         ineighprocs(1:nneighprocs(1),1) = topo%ineighproc(1:topo%nneighproc)
-
-         DO i=1,ppm_nproc-1
-            CALL MPI_Recv(ineighprocs(1:nneighprocs(i+1),i+1),nneighprocs(i+1), &
-            &    MPI_INTEGER,i,i,ppm_comm,MPI_STATUS_IGNORE,info)
-         ENDDO
-      ENDIF
+      CALL MPI_Gatherv(topo%ineighproc,topo%nneighproc,MPI_INTEGER, &
+      &    ineighprocs,counts,displ,MPI_INTEGER,0,ppm_comm,info)
+      or_fail_MPI("MPI_Gather")
 
       !-------------------------------------------------------------------------
       !  Rank 0: Build graph and call optimizer
@@ -190,7 +183,7 @@
          !---------------------------------------------------------------------
          !  Build graph edges as UNIQUE neighbor pairs
          !---------------------------------------------------------------------
-         isize  = 2*ppm_nproc   ! initial guess
+         isize=2*ppm_nproc   ! initial guess
          ALLOCATE(ilinks(isize),STAT=info)
          or_fail_alloc("links ILINKS",ppm_error=ppm_error_fatal)
 
@@ -225,6 +218,12 @@
             ENDDO !j=1,nneighprocs(i)
          ENDDO !i=1,ppm_nproc
 
+         !-------------------------------------------------------------------------
+         !  Deallocate temporary storage
+         !-------------------------------------------------------------------------
+         DEALLOCATE(nneighprocs,STAT=info)
+         or_fail_dealloc("number of neighbors NNEIGHPROCS")
+
          !---------------------------------------------------------------------
          !  Allocate memory for optimal coloring result
          !---------------------------------------------------------------------
@@ -249,14 +248,18 @@
          !---------------------------------------------------------------------
          CALL ppm_color_edge(ppm_nproc,ilinks,optres,info)
          or_fail('edge coloring failed')
-
-         !CALL vizing_coloring(ppm_nproc,nlinks,ilinks,optres)
          !---------------------------------------------------------------------
          !  optres now contains the result as a sequence of nlinks triples
          !  (p1,p2,c) where each triple is one edge (determined by its two
          !  vertices p1 and p2) with a color c. Numbering of colors and
          !  vertices starts at 1.
          !---------------------------------------------------------------------
+
+         !-------------------------------------------------------------------------
+         !  Deallocate temporary storage
+         !-------------------------------------------------------------------------
+         DEALLOCATE(ilinks,STAT=info)
+         or_fail_dealloc("links ILINKS")
 
          !---------------------------------------------------------------------
          !  Determine smallest and largest assigned color
@@ -279,7 +282,12 @@
          or_fail_alloc('neighbor comm. list INEIGHPROCS',ppm_error=ppm_error_fatal)
 
          ! initialize array. -1 means: no communication in this round
-         ineighprocs(1:ii,1:ppm_nproc) = -1
+         ineighprocs=-1
+
+         !This is the displ data for MPI_Scatterv
+         DO i=1,ppm_nproc
+            displ(i)=(i-1)*ii
+         ENDDO
 
          !---------------------------------------------------------------------
          !  Assemble communication protocol
@@ -298,66 +306,67 @@
                ENDIF
             ENDDO
          ENDDO
+
+         topo%ncommseq = ii
+
+         !-------------------------------------------------------------------------
+         !  Deallocate temporary storage
+         !-------------------------------------------------------------------------
+         DEALLOCATE(optres,STAT=info)
+         or_fail_dealloc("optimal result OPTRES")
+      ELSE
+         !-------------------------------------------------------------------------
+         !  Deallocate temporary storage
+         !-------------------------------------------------------------------------
+         DEALLOCATE(nneighprocs,STAT=info)
+         or_fail_dealloc("number of neighbors NNEIGHPROCS")
       ENDIF ! ppm_rank.EQ.0
 
       !-------------------------------------------------------------------------
       !  Distribute protocol to all processors
       !-------------------------------------------------------------------------
       ! First, broadcast the number of rounds to everybody
-      IF (ppm_rank.EQ.0) topo%ncommseq = ii
       CALL MPI_Bcast(topo%ncommseq,1,MPI_INTEGER,0,ppm_comm,info)
+      or_fail_MPI("MPI_Bcast")
 
       !-------------------------------------------------------------------------
       !  Everybody gets the memory needed
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_grow_preserve
+      iopt = ppm_param_alloc_grow_preserve
       ! the +1 is due to the fact that the processor itself also needs
       ! to be in the list (as element 1) in order for map_part_send to
       ! work properly
-      topo%ncommseq = topo%ncommseq + 1
-      ldu(1) = topo%ncommseq
+      ldu(1) = topo%ncommseq+1
       CALL ppm_alloc(topo%icommseq,ldu,iopt,info)
       or_fail_alloc('final communication sequence PPM_ICOMMSEQ',ppm_error=ppm_error_fatal)
 
       ! Then distribute the individual optimized neighbor lists
-      IF (ppm_rank.GT.0) THEN
-         CALL MPI_Recv(topo%icommseq(2:topo%ncommseq),topo%ncommseq-1, &
-         &    MPI_INTEGER,0,ppm_rank,ppm_comm,MPI_STATUS_IGNORE,info)
-      ELSE
-         topo%icommseq(2:topo%ncommseq) = ineighprocs(1:ii,1)
-         DO i=1,ppm_nproc-1
-            CALL MPI_Send(ineighprocs(1:ii,i+1),ii,MPI_INTEGER,i,i,ppm_comm,info)
-         ENDDO
-      ENDIF
+      counts=topo%ncommseq
+      CALL MPI_Scatterv(ineighprocs,counts,displ,MPI_INTEGER, &
+      &    topo%icommseq(2),topo%ncommseq,MPI_INTEGER,0,ppm_comm,info)
+      or_fail_MPI("MPI_Scatterv")
+
+      topo%ncommseq=topo%ncommseq+1
 
       !-------------------------------------------------------------------------
       !  Every processor must also communicate to itself in order for
       !  map_part_send to work properly
       !-------------------------------------------------------------------------
-      topo%icommseq(1) = ppm_rank
+      topo%icommseq(1)=ppm_rank
 
       !-------------------------------------------------------------------------
       !  Mark this topology as done
       !-------------------------------------------------------------------------
-      topo%isoptimized = .TRUE.
+      topo%isoptimized=.TRUE.
 
       !-------------------------------------------------------------------------
       !  Deallocate temporary storage
       !-------------------------------------------------------------------------
-      iopt = ppm_param_dealloc
-      IF (ppm_rank.EQ.0) THEN
-         DEALLOCATE(optres,STAT=info)
-         or_fail_dealloc("optimal result OPTRES")
-
-         DEALLOCATE(ilinks,STAT=info)
-         or_fail_dealloc("links ILINKS")
-      ENDIF
-
       DEALLOCATE(ineighprocs,STAT=info)
       or_fail_dealloc("neighbor list INEIGHPROCS")
 
-      DEALLOCATE(nneighprocs,STAT=info)
-      or_fail_dealloc("number of neighbors NNEIGHPROCS")
+      DEALLOCATE(displ,counts,STAT=info)
+      or_fail_dealloc("displ & counts")
 #endif
 
       !-------------------------------------------------------------------------
@@ -368,8 +377,12 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-          CALL ppm_check_topoid(topoid,valid,info)
-          or_fail('topoid out of range',exit_point=8888)
+        IMPLICIT NONE
+        LOGICAL :: valid
+        CALL ppm_check_topoid(topoid,valid,info)
+        IF (.NOT.valid) THEN
+           fail("topoid out of range",exit_point=8888)
+        ENDIF
       8888 CONTINUE
       END SUBROUTINE check
       END SUBROUTINE ppm_util_commopt

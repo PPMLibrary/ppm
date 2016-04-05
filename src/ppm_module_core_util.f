@@ -37,7 +37,10 @@
          USE ppm_module_find_duplicates, ONLY : ppm_find_duplicates
          USE ppm_module_is_initialized,  ONLY : ppm_is_initialized
          USE ppm_module_time,            ONLY : ppm_time
+
          USE ppm_module_util_dbg,        ONLY : ppm_dbg_print
          USE ppm_module_util_netstat,    ONLY : ppm_netstat
-
+         USE ppm_module_util_qsort,      ONLY : ppm_util_qsort
+         USE ppm_module_util_unique,     ONLY : ppm_util_unique
+         USE ppm_module_util_time,       ONLY : ppm_util_time
       END MODULE ppm_module_core_util

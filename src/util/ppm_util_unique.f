@@ -81,7 +81,7 @@
       INTEGER, OPTIONAL,      INTENT(IN   ) :: inlistSize
       !!! Size of the elements in the input array to make unique
       INTEGER, OPTIONAL,      INTENT(  OUT) :: outlistSize
-      !!! size of the unique elements
+      !!! size of the output unique elements
 
       !-------------------------------------------------------------------------
       !  Local variables

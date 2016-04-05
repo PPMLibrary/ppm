@@ -32,7 +32,7 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data, ONLY: ppm_kind_double, ppm_initialized,ppm_char
+      USE ppm_module_data, ONLY: ppm_kind_double,ppm_initialized,ppm_char
       USE ppm_module_substart
       USE ppm_module_substop
       IMPLICIT NONE
@@ -64,7 +64,7 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       END SUBROUTINE ppm_is_initialized

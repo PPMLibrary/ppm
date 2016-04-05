@@ -79,8 +79,7 @@
       !-------------------------------------------------------------------------
       !  Validity check
       !-------------------------------------------------------------------------
-      IF ((topoid.GE.1).AND.(topoid.LE.SIZE(ppm_topo)).AND. &
-      &  (ppm_topo(topoid)%t%isdefined)) THEN
+      IF ((topoid.GE.1).AND.(topoid.LE.SIZE(ppm_topo)).AND.(ppm_topo(topoid)%t%isdefined)) THEN
          valid = .TRUE.
       ELSE
          valid = .FALSE.

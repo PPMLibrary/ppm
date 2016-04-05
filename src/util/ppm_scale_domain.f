@@ -49,10 +49,15 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double) :: t0
-      INTEGER                           :: i,j,k,dim
-      LOGICAL                           :: valid
       TYPE(ppm_t_topo), POINTER :: topo
+
+      REAL(ppm_kind_double) :: t0
+
+      INTEGER :: i,j,k
+
+      LOGICAL :: valid
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_scale_domain'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -60,22 +65,20 @@
       !-------------------------------------------------------------------------
       !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_scale_domain',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+      IF (ppm_debug.GT.0) THEN
+         CALL check
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
       !  let us tell the compiler what we want to do ... ie. we should show it
       !  that the first dimension is 1) short and either 2 or 3.
       !-------------------------------------------------------------------------
-      dim=MERGE(2,3,ppm_dim.EQ.2)
-
       !-------------------------------------------------------------------------
       !  based on the topoid we have to scale all or one topology
       !-------------------------------------------------------------------------
@@ -86,45 +89,34 @@
          !----------------------------------------------------------------------
          !  scale all topologies
          !----------------------------------------------------------------------
-
          DO k=1,SIZE(ppm_topo) ! loop over all valid topologies
             CALL ppm_check_topoid(k,valid,info)
-            IF (.NOT. valid) THEN
-                CONTINUE
-            ENDIF
+            IF (.NOT.valid) CYCLE
+
             topo => ppm_topo(k)%t
 
             DO j=1,topo%nsubs
-                DO i=1,dim
+               DO i=1,ppm_dim
 #if __KIND == __DOUBLE_PRECISION
-                    topo%min_subd(i,j) = &
-     &                (topo%min_subd(i,j) - origo(i))*scale(i) + origo(i)
-                    topo%max_subd(i,j) = &
-     &                (topo%max_subd(i,j) - origo(i))*scale(i) + origo(i)
+                  topo%min_subd(i,j)=(topo%min_subd(i,j) - origo(i))*scale(i) + origo(i)
+                  topo%max_subd(i,j)=(topo%max_subd(i,j) - origo(i))*scale(i) + origo(i)
 #else
-                    topo%min_subs(i,j) = &
-     &                (topo%min_subs(i,j) - origo(i))*scale(i) + origo(i)
-                    topo%max_subs(i,j) = &
-     &                (topo%max_subs(i,j) - origo(i))*scale(i) + origo(i)
+                  topo%min_subs(i,j)=(topo%min_subs(i,j) - origo(i))*scale(i) + origo(i)
+                  topo%max_subs(i,j)=(topo%max_subs(i,j) - origo(i))*scale(i) + origo(i)
 #endif
-                ENDDO
+               ENDDO
             ENDDO ! end loop of subs in k-th topo
 
             !-------------------------------------------------------------------
             !  scale the physical domain for/in each topology
             !-------------------------------------------------------------------
-
-            DO i=1,dim
+            DO i=1,ppm_dim
 #if __KIND == __DOUBLE_PRECISION
-                topo%min_physd(i) = &
-     &            (topo%min_physd(i) - origo(i))*scale(i) + origo(i)
-                topo%max_physd(i) = &
-     &            (topo%max_physd(i) - origo(i))*scale(i) + origo(i)
+               topo%min_physd(i)=(topo%min_physd(i) - origo(i))*scale(i) + origo(i)
+               topo%max_physd(i)=(topo%max_physd(i) - origo(i))*scale(i) + origo(i)
 #else
-               topo%min_physs(i) = &
-     &           (topo%min_physs(i) - origo(i))*scale(i) + origo(i)
-               topo%max_physs(i) = &
-     &           (topo%max_physs(i) - origo(i))*scale(i) + origo(i)
+               topo%min_physs(i)=(topo%min_physs(i) - origo(i))*scale(i) + origo(i)
+               topo%max_physs(i)=(topo%max_physs(i) - origo(i))*scale(i) + origo(i)
 #endif
             ENDDO
          ENDDO
@@ -134,46 +126,36 @@
          !----------------------------------------------------------------------
          CALL ppm_check_topoid(topoid,valid,info)
          IF (.NOT. valid) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_scale_domain',  &
-     &                     'Given topoid is not valid',__LINE__,info)
-            GOTO 9999
+            fail("Given topoid is not valid")
          ENDIF
+
          topo => ppm_topo(topoid)%t
 
          !----------------------------------------------------------------------
          !  scale the subs in this topology
          !----------------------------------------------------------------------
          DO j=1,topo%nsubs
-             DO i=1,dim
+            DO i=1,ppm_dim
 #if __KIND == __DOUBLE_PRECISION
-                topo%min_subd(i,j) = &
-     &            (topo%min_subd(i,j) - origo(i))*scale(i) + origo(i)
-                topo%max_subd(i,j) = &
-     &           (topo%max_subd(i,j) - origo(i))*scale(i) + origo(i)
+               topo%min_subd(i,j)=(topo%min_subd(i,j) - origo(i))*scale(i) + origo(i)
+               topo%max_subd(i,j)=(topo%max_subd(i,j) - origo(i))*scale(i) + origo(i)
 #else
-                topo%min_subs(i,j) = &
-     &            (topo%min_subs(i,j) - origo(i))*scale(i) + origo(i)
-                topo%max_subs(i,j) = &
-     &           (topo%max_subs(i,j) - origo(i))*scale(i) + origo(i)
+               topo%min_subs(i,j)=(topo%min_subs(i,j) - origo(i))*scale(i) + origo(i)
+               topo%max_subs(i,j)=(topo%max_subs(i,j) - origo(i))*scale(i) + origo(i)
 #endif
-             ENDDO
+            ENDDO
          ENDDO
 
          !----------------------------------------------------------------------
          !  scale the physical domain
          !----------------------------------------------------------------------
-         DO i=1,dim
+         DO i=1,ppm_dim
 #if __KIND == __DOUBLE_PRECISION
-             topo%min_physd(i) = &
-     &         (topo%min_physd(i) - origo(i))*scale(i) + origo(i)
-             topo%max_physd(i) = &
-     &         (topo%max_physd(i) - origo(i))*scale(i) + origo(i)
+            topo%min_physd(i)=(topo%min_physd(i) - origo(i))*scale(i) + origo(i)
+            topo%max_physd(i)=(topo%max_physd(i) - origo(i))*scale(i) + origo(i)
 #else
-             topo%min_physs(i) = &
-     &         (topo%min_physs(i) - origo(i))*scale(i) + origo(i)
-             topo%max_physs(i) = &
-     &         (topo%max_physs(i) - origo(i))*scale(i) + origo(i)
+            topo%min_physs(i)=(topo%min_physs(i) - origo(i))*scale(i) + origo(i)
+            topo%max_physs(i)=(topo%max_physs(i) - origo(i))*scale(i) + origo(i)
 #endif
          ENDDO
       END SELECT
@@ -181,18 +163,15 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_scale_domain',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF (topoid .GE. 0) THEN
+         IF (topoid.GE.0) THEN
             CALL ppm_check_topoid(topoid,valid,info)
             IF (.NOT. valid) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_scale_domain',  &
-     &             'topoid is invalid!',__LINE__,info)
-               GOTO 8888
+               fail("topoid is invalid!",exit_point=8888)
             ENDIF
          ENDIF
          !----------------------------------------------------------------------
@@ -200,13 +179,10 @@
          !----------------------------------------------------------------------
          DO k=1,ppm_dim
             IF (scale(k).LE.0.0_MK) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_scale_domain',  &
-     &         'the scale factor must > 0',__LINE__,info)
-               GOTO 8888
+               fail("the scale factor must > 0",exit_point=8888)
             ENDIF
          ENDDO
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_scale_domain_s

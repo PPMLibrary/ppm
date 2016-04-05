@@ -124,75 +124,79 @@ def plotdat3(ax,x,y,z,tag):
     ax.scatter(x,y,z,s=10,c=[cmap[t] for t in tag],linewidths=0)
 
 def main():
-    subfilen = sys.argv[1]
-    datfilen = sys.argv[2]
+    if len(sys.argv) > 1:
+      subfilen = sys.argv[1]
+      datfilen = sys.argv[2]
 
-    fig = plt.figure()
+      fig = plt.figure()
+      subfile = open(subfilen)
+      l1 = subfile.readline()
+      dim = float(l1.strip())
+      print dim
+      l2 = subfile.readline()
+      halo = float(l2.strip())
 
-    subfile = open(subfilen)
-    l1 = subfile.readline()
-    dim = float(l1.strip())
-    print dim
-    l2 = subfile.readline()
-    halo = float(l2.strip())
-    if dim == 2:
+      if dim == 2:
         ax = fig.add_subplot(111)
         for l in subfile:
-            r = l.strip().split()
-            min_sub = [float(r[0]),float(r[1])]
-            max_sub = [float(r[2]),float(r[3])]
-            proc = int(r[4])
-            bc = [int(r[5]),int(r[6]),int(r[7]),int(r[8])]
-            if (halo > 0.0):
-                glfaces = gl2rect(min_sub,max_sub,bc,halo)
-                plotgl2(ax,glfaces)
+          r = l.strip().split()
+          min_sub = [float(r[0]),float(r[1])]
+          max_sub = [float(r[2]),float(r[3])]
+          proc = int(r[4])
+          bc = [int(r[5]),int(r[6]),int(r[7]),int(r[8])]
+          if (halo > 0.0):
+            glfaces = gl2rect(min_sub,max_sub,bc,halo)
+            plotgl2(ax,glfaces)
             faces = sub2rect(min_sub,max_sub)
             plotsub2(ax,faces,proc)
-    elif dim == 3:
+      elif dim == 3:
         ax = Axes3D(fig)
         for l in subfile:
-            r = l.strip().split()
-            min_sub = [float(r[0]),float(r[1]),float(r[2])]
-            max_sub = [float(r[3]),float(r[4]),float(r[5])]
-            proc = int(r[6])
-            bc = [int(r[7]),int(r[8]),int(r[9]),\
-                    int(r[10]),int(r[11]),int(r[12])]
-            if (halo > 0.0):
-                glfaces = gl2cube(min_sub,max_sub,bc,halo)
-                plotgl3(ax,glfaces)
+          r = l.strip().split()
+          min_sub = [float(r[0]),float(r[1]),float(r[2])]
+          max_sub = [float(r[3]),float(r[4]),float(r[5])]
+          proc = int(r[6])
+          bc = [int(r[7]),int(r[8]),int(r[9]),\
+            int(r[10]),int(r[11]),int(r[12])]
+          if (halo > 0.0):
+            glfaces = gl2cube(min_sub,max_sub,bc,halo)
+            plotgl3(ax,glfaces)
             faces = sub2cube(min_sub,max_sub)
             plotsub3(ax,faces,proc)
-    subfile.close()
-    datfile = open(datfilen)
-    x = []
-    y = []
-    if dim == 3:
+
+      subfile.close()
+      datfile = open(datfilen)
+      x = []
+      y = []
+      if dim == 3:
         z = []
-    c = []
-    if dim == 2:
-        for l in datfile:
-            r = l.strip().split()
-            x.append(float(r[0]))
-            y.append(float(r[1]))
-            c.append(int(r[2]))
-        plotdat2(ax,x,y,c)
-    elif dim == 3:
-        for l in datfile:
-            r = l.strip().split()
-            x.append(float(r[0]))
-            y.append(float(r[1]))
-            z.append(float(r[2]))
-            c.append(int(r[3]))
-        plotdat3(ax,x,y,z,c)
-    datfile.close()
 
+      c = []
 
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    if dim == 3:
+      if dim == 2:
+        for l in datfile:
+          r = l.strip().split()
+          x.append(float(r[0]))
+          y.append(float(r[1]))
+          c.append(int(r[2]))
+          plotdat2(ax,x,y,c)
+      elif dim == 3:
+        for l in datfile:
+          r = l.strip().split()
+          x.append(float(r[0]))
+          y.append(float(r[1]))
+          z.append(float(r[2]))
+          c.append(int(r[3]))
+          plotdat3(ax,x,y,z,c)
+
+      datfile.close()
+
+      ax.set_xlabel('x')
+      ax.set_ylabel('y')
+      if dim == 3:
         ax.set_zlabel('z')
-    plt.show()
 
+      plt.show()
 
 if __name__ == "__main__":
     main()

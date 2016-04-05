@@ -66,92 +66,98 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-
-      ! arguments
-      INTEGER,            INTENT(IN   ) :: topoid
+      !-------------------------------------------------------------------------
+      !  Arguments
+      !-------------------------------------------------------------------------
+      INTEGER,                            INTENT(IN   ) :: topoid
       !!! topology ID to which we are currently mapped
-      REAL(mk),           INTENT(IN   ) :: ghostlayer
+      REAL(mk),                           INTENT(IN   ) :: ghostlayer
       !!! ghostlayer, can be set to 0 if we dont care about it
-      INTEGER,            INTENT(IN   ) :: step
+      INTEGER,                            INTENT(IN   ) :: step
       !!! parameter can be used to create distinct output dump files for each
       !!! timestep
 #if   __CTAG == __SCALAR
-      INTEGER,            INTENT(IN   ) :: colortag
+      INTEGER,                            INTENT(IN   ) :: colortag
 #elif __CTAG == __VECTOR
-      INTEGER, DIMENSION(:), POINTER    :: colortag
+      INTEGER, DIMENSION(:),              POINTER       :: colortag
 #endif
       !!! a tag to be able to print out different groups of particles or
       !!! visualize a property
-      INTEGER,            INTENT(OUT)   :: info
-      REAL(mk), DIMENSION(:,:), POINTER,OPTIONAL :: xp
+      INTEGER,                            INTENT(  OUT) :: info
+
+      REAL(mk), DIMENSION(:,:), OPTIONAL, POINTER       :: xp
       !!! a particle position array, this argument is optional
-      INTEGER,            INTENT(IN),OPTIONAL    :: np
+      INTEGER,                  OPTIONAL, INTENT(IN   ) :: np
       !!! number of particles
       !!! if xp is provided, then this one must e provided too
-      INTEGER,            INTENT(IN),OPTIONAL    :: mp
+      INTEGER,                  OPTIONAL, INTENT(IN   ) :: mp
       !!! number of particles including ghost particles
       !!! if omitted it is assumed that np=mp
-      LOGICAL,            INTENT(IN),OPTIONAL    :: append
+
+      LOGICAL,                  OPTIONAL, INTENT(IN   ) :: append
       !!! Should the particle positions be appended to an existing file or the
       !!! file overwritten (default).
-      ! local vars
-      CHARACTER(128)                     :: sfmt,pfmt
-      CHARACTER(64)                     :: sfname,pfname
-      TYPE(ppm_t_topo), POINTER         :: topo
-      INTEGER                           :: i
-      INTEGER                           :: iunit
-      REAL(ppm_kind_double) :: t0
-      INTEGER                           :: mpart
-#ifdef __MPI
-      INTEGER, DIMENSION(:),    POINTER :: allnp   => NULL()
-      INTEGER, DIMENSION(:),    POINTER :: allmp   => NULL()
-#if   __CTAG == __SCALAR
-      INTEGER, DIMENSION(:),    POINTER :: allctag => NULL()
-#elif __CTAG == __VECTOR
-      INTEGER, DIMENSION(:,:),  POINTER :: allctag => NULL()
-#endif
-      REAL(mk), DIMENSION(:,:,:),POINTER:: allxp   => NULL()
-      INTEGER, DIMENSION(3)             :: lda
-      INTEGER                           :: maxmp
-      INTEGER                           :: iproc
-      INTEGER, DIMENSION(:),  POINTER   :: req => NULL()
-#endif
 
+      !-------------------------------------------------------------------------
+      !  Local variables
+      !-------------------------------------------------------------------------
+      TYPE(ppm_t_topo), POINTER :: topo
+
+      REAL(ppm_kind_double)               :: t0
+#ifdef __MPI
+      REAL(mk), DIMENSION(:,:,:), POINTER :: allxp
+
+      INTEGER, DIMENSION(:),   POINTER :: allnp
+      INTEGER, DIMENSION(:),   POINTER :: allmp
+#if   __CTAG == __SCALAR
+      INTEGER, DIMENSION(:),   POINTER :: allctag
+#elif __CTAG == __VECTOR
+      INTEGER, DIMENSION(:,:), POINTER :: allctag
+#endif
+      INTEGER, DIMENSION(3)            :: lda
+      INTEGER                          :: maxmp
+      INTEGER                          :: iproc
+#endif
+      INTEGER                          :: i
+      INTEGER                          :: iunit
+      INTEGER                          :: mpart
+
+      CHARACTER(128)          :: sfmt,pfmt
+      CHARACTER(64)           :: sfname,pfname
       CHARACTER(LEN=ppm_char) :: caller='ppm_dbg_print'
 
+      !-------------------------------------------------------------------------
+      !  Start
+      !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
       !------------------------------------------------------------------------
       ! Prepare format strings and file names for I/O
       !------------------------------------------------------------------------
       iunit = 2342
-      WRITE(sfmt,'(A,I1,A,I1,A)') '(',ppm_dim*2,'F12.8,I4,',ppm_dim*2,'I2)'
-      WRITE(pfmt,'(A,I1,A)') '(',ppm_dim,'E18.9,I4)'
-      WRITE(sfname,'(A,I5.5,A)') 'ppm_dbg_',step,'.sub'
-      WRITE(pfname,'(A,I5.5,A)') 'ppm_dbg_',step,'.dat'
+
+      WRITE(sfmt,  '(A,I1,A,I1,A)') '(',ppm_dim*2,'F12.8,I4,',ppm_dim*2,'I2)'
+      WRITE(pfmt,  '(A,I1,A)'     ) '(',ppm_dim,'E18.9,I4)'
+      WRITE(sfname,'(A,I5.5,A)'   ) 'ppm_dbg_',step,'.sub'
+      WRITE(pfname,'(A,I5.5,A)'   ) 'ppm_dbg_',step,'.dat'
 
       !------------------------------------------------------------------------
       ! Write domain decomp and topology info.
       ! In the MPI case, only rank 0 creates this file
       !------------------------------------------------------------------------
-
-#ifdef __MPI
       IF (ppm_rank.EQ.0) THEN
-#endif
-      NULLIFY(topo)
-      CALL ppm_topo_get(topoid,topo,info)
-      OPEN(iunit,FILE=sfname)
+         NULLIFY(topo)
+         CALL ppm_topo_get(topoid,topo,info)
 
-      WRITE(iunit,'(I1)') ppm_dim
-      WRITE(iunit,'(F12.8)') ghostlayer
-      DO i=1,topo%nsubs
-         WRITE(iunit,sfmt) topo%min_subd(:,i),topo%max_subd(:,i),&
-         & topo%sub2proc(i),topo%subs_bc(:,i)
-      ENDDO
-      CLOSE(iunit)
-#ifdef __MPI
+         OPEN(iunit,FILE=sfname)
+         WRITE(iunit,'(I1)') ppm_dim
+         WRITE(iunit,'(F12.8)') ghostlayer
+         DO i=1,topo%nsubs
+            WRITE(iunit,sfmt) topo%min_subd(:,i),topo%max_subd(:,i), &
+            & topo%sub2proc(i),topo%subs_bc(:,i)
+         ENDDO
+         CLOSE(iunit)
       ENDIF
-#endif
 
       IF (PRESENT(xp).AND.PRESENT(np)) THEN
          IF (PRESENT(mp)) THEN
@@ -164,6 +170,7 @@
          !--------------------------------------------------------------------
          ! Send all data to rank 0
          !--------------------------------------------------------------------
+         NULLIFY(allnp,allmp,allctag)
          ! first allocate the size info arrays
          lda(1) = ppm_nproc
          CALL ppm_alloc(allnp,lda,ppm_param_alloc_fit,info)
@@ -182,6 +189,7 @@
          or_fail_MPI('failed to gather allnp, allmp or allctag',ppm_error=ppm_error_fatal)
 
          IF (ppm_rank.EQ.0) THEN
+            NULLIFY(allxp)
             ! allocate allxp array
             maxmp = MAXVAL(allmp)
             lda(1) = ppm_dim
@@ -194,10 +202,6 @@
             CALL ppm_alloc(allctag,lda,ppm_param_alloc_fit,info)
 #endif
             or_fail_alloc('failed to allocate allxp',ppm_error=ppm_error_fatal)
-
-            lda(1) = ppm_nproc
-            CALL ppm_alloc(req,lda,ppm_param_alloc_fit,info)
-            or_fail_alloc('failed to allocate req',ppm_error=ppm_error_fatal)
 
             DO i=1,allmp(1)
                allxp(:,i,1) = xp(:,i)
@@ -238,35 +242,49 @@
 #endif
                ENDDO
             ENDDO
+
             CLOSE(iunit)
+
             CALL ppm_alloc(allxp,lda,ppm_param_dealloc,info)
+            or_fail_dealloc("Failed to deallocate temporary array allxp.")
          ELSE
             CALL MPI_Send(xp,mpart*ppm_dim,ppm_mpi_kind,0,0,ppm_comm,info)
 #if __CTAG == __VECTOR
             CALL MPI_Send(colortag,mpart,MPI_INTEGER,0,0,ppm_comm,info)
 #endif
-          ENDIF
+         ENDIF
+
+         CALL ppm_alloc(allnp,lda,ppm_param_dealloc,info)
+         or_fail_dealloc("Failed to deallocate temporary array allnp.")
+
+         CALL ppm_alloc(allmp,lda,ppm_param_dealloc,info)
+         or_fail_dealloc("Failed to deallocate temporary array allmp.")
+
+         CALL ppm_alloc(allctag,lda,ppm_param_dealloc,info)
+         or_fail_dealloc("Failed to deallocate temporary array allctag.")
+!Non-MPI
 #else
-          IF (PRESENT(append).AND.append) then
-             OPEN(iunit,FILE=pfname,ACCESS='APPEND')
-          ELSE
-             OPEN(iunit,FILE=pfname)
-          ENDIF
-          DO i=1,np
+         IF (PRESENT(append).AND.append) then
+            OPEN(iunit,FILE=pfname,ACCESS='APPEND')
+         ELSE
+            OPEN(iunit,FILE=pfname)
+         ENDIF
+
+         DO i=1,np
 #if __CTAG == __SCALAR
-             WRITE(iunit,pfmt) xp(:,i),colortag
+            WRITE(iunit,pfmt) xp(:,i),colortag
 #elif __CTAG == __VECTOR
-             WRITE(iunit,pfmt) xp(:,i),colortag(i)
+            WRITE(iunit,pfmt) xp(:,i),colortag(i)
 #endif
-          ENDDO
-          DO i=np+1,mpart
+         ENDDO
+         DO i=np+1,mpart
 #if __CTAG == __SCALAR
-             WRITE(iunit,pfmt) xp(:,i),-1
+            WRITE(iunit,pfmt) xp(:,i),-1
 #elif __CTAG == __VECTOR
-             WRITE(iunit,pfmt) xp(:,i),colortag(i)
+            WRITE(iunit,pfmt) xp(:,i),colortag(i)
 #endif
-          ENDDO
-          CLOSE(iunit)
+         ENDDO
+         CLOSE(iunit)
 #endif
       ENDIF
       !-------------------------------------------------------------------------
