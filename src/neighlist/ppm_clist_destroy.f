@@ -29,13 +29,6 @@
 
       SUBROUTINE ppm_clist_destroy(clist,info)
       !!! Properly deallocates the cell list it is passed.
-      !!!
-      !!! [NOTE]
-      !!! At least using pgf90, this routine is actually not necessary as
-      !!! `DEALLOCATE(clist)` would be sufficient (no memory leak would
-      !!! occur according to Valgrind). But since this might be a
-      !!! compiler-dependent feature we do it the orthodox way for the sake
-      !!! of portability.
 
       !-------------------------------------------------------------------------
       !  Modules

@@ -6,8 +6,8 @@ USE ppm_module_field_typedef
 USE ppm_module_mktopo
 
 INTEGER, PARAMETER              :: debug = 0
-INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
-REAL(MK),PARAMETER              :: pi = ACOS(-1._mk)
+INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
+REAL(MK),PARAMETER              :: pi = ACOS(-1.0_MK)
 INTEGER,PARAMETER               :: ndim=2
 INTEGER                         :: decomp,assig,tolexp
 INTEGER                         :: info,comm,rank,nproc
@@ -50,8 +50,8 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         ALLOCATE(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
 
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
+        min_phys(1:ndim) = 0.0_MK
+        max_phys(1:ndim) = 1.0_MK
         ighostsize(1:ndim) = 2
         bcdef(1:2*ndim) = ppm_param_bcdef_periodic
         tolexp = -12
@@ -136,7 +136,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         endif
 
         Nm = 125
-        offset = 0._mk
+        offset = 0.0_MK
         CALL Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
         CALL Mesh1%destroy(info)
@@ -167,7 +167,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         &    ghostsize=ighostsize,name='Test_Mesh_1')
         Assert_Equal(info,0)
 
-        my_patch(1:2*ndim) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
+        my_patch(1:2*ndim) = (/0.15_mk,0.10_MK,0.99_mk,0.7_mk/)
         CALL Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
 
@@ -262,9 +262,9 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         !Fill in the allocated field arrays (incl. ghost nodes) with some data
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
-                Field1_n(1) = -10._mk * (rank+1)
-                Field1_n(2) = -10._mk * (rank+1) - 1
-                Field2_n    = -1._mk
+                Field1_n(1) = -10.0_MK * (rank+1)
+                Field1_n(2) = -10.0_MK * (rank+1) - 1
+                Field2_n    = -1.0_MK
         end foreach
 
         !Change the values of the real nodes to something that depends
@@ -272,9 +272,9 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for real
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                Field1_n(1) = cos(2._mk*pi*pos(1))
-                Field1_n(2) = cos(2._mk*pi*pos(1)) + 2._mk
-                Field2_n    = 1._mk
+                Field1_n(1) = COS(2._MK*pi*pos(1))
+                Field1_n(2) = COS(2._MK*pi*pos(1)) + 2.0_MK
+                Field2_n    = 1.0_MK
         end foreach
 
         !Do a ghost mapping
@@ -305,7 +305,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .lt. 0._mk) then
+                IF (Field2_n .lt. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
                 !stdout_f('(A,2(I0,1X),A,2(E24.16,1X))',&
@@ -317,9 +317,9 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
                 !stdout("p%iend=",'sbpitr%iend')
                 !stdout("p%iend_pos=",&
                 !    'sbpitr%get_pos(sbpitr%nnodes(1),sbpitr%nnodes(2))')
-                Assert_Equal_Within(Field1_n(1) ,cos(2._mk*pi*pos(1)),        1e-5)
-                Assert_Equal_Within(Field1_n(2) ,cos(2._mk*pi*pos(1)) + 2._mk,1e-5)
-                Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
+                Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
+                Assert_Equal_Within(Field1_n(2) ,COS(2._MK*pi*pos(1)) + 2.0_MK,1e-5)
+                Assert_Equal_Within(Field2_n    ,1.0_MK,1e-5)
         end foreach
         Assert_Equal(nb_errors,0)
 #ifdef __MPI

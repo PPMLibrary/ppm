@@ -1,12 +1,8 @@
 test_suite ppm_module_neighlist_kdtree
 
-#ifdef __MPI
-  INCLUDE "mpif.h"
-#endif
-
   INTEGER,  PARAMETER                 :: debug = 0
-  INTEGER,  PARAMETER                 :: mk = kind(1.0d0) !kind(1.0e0)
-  REAL(MK), PARAMETER                 :: skin = 0._mk
+  INTEGER,  PARAMETER                 :: MK = KIND(1.0d0) !KIND(1.0e0)
+  REAL(MK), PARAMETER                 :: skin = 0.0_MK
   INTEGER,  PARAMETER                 :: ndim=3
   INTEGER                             :: decomp,assig,tolexp
   REAL(MK)                            :: tol,min_rcp,max_rcp
@@ -32,7 +28,7 @@ test_suite ppm_module_neighlist_kdtree
   INTEGER,  DIMENSION(:), ALLOCATABLE :: seed
   REAL(MK), DIMENSION(:), ALLOCATABLE :: randnb
   INTEGER                             :: isymm = 0
-  LOGICAL                             :: lsymm = .false.,ok
+  LOGICAL                             :: lsymm = .FALSE.,ok
   REAL(MK)                            :: t0,t1,t2,t3
   REAL(MK)                            :: eps
 
@@ -45,8 +41,8 @@ test_suite ppm_module_neighlist_kdtree
     &       ghostsize(ndim),ghostlayer(2*ndim),&
     &       nm(ndim),h(ndim),STAT=info)
 
-    min_phys(1:ndim) = 0.0_mk
-    max_phys(1:ndim) = 1.0_mk
+    min_phys(1:ndim) = 0.0_MK
+    max_phys(1:ndim) = 1.0_MK
     len_phys(1:ndim) = max_phys-min_phys
     ghostsize(1:ndim) = 2
     bcdef(1:6) = ppm_param_bcdef_periodic
@@ -182,7 +178,7 @@ test_suite ppm_module_neighlist_kdtree
     stdout('t2-t1'," seconds to compute Verlet list.")
     Assert_Equal(info,0)
 
-    Assert_true(Part%has_neighlist())
+    Assert_True(Part%has_neighlist())
 
     Nlist => Part%get_neighlist()
 
@@ -198,7 +194,7 @@ test_suite ppm_module_neighlist_kdtree
     stdout('t2-t1'," seconds to create Verlet list using the tree.")
     Assert_Equal(info,0)
 
-    Assert_true(Part%has_neighlist())
+    Assert_True(Part%has_neighlist())
 
     Nlist => Part%get_neighlist()
     knn=50

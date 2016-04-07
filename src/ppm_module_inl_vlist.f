@@ -46,6 +46,8 @@
         USE ppm_module_topo_typedef
         IMPLICIT NONE
 
+        PRIVATE
+
         !-------------------------------------------------------------------------
         !  Declaration of arrays
         !-------------------------------------------------------------------------
@@ -135,20 +137,12 @@
         END INTERFACE
 
         !-------------------------------------------------------------------------
-        !  Privatizing arrays, variables and parameters
+        !  PUBLIC
         !-------------------------------------------------------------------------
-        PRIVATE :: create_inl_vlist
-        PRIVATE :: getVerletLists
-        PRIVATE :: count_neigh, count_neigh_sym
-        PRIVATE :: get_neigh, get_neigh_sym
-        PRIVATE :: getSubdomainParticles
-        PRIVATE :: getParticlesInCell
-        PRIVATE :: getParticleCoorDepth
-        PRIVATE :: inDomain
-        PRIVATE :: isNeighbor
+        PUBLIC :: ppm_inl_vlist
+        
 
-!!! to be completed when test driver is removed!
-
+        !!! to be completed when test driver is removed!
         CONTAINS
 
 #define __KIND __SINGLE_PRECISION

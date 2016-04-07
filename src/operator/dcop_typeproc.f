@@ -497,7 +497,7 @@
               ELSE
                  CALL Part_src%get_vlist(nvlist,vlist,info)
                  or_fail("could not access neighbour lists")
-                 sig = -1._mk
+                 sig = -1.0_MK
                  IF (vector_operator) THEN
                     IF (vector_input) THEN
                        NULLIFY(wpv1)

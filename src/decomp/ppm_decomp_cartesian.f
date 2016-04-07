@@ -205,7 +205,7 @@
          !  Decomposition based on mesh
          !---------------------------------------------------------------------
          ! create as few subs as possible, but at least as many as
-         ! there as processors. reason: sub borders only cause extra
+         ! there are processors. reason: sub borders only cause extra
          ! needs for memory (ghosts) and communication (ghost update)
          nsrem = nsubs
 
@@ -359,9 +359,8 @@
                      DO k = 1,nblocks(3)
                         tz = tz + Npx(3,k)
                      ENDDO
-                     surface(1)=surface(1) + &
-                     & 2*(nsrem*tz*ty+nblocks(3)*rc*ty+nblocks(2)*rc*tz)
-                     volume(1) =volume(1)  + (rc*ty*tz)
+                     surface(1)=surface(1)+2*(nsrem*tz*ty+nblocks(3)*rc*ty+nblocks(2)*rc*tz)
+                     volume(1) =volume(1) +(rc*ty*tz)
                   ELSE
                      ty = nblocks(2)
                      DO k = 1,nblocks(2)
@@ -381,9 +380,8 @@
                      ! total grid points in x and z
                      tx = SUM(Npx(1,1:nblocks(1)))+nblocks(1)
                      tz = SUM(Npx(3,1:nblocks(3)))+nblocks(3)
-                     surface(2)=surface(2) + &
-                     & 2*(nsrem*tx*tz + nblocks(1)*rc*tz+nblocks(3)*rc*tx)
-                     volume(2) =volume(2)  + (rc*tz*tx)
+                     surface(2)=surface(2)+2*(nsrem*tx*tz + nblocks(1)*rc*tz+nblocks(3)*rc*tx)
+                     volume(2) =volume(2) +(rc*tz*tx)
                   ELSE
                      tx = SUM(Npx(1,1:nblocks(1)))+nblocks(1)
                      surface(2)=surface(2) + 2*(nblocks(1)*rc*tx)
@@ -405,9 +403,8 @@
                   DO k = 1,nblocks(2)
                      ty = ty + Npx(2,k)
                   ENDDO
-                  surface(3)=surface(3) + &
-                  & 2* (nsrem*ty*tx + nblocks(2)*rc*tx+nblocks(1)*rc*ty)
-                  volume(3) =volume(3)  + (rc*tx*ty)
+                  surface(3)=surface(3)+2* (nsrem*ty*tx + nblocks(2)*rc*tx+nblocks(1)*rc*ty)
+                  volume(3) =volume(3) +(rc*tx*ty)
                ENDDO
             ENDIF
             ! NOTE: surface(i) and volume(i) are the total surface of

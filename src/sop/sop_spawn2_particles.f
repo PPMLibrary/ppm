@@ -248,18 +248,18 @@
               DO i=1,6
                   angle = PI/3._MK*REAL(i,MK)
                   default_stencil(1:3,i) =  &
-                      (/COS(angle),SIN(angle),0._mk/)
+                      (/COS(angle),SIN(angle),0.0_MK/)
               ENDDO
               !the 3d stencil (2d stencil completed by 2 additional layers)
               DO i=1,3
                   angle = PI/6._MK + 2._MK*PI/3._MK* REAL(i,MK)
-                  default_stencil(1:3,6+i)=sqrt(3._mk)/2._mk*&
-                      (/COS(angle),SIN(angle),1._mk/sqrt(3._mk)/)
+                  default_stencil(1:3,6+i)=SQRT(3.0_MK)/2._MK*&
+                      (/COS(angle),SIN(angle),1.0_MK/SQRT(3.0_MK)/)
               ENDDO
               DO i=1,3
                   angle = PI/6._MK + 2._MK*PI/3._MK* REAL(i,MK)
-                  default_stencil(1:3,9+i)=sqrt(3._mk)/2._mk*&
-                      (/COS(angle),SIN(angle),-1._mk/sqrt(3._mk)/)
+                  default_stencil(1:3,9+i)=SQRT(3.0_MK)/2._MK*&
+                      (/COS(angle),SIN(angle),-1.0_MK/SQRT(3.0_MK)/)
               ENDDO
 
 
@@ -283,7 +283,7 @@
                           ENDIF
                       ENDIF
 
-                      new_part_list: DO i=1,abs(nvlist(ip))
+                      new_part_list: DO i=1,ABS(nvlist(ip))
                           add_part = add_part + 1
 
                           if(nvlist(ip) .gt.0) then
@@ -293,19 +293,19 @@
                                   !cycle new_part_list
                               !endif
                               if (iq .le. Npart) then
-                                  dist = sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
+                                  dist = SQRT(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
                                   xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
                                       opts%spawn_radius*D(ip) * &
                                       ((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)))/dist
-                                      ! + 0.0_mk*default_stencil(1:ppm_dim,1))
+                                      ! + 0.0_MK*default_stencil(1:ppm_dim,1))
                                       ! mirror image of q
 
                               else
-                                  dist = sqrt(sum((xp(1:ppm_dim,ip)-xp_g(1:ppm_dim,iq))**2))
+                                  dist = SQRT(sum((xp(1:ppm_dim,ip)-xp_g(1:ppm_dim,iq))**2))
                                   xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
                                       opts%spawn_radius*D(ip) * &
                                       ((xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq)))/dist
-                                      ! + 0.0_mk*default_stencil(1:ppm_dim,1))
+                                      ! + 0.0_MK*default_stencil(1:ppm_dim,1))
                                       !mirror image of q
                               endif
                           else
@@ -318,7 +318,7 @@
                           Dtilde(Npart + add_part)   = Dtilde(ip)
                           rcp(Npart + add_part) = rcp(ip)
                           fuse_part(Npart + add_part)   = fuse_part(ip)
-                          nb_neigh(Npart + add_part)   = -abs(nb_neigh(ip))
+                          nb_neigh(Npart + add_part)   = -ABS(nb_neigh(ip))
                       ENDDO new_part_list
                   ENDIF
               ENDDO add_particles
@@ -426,11 +426,11 @@
 
           Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
 
-          fuse_part => Get_wpi(Particles,fuse_id,with_ghosts=.true.)
+          fuse_part => Get_wpi(Particles,fuse_id,with_ghosts=.TRUE.)
           nb_neigh => Get_wpi(Particles,nb_neigh_id)
 
-          !max_nn = 0._mk
-          avg_nn = 0._mk
+          !max_nn = 0.0_MK
+          avg_nn = 0.0_MK
           particle_loop: DO ip = 1,Particles%Npart
               nn = big
               close_neigh = 0
@@ -450,7 +450,7 @@
                   IF (rr .LT. nn) THEN
                       nn = rr
                   ENDIF
-                  IF (rr .LT. 1.0_mk) THEN
+                  IF (rr .LT. 1.0_MK) THEN
                       close_neigh = close_neigh + 1
                       IF (fuse_part(iq).GT.0) nb_fuse_neigh=nb_fuse_neigh + 1
                   ENDIF
@@ -478,7 +478,7 @@
 
               IF (close_neigh .LE. nb_close_theo-1) THEN
                   IF (close_neigh .LE. nb_close_theo-2) then
-                      adaptation_ok = .false.
+                      adaptation_ok = .FALSE.
                   ENDIF
                   !IF (nn .gt. opts%attractive_radius0 .and. opts%add_parts) THEN
                   IF (opts%add_parts) THEN
@@ -488,7 +488,7 @@
 
                           rr = SQRT(SUM((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))**2)) / &
                               Dtilde(ip)
-                          IF (rr .LT. 1.0_mk) THEN
+                          IF (rr .LT. 1.0_MK) THEN
                               close_neigh=close_neigh+1
                               vlist(close_neigh,ip) = iq
                           ENDIF

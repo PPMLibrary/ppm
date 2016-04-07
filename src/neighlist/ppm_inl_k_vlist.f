@@ -1078,7 +1078,7 @@
       !!! [NOTE]
       !! Yaser
       !!! this is only the modification of the hybrid QuickSort algorithm
-      !!! which will sort the input array in ascending order.
+      !!! which will sort the input array in an ascending order.
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -1099,12 +1099,11 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(DTYPE(kdtree_result)) :: datap
+      TYPE(DTYPE(kdtree_result))                            :: datap
+      TYPE(DTYPE(kdtree_result)), DIMENSION(:), ALLOCATABLE :: inlistarray
 
       REAL(ppm_kind_double) :: t0
 
-      INTEGER, DIMENSION(1)              :: ldl,ldu
-      INTEGER                            :: iopt
       INTEGER, PARAMETER                 :: m = 9
       !   QuickSort Cutoff
       !   Quit QuickSort-ing when a subsequence contains M or fewer
@@ -1113,6 +1112,9 @@
       INTEGER                            :: stklength, dn
       INTEGER, DIMENSION(:), ALLOCATABLE :: lstk
       INTEGER, DIMENSION(:), ALLOCATABLE :: rstk
+      INTEGER, DIMENSION(:), ALLOCATABLE :: inlistidx
+      ! Permutation list
+      INTEGER                            :: indexp,indext
       INTEGER                            :: i,j,n,l,r,p
       INTEGER                            :: istk
       INTEGER                            :: inlistu,inlistl
@@ -1131,6 +1133,11 @@
       inlistu = UBOUND(inlist,1)
       n = inlistu-inlistl+1
 
+      ALLOCATE(inlistidx(inlistl:inlistu),STAT=info)
+      or_fail_alloc('indices list inlistidx',ppm_error=ppm_error_fatal)
+
+      FORALL (i=inlistl:inlistu) inlistidx(i)=i
+
       !-------------------------------------------------------------------------
       ! Compute the log of the list length, it is in fact a bound for the length
       ! of the stack of intervals
@@ -1147,13 +1154,9 @@
       !-------------------------------------------------------------------------
       ! Allocate the stack of intervals
       !-------------------------------------------------------------------------
-      ldl(1) = 1
-      ldu(1) = stklength
-      ALLOCATE(lstk(ldl(1):ldu(1)),STAT=info)
-      or_fail_alloc('left indices list LSTK',ppm_error=ppm_error_fatal)
-
-      ALLOCATE(rstk(ldl(1):ldu(1)),STAT=info)
-      or_fail_alloc('right indices list RSTK',ppm_error=ppm_error_fatal)
+      ALLOCATE(lstk(stklength),rstk(stklength),STAT=info)
+      or_fail_alloc('Failed to allocate left indices list LSTK & right indices list RSTK!', &
+      & ppm_error=ppm_error_fatal)
 
       ! If array is short, skip QuickSort and go directly to
       ! the straight insertion sort.
@@ -1193,23 +1196,27 @@
       !     The pivot key, DATAP, is then DATA[P].
 
       p=(l+r)/2
-      datap=inlist(p)
 
-      IF (inlist(l)%dis.GT.datap%dis) THEN
-         inlist(p)=inlist(l)
-         inlist(l)=datap
-         datap=inlist(p)
+      indexp=inlistidx(p)
+      datap=inlist(indexp)
+
+      IF (inlist(inlistidx(l))%dis.GT.datap%dis) THEN
+         inlistidx(p)=inlistidx(l)
+         inlistidx(l)=indexp
+         indexp=inlistidx(p)
+         datap=inlist(indexp)
       ENDIF
 
-      IF (datap%dis.GT.inlist(r)%dis) THEN
-         IF (inlist(l)%dis.GT.inlist(r)%dis) THEN
-            inlist(p)=inlist(l)
-            inlist(l)=inlist(r)
+      IF (datap%dis.GT.inlist(inlistidx(r))%dis) THEN
+         IF (inlist(inlistidx(l))%dis.GT.inlist(inlistidx(r))%dis) THEN
+            inlistidx(p)=inlistidx(l)
+            inlistidx(l)=inlistidx(r)
          ELSE
-            inlist(p)=inlist(r)
+            inlistidx(p)=inlistidx(r)
          ENDIF
-         inlist(r)=datap
-         datap=inlist(p)
+         inlistidx(r)=indexp
+         indexp=inlistidx(p)
+         datap=inlist(indexp)
       ENDIF
 
       !     Now we swap values between the right and left sides and/or
@@ -1227,7 +1234,7 @@
       !     the subsequence).
 
       i=i+1
-      IF (inlist(i)%dis.LT.datap%dis) GOTO 300
+      IF (inlist(inlistidx(i))%dis.LT.datap%dis) GOTO 300
 
       400 CONTINUE
 
@@ -1238,17 +1245,18 @@
       !     to terminate since we initially placed DATAP near the middle of
       !     the subsequence).
       j=j-1
-      IF (inlist(j)%dis.GT.datap%dis) GOTO 400
+      IF (inlist(inlistidx(j))%dis.GT.datap%dis) GOTO 400
 
       ! Q5: Have the two scans collided?
       IF (i.LT.j) THEN
          ! Q6: No, interchange DATA[I] <--> DATA[J] and continue
          !PRINT *, ' Interchange '
-         datap=inlist(i)
-         inlist(i)=inlist(j)
-         inlist(j)=datap
+         indext=inlistidx(i)
+         inlistidx(i)=inlistidx(j)
+         inlistidx(j)=indext
          GOTO 300
       ELSE
+
       ! Q7: Yes, select next subsequence to sort
       !
       !     At this point, I >= J and DATA[l] <= DATA[I] == DATAP <= DATA[r],
@@ -1260,21 +1268,11 @@
          !PRINT *, ' Collision '
          IF (r-j .GE. i-l .AND. i-l .GT. m) THEN
             istk=istk+1
-            !Unnecessary check for the stack position
-            IF (istk .GT. stklength) THEN
-               fail('-1- ISTK > STKLENGTH',ppm_err_wrong_dim)
-            ENDIF
-
             lstk(istk)=j+1
             rstk(istk)=r
             r=i-1
          ELSE IF (i-l .GT. r-j .AND. r-j .GT. m) THEN
             istk=istk+1
-            !Unnecessary check for the stack position
-            IF (istk .GT. stklength) THEN
-               fail('-2- ISTK > STKLENGTH',ppm_err_wrong_dim)
-            ENDIF
-
             lstk(istk)=l
             rstk(istk)=i-1
             l=j+1
@@ -1297,18 +1295,19 @@
       !-------------------------------------------------------------------------
       ! Q9: Straight Insertion sort
       DO i=inlistl+1,inlistu
-         IF (inlist(i-1)%dis.GT.inlist(i)%dis) THEN
-            datap=inlist(i)
+         IF (inlist(inlistidx(i-1))%dis.GT.inlist(inlistidx(i))%dis) THEN
+            indexp=inlistidx(i)
+            datap=inlist(indexp)
             p=i-1
 
       920   CONTINUE
 
-            inlist(p+1)=inlist(p)
+            inlistidx(p+1) = inlistidx(p)
             p=p-1
             IF (p.GT.(inlistl-1)) THEN
-               IF (inlist(p)%dis.GT.datap%dis) GOTO 920
+               IF (inlist(inlistidx(p))%dis.GT.datap%dis) GOTO 920
             ENDIF
-            inlist(p+1)=datap
+            inlistidx(p+1) = indexp
          ENDIF
       ENDDO
 
@@ -1317,6 +1316,21 @@
       !-------------------------------------------------------------------------
       DEALLOCATE(lstk,rstk,STAT=info)
       or_fail_dealloc('left indices list LSTK & right indices list RSTK')
+
+      ALLOCATE(inlistarray(inlistl:inlistu),STAT=info)
+      or_fail_alloc("inlistarray")
+
+      FORALL(i=inlistl:inlistu)
+         inlistarray(i)=inlist(inlistidx(i))
+      END FORALL
+
+      FORALL(i=inlistl:inlistu) inlist(i)=inlistarray(i)
+
+      !-------------------------------------------------------------------------
+      ! Deallocate the stack of intervals
+      !-------------------------------------------------------------------------
+      DEALLOCATE(inlistarray,inlistidx,STAT=info)
+      or_fail_dealloc('Failed to deallocate inlistarray & inlistidx!')
 
       !===================================================================
       !

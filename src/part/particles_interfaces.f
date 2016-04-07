@@ -72,6 +72,28 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
           INTEGER,               INTENT(  OUT) :: info
       END SUBROUTINE
 
+      SUBROUTINE DTYPE(part_del_part)_(Pc,del_part,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(IN   ) :: del_part
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
+      FUNCTION DTYPE(part_size)_(Pc) RESULT(res)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER                        :: res
+      END FUNCTION
+
+      SUBROUTINE DTYPE(part_grow_size)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
 minclude ppm_create_collection_interfaces(DTYPE(part_prop)_,DTYPE(part_prop)_)
 
       !CREATE ENTRY
@@ -157,11 +179,11 @@ minclude ppm_create_collection_interfaces(DTYPE(part_prop)_,DTYPE(part_prop)_)
           INTEGER,                 INTENT(  OUT) :: info
       END SUBROUTINE
 
-      SUBROUTINE DTYPE(part_prop_zero)_(this,Field,info)
+      SUBROUTINE DTYPE(part_prop_zero)_(this,FieldIn,info)
           IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
           IMPLICIT NONE
           CLASS(DTYPE(ppm_t_particles)_)     :: this
-          CLASS(ppm_t_field_), TARGET        :: Field
+          CLASS(ppm_t_field_), TARGET        :: FieldIn
           INTEGER,             INTENT(  OUT) :: info
       END SUBROUTINE
 

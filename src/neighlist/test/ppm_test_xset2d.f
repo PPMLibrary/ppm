@@ -42,18 +42,18 @@ subroutine old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
 
     ! arguments
     integer, parameter              :: mk = ppm_kind_double
-    integer,                         intent(in   ) :: topo_id
-    type(ppm_t_topo), pointer,       intent(in   ) :: topo
-    real(mk),dimension(:,:),pointer, intent(in   ) :: xp_red
-    integer,                         intent(in   ) :: nred
-    real(mk),dimension(:,:),         intent(in   ) :: xp_blue
-    real(mk),dimension(:),           intent(in   ) :: rcp_blue
-    integer,                         intent(in   ) :: nblue
-    integer,                         intent(in   ) :: mblue
-    real(mk),                        intent(in   ) :: cutoff
-    integer, dimension(:),  pointer, intent(inout) :: nvlist_cross
-    integer, dimension(:,:),pointer, intent(inout) :: vlist_cross
-    integer,                         intent(  out)   :: info
+    integer,                         INTENT(IN   ) :: topo_id
+    type(ppm_t_topo), pointer,       INTENT(IN   ) :: topo
+    REAL(MK),dimension(:,:),pointer, INTENT(IN   ) :: xp_red
+    integer,                         INTENT(IN   ) :: nred
+    REAL(MK),dimension(:,:),         INTENT(IN   ) :: xp_blue
+    REAL(MK),dimension(:),           INTENT(IN   ) :: rcp_blue
+    integer,                         INTENT(IN   ) :: nblue
+    integer,                         INTENT(IN   ) :: mblue
+    REAL(MK),                        INTENT(IN   ) :: cutoff
+    integer, dimension(:),  pointer, INTENT(INOUT) :: nvlist_cross
+    integer, dimension(:,:),pointer, INTENT(INOUT) :: vlist_cross
+    integer,                         INTENT(  OUT)   :: info
 
     ! local variable
     integer                                             :: ip,iq,isub,iinter
@@ -62,15 +62,15 @@ subroutine old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
     integer                                             :: n1,n2,n3,i,j,k
     integer                                             :: maxvlen
     integer                                             :: ibegin,iend,jbegin,jend
-    real(mk)                                            :: dist2,cutoff2
-    real(mk),dimension(2)                               :: cellsize
+    REAL(MK)                                            :: dist2,cutoff2
+    REAL(MK),dimension(2)                               :: cellsize
     integer, dimension(:,:), pointer                    :: ncells => null()
     type(ppm_type_ptr_to_clist), dimension(:), pointer  :: clist => null()
     integer,                     dimension(:,:),pointer :: ind => null()
     integer,                     dimension(:,:),pointer :: jnd => null()
     integer                                             :: nnd
     integer                                             :: ndim
-    real(mk), dimension(:,:),pointer                    :: all_xp=>NULL()
+    REAL(MK), dimension(:,:),pointer                    :: all_xp=>NULL()
 
         !---------------------------------------------------------------------!
         ! initialize
@@ -94,12 +94,12 @@ subroutine old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
         cellsize = cutoff
 
         call ppm_neighlist_clist(topo_id,all_xp,mblue+nred,cellsize,&
-            .false.,clist,ncells,info)
+            .FALSE.,clist,ncells,info)
 
         !!--------------------------------------------------------------------
         !! create the index list of cell-cell interactons
         !!--------------------------------------------------------------------
-        call ppm_neighlist_mkneighidx(.false.,ind,jnd,nnd,info)
+        call ppm_neighlist_mkneighidx(.FALSE.,ind,jnd,nnd,info)
 
         !!--------------------------------------------------------------------
         !! run over cells and create verlet lists for the particles inside
@@ -328,11 +328,11 @@ include 'mpif.h'
 
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = ppm_kind_double
-real(mk),parameter              :: pi = 3.1415926535897931_mk
-real(mk),parameter              :: skin = 0._mk
+REAL(MK),parameter              :: pi = 3.1415926535897931_mk
+REAL(MK),parameter              :: skin = 0.0_MK
 integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol,min_rcp,max_rcp
+REAL(MK)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank
 integer                         :: topoid
 integer                         :: nred = 10000
@@ -340,31 +340,31 @@ integer                         :: mred
 integer                         :: nblue = 3000
 integer                         :: mblue
 integer                         :: newnp
-real(mk),dimension(:,:),pointer :: xp_red=>NULL()
-real(mk),dimension(:,:),pointer :: xp_blue=>NULL()
-real(mk),dimension(:  ),pointer :: rcp_blue=>NULL()
-real(mk),dimension(:  ),pointer :: min_phys=>NULL(),max_phys,h,p_h=>NULL()
-real(mk),dimension(:  ),pointer :: len_phys=>NULL()
-real(mk),dimension(:  ),pointer :: ghostlayer=>NULL()
+REAL(MK),dimension(:,:),pointer :: xp_red=>NULL()
+REAL(MK),dimension(:,:),pointer :: xp_blue=>NULL()
+REAL(MK),dimension(:  ),pointer :: rcp_blue=>NULL()
+REAL(MK),dimension(:  ),pointer :: min_phys=>NULL(),max_phys,h,p_h=>NULL()
+REAL(MK),dimension(:  ),pointer :: len_phys=>NULL()
+REAL(MK),dimension(:  ),pointer :: ghostlayer=>NULL()
 integer, dimension(:  ),pointer :: ghostsize=>NULL()
 integer                         :: i,j,sum1,sum2
 integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost=>NULL()
+REAL(MK),dimension(:  ),pointer :: cost=>NULL()
 integer, dimension(:  ),pointer :: nm=>NULL()
 type(ppm_t_topo), pointer       :: topo
 integer                         :: seedsize
-integer,  dimension(:),allocatable :: seed
-real(mk), dimension(:),allocatable :: randnb
+integer,  dimension(:),ALLOCATABLE :: seed
+REAL(MK), dimension(:),ALLOCATABLE :: randnb
 integer,dimension(:,:),pointer   :: vlist=>NULL(),vlist2=>NULL()
 integer,dimension(:),  pointer   :: nvlist=>NULL(),nvlist2=>NULL()
 integer                          :: isymm = 0
-logical                          :: lsymm = .false.,ok
+logical                          :: lsymm = .FALSE.,ok
 
 !----------------
 ! setup
 !----------------
-tol = 10.0_mk*EPSILON(1.0_mk)
-tolexp = int(log10(EPSILON(1.0_mk)))
+tol = 10.0_MK*EPSILON(1.0_MK)
+tolexp = int(log10(EPSILON(1.0_MK)))
 min_rcp = 0.01_mk
 max_rcp = 0.1_mk
 
@@ -372,8 +372,8 @@ ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
     &         ghostsize(ndim),ghostlayer(2*ndim),&
     &         nm(ndim),h(ndim),p_h(ndim),stat=info)
 
-min_phys(1:ndim) = 0.0_mk
-max_phys(1:ndim) = 1.0_mk
+min_phys(1:ndim) = 0.0_MK
+max_phys(1:ndim) = 1.0_MK
 len_phys(1:ndim) = max_phys-min_phys
 ghostsize(1:ndim) = 2
 ghostlayer(1:2*ndim) = max_rcp
@@ -404,9 +404,9 @@ call random_number(randnb)
 
 ALLOCATE(xp_red(ndim,nred),stat=info)
 ALLOCATE(xp_blue(ndim,nblue),rcp_blue(nblue),stat=info)
-xp_red = 0.0_mk
-xp_blue = 0.0_mk
-rcp_blue = 0.0_mk
+xp_red = 0.0_MK
+xp_blue = 0.0_MK
+rcp_blue = 0.0_MK
 
 do i=1,nred
     do j=1,2

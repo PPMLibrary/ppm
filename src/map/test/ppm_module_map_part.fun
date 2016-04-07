@@ -1,9 +1,9 @@
 test_suite ppm_module_map_part
 
   INTEGER, PARAMETER              :: debug = 0
-  INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
+  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
   REAL(MK),PARAMETER              :: pi = 3.1415926535897931_mk
-  REAL(MK),PARAMETER              :: skin = 0._mk
+  REAL(MK),PARAMETER              :: skin = 0.0_MK
   INTEGER,PARAMETER               :: ndim=2
   INTEGER,PARAMETER               :: pdim=2
   INTEGER                         :: decomp,assig,tolexp
@@ -31,10 +31,10 @@ test_suite ppm_module_map_part
   REAL(MK),DIMENSION(:  ),POINTER :: cost => NULL()
   INTEGER, DIMENSION(:  ),POINTER :: nm => NULL()
   INTEGER                         :: seedsize
-  INTEGER,  DIMENSION(:),allocatable :: seed
-  REAL(MK), DIMENSION(:),allocatable :: randnb
+  INTEGER,  DIMENSION(:),ALLOCATABLE :: seed
+  REAL(MK), DIMENSION(:),ALLOCATABLE :: randnb
   INTEGER                          :: isymm = 0
-  LOGICAL                          :: lsymm = .false.,ok
+  LOGICAL                          :: lsymm = .FALSE.,ok
   REAL(MK)                         :: t0,t1,t2,t3
 
     init
@@ -47,13 +47,13 @@ test_suite ppm_module_map_part
         &         ghostsize(ndim),ghostlayer(2*ndim),&
         &         nm(ndim),h(ndim),p_h(ndim),STAT=info)
 
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
+        min_phys(1:ndim) = 0.0_MK
+        max_phys(1:ndim) = 1.0_MK
         len_phys(1:ndim) = max_phys-min_phys
         ghostsize(1:ndim) = 2
         ghostlayer(1:2*ndim) = max_rcp
         bcdef(1:6) = ppm_param_bcdef_periodic
-        tol = EPSILON(1.0_mk)
+        tol = EPSILON(1.0_MK)
         tolexp = INT(LOG10(EPSILON(1.0_MK)))
 
         NULLIFY(xp,rcp,wp)
@@ -119,15 +119,15 @@ test_suite ppm_module_map_part
         ! create particles
         !----------------
 
-        xp = 0.0_mk
-        rcp = 0.0_mk
+        xp = 0.0_MK
+        rcp = 0.0_MK
 
-        !p_h = len_phys / real(npgrid,mk)
+        !p_h = len_phys / REAL(npgrid,mk)
         !do j=1,npgrid
         !    do i=1,npgrid
         !        p_i = i + (j-1)*npgrid
-        !        xp(1,p_i) = min_phys(1)+real(i-1,mk)*p_h(1)
-        !        xp(2,p_i) = min_phys(2)+real(j-1,mk)*p_h(2)
+        !        xp(1,p_i) = min_phys(1)+REAL(i-1,mk)*p_h(1)
+        !        xp(2,p_i) = min_phys(2)+REAL(j-1,mk)*p_h(2)
         !        rcp(p_i) = min_rcp + (max_rcp-min_rcp)*randnb(p_i)
         !        do k=1,pdim
         !            wp(k,i) = rcp(i)*REAL(k,MK)
@@ -170,7 +170,7 @@ test_suite ppm_module_map_part
 
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
 
-        assert_true(ok)
+        Assert_True(ok)
 
     end test
 
@@ -186,8 +186,8 @@ test_suite ppm_module_map_part
         ! create particles
         !----------------
 
-        xp = 0.0_mk
-        rcp = 0.0_mk
+        xp = 0.0_MK
+        rcp = 0.0_MK
 
         do i=1,np
             do j=1,ndim
@@ -244,7 +244,7 @@ test_suite ppm_module_map_part
         np=newnp
 
         CALL ppm_topo_check(topoid,xp,np,ok,info)
-        assert_true(ok)
+        Assert_True(ok)
 
     end test
 
@@ -288,7 +288,7 @@ test_suite ppm_module_map_part
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
 
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
@@ -296,7 +296,7 @@ test_suite ppm_module_map_part
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
 
     end test
@@ -338,7 +338,7 @@ test_suite ppm_module_map_part
         p(1,8) = 0.95_mk  ! right-top
         p(2,8) = 0.95_mk
 
-        w(:) = 1.0_mk
+        w(:) = 1.0_MK
 
         bcdef(1:6) = ppm_param_bcdef_periodic
 
@@ -361,7 +361,7 @@ test_suite ppm_module_map_part
         CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
         npart=newnpart
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
@@ -371,7 +371,7 @@ test_suite ppm_module_map_part
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
         CALL ppm_map_part_store(info)
 
@@ -386,97 +386,97 @@ test_suite ppm_module_map_part
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
-        assert_equal(mpart-npart,4+3*4) ! check number of ghosts
+        Assert_Equal(mpart-npart,4+3*4) ! check number of ghosts
 
         ! now go through all particles and try to find their ghosts
 
         check(1) = 1.05_mk  ! left
         check(2) = 0.5_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         check(1) = -0.05_mk  ! right
         check(2) =  0.5_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         check(1) = 0.5_mk   ! bottom
         check(2) = 1.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         check(1) =  0.5_mk   ! top
         check(2) = -0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
 
         check(1) = 1.05_mk  ! left-bottom
         check(2) = 0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
         check(1) = 0.05_mk
         check(2) = 1.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
         check(1) = 1.05_mk
         check(2) = 1.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         check(1) =  1.05_mk  ! left-top
         check(2) =  0.95_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
         check(1) =  0.05_mk
         check(2) = -0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
         check(1) =  1.05_mk
         check(2) = -0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         check(1) = -0.05_mk  ! right-bottom
         check(2) =  0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
         check(1) =  0.95_mk
         check(2) =  1.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
         check(1) = -0.05_mk
         check(2) =  1.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         check(1) = -0.05_mk  ! right-top
         check(2) =  0.95_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
         check(1) =  0.95_mk
         check(2) = -0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
         check(1) = -0.05_mk
         check(2) = -0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         DEALLOCATE(w)
 
     end test
 
     function found_ghost(ghosts,n,cp)
-      REAL(MK),DIMENSION(2,n),intent(in) :: ghosts
-      INTEGER                ,intent(in) :: n
-      REAL(MK),DIMENSION(2)  ,intent(in) :: cp
+      REAL(MK),DIMENSION(2,n),INTENT(IN) :: ghosts
+      INTEGER                ,INTENT(IN) :: n
+      REAL(MK),DIMENSION(2)  ,INTENT(IN) :: cp
     LOGICAL                 :: found_ghost
 
       INTEGER                 :: i
       INTEGER                 :: found
 
-    found_ghost = .false.
+    found_ghost = .FALSE.
 
     found = 0
     do i=1,n
-        if((abs(ghosts(1,i) - cp(1)).lt.tol).and. &
-        &  (abs(ghosts(2,i) - cp(2)).lt.tol)) then
+        if((ABS(ghosts(1,i) - cp(1)).lt.tol).and. &
+        &  (ABS(ghosts(2,i) - cp(2)).lt.tol)) then
             found = found + 1
         endif
     enddo
     if (found.eq.1) then
-        found_ghost = .true.
+        found_ghost = .TRUE.
     endif
 
-    end function found_ghost
+    END FUNCTION found_ghost
 
     test getsymbc
         ! tests symmetric boundary conditions and ghost get
@@ -517,7 +517,7 @@ test_suite ppm_module_map_part
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
 
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
@@ -525,7 +525,7 @@ test_suite ppm_module_map_part
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
 
     end test
@@ -582,14 +582,14 @@ test_suite ppm_module_map_part
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
 
-        assert_true(ok)
+        Assert_True(ok)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
         CALL ppm_map_part_send(npart,mpart,info)
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
-        assert_equal(mpart-npart,104)
+        Assert_Equal(mpart-npart,104)
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart,mpart)
 
 
@@ -624,7 +624,7 @@ test_suite ppm_module_map_part
         !p(2,4) = 0.95_mk
 
 
-        w(:) = 1.0_mk
+        w(:) = 1.0_MK
 
         bcdef(1:2) = ppm_param_bcdef_symmetry
         bcdef(3:4) = ppm_param_bcdef_periodic
@@ -649,7 +649,7 @@ test_suite ppm_module_map_part
         npart=newnpart
         CALL ppm_topo_check(topoid,p,npart,ok,info)
 
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
@@ -659,7 +659,7 @@ test_suite ppm_module_map_part
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
         CALL ppm_map_part_store(info)
 
@@ -679,20 +679,20 @@ test_suite ppm_module_map_part
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
-        assert_equal(mpart-npart,2) ! check number of ghosts
+        Assert_Equal(mpart-npart,2) ! check number of ghosts
 
         ! now go through all particles and try to find their ghosts
 
         check(1) = -0.04_mk  ! left
         check(2) =  0.6_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         check(1) =  1.04_mk  ! right
         check(2) =  0.6_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
 
         DEALLOCATE(w)
@@ -725,7 +725,7 @@ test_suite ppm_module_map_part
         p(2,2) = 0.95_mk
 
 
-        w(:) = 1.0_mk
+        w(:) = 1.0_MK
 
         bcdef(1:2) = ppm_param_bcdef_freespace
         bcdef(3:4) = ppm_param_bcdef_symmetry
@@ -750,7 +750,7 @@ test_suite ppm_module_map_part
         npart=newnpart
         CALL ppm_topo_check(topoid,p,npart,ok,info)
 
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
@@ -760,7 +760,7 @@ test_suite ppm_module_map_part
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
         CALL ppm_map_part_store(info)
 
@@ -780,20 +780,20 @@ test_suite ppm_module_map_part
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
+        Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
-        assert_equal(mpart-npart,2) ! check number of ghosts
+        Assert_Equal(mpart-npart,2) ! check number of ghosts
 
         ! now go through all particles and try to find their ghosts
 
         check(1) =  0.6_mk  ! left
         check(2) = -0.06_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         check(1) =  0.4_mk  ! right
         check(2) =  1.04_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         DEALLOCATE(w)
 

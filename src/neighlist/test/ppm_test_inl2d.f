@@ -41,16 +41,16 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
 
     ! arguments
     integer, parameter              :: mk = ppm_kind_double
-    integer,                         intent(in   )   :: topo_id
-    type(ppm_t_topo), pointer,       intent(in   )   :: topo
-    real(mk),dimension(:,:),pointer, intent(in   )   :: xp
-    real(mk),dimension(:),pointer,   intent(inout)   :: rcp
-    real(mk),                        intent(in   )   :: cutoff
-    integer,                         intent(in   )   :: npart
-    integer,                         intent(in   )   :: mpart
-    integer, dimension(:),  pointer, intent(inout)   :: nvlist
-    integer, dimension(:,:),pointer, intent(inout)   :: vlist
-    integer,                         intent(  out)   :: info
+    integer,                         INTENT(IN   )   :: topo_id
+    type(ppm_t_topo), pointer,       INTENT(IN   )   :: topo
+    REAL(MK),dimension(:,:),pointer, INTENT(IN   )   :: xp
+    REAL(MK),dimension(:),pointer,   INTENT(INOUT)   :: rcp
+    REAL(MK),                        INTENT(IN   )   :: cutoff
+    integer,                         INTENT(IN   )   :: npart
+    integer,                         INTENT(IN   )   :: mpart
+    integer, dimension(:),  pointer, INTENT(INOUT)   :: nvlist
+    integer, dimension(:,:),pointer, INTENT(INOUT)   :: vlist
+    integer,                         INTENT(  OUT)   :: info
 
     ! local variable
     integer                           :: ip,iq,isub,iinter
@@ -59,8 +59,8 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
     integer                           :: n1,n2,i,j
     integer                           :: maxvlen
     integer                           :: ibegin,iend,jbegin,jend
-    real(mk)                          :: dist2,cutoff2
-    real(mk),dimension(2)          :: cellsize
+    REAL(MK)                          :: dist2,cutoff2
+    REAL(MK),dimension(2)          :: cellsize
     integer, dimension(:,:), pointer              :: ncells => null()
     type(ppm_type_ptr_to_clist), dimension(:), pointer  :: clist => null()
     integer,                     dimension(:,:),pointer :: ind => null()
@@ -79,12 +79,12 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
     !!-------------------------------------------------------------------------!
     cellsize = cutoff
     call ppm_neighlist_clist(topo_id,xp,mpart,cellsize,&
-        .false.,clist,ncells,info)
+        .FALSE.,clist,ncells,info)
 
     !!-------------------------------------------------------------------------!
     !! create the index list of cell-cell interactons
     !!-------------------------------------------------------------------------!
-    call ppm_neighlist_mkneighidx(.false.,ind,jnd,nnd,info)
+    call ppm_neighlist_mkneighidx(.FALSE.,ind,jnd,nnd,info)
 
     !!-------------------------------------------------------------------------!
     !! run over cells and create verlet lists for the particles inside
@@ -331,40 +331,40 @@ INCLUDE 'mpif.h'
 
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = ppm_kind_double
-real(mk),parameter              :: pi = 3.1415926535897931_mk
-real(mk),parameter              :: skin = 0._mk
+REAL(MK),parameter              :: pi = 3.1415926535897931_mk
+REAL(MK),parameter              :: skin = 0.0_MK
 integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol,min_rcp,max_rcp
+REAL(MK)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank
 integer                         :: topoid
 integer                         :: np = 10000
 integer                         :: mp
 integer                         :: newnp
-real(mk),dimension(:,:),pointer :: xp
-real(mk),dimension(:  ),pointer :: rcp
-real(mk),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
-real(mk),dimension(:  ),pointer :: len_phys
-real(mk),dimension(:  ),pointer :: ghostlayer
+REAL(MK),dimension(:,:),pointer :: xp
+REAL(MK),dimension(:  ),pointer :: rcp
+REAL(MK),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
+REAL(MK),dimension(:  ),pointer :: len_phys
+REAL(MK),dimension(:  ),pointer :: ghostlayer
 integer, dimension(:  ),pointer :: ghostsize
 integer                         :: i,j,sum1,sum2
 integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost
+REAL(MK),dimension(:  ),pointer :: cost
 integer, dimension(:  ),pointer :: nm
 type(ppm_t_topo), pointer       :: topo
 integer                         :: seedsize
-integer,  dimension(:),allocatable :: seed
-real(mk), dimension(:),allocatable :: randnb
+integer,  dimension(:),ALLOCATABLE :: seed
+REAL(MK), dimension(:),ALLOCATABLE :: randnb
 integer,dimension(:,:),pointer   :: vlist,vlist2
 integer,dimension(:),  pointer   :: nvlist,nvlist2
 integer                          :: isymm = 0
-logical                          :: lsymm = .false.,ok
+logical                          :: lsymm = .FALSE.,ok
 
 !----------------
 ! setup
 !----------------
-tol = 10.0_mk*EPSILON(1.0_mk)
-tolexp = int(log10(EPSILON(1.0_mk)))
+tol = 10.0_MK*EPSILON(1.0_MK)
+tolexp = int(log10(EPSILON(1.0_MK)))
 min_rcp = 0.01_mk
 max_rcp = 0.1_mk
 
@@ -372,14 +372,14 @@ ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
     &         ghostsize(ndim),ghostlayer(2*ndim),&
     &         nm(ndim),h(ndim),p_h(ndim),stat=info)
 
-min_phys(1:ndim) = 0.0_mk
-max_phys(1:ndim) = 1.0_mk
+min_phys(1:ndim) = 0.0_MK
+max_phys(1:ndim) = 1.0_MK
 len_phys(1:ndim) = max_phys-min_phys
 ghostsize(1:ndim) = 2
 ghostlayer(1:2*ndim) = max_rcp
 bcdef(1:6) = ppm_param_bcdef_periodic
 
-nullify(xp,rcp)
+NULLIFY(xp,rcp)
 
 #ifdef __MPI
 comm = MPI_COMM_WORLD
@@ -404,8 +404,8 @@ call random_number(randnb)
 !----------------
 
 ALLOCATE(xp(ndim,np),rcp(np),stat=info)
-xp = 0.0_mk
-rcp = 0.0_mk
+xp = 0.0_MK
+rcp = 0.0_MK
 
 do i=1,np
     do j=1,ndim

@@ -125,6 +125,20 @@
       ENDIF
 
       !-------------------------------------------------------------------------
+      !  Call ppm_util_rank3d to get the particle index arrays
+      !-------------------------------------------------------------------------
+      NULLIFY(lpdx,lhbx)
+
+      Ngl=0
+
+      CALL ppm_util_rank3d(xp,Np,xmin,xmax,Nm,Ngl,lpdx,lhbx,info2)
+
+      ! check if all particles have been ranked
+      IF (info2 .GT. 0) THEN
+         fail('Not all particles have been ranked',ppm_error=ppm_error_error)
+      ENDIF
+
+      !-------------------------------------------------------------------------
       !  Total number of cells
       !-------------------------------------------------------------------------
       nbox = Nm(1)*Nm(2)*Nm(3)   ! total number of boxes
@@ -134,20 +148,6 @@
       !-------------------------------------------------------------------------
       ALLOCATE(work(ppm_dim,Np), STAT=info)
       or_fail_alloc('work array WORK')
-
-      !-------------------------------------------------------------------------
-      !  Call ppm_util_rank3d to get the particle index arrays
-      !-------------------------------------------------------------------------
-      NULLIFY(lpdx,lhbx)
-
-      Ngl(1:6) = 0
-
-      CALL ppm_util_rank3d(xp,Np,xmin,xmax,Nm,Ngl,lpdx,lhbx,info2)
-
-      ! check if all particles have been ranked
-      IF (info2 .GT. 0) THEN
-         fail('Not all particles have been ranked',ppm_error=ppm_error_error)
-      ENDIF
 
       !-------------------------------------------------------------------------
       !  Re-arrange the particles in the correct order

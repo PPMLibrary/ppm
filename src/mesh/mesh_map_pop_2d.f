@@ -475,7 +475,7 @@
                IF (.NOT. found_patch) THEN
                    stdout("isub = ",isub," jsub = ",jsub," ipatch = ",ipatch)
                    stdout("patchid = ",patchid)
-                   stdout("patchid/h = ",'(patchid-1._mk)*this%h(1:ppm_dim)')
+                   stdout("patchid/h = ",'(patchid-1.0_MK)*this%h(1:ppm_dim)')
                    stdout("h = ",'this%h(1:ppm_dim)')
                    stdout("this%subpatch_by_sub(jsub)%nsubpatch = ",&
                    &      'this%subpatch_by_sub(jsub)%nsubpatch')
@@ -1918,7 +1918,7 @@
                IF (.NOT. found_patch) THEN
                    stdout("isub = ",isub," jsub = ",jsub," ipatch = ",ipatch)
                    stdout("patchid = ",patchid)
-                   stdout("patchid/h = ",'(patchid-1._mk)*this%h(1:ppm_dim)')
+                   stdout("patchid/h = ",'(patchid-1.0_MK)*this%h(1:ppm_dim)')
                    stdout("h = ",'this%h(1:ppm_dim)')
                    stdout("this%subpatch_by_sub(jsub)%nsubpatch = ",&
                    &      'this%subpatch_by_sub(jsub)%nsubpatch')

@@ -47,34 +47,34 @@ program ppm_test_interp_p2m
     integer                         :: decomp
     integer                         :: assig
     integer                         :: tolexp
-    real(MK)                        :: tol
+    REAL(MK)                        :: tol
     integer                         :: info
     integer                         :: topoid,meshid
-    real(MK),dimension(:,:),pointer :: xp,wp
-    real(MK),dimension(:  ),pointer :: min_phys,max_phys,h
+    REAL(MK),dimension(:,:),pointer :: xp,wp
+    REAL(MK),dimension(:  ),pointer :: min_phys,max_phys,h
     integer, dimension(:  ),pointer :: ghostsize
     integer                         :: i,j,p_i,ai,aj
     integer, dimension(6)           :: bcdef
-    real(MK),dimension(:  ),pointer :: cost
+    REAL(MK),dimension(:  ),pointer :: cost
     integer, dimension(:,:),pointer :: istart,ndata
     integer, dimension(:  ),pointer :: nm
-    real(MK),dimension(:,:),pointer :: minsub,maxsub
+    REAL(MK),dimension(:,:),pointer :: minsub,maxsub
     integer, dimension(:  ),pointer :: sub2proc
     integer                         :: np,mp
     integer, parameter              :: kernel = ppm_param_rmsh_kernel_mp4
-    real(MK),dimension(:,:,:,:  ), pointer :: field_wp ! 2d  field_up(ldn,i,j,isub)
-    !real(MK),dimension(:,:,:,:,:), pointer :: field_up ! 3d  field_up(ldn,i,j,k,isub)
-    real(MK),dimension(:  ),pointer :: field_x
+    REAL(MK),dimension(:,:,:,:  ), pointer :: field_wp ! 2d  field_up(ldn,i,j,isub)
+    !REAL(MK),dimension(:,:,:,:,:), pointer :: field_up ! 3d  field_up(ldn,i,j,k,isub)
+    REAL(MK),dimension(:  ),pointer :: field_x
     type(ppm_t_topo), pointer       :: topo
-    real(MK)                        :: maxm3
+    REAL(MK)                        :: maxm3
     integer, parameter              :: nmom = 10
     integer, dimension(2,nmom)      :: alpha
-    real(MK),dimension(nmom)        :: f_moments, p_moments
+    REAL(MK),dimension(nmom)        :: f_moments, p_moments
     !----------------
     ! setup
     !----------------
-    tol = 10.0_mk*EPSILON(1.0_mk)
-    tolexp = int(log10(EPSILON(1.0_mk)))
+    tol = 10.0_MK*EPSILON(1.0_MK)
+    tolexp = int(log10(EPSILON(1.0_MK)))
     ndim = 2
     nspec = 1
     data ((alpha(ai,aj), ai=1,2), aj=1,nmom) /0,0, 1,0, 0,1, 2,0, 0,2, &
@@ -84,14 +84,14 @@ program ppm_test_interp_p2m
    &         nm(ndim),h(ndim),field_x(ndim),stat=info)
 
     do i=1,ndim
-        min_phys(i) = 0.0_mk
-        max_phys(i) = 1.0_mk
+        min_phys(i) = 0.0_MK
+        max_phys(i) = 1.0_MK
         ghostsize(i) = 2
     enddo
     bcdef(1:6) = ppm_param_bcdef_freespace
 
-    nullify(xp)
-    nullify(wp)
+    NULLIFY(xp)
+    NULLIFY(wp)
 
 #ifdef __MPI
     call MPI_Init(info)
@@ -108,7 +108,7 @@ program ppm_test_interp_p2m
     ALLOCATE(xp(ndim,np),wp(nspec,np),stat=info)
     !call random_seed(put=(/17,42/))
     call random_number(xp)
-    wp = 0.0_mk
+    wp = 0.0_MK
 
 
     !----------------
@@ -122,7 +122,7 @@ program ppm_test_interp_p2m
 
     ALLOCATE(minsub(ndim,1),maxsub(ndim,1),sub2proc(1),cost(1),stat=info)
 
-    cost(1) = 1.0_mk
+    cost(1) = 1.0_MK
 
     do i=1,ndim
         minsub(i,1)=min_phys(i)
@@ -145,7 +145,7 @@ program ppm_test_interp_p2m
     !ALLOCATE(field_wp(nspec,ndata(1,1),ndata(2,1),ndata(3,1),1),stat=info) ! 3d
 
     do i=1,ndim
-        h(i) = (max_phys(i) - min_phys(i)) / real(ndata(i,1)-1,mk)
+        h(i) = (max_phys(i) - min_phys(i)) / REAL(ndata(i,1)-1,mk)
     enddo
 
     NULLIFY(topo)
@@ -165,23 +165,23 @@ program ppm_test_interp_p2m
     endif
     np = mp
 
-    maxm3 = 0.0_mk
+    maxm3 = 0.0_MK
     do p_i=1,np
         !----------------
         ! p --> m
         !----------------
-        wp(1,p_i) = 1.0_mk
+        wp(1,p_i) = 1.0_MK
         call ppm_interp_p2m(topoid,meshid,xp,np,wp,1,kernel,ghostsize,field_wp,info)
 
         !----------------
         ! test p --> m
         !----------------
-        f_moments = 0.0_mk
-        p_moments = 0.0_mk
+        f_moments = 0.0_MK
+        p_moments = 0.0_MK
         do j = 1-ghostsize(2), ndata(2,1)+ghostsize(2)
             do i = 1-ghostsize(1),ndata(1,1)+ghostsize(1)
-                field_x(1) = min_phys(1) + h(1)*real(i-1,mk)
-                field_x(2) = min_phys(2) + h(2)*real(j-1,mk)
+                field_x(1) = min_phys(1) + h(1)*REAL(i-1,mk)
+                field_x(2) = min_phys(2) + h(2)*REAL(j-1,mk)
                 do aj = 1,nmom
                    f_moments(aj) = f_moments(aj) + field_wp(1,i,j,1)* &
     &                            field_x(1)**alpha(1,aj)*field_x(2)**alpha(2,aj)
@@ -192,7 +192,7 @@ program ppm_test_interp_p2m
            p_moments(aj) = xp(1,p_i)**alpha(1,aj)*xp(2,p_i)**alpha(2,aj)
         enddo
         do aj = 1,6
-            if (abs(f_moments(aj) - p_moments(aj)) .GT. tol) then
+            if (ABS(f_moments(aj) - p_moments(aj)) .GT. tol) then
                 print *, 'particle pos:',     xp(:,p_i)
                 print *, 'failed at moment: ', aj
                 print *, 'field moments: ',   f_moments
@@ -201,12 +201,12 @@ program ppm_test_interp_p2m
             endif
         enddo
         do aj = 7,10
-            if (abs(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
-                maxm3 = abs(f_moments(aj) - p_moments(aj))
+            if (ABS(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
+                maxm3 = ABS(f_moments(aj) - p_moments(aj))
             endif
         enddo
 
-        wp(1,p_i) = 0.0_mk
+        wp(1,p_i) = 0.0_MK
     enddo
 
     print *, 'Maximum 3rd moment difference / h^3', maxm3/h**3

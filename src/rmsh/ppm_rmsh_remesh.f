@@ -105,7 +105,7 @@
 #if   __MODE == __SCA
       REAL(MK) , DIMENSION(:)         , POINTER        :: up
       !!! The array to be remeshed
-      REAL(mk)                                         :: tup
+      REAL(MK)                                         :: tup
 #if   __DIME == __2D
       REAL(MK) , DIMENSION(:,:,:    ) , POINTER        :: field_up
 #elif __DIME == __3D
@@ -118,7 +118,7 @@
       !!! Leading dimension
       REAL(MK) , DIMENSION(:,:)       , POINTER        :: up
       !!! The array to be remeshed
-      REAL(mk) , DIMENSION(lda)                        :: tup
+      REAL(MK) , DIMENSION(lda)                        :: tup
 #if   __DIME == __2D
       REAL(MK) , DIMENSION(:,:,:,:  ) , POINTER        :: field_up
 #elif __DIME == __3D
@@ -376,7 +376,7 @@
       !-------------------------------------------------------------------------
       !  Initialize the field
       !-------------------------------------------------------------------------
-      field_up = 0.0_mk
+      field_up = 0.0_MK
       IF(np.EQ.0) GOTO 9999
       !-------------------------------------------------------------------------
       !  Recover particle lists
@@ -399,7 +399,7 @@
          dx(i)       = len_phys(i)/REAL(Nc(i),MK)
       END DO
 
-      dxi = 1.0_mk/dx
+      dxi = 1.0_MK/dx
       dv1 = dx(1)
       dv2 = dx(2)
       if(ppm_dim.eq.3) dv3 = dx(3)

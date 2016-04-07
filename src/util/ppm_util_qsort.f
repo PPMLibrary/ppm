@@ -133,7 +133,7 @@
       ELSE
          inlistu = UBOUND(inlist,1)
       ENDIF
-      inlistl = 1 !LBOUND(inlist,1)
+      inlistl = LBOUND(inlist,1)
       !y inlist is an INTENT(IN) value and not a pointer, so LBOUND is always 1
       n = inlistu-inlistl+1
 

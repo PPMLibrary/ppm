@@ -56,7 +56,7 @@
 
                   !compute nearest-neighbour distance for each particle
                   ! rescaled by the MIN of D(ip) and D(iq)
-                  IF (rr .LT. 1.0_mk) THEN
+                  IF (rr .LT. 1.0_MK) THEN
                       close_neigh = close_neigh + 1
 
                       !sort vlist (only for the close neighbours, and only
@@ -68,10 +68,10 @@
               ENDDO neighbour_loop
 
               IF (close_neigh .LE. nb_close_theo-2) THEN
-                 adaptation_ok = .false.
+                 adaptation_ok = .FALSE.
               ENDIF
               !IF (close_neigh .GE. 2*nb_close_theo) THEN
-                      !adaptation_ok = .false.
+                      !adaptation_ok = .FALSE.
               !ENDIF
 
               nb_neigh(ip) = close_neigh

@@ -85,7 +85,7 @@
       ! alloc
       INTEGER, DIMENSION(2) :: lda
       INTEGER               :: iopt
-      INTEGER               :: i,j,k,l,ibox,nz
+      INTEGER               :: i,j,k,l,nz
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_neighlist_MkNeighIdx'
 
@@ -106,15 +106,24 @@
       !-------------------------------------------------------------------------
       !  Determine number of box-box interactions needed
       !-------------------------------------------------------------------------
-      nnd = 0
-      ! 2D using symmetry
-      IF (ppm_dim .EQ. 2 .AND. lsymm) nnd = 5
-      ! 2D NOT using symmetry
-      IF (ppm_dim .EQ. 2 .AND. (.NOT. lsymm)) nnd = 9
-      ! 3D using symmetry
-      IF (ppm_dim .EQ. 3 .AND. lsymm) nnd = 14
-      ! 3D NOT using symmetry
-      IF (ppm_dim .EQ. 3 .AND. (.NOT. lsymm)) nnd = 27
+      SELECT CASE (ppm_dim)
+      CASE (2)
+         IF (lsymm) THEN
+            ! 2D using symmetry
+            nnd = 5
+         ELSE
+            ! 2D NOT using symmetry
+            nnd = 9
+         ENDIF
+      CASE (3)
+         IF (lsymm) THEN
+            ! 3D using symmetry
+            nnd = 14
+         ELSE
+            ! 3D NOT using symmetry
+            nnd = 27
+         ENDIF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Allocate memory for interaction lists
@@ -122,25 +131,18 @@
       iopt   = ppm_param_alloc_fit
       lda(1) = 3
       lda(2) = nnd
-      CALL ppm_alloc(ind,lda,iopt,i)
-      IF (i .NE. 0) THEN
-         fail('Interaction list IND',ppm_err_alloc,ppm_error=ppm_error_fatal)
-      ENDIF
-      CALL ppm_alloc(jnd,lda,iopt,i)
-      IF (i .NE. 0) THEN
-         fail('Interaction list JND',ppm_err_alloc,ppm_error=ppm_error_fatal)
-      ENDIF
+
+      CALL ppm_alloc(ind,lda,iopt,info)
+      or_fail_alloc('Interaction list IND',ppm_error=ppm_error_fatal)
+
+      CALL ppm_alloc(jnd,lda,iopt,info)
+      or_fail_alloc('Interaction list JND',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Initialize ind and jnd
       !-------------------------------------------------------------------------
       ind = 0
       jnd = 0
-
-      !-------------------------------------------------------------------------
-      !  Set z direction according to dimensionality
-      !-------------------------------------------------------------------------
-      nz = MERGE(1,0,ppm_dim.EQ.3)
 
       !---------------------------------------------------------------------
       !  Compute neighbour indices
@@ -198,11 +200,15 @@
              jnd(3,14)  = 1
          ENDIF
       ELSE
+         !-------------------------------------------------------------------------
+         !  Set z direction according to dimensionality
+         !-------------------------------------------------------------------------
+         nz = MERGE(1,0,ppm_dim.EQ.3)
+
          !------------------------------------------------------------------
          !  Full list
          !------------------------------------------------------------------
-         l    = 0
-         ibox = 0
+         l = 0
          DO k=-nz,nz
             DO j=-1,1
                DO i=-1,1

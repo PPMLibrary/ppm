@@ -40,42 +40,42 @@ program ppm_test_CASE
 
     integer, parameter              :: debug = 0
     integer, parameter              :: MK = ppm_kind_double
-    real(mk),parameter              :: pi = 3.1415926535897931_mk
+    REAL(MK),parameter              :: pi = 3.1415926535897931_mk
     integer                         :: ndim,nspec
     integer                         :: decomp
     integer                         :: assig
     integer                         :: tolexp
-    real(MK)                        :: tol
+    REAL(MK)                        :: tol
     integer                         :: info
     integer                         :: topoid,meshid
     integer,  parameter             :: ngrid = 513
     integer,  parameter             :: npgrid = 1025
-    real(MK),dimension(:,:),pointer :: xp,wp
-    real(MK),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
+    REAL(MK),dimension(:,:),pointer :: xp,wp
+    REAL(MK),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
     integer, dimension(:  ),pointer :: ghostsize
     integer                         :: i,j,ai,aj,p_i
     integer, dimension(6)           :: bcdef
-    real(MK),dimension(:  ),pointer :: cost
+    REAL(MK),dimension(:  ),pointer :: cost
     integer, dimension(:,:),pointer :: istart,ndata
     integer, dimension(:  ),pointer :: nm
-    real(MK),dimension(:,:),pointer :: minsub,maxsub
+    REAL(MK),dimension(:,:),pointer :: minsub,maxsub
     integer, dimension(:  ),pointer :: sub2proc
     integer                         :: np,mp
     integer, parameter              :: kernel = ppm_param_rmsh_kernel_mp4
-    real(MK),dimension(:,:,:,:  ), pointer :: field_wp ! 2d  field_up(ldn,i,j,isub)
-    !real(MK),dimension(:,:,:,:,:), pointer :: field_up ! 3d  field_up(ldn,i,j,k,isub)
-    real(MK),dimension(:  ),pointer :: field_x
+    REAL(MK),dimension(:,:,:,:  ), pointer :: field_wp ! 2d  field_up(ldn,i,j,isub)
+    !REAL(MK),dimension(:,:,:,:,:), pointer :: field_up ! 3d  field_up(ldn,i,j,k,isub)
+    REAL(MK),dimension(:  ),pointer :: field_x
     type(ppm_t_topo), pointer       :: topo
-    real(MK)                        :: maxm3
+    REAL(MK)                        :: maxm3
     integer, parameter              :: nmom = 10
     integer, dimension(2,nmom)      :: alpha
-    real(MK),dimension(nmom)        :: f_moments, p_moments
-    real(MK),dimension(2)           :: sigma,mu
+    REAL(MK),dimension(nmom)        :: f_moments, p_moments
+    REAL(MK),dimension(2)           :: sigma,mu
     !================
     ! setup
     !================
-    tol = 10.0_mk*EPSILON(1.0_mk)
-    tolexp = int(log10(EPSILON(1.0_mk)))
+    tol = 10.0_MK*EPSILON(1.0_MK)
+    tolexp = int(log10(EPSILON(1.0_MK)))
     ndim = 2
     nspec = 1
 
@@ -83,14 +83,14 @@ program ppm_test_CASE
    &         nm(ndim),h(ndim),p_h(ndim),field_x(ndim),stat=info)
 
     do i=1,ndim
-        min_phys(i) = 0.0_mk
-        max_phys(i) = 1.0_mk
+        min_phys(i) = 0.0_MK
+        max_phys(i) = 1.0_MK
         ghostsize(i) = 2
     enddo
     bcdef(1:6) = -1 ! BOUNDARY CONDITION
 
-    nullify(xp)
-    nullify(wp)
+    NULLIFY(xp)
+    NULLIFY(wp)
 
 #ifdef __MPI
     call MPI_Init(info)
@@ -105,8 +105,8 @@ program ppm_test_CASE
     mp = 0
 
     ALLOCATE(xp(ndim,np),wp(nspec,np),stat=info)
-    xp = 0.0_mk
-    wp = 0.0_mk
+    xp = 0.0_MK
+    wp = 0.0_MK
 
 
     ALLOCATE(nm(ndim),stat=info)

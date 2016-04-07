@@ -150,7 +150,7 @@
              !!! nearest-neighbour distances within Part_src
              !!! (they must have been already computed)
              CALL Part_src%get(this%nn_sq,nn_sq,info, &
-             &    with_ghosts=.TRUE.,read_only=.true.)
+             &    with_ghosts=.TRUE.,read_only=.TRUE.)
              or_fail("need to call particles_nearest_neighbors first")
           ENDIF
 

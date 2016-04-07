@@ -7,8 +7,8 @@ USE ppm_module_mktopo
 USE ppm_module_topo_alloc
 
 INTEGER, PARAMETER              :: debug = 0
-INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
-REAL(MK),PARAMETER              :: pi = ACOS(-1._mk)
+INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
+REAL(MK),PARAMETER              :: pi = ACOS(-1.0_MK)
 INTEGER,PARAMETER               :: ndim=2
 INTEGER                         :: decomp,assig,tolexp
 INTEGER                         :: info,comm,rank,nproc
@@ -49,8 +49,8 @@ REAL(MK),DIMENSION(ndim)         :: offset
         ALLOCATE(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
 
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
+        min_phys(1:ndim) = 0.0_MK
+        max_phys(1:ndim) = 1.0_MK
         ighostsize(1:ndim) = 2
         bcdef(1:2*ndim) = ppm_param_bcdef_periodic
         tolexp = -12
@@ -100,7 +100,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
 
 !Uncomment for more thorough testing...
     !test ghost_mappings({decomp: [ppm_param_decomp_bisection,ppm_param_decomp_cuboid,ppm_param_decomp_xpencil, ppm_param_decomp_ypencil,ppm_param_decomp_xy_slab,ppm_param_decomp_bisection]}, sizex:[69,70,71], sizey:[77,78,81,82]})
-    test ghost_mappings_basics({decomp: [ppm_param_decomp_cuboid]}, sizex:[69,70], sizey:[77,78,81,82],unifpatch: [.true.,.false.]})
+    test ghost_mappings_basics({decomp: [ppm_param_decomp_cuboid]}, sizex:[69,70], sizey:[77,78,81,82],unifpatch: [.TRUE.,.FALSE.]})
 
 
         TYPE(ppm_t_field) :: Field1,Field2
@@ -122,7 +122,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
 #ifdef __MPI
         CALL MPI_BARRIER(comm,info)
 #endif
-        offset = 0._mk
+        offset = 0.0_MK
         Nm(ndim) = 65
         Nm(1:2) = (/sizex,sizey/)
 
@@ -142,10 +142,10 @@ REAL(MK),DIMENSION(ndim)         :: offset
 
         IF (.NOT.unifpatch) THEN
             if (ndim.eq.2) then
-                my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
-                my_patch(1:4) = (/0.17_mk,0.17_mk,0.70_mk,0.70_mk/)
+                my_patch(1:4) = (/0.15_mk,0.10_MK,0.99_mk,0.7_mk/)
+                my_patch(1:4) = (/0.17_mk,0.17_mk,0.70_MK,0.70_MK/)
             else
-                my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,&
+                my_patch(1:6) = (/0.15_mk,0.10_MK,0.51_mk,&
                     0.99_mk,0.7_mk,0.78_mk/)
             endif
             CALL Mesh1%def_patch(my_patch,info)
@@ -225,16 +225,16 @@ REAL(MK),DIMENSION(ndim)         :: offset
         IF (ndim.EQ.2) THEN
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
-                Field1_n(1) = -10._mk * (rank+1)
-                Field1_n(2) = -10._mk * (rank+1) - 1
-                Field2_n    = -1._mk
+                Field1_n(1) = -10.0_MK * (rank+1)
+                Field1_n(2) = -10.0_MK * (rank+1) - 1
+                Field2_n    = -1.0_MK
         end foreach
         ELSE
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for all
-                Field1_n(1) = -10._mk * (rank+1)
-                Field1_n(2) = -10._mk * (rank+1) - 1
-                Field2_n    = -1._mk
+                Field1_n(1) = -10.0_MK * (rank+1)
+                Field1_n(2) = -10.0_MK * (rank+1) - 1
+                Field2_n    = -1.0_MK
         end foreach
         ENDIF
 
@@ -244,17 +244,17 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for real
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                Field1_n(1) = cos(2._mk*pi*pos(1))
-                Field1_n(2) = cos(2._mk*pi*pos(1)) + 2._mk
-                Field2_n    = 1._mk
+                Field1_n(1) = COS(2._MK*pi*pos(1))
+                Field1_n(2) = COS(2._MK*pi*pos(1)) + 2.0_MK
+                Field2_n    = 1.0_MK
         end foreach
         ELSE
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for real
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                Field1_n(1) = cos(2._mk*pi*pos(1))
-                Field1_n(2) = cos(2._mk*pi*pos(1)) + 2._mk
-                Field2_n    = 1._mk
+                Field1_n(1) = COS(2._MK*pi*pos(1))
+                Field1_n(2) = COS(2._MK*pi*pos(1)) + 2.0_MK
+                Field2_n    = 1.0_MK
         end foreach
         ENDIF
 
@@ -287,23 +287,23 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .lt. 0._mk) then
+                IF (Field2_n .lt. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
-                Assert_Equal_Within(Field1_n(1) ,cos(2._mk*pi*pos(1)),        1e-5)
-                Assert_Equal_Within(Field1_n(2) ,cos(2._mk*pi*pos(1)) + 2._mk,1e-5)
-                Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
+                Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
+                Assert_Equal_Within(Field1_n(2) ,COS(2._MK*pi*pos(1)) + 2.0_MK,1e-5)
+                Assert_Equal_Within(Field2_n    ,1.0_MK,1e-5)
         end foreach
         ELSE
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                IF (Field2_n .lt. 0._mk) then
+                IF (Field2_n .lt. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
-                Assert_Equal_Within(Field1_n(1) ,cos(2._mk*pi*pos(1)),        1e-5)
-                Assert_Equal_Within(Field1_n(2) ,cos(2._mk*pi*pos(1)) + 2._mk,1e-5)
-                Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
+                Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
+                Assert_Equal_Within(Field1_n(2) ,COS(2._MK*pi*pos(1)) + 2.0_MK,1e-5)
+                Assert_Equal_Within(Field2_n    ,1.0_MK,1e-5)
         end foreach
         ENDIF
         Assert_Equal(nb_errors,0)
@@ -331,8 +331,8 @@ REAL(MK),DIMENSION(ndim)         :: offset
         end_subroutine()
     end test
 
-    !test ghost_mappings_bcdef({decomp: [ppm_param_decomp_cuboid], sizex:[69], sizey:[77], bcdefX: [ppm_param_bcdef_periodic,ppm_param_bcdef_symmetry,ppm_param_bcdef_freespace], bcdefY: [ppm_param_bcdef_periodic,ppm_param_bcdef_symmetry,ppm_param_bcdef_freespace],unifpatch: [.true.,.false.]})
-    test ghost_mappings_bcdef({decomp: [ppm_param_decomp_cuboid], sizex:[69,70,71,72,73,75,123], sizey:[77,83,93,111], bcdefX: [ppm_param_bcdef_periodic,ppm_param_bcdef_freespace], bcdefY: [ppm_param_bcdef_periodic,ppm_param_bcdef_freespace],unifpatch: [.true.,.false.]})
+    !test ghost_mappings_bcdef({decomp: [ppm_param_decomp_cuboid], sizex:[69], sizey:[77], bcdefX: [ppm_param_bcdef_periodic,ppm_param_bcdef_symmetry,ppm_param_bcdef_freespace], bcdefY: [ppm_param_bcdef_periodic,ppm_param_bcdef_symmetry,ppm_param_bcdef_freespace],unifpatch: [.TRUE.,.FALSE.]})
+    test ghost_mappings_bcdef({decomp: [ppm_param_decomp_cuboid], sizex:[69,70,71,72,73,75,123], sizey:[77,83,93,111], bcdefX: [ppm_param_bcdef_periodic,ppm_param_bcdef_freespace], bcdefY: [ppm_param_bcdef_periodic,ppm_param_bcdef_freespace],unifpatch: [.TRUE.,.FALSE.]})
         TYPE(ppm_t_field) :: Field1,Field2
         REAL(ppm_kind_double),DIMENSION(ndim) :: pos
         INTEGER                             :: p_idx, nb_errors
@@ -356,7 +356,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
             stdout(" patch covers the whole domain? ",unifpatch)
         endif
 
-        offset = 0._mk
+        offset = 0.0_MK
         Nm(ndim) = 65
         Nm(1:2) = (/sizex,sizey/)
 
@@ -377,10 +377,10 @@ REAL(MK),DIMENSION(ndim)         :: offset
 
         if (.not.unifpatch) then
             if (ndim.eq.2) then
-                my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
-                my_patch(1:4) = (/0.17_mk,0.17_mk,0.70_mk,0.70_mk/)
+                my_patch(1:4) = (/0.15_mk,0.10_MK,0.99_mk,0.7_mk/)
+                my_patch(1:4) = (/0.17_mk,0.17_mk,0.70_MK,0.70_MK/)
             else
-                my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
+                my_patch(1:6) = (/0.15_mk,0.10_MK,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
             endif
 
             CALL Mesh1%def_patch(my_patch,info)
@@ -518,16 +518,16 @@ REAL(MK),DIMENSION(ndim)         :: offset
         IF (ndim.EQ.2) THEN
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
-                Field1_n(1) = -10._mk * (rank+1)
-                Field1_n(2) = -10._mk * (rank+1) - 1
-                Field2_n    = -1._mk
+                Field1_n(1) = -10.0_MK * (rank+1)
+                Field1_n(2) = -10.0_MK * (rank+1) - 1
+                Field2_n    = -1.0_MK
         end foreach
         ELSE
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for all
-                Field1_n(1) = -10._mk * (rank+1)
-                Field1_n(2) = -10._mk * (rank+1) - 1
-                Field2_n    = -1._mk
+                Field1_n(1) = -10.0_MK * (rank+1)
+                Field1_n(2) = -10.0_MK * (rank+1) - 1
+                Field2_n    = -1.0_MK
         end foreach
         ENDIF
 
@@ -537,17 +537,17 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for real
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                Field1_n(1) = cos(2._mk*pi*pos(1))
-                Field1_n(2) = cos(2._mk*pi*pos(1)) + 2._mk
-                Field2_n    = 1._mk
+                Field1_n(1) = COS(2._MK*pi*pos(1))
+                Field1_n(2) = COS(2._MK*pi*pos(1)) + 2.0_MK
+                Field2_n    = 1.0_MK
         end foreach
         ELSE
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for real
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                Field1_n(1) = cos(2._mk*pi*pos(1))
-                Field1_n(2) = cos(2._mk*pi*pos(1)) + 2._mk
-                Field2_n    = 1._mk
+                Field1_n(1) = COS(2._MK*pi*pos(1))
+                Field1_n(2) = COS(2._MK*pi*pos(1)) + 2.0_MK
+                Field2_n    = 1.0_MK
         end foreach
         ENDIF
 
@@ -586,25 +586,25 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for valid_nodes
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .lt. 0._mk) then
+                IF (Field2_n .lt. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
                 !stdout("i,j = ",i,j,'sbpitr%istart(1)-1+i','sbpitr%istart(2)-1+j')
                 !stdout("pos = ",pos)
-                Assert_Equal_Within(Field1_n(1) ,cos(2._mk*pi*pos(1)),        1e-5)
-                Assert_Equal_Within(Field1_n(2) ,cos(2._mk*pi*pos(1)) + 2._mk,1e-5)
-                Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
+                Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
+                Assert_Equal_Within(Field1_n(2) ,COS(2._MK*pi*pos(1)) + 2.0_MK,1e-5)
+                Assert_Equal_Within(Field2_n    ,1.0_MK,1e-5)
         end foreach
         ELSE
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for valid_nodes
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                IF (Field2_n .lt. 0._mk) then
+                IF (Field2_n .lt. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
-                Assert_Equal_Within(Field1_n(1) ,cos(2._mk*pi*pos(1)),        1e-5)
-                Assert_Equal_Within(Field1_n(2) ,cos(2._mk*pi*pos(1)) + 2._mk,1e-5)
-                Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
+                Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
+                Assert_Equal_Within(Field1_n(2) ,COS(2._MK*pi*pos(1)) + 2.0_MK,1e-5)
+                Assert_Equal_Within(Field2_n    ,1.0_MK,1e-5)
         end foreach
         ENDIF
         Assert_Equal(nb_errors,0)

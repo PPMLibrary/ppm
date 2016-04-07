@@ -4,27 +4,27 @@
 
 !confining potential
  !Psi_part = Psi_part + meanD**2 * &
-     !(-log(rd) + 0.5_mk*rd **2)
- !gradPsi = meanD * (1._mk/rd - rd)
+     !(-log(rd) + 0.5_MK*rd **2)
+ !gradPsi = meanD * (1.0_MK/rd - rd)
 
 
 IF (rd .GT. attractive_radius .or. no_fusion) THEN
 
     Psi_part = Psi_part + meanD**2 * coeff * &
-        (-rho**(-4._mk*rd) + 0.8_mk*rho**(1._mk-5._mk*rd) &
+        (-rho**(-4._MK*rd) + 0.8_MK*rho**(1.0_MK-5._MK*rd) &
         -Psi_at_cutoff)
-    gradPsi = 2._mk* meanD * coeff * &
-        4._mk*LOG(rho) * (rho**(-4._mk*rd) - rho**(1._mk-5._mk*rd))
+    gradPsi = 2._MK* meanD * coeff * &
+        4._MK*LOG(rho) * (rho**(-4._MK*rd) - rho**(1.0_MK-5._MK*rd))
 
 ELSE
 
     Psi_part = Psi_part + meanD**2 * (-10._MK / SQRT(rd+0.1_mk)) &
-        + meanD**2 *(-rho**(-4._mk*attractive_radius)+&
-        0.8_mk*rho**(1._mk-5._mk*attractive_radius) + &
+        + meanD**2 *(-rho**(-4._MK*attractive_radius)+&
+        0.8_MK*rho**(1.0_MK-5._MK*attractive_radius) + &
         10._MK/SQRT(attractive_radius+0.1_mk))
-    gradPsi =  2._mk*meanD * 5._MK / (rd+0.1_mk)**1.5_mk
+    gradPsi =  2._MK*meanD * 5._MK / (rd+0.1_mk)**1.5_mk
 
-    !adaptation_ok = .false.
+    !adaptation_ok = .FALSE.
 
 ENDIF
 

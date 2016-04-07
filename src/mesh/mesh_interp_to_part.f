@@ -83,8 +83,8 @@
       INTEGER                                :: nsubpatch,ipatch
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk)                               :: myeps
-      REAL(mk)                               :: tim1s, tim1e
+      REAL(MK)                               :: myeps
+      REAL(MK)                               :: tim1s, tim1e
       TYPE(ppm_t_topo)     , POINTER         :: topo
       CLASS(ppm_t_subpatch_),POINTER         :: p
 
@@ -434,7 +434,7 @@
          CALL Part%get(Field,up_1d,info)
          or_fail("Part%get_field")
          DO ip=1,np
-            up_1d(ip) = 0.0_mk
+            up_1d(ip) = 0.0_MK
          END DO
       ELSE
          NULLIFY(up_2d)
@@ -444,41 +444,41 @@
          SELECT CASE(Field%lda)
          CASE (1)
             DO ip=1,np
-               up_2d(1,ip) = 0.0_mk
+               up_2d(1,ip) = 0.0_MK
             END DO
 
          CASE (2)
             DO ip=1,np
-               up_2d(1,ip) = 0.0_mk
-               up_2d(2,ip) = 0.0_mk
+               up_2d(1,ip) = 0.0_MK
+               up_2d(2,ip) = 0.0_MK
             END DO
 
          CASE (3)
             DO ip=1,np
-               up_2d(1,ip) = 0.0_mk
-               up_2d(2,ip) = 0.0_mk
-               up_2d(3,ip) = 0.0_mk
+               up_2d(1,ip) = 0.0_MK
+               up_2d(2,ip) = 0.0_MK
+               up_2d(3,ip) = 0.0_MK
             END DO
 
          CASE (4)
             DO ip=1,np
-               up_2d(1,ip) = 0.0_mk
-               up_2d(2,ip) = 0.0_mk
-               up_2d(3,ip) = 0.0_mk
-               up_2d(4,ip) = 0.0_mk
+               up_2d(1,ip) = 0.0_MK
+               up_2d(2,ip) = 0.0_MK
+               up_2d(3,ip) = 0.0_MK
+               up_2d(4,ip) = 0.0_MK
             END DO
 
          CASE (5)
             DO ip=1,np
-               up_2d(1,ip) = 0.0_mk
-               up_2d(2,ip) = 0.0_mk
-               up_2d(3,ip) = 0.0_mk
-               up_2d(4,ip) = 0.0_mk
-               up_2d(5,ip) = 0.0_mk
+               up_2d(1,ip) = 0.0_MK
+               up_2d(2,ip) = 0.0_MK
+               up_2d(3,ip) = 0.0_MK
+               up_2d(4,ip) = 0.0_MK
+               up_2d(5,ip) = 0.0_MK
             END DO
 
          CASE DEFAULT
-            up_2d = 0.0_mk
+            up_2d = 0.0_MK
          END SELECT
       ENDIF
 
@@ -553,7 +553,7 @@
       or_fail_dealloc("list_sub")
 
       !Updating internal state variables
-      CALL Part%set_xp(xp,info,read_only=.true.)
+      CALL Part%set_xp(xp,info,read_only=.TRUE.)
       or_fail("Set_xp failed")
 
       end_subroutine()

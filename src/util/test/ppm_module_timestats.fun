@@ -1,7 +1,7 @@
 test_suite ppm_module_timestats
 
   INTEGER, PARAMETER              :: debug = 0
-  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !kind(1.0e0)
+  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
   INTEGER,PARAMETER               :: ndim=2
   INTEGER                         :: decomp,assig,tolexp
   REAL(MK)                        :: tol

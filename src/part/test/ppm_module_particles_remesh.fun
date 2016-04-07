@@ -8,8 +8,8 @@ USE ppm_module_mktopo
 USE ppm_module_io_vtk
 
 INTEGER, PARAMETER              :: debug = 0
-INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
-REAL(MK),PARAMETER              :: pi = ACOS(-1._mk)
+INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
+REAL(MK),PARAMETER              :: pi = ACOS(-1.0_MK)
 INTEGER,PARAMETER               :: ndim=2
 INTEGER                         :: decomp,assig,tolexp
 INTEGER                         :: info,comm,rank,nproc
@@ -22,7 +22,7 @@ REAL(ppm_kind_double)           :: t2,t1
 INTEGER, DIMENSION(:  ),POINTER :: ighostsize => NULL()
 REAL(MK)                        :: sca_ghostsize
 INTEGER                         :: seedsize
-INTEGER,  DIMENSION(:),allocatable :: seed
+INTEGER,  DIMENSION(:),ALLOCATABLE :: seed
 
 INTEGER                         :: i,j,k
 INTEGER                         :: nsublist
@@ -66,8 +66,8 @@ INTEGER :: np_global
         ALLOCATE(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
 
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
+        min_phys(1:ndim) = 0.0_MK
+        max_phys(1:ndim) = 1.0_MK
         ighostsize(1:ndim) = 2
         bcdef(1:2*ndim) = ppm_param_bcdef_periodic
         tolexp = -12
@@ -142,13 +142,13 @@ INTEGER :: np_global
 !               (which is the default, when no patches are defined)
 
         if (ndim.eq.2) then
-            my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
+            my_patch(1:4) = (/0.15_mk,0.10_MK,0.99_mk,0.7_mk/)
             my_patch(1:4) = (/0.15_mk,0.15_mk,0.7_mk,0.7_mk/)
             !works (at least on one proc)
-            my_patch(1:4) = (/-10000._mk,-1000._mk,1000._mk,1000._mk/)
+            my_patch(1:4) = (/-10000.0_MK,-1000.0_MK,1000.0_MK,1000.0_MK/)
             !does not work (problem with ghosts)
         else
-            my_patch(1:6) = (/0.15_mk,0.10_mk,0.25_mk,0.89_mk,0.7_mk,0.78_mk/)
+            my_patch(1:6) = (/0.15_mk,0.10_MK,0.25_mk,0.89_mk,0.7_mk,0.78_mk/)
         endif
         CALL Mesh1%def_patch(my_patch,info)
 
@@ -170,7 +170,7 @@ INTEGER :: np_global
         !----------------
         CALL Part1%apply_bc(info)
 
-        CALL Part1%map(info,global=.true.,topoid=topoid)
+        CALL Part1%map(info,global=.TRUE.,topoid=topoid)
 
 
         !----------------
@@ -201,7 +201,7 @@ INTEGER :: np_global
         ! and 2), to test interpolants of orders up to 3.
         !----------------
         foreach p in particles(Part1) with positions(x) vec_fields(V1=VField1,V2=VField2,V3=VField3,V4=Vfield4) sca_fields(S1=SField1,S2=SField2,S3=SField3,Vol=Vol)
-                Vol_p   = 1._mk / np_global
+                Vol_p   = 1.0_MK / np_global
                 S1_p    = f_cst(x_p(1:ndim),ndim) * Vol_p
                 S2_p    = f_lin(x_p(1:ndim),ndim) * Vol_p
                 S3_p    = f_sq(x_p(1:ndim),ndim) * Vol_p
@@ -282,7 +282,7 @@ INTEGER :: np_global
         !----------------
         cutoff = REAL(Mesh1%ghostsize(1:ndim),ppm_kind_double)* Mesh1%h(1:ndim)
 
-        voln = 1._mk / PRODUCT(Mesh1%Nm(1:ndim)-1)
+        voln = 1.0_MK / PRODUCT(Mesh1%Nm(1:ndim)-1)
 
         !----------------
         !Loop through all the mesh nodes and check that the values of the field
@@ -291,7 +291,7 @@ INTEGER :: np_global
         !with a 3rd order interpolating kernel (like Mp4)
         !----------------
         foreach p in particles(Part1) with positions(x) vec_fields(V1=VField1,V2=VField2,V3=VField3,V4=Vfield4) sca_fields(S1=SField1,S2=SField2,S3=SField3,Vol=Vol)
-                Vol_p   = 1._mk / np_global
+                Vol_p   = 1.0_MK / np_global
                 Assert_Equal_Within(S1_p, f_cst(x_p(1:ndim),ndim)* Vol_p,tol)
                 Assert_Equal_Within(S2_p, f_lin(x_p(1:ndim),ndim)* Vol_p,tol)
                 Assert_Equal_Within(S3_p, f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
@@ -355,7 +355,7 @@ INTEGER :: np_global
         !----------------
         cutoff = REAL(Mesh1%ghostsize(1:ndim),ppm_kind_double)* Mesh1%h(1:ndim)
 
-        voln = 1._mk / PRODUCT(Mesh1%Nm(1:ndim)-1)
+        voln = 1.0_MK / PRODUCT(Mesh1%Nm(1:ndim)-1)
 
         !----------------
         !Loop through all the mesh nodes and check that the values of the field
@@ -364,7 +364,7 @@ INTEGER :: np_global
         !with a 3rd order interpolating kernel (like Mp4)
         !----------------
         foreach p in particles(Part1) with positions(x) vec_fields(V1=VField1,V2=VField2,V3=VField3,V4=Vfield4) sca_fields(S1=SField1,S2=SField2,S3=SField3,Vol=Vol)
-                Vol_p   = 1._mk / np_global
+                Vol_p   = 1.0_MK / np_global
                 Assert_Equal_Within(S1_p, f_cst(x_p(1:ndim),ndim)* Vol_p,tol)
                 Assert_Equal_Within(S2_p, f_lin(x_p(1:ndim),ndim)* Vol_p,tol)
                 Assert_Equal_Within(S3_p, f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
@@ -400,42 +400,42 @@ INTEGER :: np_global
 !-------------------------------------------------------------
 ! test function
 !-------------------------------------------------------------
-pure function f_cst(pos,ndim) RESULT(res)
+PURE FUNCTION f_cst(pos,ndim) RESULT(res)
     REAL(MK)                              :: res
-    INTEGER                 ,  intent(in) :: ndim
-    REAL(MK), DIMENSION(ndim), intent(in) :: pos
+    INTEGER                 ,  INTENT(IN) :: ndim
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
-    res =  42._mk
-end function
+    res =  42.0_MK
+END FUNCTION
 
-pure function f_lin(pos,ndim) RESULT(res)
+PURE FUNCTION f_lin(pos,ndim) RESULT(res)
     REAL(MK)                              :: res
-    INTEGER                 ,  intent(in) :: ndim
-    REAL(MK), DIMENSION(ndim), intent(in) :: pos
+    INTEGER                 ,  INTENT(IN) :: ndim
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
-    res =  1.337_mk + pos(1) + 10._mk*pos(2) + 100._mk*pos(ndim)
-end function
+    res =  1.337_mk + pos(1) + 10._MK*pos(2) + 100._MK*pos(ndim)
+END FUNCTION
 
-pure function f_sq(pos,ndim) RESULT(res)
+PURE FUNCTION f_sq(pos,ndim) RESULT(res)
     REAL(MK)                              :: res
-    INTEGER                 ,  intent(in) :: ndim
-    REAL(MK), DIMENSION(ndim), intent(in) :: pos
+    INTEGER                 ,  INTENT(IN) :: ndim
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
-    res =  pos(1)**2 + 10._mk*pos(2)**2 + 100._mk*pos(ndim)**2
-end function
+    res =  pos(1)**2 + 10._MK*pos(2)**2 + 100._MK*pos(ndim)**2
+END FUNCTION
 
 !!! check whether a particle is within a patch and more than a cutoff
 !!! distance away from its boundaries.
-pure function is_well_within(pos,patch,cutoff,ndim) RESULT(res)
+PURE FUNCTION is_well_within(pos,patch,cutoff,ndim) RESULT(res)
     LOGICAL                               :: res
-    REAL(MK), DIMENSION(ndim), intent(in) :: pos
-    REAL(MK), DIMENSION(2*ndim),intent(in):: patch
-    REAL(MK), DIMENSION(ndim), intent(in) :: cutoff
-    INTEGER                 ,  intent(in) :: ndim
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
+    REAL(MK), DIMENSION(2*ndim),INTENT(IN):: patch
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: cutoff
+    INTEGER                 ,  INTENT(IN) :: ndim
 
     res = ALL(pos(1:ndim).GE.(patch(1:ndim)+cutoff(1:ndim)))
     res = res .AND. ALL(pos(1:ndim).LE.(patch(ndim+1:2*ndim)-cutoff(1:ndim)))
 
-end function
+END FUNCTION
 
 end test_suite

@@ -8,10 +8,10 @@ USE ppm_module_interfaces
 USE ppm_module_data
 
 INTEGER, PARAMETER              :: debug = 0
-INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
-REAL(MK),PARAMETER              :: tol=EPSILON(1._mk)*100
-REAL(MK),PARAMETER              :: pi = ACOS(-1._mk)
-REAL(MK),PARAMETER              :: skin = 0._mk
+INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
+REAL(MK),PARAMETER              :: tol=EPSILON(1.0_MK)*100
+REAL(MK),PARAMETER              :: pi = ACOS(-1.0_MK)
+REAL(MK),PARAMETER              :: skin = 0.0_MK
 INTEGER,PARAMETER               :: ndim=2
 INTEGER                         :: decomp,assig,tolexp
 INTEGER                         :: info,comm,rank,nproc,topoid
@@ -28,7 +28,7 @@ REAL(MK),DIMENSION(:  ),POINTER :: cost=>NULL()
 INTEGER                         :: isymm = 0
 REAL(MK)                        :: t0,t1,t2,t3
 INTEGER                         :: seedsize
-INTEGER,  DIMENSION(:),allocatable :: seed
+INTEGER,  DIMENSION(:),ALLOCATABLE :: seed
 INTEGER, DIMENSION(:),POINTER   :: nvlist=>NULL()
 INTEGER, DIMENSION(:,:),POINTER :: vlist=>NULL()
 REAL(MK)                        :: err
@@ -39,12 +39,12 @@ INTEGER(ppm_kind_int64),DIMENSION(:),  POINTER :: wp_1li => NULL()
 INTEGER(ppm_kind_int64),DIMENSION(:,:),POINTER :: wp_2li => NULL()
 REAL(MK), DIMENSION(:),   POINTER              :: wp_1r => NULL()
 REAL(MK), DIMENSION(:,:), POINTER              :: wp_2r => NULL()
-complex(mk), DIMENSION(:),   POINTER           :: wp_1c => NULL()
-complex(mk), DIMENSION(:,:), POINTER           :: wp_2c => NULL()
+COMPLEX(MK), DIMENSION(:),   POINTER           :: wp_1c => NULL()
+COMPLEX(MK), DIMENSION(:,:), POINTER           :: wp_2c => NULL()
 LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
 
-INTEGER, DIMENSION(:),allocatable              :: degree,order
-REAL(ppm_kind_double),DIMENSION(:),allocatable :: coeffs
+INTEGER, DIMENSION(:),ALLOCATABLE              :: degree,order
+REAL(ppm_kind_double),DIMENSION(:),ALLOCATABLE :: coeffs
 INTEGER                                        :: nterms
 
     init
@@ -54,8 +54,8 @@ INTEGER                                        :: nterms
 
         ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),STAT=info)
 
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
+        min_phys(1:ndim) = 0.0_MK
+        max_phys(1:ndim) = 1.0_MK
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6) = ppm_param_bcdef_periodic
 
@@ -67,7 +67,7 @@ INTEGER                                        :: nterms
         rank = 0
         nproc = 1
 #endif
-        tolexp = int(log10(EPSILON(1._mk)))+10
+        tolexp = int(log10(EPSILON(1.0_MK)))+10
         CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
         CALL RANDOM_SEED(size=seedsize)
@@ -132,7 +132,7 @@ INTEGER                                        :: nterms
         CALL Part1%create_neighlist(Part1,info)
         Assert_Equal(info,0)
 
-        CALL Part1%set_cutoff(3._mk * Part1%h_avg,info)
+        CALL Part1%set_cutoff(3.0_MK * Part1%h_avg,info)
         Assert_Equal(info,0)
 
         ALLOCATE(wp_2r(ndim,Part1%Npart))
@@ -143,7 +143,7 @@ INTEGER                                        :: nterms
         DEALLOCATE(wp_2r)
         CALL Part1%apply_bc(info)
         Assert_Equal(info,0)
-        CALL Part1%map(info,global=.true.,topoid=topoid)
+        CALL Part1%map(info,global=.TRUE.,topoid=topoid)
         Assert_Equal(info,0)
 
         CALL Field1%discretize_on(Part1,info)
@@ -152,10 +152,10 @@ INTEGER                                        :: nterms
 
         !Initialize concentrations
         foreach p in particles(Part1) with positions(x) vec_fields(w=Field1)
-            w_p(1) = 1._mk
-            w_p(2) = -10._mk
-            w_p(3) = cos(x_p(1))
-            w_p(4) = sin(x_p(2))
+            w_p(1) = 1.0_MK
+            w_p(2) = -10.0_MK
+            w_p(3) = COS(x_p(1))
+            w_p(4) = SIN(x_p(2))
             w_p(5) = SQRT(SUM(x_p(1:ndim)**2))
         end foreach
 
@@ -175,7 +175,7 @@ INTEGER                                        :: nterms
         else
                degree =  (/2,0,0, 0,2,0, 0,0,2/)
         endif
-        coeffs = 1.0_mk
+        coeffs = 1.0_MK
 
         CALL Laplacian%create(ndim,coeffs,degree,info,name="Laplacian")
         Assert_Equal(info,0)
@@ -210,18 +210,18 @@ INTEGER                                        :: nterms
 !-------------------------------------------------------------
 ! test function
 !-------------------------------------------------------------
-pure function f0_test(pos,ndim)
+PURE FUNCTION f0_test(pos,ndim)
 
     REAL(MK)                              :: f0_test
-    INTEGER                 ,  intent(in) :: ndim
-    REAL(MK), DIMENSION(ndim), intent(in) :: pos
+    INTEGER                 ,  INTENT(IN) :: ndim
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
-    f0_test =  sin(2._mk*pi*pos(1)) * cos(2._mk*pi*pos(2)) * &
-        & sin(2._mk*pi*pos(ndim))
+    f0_test =  SIN(2._MK*pi*pos(1)) * COS(2._MK*pi*pos(2)) * &
+        & SIN(2._MK*pi*pos(ndim))
 
     return
 
-end function f0_test
+END FUNCTION f0_test
 
 
 

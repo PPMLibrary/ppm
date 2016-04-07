@@ -81,8 +81,8 @@
 
       shift =MERGE(grid_shift,0.0_MK,PRESENT(grid_shift))
 
-      minphys = 0.0_mk
-      maxphys = 0.0_mk
+      minphys = 0.0_MK
+      maxphys = 0.0_MK
       minphys(1:ppm_dim) = min_phys(1:ppm_dim)
       maxphys(1:ppm_dim) = max_phys(1:ppm_dim)
       lenphys = maxphys - minphys

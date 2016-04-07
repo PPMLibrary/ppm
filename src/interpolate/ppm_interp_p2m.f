@@ -149,12 +149,12 @@
       INTEGER,  DIMENSION(:,:)     , POINTER :: ndata
       INTEGER,  DIMENSION(:)       , POINTER :: ilist1 => NULL()
       INTEGER,  DIMENSION(:)       , POINTER :: ilist2 => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: min_phys
-      REAL(mk), DIMENSION(:)       , POINTER :: max_phys
-      REAL(mk), DIMENSION(ppm_dim)           :: dxi,dx
-      REAL(mk)                               :: dxx,dxy,dxz,dxxi,dxyi,dxzi
-      REAL(mk), DIMENSION(ppm_dim)           :: len_phys
-      REAL(mk)                               :: x1,x2,x3
+      REAL(MK), DIMENSION(:)       , POINTER :: min_phys
+      REAL(MK), DIMENSION(:)       , POINTER :: max_phys
+      REAL(MK), DIMENSION(ppm_dim)           :: dxi,dx
+      REAL(MK)                               :: dxx,dxy,dxz,dxxi,dxyi,dxzi
+      REAL(MK), DIMENSION(ppm_dim)           :: len_phys
+      REAL(MK)                               :: x1,x2,x3
       INTEGER                                :: kernel_support
       INTEGER,  DIMENSION(ppm_dim+2)         :: ldu,ldl
       INTEGER,  DIMENSION(ppm_dim)           :: Nc
@@ -171,14 +171,14 @@
       INTEGER                                :: iq
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub
-      REAL(mk)                               :: myeps
-      REAL(mk)                               :: tim1s, tim1e
-      REAL(mk)                               :: xp1,xp2,xp3
-      REAL(mk)                               :: wx1,wx2,wx3
-      REAL(mk), DIMENSION(ppm_dim)           :: x0
-      REAL(mk)                               :: x01,x02,x03
+      REAL(MK), DIMENSION(:,:),      POINTER :: min_sub
+      REAL(MK), DIMENSION(:,:),      POINTER :: max_sub
+      REAL(MK)                               :: myeps
+      REAL(MK)                               :: tim1s, tim1e
+      REAL(MK)                               :: xp1,xp2,xp3
+      REAL(MK)                               :: wx1,wx2,wx3
+      REAL(MK), DIMENSION(ppm_dim)           :: x0
+      REAL(MK)                               :: x01,x02,x03
       INTEGER                                :: ldn
       CHARACTER(len=256)                     :: msg
       TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
@@ -563,10 +563,10 @@
               DO i=1-ghostsize(1),ndata(1,isubl)+ghostsize(1)
 #if __MODE == __VEC
                  DO ldn=1,lda
-                    field_up(ldn,i,j,k,isub) = 0.0_mk
+                    field_up(ldn,i,j,k,isub) = 0.0_MK
                  END DO
 #else
-                 field_up(i,j,k,isub) = 0.0_mk
+                 field_up(i,j,k,isub) = 0.0_MK
 #endif
               END DO
            END DO
@@ -587,10 +587,10 @@
 
 #if __MODE == __VEC
               DO ldn=1,lda
-                 field_up(ldn,i,j,isub) = 0.0_mk
+                 field_up(ldn,i,j,isub) = 0.0_MK
               END DO
 #else
-              field_up(i,j,isub) = 0.0_mk
+              field_up(i,j,isub) = 0.0_MK
 #endif
            END DO
         END DO

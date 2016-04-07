@@ -212,10 +212,8 @@
       !-------------------------------------------------------------------------
       !  Boxes need to be cutoff+skin in all directions !
       !-------------------------------------------------------------------------
-      DO i=1,ppm_dim
-         bsize(i) = cutoff + skin
-      ENDDO
-      cut2 = bsize(1)*bsize(1)
+      bsize=cutoff + skin
+      cut2 =bsize(1)*bsize(1)
 
       !-------------------------------------------------------------------------
       !  Generate cell lists
@@ -470,10 +468,8 @@
                      ! loop over all box-box interactions
                      DO iinter=1,nnp
                         ! determine box indices for this interaction
-                        ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+ &
-                        &                          n2*inp(3,iinter))
-                        jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+ &
-                        &                          n2*jnp(3,iinter))
+                        ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+n2*inp(3,iinter))
+                        jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+n2*jnp(3,iinter))
                         !-------------------------------------------------
                         !  Read indices and check if empty
                         !-------------------------------------------------

@@ -1,7 +1,7 @@
 test_suite ppm_module_alloc
 
   INTEGER, PARAMETER              :: debug = 0
-  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !kind(1.0e0)
+  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
   INTEGER, PARAMETER              :: ndim=2
   INTEGER                         :: tolexp
   INTEGER                         :: nproc,rank,comm
@@ -47,7 +47,7 @@ test_suite ppm_module_alloc
     iopt = ppm_param_alloc_fit
     lda(1) = 1024
     CALL ppm_alloc(wp,lda,iopt,info)
-    assert_equal(info,0)
+    Assert_Equal(info,0)
 
   end test
 
@@ -62,6 +62,6 @@ test_suite ppm_module_alloc
     iopt = ppm_param_dealloc
     lda(1) = 1024
     CALL ppm_alloc(wp,lda,iopt,info)
-    assert_equal(info,0)
+    Assert_Equal(info,0)
   end test
 end test_suite

@@ -357,7 +357,7 @@
          !-------------------------------------------------------------------
          ! build a quad tree, binary in 2d
          treetype         = ppm_param_tree_quad
-         IF (ppm_dim .EQ. 2) treetype = ppm_param_tree_bin
+         IF (ppm_dim.EQ.2) treetype = ppm_param_tree_bin
          ! particles have unit weight
          weights(1,1:2)   = 1.0_MK
          ! mesh and geometry are not considered
@@ -365,9 +365,9 @@
          weights(3,1:2)   = 0.0_MK
          ! fix the proper direction
          fixed(1:ppm_dim) = .FALSE.
-         IF (decomp .EQ. ppm_param_decomp_xpencil) fixed(1) = .TRUE.
-         IF (decomp .EQ. ppm_param_decomp_ypencil) fixed(2) = .TRUE.
-         IF (decomp .EQ. ppm_param_decomp_zpencil) fixed(3) = .TRUE.
+         IF (decomp.EQ.ppm_param_decomp_xpencil) fixed(1) = .TRUE.
+         IF (decomp.EQ.ppm_param_decomp_ypencil) fixed(2) = .TRUE.
+         IF (decomp.EQ.ppm_param_decomp_zpencil) fixed(3) = .TRUE.
          gsvec(1:ppm_dim) = ghostsize
          ! no mesh
          Nm(1:ppm_dim)    = 0
@@ -409,15 +409,15 @@
          weights(3,1:2)   = 0.0_MK
          ! fix the proper directions
          fixed(1:ppm_dim) = .FALSE.
-         IF (decomp .EQ. ppm_param_decomp_xy_slab) THEN
+         IF (decomp.EQ.ppm_param_decomp_xy_slab) THEN
              fixed(1) = .TRUE.
              fixed(2) = .TRUE.
          ENDIF
-         IF (decomp .EQ. ppm_param_decomp_xz_slab) THEN
+         IF (decomp.EQ.ppm_param_decomp_xz_slab) THEN
              fixed(1) = .TRUE.
              fixed(3) = .TRUE.
          ENDIF
-         IF (decomp .EQ. ppm_param_decomp_yz_slab) THEN
+         IF (decomp.EQ.ppm_param_decomp_yz_slab) THEN
              fixed(2) = .TRUE.
              fixed(3) = .TRUE.
          ENDIF
@@ -448,7 +448,7 @@
          ! build an oct tree in 3d
          treetype         = ppm_param_tree_oct
          ! and a quad tree in 2d
-         IF (ppm_dim .EQ. 2) treetype = ppm_param_tree_quad
+         IF (ppm_dim.EQ.2) treetype = ppm_param_tree_quad
          ! particles have unit weight
          weights(1,1:2)   = 1.0_MK
          ! mesh and geometry are not considered
@@ -500,8 +500,7 @@
       !-------------------------------------------------------------------------
       IF (decomp .NE. ppm_param_decomp_user_defined) THEN
          IF (PRESENT(pcost)) THEN
-            CALL ppm_topo_cost(xp,Npart,min_sub,max_sub,nsubs,nnodes,cost, &
-            &    info,pcost)
+            CALL ppm_topo_cost(xp,Npart,min_sub,max_sub,nsubs,nnodes,cost,info,pcost)
          ELSE
             CALL ppm_topo_cost(xp,Npart,min_sub,max_sub,nsubs,nnodes,cost,info)
          ENDIF
@@ -516,8 +515,7 @@
          !-------------------------------------------------------------------
          !  internal assignment routine
          !-------------------------------------------------------------------
-         CALL ppm_topo_subs2proc(cost,nneigh,ineigh,nsubs,sub2proc, &
-         &    isublist,nsublist,info)
+         CALL ppm_topo_subs2proc(cost,nneigh,ineigh,nsubs,sub2proc,isublist,nsublist,info)
          or_fail('Assigning subs to processors failed')
 
       CASE (ppm_param_assign_metis_cut, &
@@ -527,9 +525,8 @@
          !-------------------------------------------------------------------
          !  use METIS library to do assignment
          !-------------------------------------------------------------------
-         CALL ppm_topo_metis_s2p(min_phys,max_phys,min_sub,max_sub, &
-         &    cost,gsvec,nneigh,ineigh,nsubs,sub2proc,isublist,     &
-         &    nsublist,assig,info)
+         CALL ppm_topo_metis_s2p(min_phys,max_phys,min_sub,max_sub,cost, &
+         &    gsvec,nneigh,ineigh,nsubs,sub2proc,isublist,nsublist,assig,info)
          or_fail('Assigning subs to processors using METIS failed')
 
       CASE (ppm_param_assign_user_defined)
@@ -544,7 +541,7 @@
          isublist = ppm_param_undefined
          nsublist = 0
          DO isub=1,nsubs
-            IF (sub2proc(isub) .EQ. ppm_rank) THEN
+            IF (sub2proc(isub).EQ.ppm_rank) THEN
                nsublist = nsublist + 1
                isublist(nsublist) = isub
             ENDIF
@@ -641,19 +638,19 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF (.NOT. ppm_initialized) THEN
+          IF (.NOT.ppm_initialized) THEN
              fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
           ENDIF ! test ppm_initialized
-          IF (Npart .LT. 0) THEN
+          IF (Npart.LT.0) THEN
              fail('Npart must not be negative!',exit_point=8888)
           ENDIF ! test Npart > 0
           IF (.NOT.ASSOCIATED(xp)) THEN
              fail('xp is not allocated!',exit_point=8888)
           ENDIF ! test xp associated
-          IF (SIZE(xp,1) .LT. ppm_dim) THEN
+          IF (SIZE(xp,1).LT.ppm_dim) THEN
              fail('leading dimension of xp too small!',exit_point=8888)
           ENDIF ! test xp enough dims
-          IF (SIZE(xp,2) .LT. Npart) THEN
+          IF (SIZE(xp,2).LT.Npart) THEN
              fail('not enough particles contained in xp!',exit_point=8888)
           ENDIF ! test xp >= Npart
           IF (topoid.NE.0) THEN
@@ -662,7 +659,7 @@
              ENDIF
           ENDIF
           IF (PRESENT(pcost)) THEN
-             IF (SIZE(pcost,1) .LT. Npart) THEN
+             IF (SIZE(pcost,1).LT.Npart) THEN
                 fail('pcost must be of at least length Npart!',exit_point=8888)
              ENDIF ! test pcost >= Npart
           ENDIF ! test pcost present
@@ -670,18 +667,18 @@
              fail('ghostsize must not be negative!',exit_point=8888)
           ENDIF ! test ghostsize
           DO i=1,ppm_dim
-             IF (max_phys(i) .LE. min_phys(i)) THEN
+             IF (max_phys(i).LE.min_phys(i)) THEN
                 fail('max_phys must be > min_phys!',exit_point=8888)
              ENDIF ! test valid dims
           ENDDO ! for each dimension
-          IF (assig .EQ. ppm_param_assign_user_defined) THEN
+          IF (assig.EQ.ppm_param_assign_user_defined) THEN
              IF (decomp .NE. ppm_param_decomp_user_defined) THEN
                 fail('decomp type set to user_defined for this assignment!',exit_point=8888)
              ENDIF ! test decomp user_defined
              IF (.NOT.PRESENT(user_nsubs)) THEN
                 fail('user_nsubs must be provided if assignment user defined!',exit_point=8888)
              ENDIF ! test user_nsubs present
-             IF (user_nsubs .LE. 0) THEN
+             IF (user_nsubs.LE.0) THEN
                 fail('user_nsubs has to be > 0!',exit_point=8888)
              ENDIF ! test user_nsubs > 0
              IF (.NOT.PRESENT(user_minsub)) THEN
@@ -717,8 +714,8 @@
                 ENDIF ! test if processor assign valid
              ENDDO ! for each sub
           ENDIF ! do user defined assignment checks
-          IF (decomp .EQ. ppm_param_decomp_user_defined) THEN
-             IF (user_nsubs .LE. 0) THEN
+          IF (decomp.EQ.ppm_param_decomp_user_defined) THEN
+             IF (user_nsubs.LE.0) THEN
                 fail('no subs defined in user_defined decomposition!',exit_point=8888)
              ENDIF ! test user_nsubs
              !-------------------------------------------------------------

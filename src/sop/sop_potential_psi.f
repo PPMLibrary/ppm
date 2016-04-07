@@ -67,9 +67,9 @@
 
           !offset potential so that it is zero at r=r_cutoff
           rho = opts%param_morse
-          Psi_at_cutoff = (-rho**(-4._mk*opts%rcp_over_D) + &
-              0.8_mk*rho**(1._mk-5._mk*opts%rcp_over_D))
-          coeff = 1._mk
+          Psi_at_cutoff = (-rho**(-4._MK*opts%rcp_over_D) + &
+              0.8_MK*rho**(1.0_MK-5._MK*opts%rcp_over_D))
+          coeff = 1.0_MK
 
 
           attractive_radius = opts%attractive_radius0
@@ -103,15 +103,15 @@
 
                   !if (fuse(ip)*fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then
                   if (max(fuse(ip),fuse(iq)).ge.4 ) then
-                      no_fusion = .false.
+                      no_fusion = .FALSE.
                   else
-                      no_fusion = .true.
+                      no_fusion = .TRUE.
                   endif
 
                   !if (fuse(ip)+fuse(iq).GE.1) then
-                      !coeff = 1._mk / REAL(MAX(fuse(ip),fuse(iq)),MK)
+                      !coeff = 1.0_MK / REAL(MAX(fuse(ip),fuse(iq)),MK)
                   !else
-                      !coeff = 1._mk
+                      !coeff = 1.0_MK
                   !endif
 
                   !------------------------------------------------------------------!
@@ -189,16 +189,16 @@
           info = 0
           no_fusion = .FALSE.
           attractive_radius = opts%attractive_radius0
-          meanD = 1._mk
-          coeff = 1._mk
+          meanD = 1.0_MK
+          coeff = 1.0_MK
           rho = opts%param_morse
-          Psi_at_cutoff = (-rho**(-4._mk*opts%rcp_over_D) + &
-              0.8_mk*rho**(1._mk-5._mk*opts%rcp_over_D))
+          Psi_at_cutoff = (-rho**(-4._MK*opts%rcp_over_D) + &
+              0.8_MK*rho**(1.0_MK-5._MK*opts%rcp_over_D))
 
           OPEN(UNIT=271,FILE=TRIM(ADJUSTL(filename)),IOSTAT=info)
           DO i=1,1000
 
-              Psi_part = 0._mk
+              Psi_part = 0.0_MK
               rd = REAL(i,MK)/100._MK
 
 #if   __SOP_POTENTIAL == __MORSE

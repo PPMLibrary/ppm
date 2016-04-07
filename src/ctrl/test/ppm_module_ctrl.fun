@@ -71,11 +71,11 @@ test_suite ppm_module_ctrl
     cdefault    = ''
     cflag       = ''
     clong_flag  = ''
-    ldefault    = .false.
-    leflag      = .false.
-    lelong_flag = .false.
-    ldflag      = .false.
-    ldlong_flag = .false.
+    ldefault    = .FALSE.
+    leflag      = .FALSE.
+    lelong_flag = .FALSE.
+    ldflag      = .FALSE.
+    ldlong_flag = .FALSE.
     pdefault    = (0.,0.)
     pflag       = (0.,0.)
     plong_flag  = (0.,0.)
@@ -83,7 +83,7 @@ test_suite ppm_module_ctrl
     xflag       = (0._8,0._8)
     xlong_flag  = (0._8,0._8)
     value       = ''
-    ok          = .false.
+    ok          = .FALSE.
     info        = 0
   end teardown
 
@@ -119,7 +119,7 @@ test_suite ppm_module_ctrl
          flag      = '-b',             &
          long_flag = '--bool',         &
          ctrl_name = 'some_bool',      &
-         default   = .true.,           &
+         default   = .TRUE.,           &
          help      = "Test if bool printing works.")
     CALL arg(iarray, 'int_array',      &
          flag      = '-m',             &
@@ -148,7 +148,7 @@ test_suite ppm_module_ctrl
          flag      = '-p',             &
          long_flag = '--bool-array',   &
          ctrl_name = 'bool_array',     &
-         default   = (/.true.,.false.,.true./), &
+         default   = (/.TRUE.,.FALSE.,.TRUE./), &
          help      = "Test if bool array printing works.")
     ! supply flag
 !    CALL add_cmd('-h')
@@ -425,14 +425,14 @@ test_suite ppm_module_ctrl
   end test
 
   test LOGICAL_args
-    CALL arg(ldefault,    'ldefault',    default   = .true.)
-    CALL arg(leflag,      'leflag',      default   = .false., &
+    CALL arg(ldefault,    'ldefault',    default   = .TRUE.)
+    CALL arg(leflag,      'leflag',      default   = .FALSE., &
          vtype = enabling_flag, flag      = '-e')
-    CALL arg(lelong_flag, 'lelong_flag', default   = .false., &
+    CALL arg(lelong_flag, 'lelong_flag', default   = .FALSE., &
          vtype = enabling_flag, long_flag = '--enable')
-    CALL arg(ldflag,      'ldflag',      default   = .true.,  &
+    CALL arg(ldflag,      'ldflag',      default   = .TRUE.,  &
          vtype = disabling_flag, flag      = '-d')
-    CALL arg(ldlong_flag, 'ldlong_flag', default   = .true.,  &
+    CALL arg(ldlong_flag, 'ldlong_flag', default   = .TRUE.,  &
          vtype = disabling_flag, long_flag = '--disable')
     ! supply
     CALL add_cmd('-e'       )
@@ -451,7 +451,7 @@ test_suite ppm_module_ctrl
 
   test LOGICAL_array_args
     ! define
-    CALL arg(larray,  'larray',  default   = (/.true.,.false.,.true./))
+    CALL arg(larray,  'larray',  default   = (/.TRUE.,.FALSE.,.TRUE./))
     CALL arg(laflag,  'laflag',  flag      = '-f'     )
     CALL arg(lalflag, 'lalflag', long_flag = '--flag' )
     ! supply
@@ -460,9 +460,9 @@ test_suite ppm_module_ctrl
     ! parse
     CALL parse_args(info)
     ! test
-    Assert_LArray_Equal(larray,  (/.true.,.false.,.true./))
-    Assert_LArray_Equal(laflag,  (/.true.,.false.,.true./))
-    Assert_LArray_Equal(lalflag, (/.true.,.false.,.true./))
+    Assert_LArray_Equal(larray,  (/.TRUE.,.FALSE.,.TRUE./))
+    Assert_LArray_Equal(laflag,  (/.TRUE.,.FALSE.,.TRUE./))
+    Assert_LArray_Equal(lalflag, (/.TRUE.,.FALSE.,.TRUE./))
   end test
 
   test COMPLEX_args
@@ -598,7 +598,7 @@ test_suite ppm_module_ctrl
     Assert_Array_Equal(rarray, (/1.1, 2.2, 3.3/))
     Assert_Array_Equal(darray, (/1.1_8, 2.2_8, 3.3_8/))
     Assert_Array_Equal(carray, (/'foo', 'bar', 'baz'/))
-    Assert_LArray_Equal(larray, (/.true., .false., .true./))
+    Assert_LArray_Equal(larray, (/.TRUE., .FALSE., .TRUE./))
     Assert_Array_Equal(parray, (/(1,0), (0,1), (-1,0)/))
     Assert_Array_Equal(xarray, (/(1_8,0_8), (0_8,1_8), (-1_8,0_8)/))
     ! cleanup
@@ -665,7 +665,7 @@ test_suite ppm_module_ctrl
     Assert_Array_Equal( rarray, (/1.1, 2.2, 3.3/))
     Assert_Array_Equal( darray, (/1.1_8, 2.2_8, 3.3_8/))
     Assert_Array_Equal( carray, (/'foo', 'bar', 'baz'/))
-    Assert_LArray_Equal(larray, (/.true., .false., .true./))
+    Assert_LArray_Equal(larray, (/.TRUE., .FALSE., .TRUE./))
     Assert_Array_Equal( parray, (/(1,0),(0,1),(-1,0)/))
     Assert_Array_Equal( xarray, (/(1_8,0_8),(0_8,1_8),(-1_8,0_8)/))
 #else
@@ -677,103 +677,103 @@ end test_suite
 
 #ifdef __F2003
 LOGICAL function int_def(var)
-  INTEGER, POINTER, intent(in) :: var
+  INTEGER, POINTER, INTENT(IN) :: var
   var = 42
-  int_def = .true.
-end function int_def
+  int_def = .TRUE.
+END FUNCTION int_def
 
 LOGICAL function revert_on_fail(var)
-  INTEGER, POINTER, intent(in) :: var
-  revert_on_fail = .false.
-end function revert_on_fail
+  INTEGER, POINTER, INTENT(IN) :: var
+  revert_on_fail = .FALSE.
+END FUNCTION revert_on_fail
 
 LOGICAL function lng_def(var)
-  INTEGER(8), POINTER, intent(in) :: var
+  INTEGER(8), POINTER, INTENT(IN) :: var
   var = 42
-  lng_def = .true.
-end function lng_def
+  lng_def = .TRUE.
+END FUNCTION lng_def
 
 LOGICAL function flt_def(var)
-  REAL, POINTER, intent(in) :: var
+  REAL, POINTER, INTENT(IN) :: var
   var = 0.1337
-  flt_def = .true.
-end function flt_def
+  flt_def = .TRUE.
+END FUNCTION flt_def
 
 LOGICAL function dbl_def(var)
-  REAL(8), POINTER, intent(in) :: var
+  REAL(8), POINTER, INTENT(IN) :: var
   var = 0.1337_8
-  dbl_def = .true.
-end function dbl_def
+  dbl_def = .TRUE.
+END FUNCTION dbl_def
 
 LOGICAL function chr_def(var)
-  CHARACTER(len=*), POINTER, intent(in) :: var
+  CHARACTER(len=*), POINTER, INTENT(IN) :: var
   var = "hrkljus"
-  chr_def = .true.
-end function chr_def
+  chr_def = .TRUE.
+END FUNCTION chr_def
 
 LOGICAL function log_def(var)
-  LOGICAL, POINTER, intent(in) :: var
-  var = .true.
-  log_def = .true.
-end function log_def
+  LOGICAL, POINTER, INTENT(IN) :: var
+  var = .TRUE.
+  log_def = .TRUE.
+END FUNCTION log_def
 
 LOGICAL function cpx_def(var)
-  COMPLEX, POINTER, intent(in) :: var
+  COMPLEX, POINTER, INTENT(IN) :: var
   var = (0,1)
-  cpx_def = .true.
-end function cpx_def
+  cpx_def = .TRUE.
+END FUNCTION cpx_def
 
 LOGICAL function dcp_def(var)
-  COMPLEX(8), POINTER, intent(in) :: var
+  COMPLEX(8), POINTER, INTENT(IN) :: var
   var = (0_8,1_8)
-  dcp_def = .true.
-end function dcp_def
+  dcp_def = .TRUE.
+END FUNCTION dcp_def
 
 LOGICAL function inta_def(var)
-  INTEGER, DIMENSION(:), POINTER, intent(in) :: var
+  INTEGER, DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/1,2,3/)
-  inta_def = .true.
-end function inta_def
+  inta_def = .TRUE.
+END FUNCTION inta_def
 
 LOGICAL function lnga_def(var)
-  INTEGER(8), DIMENSION(:), POINTER, intent(in) :: var
+  INTEGER(8), DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/1,2,3/)
-  lnga_def = .true.
-end function lnga_def
+  lnga_def = .TRUE.
+END FUNCTION lnga_def
 
 LOGICAL function flta_def(var)
-  REAL, DIMENSION(:), POINTER, intent(in) :: var
+  REAL, DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/1.1,2.2,3.3/)
-  flta_def = .true.
-end function flta_def
+  flta_def = .TRUE.
+END FUNCTION flta_def
 
 LOGICAL function dbla_def(var)
-  REAL(8), DIMENSION(:), POINTER, intent(in) :: var
+  REAL(8), DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/1.1_8,2.2_8,3.3_8/)
-  dbla_def = .true.
-end function dbla_def
+  dbla_def = .TRUE.
+END FUNCTION dbla_def
 
 LOGICAL function chra_def(var)
-  CHARACTER(len=*), DIMENSION(:), POINTER, intent(in) :: var
+  CHARACTER(len=*), DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/'foo','bar','baz'/)
-  chra_def = .true.
-end function chra_def
+  chra_def = .TRUE.
+END FUNCTION chra_def
 
 LOGICAL function loga_def(var)
-  LOGICAL, DIMENSION(:), POINTER, intent(in) :: var
-  var = (/.true.,.false.,.true./)
-  loga_def = .true.
-end function loga_def
+  LOGICAL, DIMENSION(:), POINTER, INTENT(IN) :: var
+  var = (/.TRUE.,.FALSE.,.TRUE./)
+  loga_def = .TRUE.
+END FUNCTION loga_def
 
 LOGICAL function cpxa_def(var)
-  COMPLEX, DIMENSION(:), POINTER, intent(in) :: var
+  COMPLEX, DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/(1,0),(0,1),(-1,0)/)
-  cpxa_def = .true.
-end function cpxa_def
+  cpxa_def = .TRUE.
+END FUNCTION cpxa_def
 
 LOGICAL function dcpa_def(var)
-  COMPLEX(8), DIMENSION(:), POINTER, intent(in) :: var
+  COMPLEX(8), DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/(1,0),(0,1),(-1,0)/)
-  dcpa_def = .true.
-end function dcpa_def
+  dcpa_def = .TRUE.
+END FUNCTION dcpa_def
 #endif

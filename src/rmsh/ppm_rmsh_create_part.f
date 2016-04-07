@@ -132,7 +132,7 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(mk),  DIMENSION(:,:)       , POINTER        :: xp
+      REAL(MK),  DIMENSION(:,:)       , POINTER        :: xp
       !!! Particle positions
       INTEGER, INTENT(out)                             :: np
       !!! New number of particles
@@ -161,16 +161,16 @@
       !!! Topology ID
       INTEGER                        ,  INTENT(IN   )  :: meshid
       !!! Mesh ID
-      REAL(mk), DIMENSION(2)         ,  INTENT(in   )  :: cutoff
+      REAL(MK), DIMENSION(2)         ,  INTENT(in   )  :: cutoff
       !!! Lower (element 1) and upper (element 2) bound of particle
       !!! strengths. Only particles with strengths in this band
       !!! will be created.
       INTEGER                        ,  INTENT(  OUT)  :: info
       !!! Returns 0 upon success
       LOGICAL , OPTIONAL             ,  INTENT(in   )  :: resetpos
-      !!! Reset the particle positions? (default .false.)
+      !!! Reset the particle positions? (default .FALSE.)
 #if   __MODE == __VEC
-      REAL(mk), OPTIONAL, DIMENSION(:), POINTER        :: cutoff_weights
+      REAL(MK), OPTIONAL, DIMENSION(:), POINTER        :: cutoff_weights
       !!! Gives the weights of the linear
       !!! combination of the vector elements. The cutoff is then applied
       !!! to the weighted sum.
@@ -198,7 +198,7 @@
       !!! A slave field for which to create particles as well
       !!! where field_up is within cutoff.
 #endif
-      REAL(mk),  DIMENSION(:)         , POINTER, OPTIONAL :: vp
+      REAL(MK),  DIMENSION(:)         , POINTER, OPTIONAL :: vp
       !!! Particle volumes
       !-------------------------------------------------------------------------
       !  Locals
@@ -210,10 +210,10 @@
       LOGICAL                                          :: reset
       INTEGER ,  DIMENSION(2  )                        :: ldu, ldl
       INTEGER                                          :: iopt
-      REAL(mk) , DIMENSION(:,:),        POINTER        :: min_sub
-      REAL(mk) , DIMENSION(:),          POINTER        :: min_phys
-      REAL(mk) , DIMENSION(:),          POINTER        :: max_phys
-      REAL(mk)                                         :: dx,dy,dz
+      REAL(MK) , DIMENSION(:,:),        POINTER        :: min_sub
+      REAL(MK) , DIMENSION(:),          POINTER        :: min_phys
+      REAL(MK) , DIMENSION(:),          POINTER        :: max_phys
+      REAL(MK)                                         :: dx,dy,dz
       INTEGER,   DIMENSION(:  ),        POINTER        :: nm
       INTEGER                                          :: inp, nnx, nny, nnz
       INTEGER                                          :: startx, starty, startz
@@ -221,9 +221,9 @@
       INTEGER                                          :: ilowbc, ihighbc
       INTEGER                                          :: jlowbc, jhighbc
       INTEGER                                          :: klowbc, khighbc
-      REAL(mk)                                         :: xbc_factor, ybc_factor
-      REAL(mk)                                         :: zbc_factor
-      REAL(mk)                                         :: strength
+      REAL(MK)                                         :: xbc_factor, ybc_factor
+      REAL(MK)                                         :: zbc_factor
+      REAL(MK)                                         :: strength
       LOGICAL                                          :: lok,lslave
       LOGICAL                                          :: with_vol
       TYPE(ppm_t_equi_mesh), POINTER                   :: p_mesh
@@ -314,8 +314,8 @@
                GOTO 9999
             ELSE
                DO i=1,lda
-                  IF(cutoff_weights(i).LT.0.0_mk&
-                       &.OR.cutoff_weights(i).GT.1.0_mk) THEN
+                  IF(cutoff_weights(i).LT.0.0_MK&
+                       &.OR.cutoff_weights(i).GT.1.0_MK) THEN
                      info = ppm_error_error
                      CALL ppm_error(ppm_err_argument,'ppm_rmsh_create_part',&
                           & '0 <= cutoff_weights <= 1 is violated.'&
@@ -626,19 +626,19 @@
             IF (k.EQ.klowbc .OR. k.EQ.khighbc) THEN
                zbc_factor = 0.5_mk
             ELSE
-               zbc_factor = 1.0_mk
+               zbc_factor = 1.0_MK
             END IF
             DO j=starty,nny
                IF (j.EQ.jlowbc .OR. j.EQ.jhighbc) THEN
                   ybc_factor = 0.5_mk
                ELSE
-                  ybc_factor = 1.0_mk
+                  ybc_factor = 1.0_MK
                END IF
                DO i=startx,nnx
                   IF (i.EQ.ilowbc .OR. i.EQ.ihighbc) THEN
                      xbc_factor = 0.5_mk
                   ELSE
-                     xbc_factor = 1.0_mk
+                     xbc_factor = 1.0_MK
                   END IF
                   !-------------------------------------------------------------
                   !  compute strength
@@ -710,13 +710,13 @@
             IF (j.EQ.jlowbc .OR. j.EQ.jhighbc) THEN
                ybc_factor = 0.5_mk
             ELSE
-               ybc_factor = 1.0_mk
+               ybc_factor = 1.0_MK
             END IF
             DO i=startx,nnx
                IF (i.EQ.ilowbc .OR. i.EQ.ihighbc) THEN
                   xbc_factor = 0.5_mk
                ELSE
-                  xbc_factor = 1.0_mk
+                  xbc_factor = 1.0_MK
                END IF
                !----------------------------------------------------------------
                !  compute strength

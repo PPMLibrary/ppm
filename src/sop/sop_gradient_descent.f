@@ -256,7 +256,7 @@
 
           !nb_neigh_id = 0
           CALL particles_allocate_wpi(Particles,nb_neigh_id,info,&
-              iopt=ppm_param_alloc_fit,name='nb_neigh',zero=.true.)
+              iopt=ppm_param_alloc_fit,name='nb_neigh',zero=.TRUE.)
           IF (info .NE. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_alloc,caller,&
@@ -288,7 +288,7 @@
           !!-------------------------------------------------------------------------!
           !! Gradient descent loop until stopping criterion is met
           !!-------------------------------------------------------------------------!
-          adaptation_ok = .false.
+          adaptation_ok = .FALSE.
 #ifdef __USE_LBFGS
           lbfgs_continue = .FALSE.
 #endif
@@ -327,8 +327,8 @@
                       !MIN(1._MK, 1.2_MK/opts%rcp_over_D * Dtilde(ip)/D(ip))
               !ENDDO
               !rcp => Set_wps(Particles,Particles%rcp_id)
-              !D      => Set_wps(Particles,Particles%D_id,read_only=.true.)
-              !Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.true.)
+              !D      => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
+              !Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
               !CALL particles_updated_cutoff(Particles,info)
               !IF (info .NE. 0) THEN
                   !info = ppm_error_error
@@ -359,7 +359,7 @@
 
               !count neighbours at a distance < D and decide
               ! whether we need to add new particles
-              adaptation_ok = .true.
+              adaptation_ok = .TRUE.
               CALL sop_close_neighbours(Particles,opts,info)
 
               !Insert (spawn) new particles where needed
@@ -394,7 +394,7 @@
                   lbfgs_continue = .FALSE.
 #endif
               else
-                  adding_particles = .false.
+                  adding_particles = .FALSE.
               endif
               Dtilde => Particles%wps(Particles%Dtilde_id)%vec
               DO ip=1,Particles%Npart
@@ -580,7 +580,7 @@
                   D_old => Get_wps(Particles_old,Particles_old%D_id)
                   rcp => Get_wps(Particles,Particles%rcp_id)
                   xp => Get_xp(Particles)
-                  xp_old => Get_xp(Particles_old,with_ghosts=.true.)
+                  xp_old => Get_xp(Particles_old,with_ghosts=.TRUE.)
 
               CALL ppm_util_time(t2)
               Particles%stats%t_xset_inl = Particles%stats%t_xset_inl + (t2-t1)
@@ -595,8 +595,8 @@
                       else
                           minDold=big
                           tmpvar1=big
-                          Dtilde(ip) = 0._mk
-                          weight_sum = 0._mk
+                          Dtilde(ip) = 0.0_MK
+                          weight_sum = 0.0_MK
 
                           DO ineigh=1,nvlist_cross(ip)
                               iq=vlist_cross(ineigh,ip)
@@ -611,7 +611,7 @@
                                   !xp_old(1:ppm_dim,iq))/Dtilde_old(iq))**2)! ** 2
                               IF (weight .LT. almostzero) THEN
                                   Dtilde(ip) = Dtilde_old(iq)
-                                  weight_sum = 1._mk
+                                  weight_sum = 1.0_MK
                                   EXIT n_loop
                               ELSE
                                   weight_sum = weight_sum + 1._MK / weight
@@ -634,7 +634,7 @@
                               !IF (weight .LT. 0._MK) THEN
                                   !D(ip) = MIN(D(ip),Dtilde_old(iq))
                               !ELSE
-                                  !D(ip) = MIN(D(ip),2._mk**(weight)*Dtilde_old(iq))
+                                  !D(ip) = MIN(D(ip),2._MK**(weight)*Dtilde_old(iq))
                               !ENDIF
 
                           !ENDDO n_loop2
@@ -654,8 +654,8 @@
                       read_only=.TRUE.)
                   rcp => Set_wps(Particles,Particles%rcp_id)
                   Dtilde  => Set_wps(Particles,Particles%Dtilde_id)
-                  xp => Set_xp(Particles,read_only=.true.)
-                  xp_old => Set_xp(Particles_old,read_only=.true.)
+                  xp => Set_xp(Particles,read_only=.TRUE.)
+                  xp_old => Set_xp(Particles_old,read_only=.TRUE.)
               ELSE
                   !------------------------------------------------------------------!
                   ! Update cutoff radii
@@ -778,12 +778,12 @@
                   rcp(ip) = SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))/Dtilde(ip)
               ENDDO
               rcp => Set_wps(Particles,potential_before_id)
-              Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.true.)
+              Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
 
 
               !IF (lbfgs_continue .and. gradPsi_max .LE. 5E-2) THEN
               IF (lbfgs_continue .and. gradPsi_max .LE. 5E-12) THEN
-                  adaptation_ok = .true.
+                  adaptation_ok = .TRUE.
               ELSE
 
                   write(*,*) 'before LBFGS: info = ',info, Particles%Npart
@@ -792,12 +792,12 @@
                       Particles%xp(1:ppm_dim,1:Particles%Npart),&
                       Psi_global,Gradient_Psi(1:ppm_dim,1:Particles%Npart),&
                       .FALSE.,DIAG,(/1,0/),1D-3,ppm_myepsd,Work,info,scaling=Dtilde)
-                  Dtilde=>Set_wps(Particles,Particles%Dtilde_id,read_only=.true.)
+                  Dtilde=>Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
                   write(*,*) 'after LBFGS: info = ',info
                   IF (info.LT.0) THEN
-                      lbfgs_continue = .false.
+                      lbfgs_continue = .FALSE.
 
-                      adaptation_ok = .true.
+                      adaptation_ok = .TRUE.
                       CALL sop_close_neighbours(Particles,opts,info)
 
                       IF (adaptation_ok) THEN
@@ -811,11 +811,11 @@
                       ENDIF
                   ELSE IF (info.GT.0) THEN
                       lbfgs_continue = .TRUE.
-                      adaptation_ok = .false.
+                      adaptation_ok = .FALSE.
                   ELSE
                       IF (lbfgs_continue) THEN
                           write(*,*) 'found suitable minimum in LBFGS'
-                          adaptation_ok = .true.
+                          adaptation_ok = .TRUE.
                       ENDIF
                   ENDIF
               ENDIF
@@ -900,12 +900,12 @@
               step_previous = 0._MK
 
               !IF (gradPsi_max .LT. 1e-3) then
-                  !step_max = 10._mk
+                  !step_max = 10.0_MK
               !else
                   !step_max = 1.5_mk
               !endif
-              step_max = MIN(0.3_mk / MIN(gradPsi_max,3.0_mk), 10000._mk)
-              !step_max = MIN(0.3_mk / MIN(gradPsi_max,3.0_mk), 0.5_mk)
+              step_max = MIN(0.3_mk / MIN(gradPsi_max,3.0_MK), 10000.0_MK)
+              !step_max = MIN(0.3_mk / MIN(gradPsi_max,3.0_MK), 0.5_mk)
 
               !!---------------------------------------------------------------------!
               !! Evaluate potential after different step sizes

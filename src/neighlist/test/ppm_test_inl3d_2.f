@@ -41,16 +41,16 @@ subroutine old_inl_vlist_3d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
 
     ! arguments
     integer, parameter              :: mk = ppm_kind_double
-    integer,                         intent(in   )   :: topo_id
-    type(ppm_t_topo), pointer,       intent(in   )   :: topo
-    real(mk),dimension(:,:),pointer, intent(in   )   :: xp
-    real(mk),dimension(:),pointer,   intent(inout)   :: rcp
-    real(mk),                        intent(in   )   :: cutoff
-    integer,                         intent(in   )   :: npart
-    integer,                         intent(in   )   :: mpart
-    integer, dimension(:),  pointer, intent(inout)   :: nvlist
-    integer, dimension(:,:),pointer, intent(inout)   :: vlist
-    integer,                         intent(  out)   :: info
+    integer,                         INTENT(IN   )   :: topo_id
+    type(ppm_t_topo), pointer,       INTENT(IN   )   :: topo
+    REAL(MK),dimension(:,:),pointer, INTENT(IN   )   :: xp
+    REAL(MK),dimension(:),pointer,   INTENT(INOUT)   :: rcp
+    REAL(MK),                        INTENT(IN   )   :: cutoff
+    integer,                         INTENT(IN   )   :: npart
+    integer,                         INTENT(IN   )   :: mpart
+    integer, dimension(:),  pointer, INTENT(INOUT)   :: nvlist
+    integer, dimension(:,:),pointer, INTENT(INOUT)   :: vlist
+    integer,                         INTENT(  OUT)   :: info
 
     ! local variable
     integer                           :: ip,iq,isub,iinter
@@ -59,8 +59,8 @@ subroutine old_inl_vlist_3d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
     integer                           :: n1,n2,n3,i,j,k
     integer                           :: maxvlen
     integer                           :: ibegin,iend,jbegin,jend
-    real(mk)                          :: dist2,cutoff2
-    real(mk),dimension(3)          :: cellsize
+    REAL(MK)                          :: dist2,cutoff2
+    REAL(MK),dimension(3)          :: cellsize
     integer, dimension(:,:), pointer              :: ncells => null()
     type(ppm_type_ptr_to_clist), dimension(:), pointer  :: clist => null()
     integer,                     dimension(:,:),pointer :: ind => null()
@@ -78,12 +78,12 @@ subroutine old_inl_vlist_3d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
     !!-------------------------------------------------------------------------!
     cellsize = cutoff
     call ppm_neighlist_clist(topo_id,xp,mpart,cellsize,&
-        .false.,clist,ncells,info)
+        .FALSE.,clist,ncells,info)
 
     !!-------------------------------------------------------------------------!
     !! create the index list of cell-cell interactons
     !!-------------------------------------------------------------------------!
-    call ppm_neighlist_mkneighidx(.false.,ind,jnd,nnd,info)
+    call ppm_neighlist_mkneighidx(.FALSE.,ind,jnd,nnd,info)
 
     !!-------------------------------------------------------------------------!
     !! run over cells and create verlet lists for the particles inside
@@ -348,41 +348,41 @@ INCLUDE 'mpif.h'
 
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = ppm_kind_double
-real(mk),parameter              :: pi = 3.1415926535897931_mk
-real(mk),parameter              :: skin = 0._mk
+REAL(MK),parameter              :: pi = 3.1415926535897931_mk
+REAL(MK),parameter              :: skin = 0.0_MK
 integer,parameter               :: ndim=3
 integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol,min_rcp,max_rcp
+REAL(MK)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank
 integer                         :: topoid
 integer                         :: np,npgrid = 15
 integer                         :: mp
 integer                         :: newnp
 integer, dimension(:),  pointer :: p_i
-real(mk),dimension(:,:),pointer :: xp
-real(mk),dimension(:  ),pointer :: rcp
-real(mk),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
-real(mk),dimension(:  ),pointer :: len_phys
-real(mk),dimension(:  ),pointer :: ghostlayer
-real(MK),dimension(:,:),pointer :: minsub,maxsub
+REAL(MK),dimension(:,:),pointer :: xp
+REAL(MK),dimension(:  ),pointer :: rcp
+REAL(MK),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
+REAL(MK),dimension(:  ),pointer :: len_phys
+REAL(MK),dimension(:  ),pointer :: ghostlayer
+REAL(MK),dimension(:,:),pointer :: minsub,maxsub
 integer, dimension(:  ),pointer :: sub2proc
 integer                         :: ii,i,j,k,sum1,sum2
 integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost
+REAL(MK),dimension(:  ),pointer :: cost
 type(ppm_t_topo), pointer       :: topo
 integer                         :: seedsize
-integer,  dimension(:),allocatable :: seed
-real(mk), dimension(:),allocatable :: randnb
+integer,  dimension(:),ALLOCATABLE :: seed
+REAL(MK), dimension(:),ALLOCATABLE :: randnb
 integer,dimension(:,:),pointer   :: vlist,vlist2
 integer,dimension(:),  pointer   :: nvlist,nvlist2
 integer                          :: isymm = 0
-logical                          :: lsymm = .false.,ok
+logical                          :: lsymm = .FALSE.,ok
 
 !----------------
 ! setup
 !----------------
-tol = 10.0_mk*EPSILON(1.0_mk)
-tolexp = int(log10(EPSILON(1.0_mk)))
+tol = 10.0_MK*EPSILON(1.0_MK)
+tolexp = int(log10(EPSILON(1.0_MK)))
 min_rcp = 0.01_mk
 max_rcp = 0.1_mk
 np=npgrid*npgrid*npgrid
@@ -391,13 +391,13 @@ ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
     &         ghostlayer(2*ndim),&
     &         h(ndim),p_i(ndim),p_h(ndim),stat=info)
 
-min_phys = 0.0_mk
-max_phys = 1.0_mk
+min_phys = 0.0_MK
+max_phys = 1.0_MK
 len_phys = max_phys-min_phys
 ghostlayer(1:2*ndim) = max_rcp
 bcdef(1:6) = ppm_param_bcdef_periodic
 
-nullify(xp,rcp)
+NULLIFY(xp,rcp)
 
 #ifdef __MPI
 comm = MPI_COMM_WORLD
@@ -422,18 +422,18 @@ call random_number(randnb)
 !----------------
 
 ALLOCATE(xp(ndim,np),rcp(np),stat=info)
-xp = 0.0_mk
-rcp = 0.0_mk
+xp = 0.0_MK
+rcp = 0.0_MK
 
-p_h = len_phys / real(npgrid,mk)
+p_h = len_phys / REAL(npgrid,mk)
 
 do k=1,npgrid
     do j=1,npgrid
         do i=1,npgrid
             p_i = i + (j-1)*npgrid + (k-1)*npgrid**2
-            xp(1,p_i) = min_phys(1)+real(i-1,mk)*p_h(1)
-            xp(2,p_i) = min_phys(2)+real(j-1,mk)*p_h(2)
-            xp(3,p_i) = min_phys(3)+real(k-1,mk)*p_h(3)
+            xp(1,p_i) = min_phys(1)+REAL(i-1,mk)*p_h(1)
+            xp(2,p_i) = min_phys(2)+REAL(j-1,mk)*p_h(2)
+            xp(3,p_i) = min_phys(3)+REAL(k-1,mk)*p_h(3)
             rcp(p_i) = min_rcp + (max_rcp-min_rcp)*randnb(p_i)
         enddo
     enddo
@@ -448,28 +448,28 @@ topoid = 0
 decomp = ppm_param_decomp_user_defined
 ALLOCATE(minsub(ndim,8),maxsub(ndim,8),sub2proc(8),cost(8),stat=info)
 
-cost = 1.0_mk; sub2proc = 0
-minsub(1:ndim,1)=0._mk; maxsub(1:ndim,1)=0.5_mk
+cost = 1.0_MK; sub2proc = 0
+minsub(1:ndim,1)=0.0_MK; maxsub(1:ndim,1)=0.5_mk
 
-minsub(1,2)=0.5_mk; minsub(2,2)=0.0_mk; minsub(3,2)=0.0_mk
-maxsub(1,2)=1.0_mk; maxsub(2,2)=0.5_mk; maxsub(3,2)=0.5_mk
+minsub(1,2)=0.5_mk; minsub(2,2)=0.0_MK; minsub(3,2)=0.0_MK
+maxsub(1,2)=1.0_MK; maxsub(2,2)=0.5_mk; maxsub(3,2)=0.5_mk
 
-minsub(1,3)=0.0_mk; minsub(2,3)=0.5_mk; minsub(3,3)=0.0_mk
-maxsub(1,3)=0.5_mk; maxsub(2,3)=1.0_mk; maxsub(3,3)=0.5_mk
+minsub(1,3)=0.0_MK; minsub(2,3)=0.5_mk; minsub(3,3)=0.0_MK
+maxsub(1,3)=0.5_mk; maxsub(2,3)=1.0_MK; maxsub(3,3)=0.5_mk
 
-minsub(1,4)=0.0_mk; minsub(2,4)=0.0_mk; minsub(3,4)=0.5_mk
-maxsub(1,4)=0.5_mk; maxsub(2,4)=0.5_mk; maxsub(3,4)=1.0_mk
+minsub(1,4)=0.0_MK; minsub(2,4)=0.0_MK; minsub(3,4)=0.5_mk
+maxsub(1,4)=0.5_mk; maxsub(2,4)=0.5_mk; maxsub(3,4)=1.0_MK
 
-minsub(1,5)=0.5_mk; minsub(2,5)=0.5_mk; minsub(3,5)=0.0_mk
-maxsub(1,5)=1.0_mk; maxsub(2,5)=1.0_mk; maxsub(3,5)=0.5_mk
+minsub(1,5)=0.5_mk; minsub(2,5)=0.5_mk; minsub(3,5)=0.0_MK
+maxsub(1,5)=1.0_MK; maxsub(2,5)=1.0_MK; maxsub(3,5)=0.5_mk
 
-minsub(1,6)=0.0_mk; minsub(2,6)=0.5_mk; minsub(3,6)=0.5_mk
-maxsub(1,6)=0.5_mk; maxsub(2,6)=1.0_mk; maxsub(3,6)=1.0_mk
+minsub(1,6)=0.0_MK; minsub(2,6)=0.5_mk; minsub(3,6)=0.5_mk
+maxsub(1,6)=0.5_mk; maxsub(2,6)=1.0_MK; maxsub(3,6)=1.0_MK
 
-minsub(1,7)=0.5_mk; minsub(2,7)=0.0_mk; minsub(3,7)=0.5_mk
-maxsub(1,7)=1.0_mk; maxsub(2,7)=0.5_mk; maxsub(3,7)=1.0_mk
+minsub(1,7)=0.5_mk; minsub(2,7)=0.0_MK; minsub(3,7)=0.5_mk
+maxsub(1,7)=1.0_MK; maxsub(2,7)=0.5_mk; maxsub(3,7)=1.0_MK
 
-minsub(1:ndim,8)=0.5_mk; maxsub(1:ndim,8)=1._mk
+minsub(1:ndim,8)=0.5_mk; maxsub(1:ndim,8)=1.0_MK
 
 topoid = 0
 call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
@@ -483,12 +483,12 @@ do ii=1,3
     call random_number(randnb)
     do i=1,np
         xp(1:ndim,i)=xp(1:ndim,i)+&
-            0.05_mk*real(ii-1,mk)*randnb(ndim*i-(ndim-1):ndim*i)
+            0.05_MK*REAL(ii-1,mk)*randnb(ndim*i-(ndim-1):ndim*i)
     enddo
     !apply periodic boundary conditions
     do i=1,np
         do j=1,ndim
-            xp(j,i)=MOD(xp(j,i),1._mk)
+            xp(j,i)=MOD(xp(j,i),1.0_MK)
         enddo
     enddo
 

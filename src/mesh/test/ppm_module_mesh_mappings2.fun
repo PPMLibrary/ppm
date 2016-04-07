@@ -7,8 +7,8 @@ USE ppm_module_mktopo
 USE ppm_module_topo_alloc
 
 INTEGER, PARAMETER              :: debug = 0
-INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
-REAL(MK),PARAMETER              :: pi = ACOS(-1._mk)
+INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
+REAL(MK),PARAMETER              :: pi = ACOS(-1.0_MK)
 INTEGER,PARAMETER               :: ndim=3
 INTEGER                         :: decomp,assig,tolexp
 INTEGER                         :: info,comm,rank,nproc
@@ -49,8 +49,8 @@ REAL(MK),DIMENSION(ndim)         :: offset
         ALLOCATE(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
 
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
+        min_phys(1:ndim) = 0.0_MK
+        max_phys(1:ndim) = 1.0_MK
         ighostsize(1:ndim) = 2
         bcdef(1:2*ndim) = ppm_param_bcdef_periodic
         tolexp = -12
@@ -121,7 +121,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
 #ifdef __MPI
         CALL MPI_BARRIER(comm,info)
 #endif
-        offset = 0._mk
+        offset = 0.0_MK
         Nm = (/80,80,80/)
 
         assig  = ppm_param_assign_internal
@@ -194,9 +194,9 @@ REAL(MK),DIMENSION(ndim)         :: offset
         !Fill in the allocated field arrays (incl. ghost nodes) with some data
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for all
-                Field1_n(1) = -10._mk * (rank+1)
-                Field1_n(2) = -10._mk * (rank+1) - 1
-                Field2_n    = -1._mk
+                Field1_n(1) = -10.0_MK * (rank+1)
+                Field1_n(2) = -10.0_MK * (rank+1) - 1
+                Field2_n    = -1.0_MK
         end foreach
 
         !Change the values of the real nodes to something that depends
@@ -204,9 +204,9 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for real
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                Field1_n(1) = cos(2._mk*pi*pos(1))
-                Field1_n(2) = cos(2._mk*pi*pos(1)) + 2._mk
-                Field2_n    = 1._mk
+                Field1_n(1) = COS(2._MK*pi*pos(1))
+                Field1_n(2) = COS(2._MK*pi*pos(1)) + 2.0_MK
+                Field2_n    = 1.0_MK
         end foreach
 
         !Do a ghost mapping
@@ -237,12 +237,12 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                IF (Field2_n .lt. 0._mk) then
+                IF (Field2_n .lt. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
-                Assert_Equal_Within(Field1_n(1) ,cos(2._mk*pi*pos(1)),        1e-5)
-                Assert_Equal_Within(Field1_n(2) ,cos(2._mk*pi*pos(1)) + 2._mk,1e-5)
-                Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
+                Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
+                Assert_Equal_Within(Field1_n(2) ,COS(2._MK*pi*pos(1)) + 2.0_MK,1e-5)
+                Assert_Equal_Within(Field2_n    ,1.0_MK,1e-5)
         end foreach
         Assert_Equal(nb_errors,0)
 

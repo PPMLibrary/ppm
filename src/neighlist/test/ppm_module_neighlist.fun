@@ -123,7 +123,7 @@ test_suite ppm_module_neighlist
     npart=1000
     CALL part_init(p,npart,min_phys,max_phys,info,&
     &    ppm_param_part_init_cartesian,0.5_MK)
-    h = 2.0_MK*(len_phys(1)/(sqrt(real(npart,mk))))
+    h = 2.0_MK*(len_phys(1)/(SQRT(REAL(npart,mk))))
     gl = 0.0_MK
     bcdef(1:6) = ppm_param_bcdef_freespace
     NULLIFY(nvlist,vlist,pidx)
@@ -155,10 +155,10 @@ test_suite ppm_module_neighlist
     FORALL(k=1:npart) pidx(k) = k
 
     CALL ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,vlist,nvlist,info,pidx,npart,clist)
-    assert_equal(info,0)
+    Assert_Equal(info,0)
 
     CALL ppm_clist_destroy(clist,info)
-    assert_equal(info,0)
+    Assert_Equal(info,0)
 
   end test
 
@@ -189,7 +189,7 @@ test_suite ppm_module_neighlist
     CALL part_init(p,npart,min_phys,max_phys,info,&
     &    ppm_param_part_init_cartesian,0.5_MK)
     !print *,npart
-    h = 2.0_MK*(len_phys(1)/(sqrt(real(npart,mk))))
+    h = 2.0_MK*(len_phys(1)/(SQRT(REAL(npart,mk))))
     gl = 0.0_MK
     bcdef(1:6) = ppm_param_bcdef_freespace
     NULLIFY(nvlist,vlist,pidx)
@@ -223,7 +223,7 @@ test_suite ppm_module_neighlist
     CALL ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,&
     &            vlist,nvlist,info)!,pidx)
 
-    assert_equal(info,0)
+    Assert_Equal(info,0)
     deALLOCATE(p,vlist,nvlist,pidx)
   end test
 
@@ -282,7 +282,7 @@ test_suite ppm_module_neighlist
 
     CALL ppm_topo_check(topoid,p,npart,ok,info)
 
-    assert_true(ok)
+    Assert_True(ok)
     !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
     CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
@@ -293,19 +293,19 @@ test_suite ppm_module_neighlist
 
     CALL ppm_topo_check(topoid,p,npart,ok,info)
 
-    assert_true(ok)
+    Assert_True(ok)
     CALL ppm_neighlist_vlist(topoid,p,mpart,gl/2.0_MK,skin,.TRUE.,&
     &            vlist,nvlist,info)
 
     !CALL ppm_dbg_print(topoid,gl,1,nvlist,info,p,npart,mpart)
 
-    assert_equal(vlist(1,1),21)
+    Assert_Equal(vlist(1,1),21)
     IF (nproc.EQ.2) THEN
-       !assert_equal(vlist(2,1),31)
-       !assert_equal(vlist(2,10),40)
-       !assert_equal(vlist(1,20),30)
+       !Assert_Equal(vlist(2,1),31)
+       !Assert_Equal(vlist(2,10),40)
+       !Assert_Equal(vlist(1,20),30)
     ENDIF
-    assert_equal(vlist(1,10),30)
+    Assert_Equal(vlist(1,10),30)
   end test
 
   test symBC_neighlist
@@ -381,86 +381,86 @@ test_suite ppm_module_neighlist
     cp(2) = 0.5_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
-        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
+        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
           ip = i
           exit
         ENDIF
     ENDDO
     IF (nproc.eq.1) THEN
-       assert_false(ip.eq.-1)
-       assert_true((vlist(1,1).eq.ip).or.(vlist(1,ip).eq.1))
+       Assert_False(ip.eq.-1)
+       Assert_True((vlist(1,1).eq.ip).or.(vlist(1,ip).eq.1))
     ENDIF
     ! p(2)
     cp(1) = 0.5_MK
     cp(2) = -0.05_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
-        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
+        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
         ip = i
         exit
         ENDIF
     ENDDO
     IF (nproc.eq.1) THEN
-       assert_false(ip.eq.-1)
-       assert_true((vlist(1,2).eq.ip).or.(vlist(1,ip).eq.2))
+       Assert_False(ip.eq.-1)
+       Assert_True((vlist(1,2).eq.ip).or.(vlist(1,ip).eq.2))
     ENDIF
     ! p(3)
     cp(1) = 0.05_MK
     cp(2) = -0.05_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
-        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
+        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
         ip = i
         exit
         ENDIF
     ENDDO
     IF (nproc.eq.1) THEN
-       assert_false(ip.eq.-1)
+       Assert_False(ip.eq.-1)
        ok = (vlist(1,3).eq.ip).or.&
        &    (vlist(2,3).eq.ip).or.&
        &    (vlist(1,ip).eq.3).or.&
        &    (vlist(2,ip).eq.3)
-       assert_true(ok)
+       Assert_True(ok)
     ENDIF
 
     cp(1) = -0.05_MK
     cp(2) = 0.05_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
-        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
+        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
         ip = i
         exit
         ENDIF
     ENDDO
     IF (nproc.eq.1) THEN
-       assert_false(ip.eq.-1)
+       Assert_False(ip.eq.-1)
        ok = (vlist(1,3).eq.ip).or.&
        &    (vlist(2,3).eq.ip).or.&
        &    (vlist(1,ip).eq.3).or.&
        &    (vlist(2,ip).eq.3)
-       assert_true(ok)
+       Assert_True(ok)
     ENDIF
     cp(1) = -0.05_MK
     cp(2) = -0.05_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
-        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
+        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
         ip = i
         exit
         ENDIF
     ENDDO
     IF (nproc.eq.1) THEN
-       assert_false(ip.eq.-1)
+       Assert_False(ip.eq.-1)
        ok = (vlist(1,3).eq.ip).or.&
        &    (vlist(2,3).eq.ip).or.&
        &    (vlist(1,ip).eq.3).or.&
        &    (vlist(2,ip).eq.3)
-       assert_true(ok)
+       Assert_True(ok)
     ENDIF
 
     ! p(4)
@@ -468,15 +468,15 @@ test_suite ppm_module_neighlist
     cp(2) = 1.05_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((abs(p(1,i)-cp(1)).lt.eps).and.&
-        &   (abs(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
+        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
         ip = i
         exit
         ENDIF
     ENDDO
     IF (nproc.eq.1) THEN
-       assert_false(ip.eq.-1)
-       assert_true((vlist(1,4).eq.ip).or.(vlist(1,ip).eq.4))
+       Assert_False(ip.eq.-1)
+       Assert_True((vlist(1,4).eq.ip).or.(vlist(1,ip).eq.4))
     ENDIF
   end test
 

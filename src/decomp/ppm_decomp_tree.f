@@ -28,11 +28,11 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE decomp_tree_s(xp,Npart,min_phys,max_phys, &
-      &   minboxsize,tolerance,min_sub,max_sub,nsubs,info,pcost)
+      SUBROUTINE decomp_tree_s(xp,Npart,min_phys,max_phys,minboxsize, &
+      &          tolerance,min_sub,max_sub,nsubs,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE decomp_tree_d(xp,Npart,min_phys,max_phys, &
-      &   minboxsize,tolerance,min_sub,max_sub,nsubs,info,pcost)
+      SUBROUTINE decomp_tree_d(xp,Npart,min_phys,max_phys,minboxsize, &
+      &          tolerance,min_sub,max_sub,nsubs,info,pcost)
 #endif
       !!! Performs a tree-like decomposition.
       !!! It subdivides space until the number of leaves in the
@@ -312,8 +312,7 @@
          !  Communicate the number of particles found in the boxes of the new
          !  boxes at the next level (this will be expensive for nproc >> 1)
          !----------------------------------------------------------------------
-         CALL MPI_Allreduce(npbx(fbox),npbxg(fbox),lbox-fbox+1, &
-         &    MPI_INTEGER,MPI_SUM,ppm_comm,info)
+         CALL MPI_Allreduce(npbx(fbox),npbxg(fbox),lbox-fbox+1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
 #else
          !----------------------------------------------------------------------
          !  Copy the global npbx from the local (the same in serial, but to
@@ -360,11 +359,9 @@
                vector_in(1) = mean_npbx
                vector_in(2) =  var_npbx
 #if __KIND == __SINGLE_PRECISION
-               CALL MPI_AllReduce(vector_in,vector_out,2,MPI_REAL, &
-               &    MPI_SUM,ppm_comm,info)
+               CALL MPI_AllReduce(vector_in,vector_out,2,MPI_REAL,MPI_SUM,ppm_comm,info)
 #else
-               CALL MPI_AllReduce(vector_in,vector_out,2,MPI_DOUBLE_PRECISION, &
-               &    MPI_SUM,ppm_comm,info)
+               CALL MPI_AllReduce(vector_in,vector_out,2,MPI_DOUBLE_PRECISION,MPI_SUM,ppm_comm,info)
 #endif
                mean_npbx = vector_out(1)
                 var_npbx = vector_out(2)

@@ -8,7 +8,7 @@ test_suite ppm_module_field_typedef
   USE ppm_module_interfaces
 
   INTEGER, PARAMETER              :: debug = 0
-  INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
+  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
 #ifdef __MPI
   INTEGER, PARAMETER              :: comm = MPI_COMM_WORLD
 #endif
@@ -38,7 +38,7 @@ test_suite ppm_module_field_typedef
   INTEGER                         :: np,mp
   INTEGER                         :: kernel
   INTEGER                         :: seedsize
-  INTEGER,  DIMENSION(:),allocatable :: seed
+  INTEGER,  DIMENSION(:),ALLOCATABLE :: seed
   REAL(MK),DIMENSION(:,:),  POINTER:: field2d_1=>NULL(),field2d_2=>NULL()
   REAL(MK),DIMENSION(:,:,:),POINTER:: field3d_1=>NULL(),field3d_2=>NULL()
   REAL(MK),DIMENSION(:,:,:),POINTER:: field4d_1=>NULL(),field4d_2=>NULL()
@@ -55,7 +55,7 @@ test_suite ppm_module_field_typedef
         USE ppm_module_data
         USE ppm_module_init
 
-        tol = 100.0_mk*EPSILON(1.0_mk)
+        tol = 100.0_MK*EPSILON(1.0_MK)
         tolexp = INT(LOG10(EPSILON(1.0_MK)))
         ndim = 2
         nspec = 1
@@ -108,8 +108,8 @@ test_suite ppm_module_field_typedef
         bcdef(1:2*ndim) = ppm_param_bcdef_freespace
         kernel = ppm_param_rmsh_kernel_mp4
         do i=1,ndim
-            min_phys(i) = 0.0_mk
-            max_phys(i) = 1.0_mk
+            min_phys(i) = 0.0_MK
+            max_phys(i) = 1.0_MK
             ighostsize(i) = 2
             ghostsize(i) = 0.05_mk
         enddo
@@ -167,7 +167,7 @@ test_suite ppm_module_field_typedef
         !--------------------------
         !Create Mesh
         !--------------------------
-        offset = 0._mk
+        offset = 0.0_MK
         CALL Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
 
@@ -201,9 +201,9 @@ test_suite ppm_module_field_typedef
 
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
-                    field2d_1(i,j) = cos(i*h(1)+j)
-                    field3d_1(1,i,j) = sin(field2d_1(i,j))
-                    field3d_1(2,i,j) = cos(field2d_1(i,j))
+                    field2d_1(i,j) = COS(i*h(1)+j)
+                    field3d_1(1,i,j) = SIN(field2d_1(i,j))
+                    field3d_1(2,i,j) = COS(field2d_1(i,j))
                 enddo
             enddo
             p => Mesh1%subpatch%next()
@@ -217,9 +217,9 @@ test_suite ppm_module_field_typedef
 
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
-                    field2d_1(i,j) = cos(i*h(1)+j)
-                    field3d_1(1,i,j) = sin(field2d_1(i,j))
-                    field3d_1(2,i,j) = cos(field2d_1(i,j))
+                    field2d_1(i,j) = COS(i*h(1)+j)
+                    field3d_1(1,i,j) = SIN(field2d_1(i,j))
+                    field3d_1(2,i,j) = COS(field2d_1(i,j))
                 enddo
             enddo
         enddo
@@ -245,13 +245,13 @@ test_suite ppm_module_field_typedef
         Assert_Equal(info,0)
 
         CALL Vort%destroy(info)
-        Assert_equal(info,0)
+        Assert_Equal(info,0)
         CALL Veloc%destroy(info)
-        Assert_equal(info,0)
+        Assert_Equal(info,0)
         CALL Mesh1%destroy(info)
-        Assert_equal(info,0)
+        Assert_Equal(info,0)
         CALL Mesh2%destroy(info)
-        Assert_equal(info,0)
+        Assert_Equal(info,0)
 
         p=>NULL()
 
@@ -295,7 +295,7 @@ test_suite ppm_module_field_typedef
         !--------------------------
         !Create Mesh
         !--------------------------
-        offset = 0._mk
+        offset = 0.0_MK
         CALL Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
 
@@ -331,7 +331,7 @@ test_suite ppm_module_field_typedef
 
            do i = 1,p%nnodes(1)
               do j = 1,p%nnodes(2)
-                 field2d_1(i,j) = cos(i*h(1)+j)
+                 field2d_1(i,j) = COS(i*h(1)+j)
                  field3d_1(1:ndim,i,j) = 17.4
               enddo
            enddo
@@ -346,7 +346,7 @@ test_suite ppm_module_field_typedef
 
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
-                    field2d_1(i,j) = cos(i*h(1)+j)
+                    field2d_1(i,j) = COS(i*h(1)+j)
                     field3d_1(1:ndim,i,j) = 17.4
                 enddo
             enddo
@@ -359,7 +359,7 @@ test_suite ppm_module_field_typedef
         Assert_Equal(info,0)
 
         CALL Mesh1%destroy(info)
-        Assert_equal(info,0)
+        Assert_Equal(info,0)
 
   end test
   !------------------------------------------------------------------------------

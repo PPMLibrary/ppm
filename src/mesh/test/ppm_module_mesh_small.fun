@@ -7,8 +7,8 @@ USE ppm_module_particles_typedef
 USE ppm_module_mktopo
 
 INTEGER, PARAMETER              :: debug = 0
-INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
-REAL(MK),PARAMETER              :: pi = ACOS(-1._mk)
+INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
+REAL(MK),PARAMETER              :: pi = ACOS(-1.0_MK)
 INTEGER,PARAMETER               :: ndim=2
 INTEGER                         :: decomp,assig,tolexp
 INTEGER                         :: info,comm,rank,nproc
@@ -20,7 +20,7 @@ REAL(MK),DIMENSION(:  ),POINTER :: max_phys => NULL()
 INTEGER, DIMENSION(:  ),POINTER :: ighostsize => NULL()
 REAL(MK)                        :: sca_ghostsize
 INTEGER                         :: seedsize
-INTEGER,  DIMENSION(:),allocatable :: seed
+INTEGER,  DIMENSION(:),ALLOCATABLE :: seed
 
 INTEGER                         :: i,j,k
 INTEGER                         :: nsublist
@@ -46,8 +46,8 @@ INTEGER(ppm_kind_int64),DIMENSION(:),  POINTER :: wp_1li => NULL()
 INTEGER(ppm_kind_int64),DIMENSION(:,:),POINTER :: wp_2li => NULL()
 REAL(MK), DIMENSION(:),   POINTER              :: wp_1r => NULL()
 REAL(MK), DIMENSION(:,:), POINTER              :: wp_2r => NULL()
-complex(mk), DIMENSION(:),   POINTER           :: wp_1c => NULL()
-complex(mk), DIMENSION(:,:), POINTER           :: wp_2c => NULL()
+COMPLEX(MK), DIMENSION(:),   POINTER           :: wp_1c => NULL()
+COMPLEX(MK), DIMENSION(:,:), POINTER           :: wp_2c => NULL()
 LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
 
 !---------------- init -----------------------
@@ -60,8 +60,8 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
         ALLOCATE(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
 
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
+        min_phys(1:ndim) = 0.0_MK
+        max_phys(1:ndim) = 1.0_MK
         ighostsize(1:ndim) = 2
         bcdef(1:2*ndim) = ppm_param_bcdef_periodic
         tolexp = -12
@@ -155,7 +155,7 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
         CALL Part1%create_neighlist(Part1,info)
         or_fail("failed to create neighbour list")
 
-        CALL Part1%set_cutoff(3._mk * Part1%h_avg,info)
+        CALL Part1%set_cutoff(3.0_MK * Part1%h_avg,info)
         Assert_Equal(info,0)
 
         ALLOCATE(wp_2r(ndim,Part1%Npart))
@@ -165,11 +165,11 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
         Assert_Equal(info,0)
         DEALLOCATE(wp_2r)
 
-        Assert_true(Part1%has_neighlist(Part1))
+        Assert_True(Part1%has_neighlist(Part1))
         CALL Part1%apply_bc(info)
         Assert_Equal(info,0)
 
-        CALL Part1%map(info,global=.true.,topoid=topoid)
+        CALL Part1%map(info,global=.TRUE.,topoid=topoid)
         Assert_Equal(info,0)
 
         CALL Part1%map_ghosts(info)
@@ -177,9 +177,9 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
 
 
         if (ndim.eq.2) then
-            my_patch(1:2*ndim) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
+            my_patch(1:2*ndim) = (/0.15_mk,0.10_MK,0.99_mk,0.7_mk/)
         else
-            my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
+            my_patch(1:6) = (/0.15_mk,0.10_MK,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
         endif
         CALL Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
@@ -254,9 +254,9 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
         !Fill in the allocated field arrays (incl. ghost nodes) with some data
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
-                Field1_n(1) = -10._mk * (rank+1)
-                Field1_n(2) = -10._mk * (rank+1) - 1
-                Field2_n    = -1._mk
+                Field1_n(1) = -10.0_MK * (rank+1)
+                Field1_n(2) = -10.0_MK * (rank+1) - 1
+                Field2_n    = -1.0_MK
         end foreach
 
         !Change the values of the real nodes to something that depends
@@ -264,9 +264,9 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for real
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                Field1_n(1) = cos(2._mk*pi*pos(1))
-                Field1_n(2) = cos(2._mk*pi*pos(1)) + 2._mk
-                Field2_n    = 1._mk
+                Field1_n(1) = COS(2._MK*pi*pos(1))
+                Field1_n(2) = COS(2._MK*pi*pos(1)) + 2.0_MK
+                Field2_n    = 1.0_MK
         end foreach
 
         !Do a ghost mapping
@@ -300,12 +300,12 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
             for all
             !for real_and_ghosts
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .lt. 0._mk) then
+                IF (Field2_n .lt. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
-                Assert_Equal_Within(Field1_n(1) ,cos(2._mk*pi*pos(1)),        1e-5)
-                Assert_Equal_Within(Field1_n(2) ,cos(2._mk*pi*pos(1)) + 2._mk,1e-5)
-                Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
+                Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
+                Assert_Equal_Within(Field1_n(2) ,COS(2._MK*pi*pos(1)) + 2.0_MK,1e-5)
+                Assert_Equal_Within(Field2_n    ,1.0_MK,1e-5)
         end foreach
         Assert_Equal(nb_errors,0)
 
@@ -328,42 +328,42 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
 !-------------------------------------------------------------
 ! test function
 !-------------------------------------------------------------
-pure function test_constant(pos,ndim) RESULT(res)
+PURE FUNCTION test_constant(pos,ndim) RESULT(res)
     REAL(MK)                              :: res
-    INTEGER                 ,  intent(in) :: ndim
-    REAL(MK), DIMENSION(ndim), intent(in) :: pos
+    INTEGER                 ,  INTENT(IN) :: ndim
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
-    res =  1._mk !42.17_mk
-end function
+    res =  1.0_MK !42.17_mk
+END FUNCTION
 
-pure function test_linear(pos,ndim) RESULT(res)
+PURE FUNCTION test_linear(pos,ndim) RESULT(res)
     REAL(MK)                              :: res
-    INTEGER                 ,  intent(in) :: ndim
-    REAL(MK), DIMENSION(ndim), intent(in) :: pos
+    INTEGER                 ,  INTENT(IN) :: ndim
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
-    res =  pos(1) + 10._mk*pos(2) + 100._mk*pos(ndim)
-end function
+    res =  pos(1) + 10._MK*pos(2) + 100._MK*pos(ndim)
+END FUNCTION
 
-pure function test_quadratic(pos,ndim) RESULT(res)
+PURE FUNCTION test_quadratic(pos,ndim) RESULT(res)
     REAL(MK)                              :: res
-    INTEGER                 ,  intent(in) :: ndim
-    REAL(MK), DIMENSION(ndim), intent(in) :: pos
+    INTEGER                 ,  INTENT(IN) :: ndim
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
-    res =  pos(1)**2 + 10._mk*pos(2)**2 + 100._mk*pos(ndim)**2
-end function
+    res =  pos(1)**2 + 10._MK*pos(2)**2 + 100._MK*pos(ndim)**2
+END FUNCTION
 
 !!! check whether a particle is within a patch and more than a cutoff
 !!! distance away from its boundaries.
-pure function is_well_within(pos,patch,cutoff,ndim) RESULT(res)
+PURE FUNCTION is_well_within(pos,patch,cutoff,ndim) RESULT(res)
     LOGICAL                               :: res
-    REAL(MK), DIMENSION(ndim), intent(in) :: pos
-    REAL(MK), DIMENSION(2*ndim),intent(in):: patch
-    REAL(MK), DIMENSION(ndim), intent(in) :: cutoff
-    INTEGER                 ,  intent(in) :: ndim
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
+    REAL(MK), DIMENSION(2*ndim),INTENT(IN):: patch
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: cutoff
+    INTEGER                 ,  INTENT(IN) :: ndim
 
     res = ALL(pos(1:ndim).GE.(patch(1:ndim)+cutoff(1:ndim)))
     res = res .AND. ALL(pos(1:ndim).LE.(patch(ndim+1:2*ndim)-cutoff(1:ndim)))
 
-end function
+END FUNCTION
 
 end test_suite

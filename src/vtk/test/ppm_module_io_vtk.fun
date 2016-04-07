@@ -1,7 +1,7 @@
 test_suite ppm_module_io_vtk
 
   INTEGER, PARAMETER              :: debug = 0
-  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !kind(1.0e0)
+  INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
   REAL(MK),PARAMETER              :: pi = 3.1415926535897931_MK
   INTEGER,PARAMETER               :: ndim=3
   INTEGER                         :: decomp,assig,tolexp
@@ -18,7 +18,7 @@ test_suite ppm_module_io_vtk
   INTEGER,  DIMENSION(:),ALLOCATABLE :: seed
   REAL(MK), DIMENSION(:),ALLOCATABLE :: randnb
   INTEGER                          :: isymm = 0
-  LOGICAL                          :: lsymm = .false.,ok
+  LOGICAL                          :: lsymm = .FALSE.,ok
   REAL(MK)                         :: t0,t1,t2,t3
   REAL(MK)                         :: eps
 

@@ -26,41 +26,36 @@
           !!! if the data is 2d logical
 
       CONTAINS
-          PROCEDURE(DTYPE(prop_create)_),    DEFERRED :: create
-          PROCEDURE(DTYPE(prop_destroy)_),   DEFERRED :: destroy
-          PROCEDURE(DTYPE(prop_print_info)_),DEFERRED :: print_info
+          PROCEDURE(DTYPE(prop_create)_),      DEFERRED :: create
+          PROCEDURE(DTYPE(prop_destroy)_),     DEFERRED :: destroy
+          PROCEDURE(DTYPE(prop_print_info)_),  DEFERRED :: print_info
 
-          PROCEDURE(DTYPE(data_1d_i_check)_),DEFERRED :: DTYPE(data_1d_i_check)
-          PROCEDURE(DTYPE(data_2d_i_check)_),DEFERRED :: DTYPE(data_2d_i_check)
-          PROCEDURE(DTYPE(data_1d_li_check)_),DEFERRED :: DTYPE(data_1d_li_check)
-          PROCEDURE(DTYPE(data_2d_li_check)_),DEFERRED :: DTYPE(data_2d_li_check)
-          PROCEDURE(DTYPE(data_1d_r_check)_),DEFERRED :: DTYPE(data_1d_r_check)
-          PROCEDURE(DTYPE(data_2d_r_check)_),DEFERRED :: DTYPE(data_2d_r_check)
-          PROCEDURE(DTYPE(data_1d_c_check)_),DEFERRED :: DTYPE(data_1d_c_check)
-          PROCEDURE(DTYPE(data_2d_c_check)_),DEFERRED :: DTYPE(data_2d_c_check)
-          PROCEDURE(DTYPE(data_1d_l_check)_),DEFERRED :: DTYPE(data_1d_l_check)
-          PROCEDURE(DTYPE(data_2d_l_check)_),DEFERRED :: DTYPE(data_2d_l_check)
-          !NOTE: for some reason, this does not work
-          ! (ifort crashes at compile time if there is a call
-          !  to this%checktype(wp,wpid,info) )
-          ! One can call the not-overloaded procedures directly,
-          ! but thats very annoying...
-          !yaser: problem solved, now you can call it
-          !this%checktype(wp,info) and it works perfectly
-          GENERIC :: checktype => &
-          DTYPE(data_1d_i_check), &
-          DTYPE(data_2d_i_check), &
-          DTYPE(data_1d_li_check),&
-          DTYPE(data_2d_li_check),&
-          DTYPE(data_1d_r_check), &
-          DTYPE(data_2d_r_check), &
-          DTYPE(data_1d_c_check), &
-          DTYPE(data_2d_c_check), &
-          DTYPE(data_1d_l_check), &
-          DTYPE(data_2d_l_check)
+          PROCEDURE(DTYPE(data_1d_i_check)_),  DEFERRED :: DTYPE(data_1d_i_check)
+          PROCEDURE(DTYPE(data_2d_i_check)_),  DEFERRED :: DTYPE(data_2d_i_check)
+          PROCEDURE(DTYPE(data_1d_li_check)_), DEFERRED :: DTYPE(data_1d_li_check)
+          PROCEDURE(DTYPE(data_2d_li_check)_), DEFERRED :: DTYPE(data_2d_li_check)
+          PROCEDURE(DTYPE(data_1d_r_check)_),  DEFERRED :: DTYPE(data_1d_r_check)
+          PROCEDURE(DTYPE(data_2d_r_check)_),  DEFERRED :: DTYPE(data_2d_r_check)
+          PROCEDURE(DTYPE(data_1d_c_check)_),  DEFERRED :: DTYPE(data_1d_c_check)
+          PROCEDURE(DTYPE(data_2d_c_check)_),  DEFERRED :: DTYPE(data_2d_c_check)
+          PROCEDURE(DTYPE(data_1d_l_check)_),  DEFERRED :: DTYPE(data_1d_l_check)
+          PROCEDURE(DTYPE(data_2d_l_check)_),  DEFERRED :: DTYPE(data_2d_l_check)
+          GENERIC :: checktype =>             &
+                     DTYPE(data_1d_i_check),  &
+                     DTYPE(data_2d_i_check),  &
+                     DTYPE(data_1d_li_check), &
+                     DTYPE(data_2d_li_check), &
+                     DTYPE(data_1d_r_check),  &
+                     DTYPE(data_2d_r_check),  &
+                     DTYPE(data_1d_c_check),  &
+                     DTYPE(data_2d_c_check),  &
+                     DTYPE(data_1d_l_check),  &
+                     DTYPE(data_2d_l_check)
 
       END TYPE DTYPE(ppm_t_part_prop)_
+
 minclude ppm_create_collection(DTYPE(part_prop)_,DTYPE(part_prop)_,generate="abstract")
+
 minclude ppm_create_collection(DTYPE(part_prop)_,DTYPE(part_prop)_,generate="concrete",vec=true,def_ptr=false)
 
       !!----------------------------------------------------------------------
@@ -93,6 +88,7 @@ minclude ppm_create_collection(DTYPE(part_prop)_,DTYPE(part_prop)_,generate="con
           PROCEDURE(DTYPE(neigh_destroy)_),DEFERRED :: destroy
 
       END TYPE DTYPE(ppm_t_neighlist)_
+
 minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abstract")
 
       TYPE,ABSTRACT :: DTYPE(particles_stats)_
@@ -163,7 +159,6 @@ minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abs
           REAL(MK) :: t_compD = 0._MK
 
       END TYPE DTYPE(particles_stats)_
-
 
       TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
           !!! Data structure for a particle set
@@ -256,7 +251,11 @@ minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abs
           PROCEDURE(DTYPE(part_create)_),            DEFERRED :: create
           PROCEDURE(DTYPE(part_destroy)_),           DEFERRED :: destroy
           PROCEDURE(DTYPE(part_initialize)_),        DEFERRED :: initialize
-          PROCEDURE(DTYPE(part_del_parts)_),         DEFERRED :: del_parts
+          PROCEDURE(DTYPE(part_del_parts)_),         DEFERRED :: part_del_parts
+          PROCEDURE(DTYPE(part_del_part)_),          DEFERRED :: part_del_part
+          GENERIC :: del_parts => part_del_parts,part_del_part
+          PROCEDURE(DTYPE(part_size)_),              DEFERRED :: size
+          PROCEDURE(DTYPE(part_grow_size)_),         DEFERRED :: grow_size
 
           PROCEDURE(DTYPE(part_prop_create)_),       DEFERRED :: create_prop
           PROCEDURE(DTYPE(part_prop_destroy)_),      DEFERRED :: destroy_prop

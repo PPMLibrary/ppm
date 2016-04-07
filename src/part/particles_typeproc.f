@@ -263,16 +263,10 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       END SUBROUTINE DTYPE(part_initialize)
 
       !TOCHECK
-      !Yaser
-      !The original implementation was totally wrong
-      !as you remove particle ip the particles number will change
-      !will cause deletion of the wrong particles, so I corrected
-      !the implementaion by sorting the deleted particles and removing the
-      !them in descending order from the last one.
       SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
-          !!! remove some particles from a Particle set
-          !!! WARNING: this implementation is NOT efficient
-          !!! if the number of particles to delete is large.
+          !!! Remove some particles from a Particle set
+          !!! It is done by sorting the list of deleted particles and removing them
+          !!! in a descending order from the last one onwards.
           !-------------------------------------------------------------------------
           !  Modules
           !-------------------------------------------------------------------------
@@ -330,7 +324,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !Yaser
           !In order to make this implementation correct I have a unique
           !sorted deleted particles and will get rid of them in
-          !descending order so the order of particles will not
+          !a descending order so the order of particles will not
           !deteriorate the deletion of the rest
           NULLIFY(unique_del_parts)
           CALL ppm_util_unique(list_del_parts,unique_del_parts,info,nb_del,nb_del_parts)
@@ -423,6 +417,207 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           end_subroutine()
       END SUBROUTINE DTYPE(part_del_parts)
 
+      SUBROUTINE DTYPE(part_del_part)(Pc,del_part,info)
+          !!! remove a particle from a Particle set
+          !!! [NOTE]
+          !!! This routine needs to be fast, so it is a user responsibility
+          !!! to make sure that everything is Okay
+          !!! - The particle properties are mapped, otherwise data will be lost
+          !-------------------------------------------------------------------------
+          !  Modules
+          !-------------------------------------------------------------------------
+          IMPLICIT NONE
+
+          !-------------------------------------------------------------------------
+          !  Includes
+          !-------------------------------------------------------------------------
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
+          !!! Data structure containing the particles
+          INTEGER,        INTENT(IN   ) :: del_part
+          !!! particle number to be deleted
+          INTEGER,        INTENT(  OUT) :: info
+          !!! Returns status, 0 upon success.
+          !-------------------------------------------------------------------------
+          !  Local variables
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
+
+          INTEGER :: Npart,lda
+
+          !-----------------------------------------------------------------
+          !  check arguments
+          !-----------------------------------------------------------------
+          info=0
+          ! There is no check to be fast
+          !-----------------------------------------------------------------
+          !  Delete a particle
+          !-----------------------------------------------------------------
+          ! copying particle from the end of xp to the index that has to be removed
+          Npart=Pc%Npart
+          IF (del_part.LE.Npart) THEN
+             Pc%xp(1:ppm_dim,del_part) = Pc%xp(1:ppm_dim,Npart)
+
+             prop => Pc%props%begin()
+             DO WHILE (ASSOCIATED(prop))
+                IF (prop%flags(ppm_ppt_partial)) THEN
+                   lda = prop%lda
+                   IF (lda.GE.2) THEN
+                      SELECT CASE (prop%data_type)
+                      CASE (ppm_type_int)
+                         prop%data_2d_i(1:lda,del_part) =prop%data_2d_i(1:lda,Npart)
+                      CASE (ppm_type_longint)
+                         prop%data_2d_li(1:lda,del_part)=prop%data_2d_li(1:lda,Npart)
+                      CASE (ppm_type_real,ppm_type_real_single)
+                         prop%data_2d_r(1:lda,del_part) =prop%data_2d_r(1:lda,Npart)
+                      CASE (ppm_type_comp,ppm_type_comp_single)
+                         prop%data_2d_c(1:lda,del_part) =prop%data_2d_c(1:lda,Npart)
+                      CASE (ppm_type_logical )
+                         prop%data_2d_l(1:lda,del_part) =prop%data_2d_l(1:lda,Npart)
+                      END SELECT
+                   ELSE
+                      SELECT CASE (prop%data_type)
+                      CASE (ppm_type_int)
+                         prop%data_1d_i(del_part) =prop%data_1d_i(Npart)
+                      CASE (ppm_type_longint)
+                         prop%data_1d_li(del_part)=prop%data_1d_li(Npart)
+                      CASE (ppm_type_real,ppm_type_real_single)
+                         prop%data_1d_r(del_part) =prop%data_1d_r(Npart)
+                      CASE (ppm_type_comp,ppm_type_comp_single)
+                         prop%data_1d_c(del_part) =prop%data_1d_c(Npart)
+                      CASE (ppm_type_logical )
+                         prop%data_1d_l(del_part) =prop%data_1d_l(Npart)
+                      END SELECT
+                   ENDIF
+                ENDIF
+                prop => Pc%props%next()
+             ENDDO !WHILE (ASSOCIATED(prop))
+
+             !New number of particles, after deleting one
+             Pc%Npart = Npart - 1
+          ENDIF !(del_part.LE.Npart)
+          RETURN
+      END SUBROUTINE DTYPE(part_del_part)
+
+      FUNCTION DTYPE(part_size)(Pc) RESULT(res)
+          !!! Returns the size of array for particle data
+          !!! [NOTE]
+          !!! It returns -1 if the particle is not initialized yet
+          IMPLICIT NONE
+
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
+
+          INTEGER                       :: res
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
+          IF (ASSOCIATED(Pc%xp)) THEN
+             res=SIZE(Pc%xp,DIM=2)
+          ELSE
+             res=-1
+          ENDIF
+      END FUNCTION DTYPE(part_size)
+
+      SUBROUTINE DTYPE(part_grow_size)(Pc,info)
+          !!! Increase the size of the data array for particle set.
+          !!!
+          !!! [NOTE]
+          !!! It preservers the available data
+          !-------------------------------------------------------------------------
+          !  Modules
+          !-------------------------------------------------------------------------
+          IMPLICIT NONE
+
+          !-------------------------------------------------------------------------
+          !  Includes
+          !-------------------------------------------------------------------------
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
+          !!! Data structure containing the particles
+
+          INTEGER,        INTENT(  OUT) :: info
+          !!! Returns status, 0 upon success.
+          !-------------------------------------------------------------------------
+          !  Local variables
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop
+
+          INTEGER, DIMENSION(2) :: ldu
+          INTEGER :: iopt
+
+          start_subroutine("part_grow_size")
+
+          !-----------------------------------------------------------------
+          !  check arguments
+          !-----------------------------------------------------------------
+          check_associated(<#Pc%xp#>, &
+          & 'Pc structure had not been defined. Call allocate first')
+
+          !-----------------------------------------------------------------
+          !  Grow particle position array size
+          !-----------------------------------------------------------------
+          iopt=ppm_param_alloc_grow_preserve
+          ldu(1)=SIZE(Pc%xp,DIM=1)
+          ldu(2)=SIZE(Pc%xp,DIM=2)*2
+
+          CALL ppm_alloc(Pc%xp,ldu,iopt,info)
+          or_fail_alloc("Pc%xp")
+
+          prop => Pc%props%begin()
+          DO WHILE (ASSOCIATED(prop))
+             ldu(1)=prop%lda
+             IF (ldu(1).GE.2) THEN
+                SELECT CASE (prop%data_type)
+                CASE (ppm_type_int)
+                   CALL ppm_alloc(prop%data_2d_i,ldu,iopt,info)
+                   or_fail_alloc("prop%data_2d_i")
+                CASE (ppm_type_longint)
+                   CALL ppm_alloc(prop%data_2d_li,ldu,iopt,info)
+                   or_fail_alloc("prop%data_2d_li")
+                CASE (ppm_type_real,ppm_type_real_single)
+                   CALL ppm_alloc(prop%data_2d_r,ldu,iopt,info)
+                   or_fail_alloc("prop%data_2d_r")
+                CASE (ppm_type_comp,ppm_type_comp_single)
+                   CALL ppm_alloc(prop%data_2d_c,ldu,iopt,info)
+                   or_fail_alloc("prop%data_2d_c")
+                CASE (ppm_type_logical )
+                   CALL ppm_alloc(prop%data_2d_l,ldu,iopt,info)
+                   or_fail_alloc("prop%data_2d_l")
+                END SELECT
+             ELSE
+                ldu(1)=ldu(2)
+                SELECT CASE (prop%data_type)
+                CASE (ppm_type_int)
+                   CALL ppm_alloc(prop%data_1d_i,ldu,iopt,info)
+                   or_fail_alloc("prop%data_1d_i")
+                CASE (ppm_type_longint)
+                   CALL ppm_alloc(prop%data_1d_li,ldu,iopt,info)
+                   or_fail_alloc("prop%data_1d_li")
+                CASE (ppm_type_real,ppm_type_real_single)
+                   CALL ppm_alloc(prop%data_1d_r,ldu,iopt,info)
+                   or_fail_alloc("prop%data_1d_r")
+                CASE (ppm_type_comp,ppm_type_comp_single)
+                   CALL ppm_alloc(prop%data_1d_c,ldu,iopt,info)
+                   or_fail_alloc("prop%data_1d_c")
+                CASE (ppm_type_logical )
+                   CALL ppm_alloc(prop%data_1d_l,ldu,iopt,info)
+                   or_fail_alloc("prop%data_1d_l")
+                END SELECT
+             ENDIF
+
+             prop => Pc%props%next()
+          ENDDO !WHILE (ASSOCIATED(prop))
+
+          end_subroutine()
+      END SUBROUTINE DTYPE(part_grow_size)
+
 minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
 
       SUBROUTINE DTYPE(prop_create)(prop,datatype,parts,npart,&
@@ -485,22 +680,16 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              SELECT CASE (datatype)
              CASE (ppm_type_int)
                 CALL ppm_alloc(prop%data_2d_i,ldc,iopt,info)
-
              CASE (ppm_type_longint)
                 CALL ppm_alloc(prop%data_2d_li,ldc,iopt,info)
-
              CASE (ppm_type_real,ppm_type_real_single)
                 CALL ppm_alloc(prop%data_2d_r,ldc,iopt,info)
-
              CASE (ppm_type_comp,ppm_type_comp_single)
                 CALL ppm_alloc(prop%data_2d_c,ldc,iopt,info)
-
              CASE (ppm_type_logical)
                 CALL ppm_alloc(prop%data_2d_l,ldc,iopt,info)
-
              CASE DEFAULT
                 fail("invalid type for particle property")
-
              END SELECT
              or_fail_alloc("allocating property failed",ppm_error=ppm_error_fatal)
 
@@ -508,19 +697,14 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
                 SELECT CASE (datatype)
                 CASE (ppm_type_int)
                    prop%data_2d_i(1:lda,1:npart) = 0
-
                 CASE (ppm_type_longint)
                    prop%data_2d_li(1:lda,1:npart) = 0_ppm_kind_int64
-
                 CASE (ppm_type_real,ppm_type_real_single)
                    prop%data_2d_r(1:lda,1:npart) = 0._MK
-
                 CASE (ppm_type_comp,ppm_type_comp_single)
                    prop%data_2d_c(1:lda,1:npart) = 0._MK
-
                 CASE (ppm_type_logical)
                    prop%data_2d_l(1:lda,1:npart) = .FALSE.
-
                 END SELECT
              ENDIF
           ELSE
@@ -529,22 +713,16 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              SELECT CASE (datatype)
              CASE (ppm_type_int)
                 CALL ppm_alloc(prop%data_1d_i,ldc,iopt,info)
-
              CASE (ppm_type_longint)
                 CALL ppm_alloc(prop%data_1d_li,ldc,iopt,info)
-
              CASE (ppm_type_real,ppm_type_real_single)
                 CALL ppm_alloc(prop%data_1d_r,ldc,iopt,info)
-
              CASE (ppm_type_comp,ppm_type_comp_single)
                 CALL ppm_alloc(prop%data_1d_c,ldc,iopt,info)
-
              CASE (ppm_type_logical)
                 CALL ppm_alloc(prop%data_1d_l,ldc,iopt,info)
-
              CASE DEFAULT
                 fail("invalid type for particle property")
-
              END SELECT
              or_fail_alloc("allocating property failed",ppm_error=ppm_error_fatal)
 
@@ -552,19 +730,14 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
                 SELECT CASE (datatype)
                 CASE (ppm_type_int)
                    prop%data_1d_i(1:npart) = 0
-
                 CASE (ppm_type_longint)
                    prop%data_1d_li(1:npart) = 0_ppm_kind_int64
-
                 CASE (ppm_type_real,ppm_type_real_single)
                    prop%data_1d_r(1:npart) = 0._MK
-
                 CASE (ppm_type_comp,ppm_type_comp_single)
                    prop%data_1d_c(1:npart) = 0._MK
-
                 CASE (ppm_type_logical)
                    prop%data_1d_l(1:npart) = .FALSE.
-
                 END SELECT
              ENDIF
           ENDIF
@@ -906,12 +1079,12 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           end_subroutine()
       END SUBROUTINE
 
-      ! TODO
-      ! Currentlt it only take care of real data type property
-      ! One should take care of the other data types
-      SUBROUTINE DTYPE(part_prop_zero)(this,Field,info)
+      SUBROUTINE DTYPE(part_prop_zero)(this,FieldIn,info)
           !!! Reset values of a property to zero
           !!! (a bit unrolled)
+          !!!
+          !!! [NOTE]
+          !!! The logical field is reset to FALSE
           IMPLICIT NONE
 
           DEFINE_MK()
@@ -920,70 +1093,117 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_particles))      :: this
 
-          CLASS(ppm_t_field_), TARGET        :: Field
+          CLASS(ppm_t_field_), TARGET        :: FieldIn
 
           INTEGER,             INTENT(  OUT) :: info
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          INTEGER :: lda
+          REAL(MK), DIMENSION(:),   POINTER :: data_1d_r
+          REAL(MK), DIMENSION(:,:), POINTER :: data_2d_r
 
+          COMPLEX(MK), DIMENSION(:),   POINTER :: data_1d_c
+          COMPLEX(MK), DIMENSION(:,:), POINTER :: data_2d_c
+
+          INTEGER,                 DIMENSION(:),   POINTER :: data_1d_i
+          INTEGER,                 DIMENSION(:,:), POINTER :: data_2d_i
+          INTEGER(ppm_kind_int64), DIMENSION(:),   POINTER :: data_1d_li
+          INTEGER(ppm_kind_int64), DIMENSION(:,:), POINTER :: data_2d_li
+          INTEGER                                          :: lda
+          INTEGER                                          :: i
+
+          LOGICAL, DIMENSION(:),   POINTER :: data_1d_l
+          LOGICAL, DIMENSION(:,:), POINTER :: data_2d_l
 
           start_subroutine("part_prop_zero")
 
-          lda = Field%lda
+          lda = FieldIn%lda
           SELECT CASE(lda)
           CASE (1)
-             SELECT CASE (Field%data_type)
-             CASE (ppm_type_real)
-                foreach p in particles(this) with sca_fields(w=Field) prec(DTYPE(prec))
-                   w_p = 0._MK
-                end foreach
-             END SELECT
-          CASE (2)
-             SELECT CASE (Field%data_type)
+             SELECT CASE (FieldIn%data_type)
              CASE (ppm_type_real,ppm_type_real_single)
-                foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                   w_p(1) = 0._MK
-                   w_p(2) = 0._MK
-                end foreach
-             END SELECT
-          CASE (3)
-             SELECT CASE (Field%data_type)
-             CASE (ppm_type_real,ppm_type_real_single)
-                foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                   w_p(1) = 0._MK
-                   w_p(2) = 0._MK
-                   w_p(3) = 0._MK
-                end foreach
-             END SELECT
-          CASE (4)
-             SELECT CASE (Field%data_type)
-             CASE (ppm_type_real,ppm_type_real_single)
-                foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                   w_p(1) = 0._MK
-                   w_p(2) = 0._MK
-                   w_p(3) = 0._MK
-                   w_p(4) = 0._MK
-                end foreach
-             END SELECT
-          CASE (5)
-             SELECT CASE (Field%data_type)
-             CASE (ppm_type_real,ppm_type_real_single)
-                foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                   w_p(1) = 0._MK
-                   w_p(2) = 0._MK
-                   w_p(3) = 0._MK
-                   w_p(4) = 0._MK
-                   w_p(5) = 0._MK
-                end foreach
+                NULLIFY(data_1d_r)
+                CALL this%get(FieldIn,data_1d_r,info)
+                or_fail("getting field FieldIn for this")
+
+                DO i=1,this%Npart
+                   data_1d_r(i)=0.0_MK
+                ENDDO
+             CASE (ppm_type_comp,ppm_type_comp_single)
+                NULLIFY(data_1d_c)
+                CALL this%get(FieldIn,data_1d_c,info)
+                or_fail("getting field FieldIn for this")
+
+                DO i=1,this%Npart
+                   data_1d_c(i)=0.0_MK
+                ENDDO
+             CASE (ppm_type_int)
+                NULLIFY(data_1d_i)
+                CALL this%get(FieldIn,data_1d_i,info)
+                or_fail("getting field FieldIn for this")
+
+                DO i=1,this%Npart
+                   data_1d_i(i)=0
+                ENDDO
+             CASE (ppm_type_longint)
+                NULLIFY(data_1d_li)
+                CALL this%get(FieldIn,data_1d_li,info)
+                or_fail("getting field FieldIn for this")
+
+                DO i=1,this%Npart
+                   data_1d_li(i)=0_ppm_kind_int64
+                ENDDO
+             CASE (ppm_type_logical)
+                NULLIFY(data_1d_l)
+                CALL this%get(FieldIn,data_1d_l,info)
+                or_fail("getting field FieldIn for this")
+
+                DO i=1,this%Npart
+                   data_1d_l(i)=.FALSE.
+                ENDDO
              END SELECT
           CASE DEFAULT
-             SELECT CASE (Field%data_type)
+             SELECT CASE (FieldIn%data_type)
              CASE (ppm_type_real,ppm_type_real_single)
-                foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                   w_p(1:lda) = 0._MK
-                end foreach
+                NULLIFY(data_2d_r)
+                CALL this%get(FieldIn,data_2d_r,info)
+                or_fail("getting field FieldIn for this")
+
+                DO i=1,this%Npart
+                   data_2d_r(1:lda,i)=0.0_MK
+                ENDDO
+             CASE (ppm_type_comp,ppm_type_comp_single)
+                NULLIFY(data_2d_c)
+                CALL this%get(FieldIn,data_2d_c,info)
+                or_fail("getting field FieldIn for this")
+
+                DO i=1,this%Npart
+                   data_2d_c(1:lda,i)=0.0_MK
+                ENDDO
+             CASE (ppm_type_int)
+                NULLIFY(data_2d_i)
+                CALL this%get(FieldIn,data_2d_i,info)
+                or_fail("getting field FieldIn for this")
+
+                DO i=1,this%Npart
+                   data_2d_i(1:lda,i)=0
+                ENDDO
+             CASE (ppm_type_longint)
+                NULLIFY(data_2d_li)
+                CALL this%get(FieldIn,data_2d_li,info)
+                or_fail("getting field FieldIn for this")
+
+                DO i=1,this%Npart
+                   data_2d_li(1:lda,i)=0_ppm_kind_int64
+                ENDDO
+             CASE (ppm_type_logical)
+                NULLIFY(data_2d_l)
+                CALL this%get(FieldIn,data_2d_l,info)
+                or_fail("getting field FieldIn for this")
+
+                DO i=1,this%Npart
+                   data_2d_l(1:lda,i)=.FALSE.
+                ENDDO
              END SELECT
           END SELECT
 
@@ -3079,7 +3299,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
           IF (Pc%ghostlayer .GT. 0._MK) THEN
              check_true(<#Pc%flags(ppm_part_ghosts)#>,&
-             & "flags(ppm_part_ghosts) need to be set to .true.")
+             & "flags(ppm_part_ghosts) need to be set to .TRUE.")
 
              check_true(<#ppm_map_type_isactive(ppm_param_map_ghost_get)#>, &
              & "Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
@@ -3141,7 +3361,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
           IF (Pc%ghostlayer.GT.0._MK) THEN
              check_true(<#Pc%flags(ppm_part_ghosts)#>,&
-             & "flags(ppm_part_ghosts) need to be set to .true.")
+             & "flags(ppm_part_ghosts) need to be set to .TRUE.")
 
              check_true(<#(ppm_map_type_isactive(ppm_param_map_ghost_get).AND.ppm_buffer_set.EQ.1)#>,&
              & "Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
@@ -3611,7 +3831,6 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_positions)
 
-
       SUBROUTINE DTYPE(part_map_push)(Pc,info,Field)
           !!! Push particles properties into the send buffer after a partial mapping
           !!!  Assumptions:
@@ -3806,7 +4025,6 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_isend)
 
-
       SUBROUTINE DTYPE(part_map_pop)(Pc,info,Field)
           !-------------------------------------------------------------------------
           !  Modules
@@ -3894,7 +4112,6 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_pop)
-
 
       SUBROUTINE DTYPE(part_map_pop_positions)(Pc,info)
           !-------------------------------------------------------------------------

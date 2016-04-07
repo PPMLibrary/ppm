@@ -1,7 +1,7 @@
 test_suite ppm_module_util_netstat
 
 INTEGER, PARAMETER              :: debug = 0
-INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
+INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
 INTEGER, PARAMETER               :: ndim=2
 INTEGER                         :: decomp,assig,tolexp
 REAL(MK)                        :: tol
@@ -26,11 +26,11 @@ LOGICAL                         :: ok
 
         ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),STAT=info)
 
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
+        min_phys(1:ndim) = 0.0_MK
+        max_phys(1:ndim) = 1.0_MK
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6) = ppm_param_bcdef_periodic
-        tol = EPSILON(1.0_mk)
+        tol = EPSILON(1.0_MK)
         tolexp = INT(LOG10(EPSILON(1.0_MK)))
 
         NULLIFY(xp)
@@ -99,11 +99,11 @@ LOGICAL                         :: ok
 
         CALL ppm_netstat(topoid,latency,bandwidth,info)
         write(*,'(A,I3,A,F12.6,A,F10.2,A)') 'rank: ',ppm_rank,'  latency: ',&
-        & latency*1000.0_mk,' ms  bandwidth: ',bandwidth/REAL(1024**2,mk),' MB/s'
+        & latency*1000.0_MK,' ms  bandwidth: ',bandwidth/REAL(1024**2,mk),' MB/s'
         if (info.ge.-2) then
-            ok = .true.
+            ok = .TRUE.
         endif
-        assert_true(ok)
+        Assert_True(ok)
 
     end test
 

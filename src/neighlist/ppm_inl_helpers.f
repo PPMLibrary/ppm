@@ -495,6 +495,7 @@
       !!! p_depth variables such that they contain coordinates and depth of the
       !!! particle, respectively.
           IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
           INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -516,8 +517,8 @@
       !-------------------------------------------------------------------------
           REAL(MK) :: minSideLength
 
-          ! Get maximum side length of the domain
-          minSideLength = getMinimumSideLength(domain)
+          ! Get minimum side length of the domain
+          minSideLength = MINVAL(domain(2:2*ppm_dim:2)-domain(1:2*ppm_dim:2))
 
           ! Initialize p_depth to 0 and keep on incrementing until we reach the
           ! correct depth.
@@ -548,29 +549,34 @@
       !!! Given the cell index, this subroutine modifies the list array such
       !!! that it contains the particle IDs of this cell and sets nlist to
       !!! number of particles in this cell.
+          USE ppm_module_inl_hash, ONLY : htable_null
           IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
           INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
           INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
-      !-------------------------------------------------------------------------
-      !  Arguments
-      !-------------------------------------------------------------------------
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           INTEGER(ppm_kind_int64),  INTENT(IN   ) :: cell_idx
+
           REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
           !!! this is basically a dummy argument to force fortran to generate
           !!! two versions of this routine
+
           TYPE(ppm_clist),          INTENT(IN   ) :: clist
+
           INTEGER,  DIMENSION(:),   INTENT(INOUT) :: list
           INTEGER,                  INTENT(INOUT) :: nlist
 
-      !-------------------------------------------------------------------------
-      !  Local variables and counters
-      !-------------------------------------------------------------------------
+          !-------------------------------------------------------------------------
+          !  Local variables and counters
+          !-------------------------------------------------------------------------
           INTEGER(ppm_kind_int64) :: parentIdx
-          INTEGER                 :: left_end
-          INTEGER                 :: right_end
+          INTEGER(ppm_kind_int64) :: left_end
+          INTEGER(ppm_kind_int64) :: right_end
           INTEGER                 :: border_idx
           INTEGER                 :: i
 
@@ -600,15 +606,15 @@
              ENDIF
 
              ! Get index of first column on borders array.
-             left_end  = 1 + cell_idx - (4*parentIdx-2)
+             left_end = 1_ppm_kind_int64 + cell_idx - (4_ppm_kind_int64*parentIdx-2_ppm_kind_int64)
 
              ! Get index of last column on borders array.
-             right_end = left_end + 1
+             right_end = left_end + 1_ppm_kind_int64
 
              ! If this is the top level, then get all particles
-             IF (parentIdx.EQ.0)  then
-                left_end  = 1
-                right_end = 5
+             IF (parentIdx.EQ.0_ppm_kind_int64)  then
+                left_end  = 1_ppm_kind_int64
+                right_end = 5_ppm_kind_int64
              ENDIF
           ! For 3D case
           ELSEIF (ppm_dim.EQ.3)   THEN
@@ -620,21 +626,20 @@
              ENDIF
 
              ! Get index of first column on borders array.
-             left_end  = 1 + cell_idx - (8*parentIdx-6)
+             left_end=1_ppm_kind_int64+cell_idx-(8_ppm_kind_int64*parentIdx-6_ppm_kind_int64)
 
              ! Get index of last column on borders array.
-             right_end = left_end + 1
+             right_end=left_end+1_ppm_kind_int64
 
              ! If this is the top level, then get all particles
-             IF (parentIdx.EQ.0)  then
-                left_end  = 1
-                right_end = 9
+             IF (parentIdx.EQ.0_ppm_kind_int64)  then
+                left_end  = 1_ppm_kind_int64
+                right_end = 9_ppm_kind_int64
              ENDIF
           ENDIF
 
           ! From first column to last, get all particles and put them in the list
-          DO i = (clist%borders(left_end, border_idx) + 1), &
-          &       clist%borders(right_end, border_idx)
+          DO i=clist%borders(left_end,border_idx)+1,clist%borders(right_end,border_idx)
              nlist = nlist + 1
              list(nlist) = clist%rank(i)
           ENDDO

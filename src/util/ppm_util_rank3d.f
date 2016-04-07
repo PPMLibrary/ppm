@@ -153,12 +153,12 @@
 
       !TODO
       !One should fix all the INTEGER numbers!
-      IF (REAL(nmtot(1),MK)*REAL(nmtot(2),MK)*REAL(nmtot(3),MK).GE.REAL(ppm_big_i-1,MK)) THEN
+      IF (REAL(nmtot(1),MK)*REAL(nmtot(2),MK)*REAL(nmtot(3),MK).GE.REAL(ppm_big_i,MK)) THEN
          stdout("INTEGER Overflow!")
          fail("INTEGER Overflow!",ppm_error=ppm_error_fatal)
       ENDIF
 
-      nbox  = nmtot(1) * nmtot(2) * nmtot(3)
+      nbox=nmtot(1)*nmtot(2)*nmtot(3)
 
       !-------------------------------------------------------------------------
       !  Allocate memory

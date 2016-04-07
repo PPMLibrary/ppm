@@ -389,14 +389,14 @@
         !                      of input_data, otherwise, dim is inferred
         !                      from SIZE(input_data,1).
         !
-        !                      if sort is .true. then output results
+        !                      if sort is .TRUE. then output results
         !                      will be sorted by increasing distance.
-        !                      default is .false., as it is faster to not sort.
+        !                      default is .FALSE., as it is faster to not sort.
         !
-        !                      if rearrange is .true. then an internal
+        !                      if rearrange is .TRUE. then an internal
         !                      copy of the data, rearranged by terminal node,
         !                      will be made for cache friendliness.
-        !                      default is .true., as it speeds searches, but
+        !                      default is .TRUE., as it speeds searches, but
         !                      building takes longer, and extra memory is used.
         !
         ! .. Function Return Cut_value ..

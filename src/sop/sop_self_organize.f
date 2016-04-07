@@ -190,7 +190,7 @@
           CLASS(ppm_t_discr_data),POINTER            :: discr_data => NULL()
 
           integer, dimension(ppm_dim)                :: degree
-          real(ppm_kind_double),dimension(1)         :: coeffs
+          REAL(ppm_kind_double),dimension(1)         :: coeffs
 
           REAL(MK), PARAMETER :: big=HUGE(1.0_MK)
 
@@ -368,7 +368,7 @@
                                   rcp(ip) = 1.3_MK * rcp(ip)
                               ENDIF
                           ENDDO
-                          CALL this%set_xp(xp,info,read_only=.true.)
+                          CALL this%set_xp(xp,info,read_only=.TRUE.)
                           or_fail("set_xp")
                       ELSE
                           CALL this%get(this%level,level,info,read_only=.TRUE.)
@@ -409,13 +409,13 @@
           !!-------------------------------------------------------------------------!
           IF (.NOT.PRESENT(wp_fun)) THEN
               degree =  0
-              coeffs = 1.0_mk
+              coeffs = 1.0_MK
 
               CALL Interp%create(ppm_dim,coeffs,degree,info,name="interpolant")
               or_fail("could not create interpolating operator")
 
               CALL opts_op%create(ppm_param_op_dcpse,info,&
-              &    interp=.true.,order=opts%order_approx,c=REAL(opts%c,ppm_kind_double))
+              &    interp=.TRUE.,order=opts%order_approx,c=REAL(opts%c,ppm_kind_double))
               or_fail("failed to initialize option object for operator")
 
               !compute nearest-neighbour distances

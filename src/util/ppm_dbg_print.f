@@ -71,7 +71,7 @@
       !-------------------------------------------------------------------------
       INTEGER,                            INTENT(IN   ) :: topoid
       !!! topology ID to which we are currently mapped
-      REAL(mk),                           INTENT(IN   ) :: ghostlayer
+      REAL(MK),                           INTENT(IN   ) :: ghostlayer
       !!! ghostlayer, can be set to 0 if we dont care about it
       INTEGER,                            INTENT(IN   ) :: step
       !!! parameter can be used to create distinct output dump files for each
@@ -85,7 +85,7 @@
       !!! visualize a property
       INTEGER,                            INTENT(  OUT) :: info
 
-      REAL(mk), DIMENSION(:,:), OPTIONAL, POINTER       :: xp
+      REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER       :: xp
       !!! a particle position array, this argument is optional
       INTEGER,                  OPTIONAL, INTENT(IN   ) :: np
       !!! number of particles
@@ -105,7 +105,7 @@
 
       REAL(ppm_kind_double)               :: t0
 #ifdef __MPI
-      REAL(mk), DIMENSION(:,:,:), POINTER :: allxp
+      REAL(MK), DIMENSION(:,:,:), POINTER :: allxp
 
       INTEGER, DIMENSION(:),   POINTER :: allnp
       INTEGER, DIMENSION(:),   POINTER :: allmp

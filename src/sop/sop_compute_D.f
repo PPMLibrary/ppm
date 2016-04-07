@@ -288,7 +288,7 @@
             CALL Op%create(ppm_dim,coeffs,degree,info,name="Gradient")
             or_fail("Failed to create Gradient operator")
             CALL opts_op%create(ppm_param_op_dcpse,info,order=3,&
-                c=REAL(opts%c,ppm_kind_double),vector=.true.)
+                c=REAL(opts%c,ppm_kind_double),vector=.TRUE.)
             or_fail("failed to initialize option object for operator")
             CALL Op%discretize_on(this,DCop,opts_op,info)
             or_fail("Failed to discretize Gradient operator on particle set")
@@ -443,12 +443,12 @@
             !either this ....
                 IF (Dtilde(iq).GE.Dtilde(ip)) CYCLE
 
-                !alpha = (sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))/&
+                !alpha = (SQRT(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))/&
                     !Dtilde(iq)-1._MK) / (opts%rcp_over_D-1._MK)
                 !if(alpha.le.0) then
                     !D(ip)=MIN(D(ip),Dtilde(iq))
                 !else
-                    !D(ip)=MIN(D(ip),sqrt(alpha)*Dtilde(ip)+(1._MK-sqrt(alpha))*Dtilde(iq))
+                    !D(ip)=MIN(D(ip),SQRT(alpha)*Dtilde(ip)+(1._MK-SQRT(alpha))*Dtilde(iq))
                 !endif
 
                 alpha = (SQRT(SUM((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))/&

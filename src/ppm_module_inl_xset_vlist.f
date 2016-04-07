@@ -48,6 +48,7 @@
         USE ppm_module_topo_typedef
         IMPLICIT NONE
 
+        PRIVATE
         !-------------------------------------------------------------------------
         !  Declaration of arrays
         !-------------------------------------------------------------------------
@@ -62,14 +63,15 @@
         !-------------------------------------------------------------------------
         !  Declaration of variables
         !-------------------------------------------------------------------------
-        TYPE(ppm_clist), SAVE :: red_clist
-        TYPE(ppm_clist), SAVE :: blue_clist
-        INTEGER               :: own_nred
-        INTEGER               :: neigh_nred
-        INTEGER               :: own_nblue
-        INTEGER               :: neigh_nblue
-        INTEGER               :: empty_pos
-        INTEGER               :: max_nneigh
+        TYPE(ppm_clist)                                  :: red_clist
+        TYPE(ppm_clist)                                  :: blue_clist
+
+        INTEGER                                          :: own_nred
+        INTEGER                                          :: neigh_nred
+        INTEGER                                          :: own_nblue
+        INTEGER                                          :: neigh_nblue
+        INTEGER                                          :: empty_pos
+        INTEGER                                          :: max_nneigh
 
         !-------------------------------------------------------------------------
         !  Declaration of interfaces
@@ -127,19 +129,11 @@
             MODULE PROCEDURE is_xset_Neighbor_d
         END INTERFACE
 
-        PRIVATE :: create_inl_xset_vlist
-        PRIVATE :: get_xset_VerletLists
-        PRIVATE :: count_xset_neigh
-        PRIVATE :: get_xset_neigh
-        PRIVATE :: getSubdomainParticles
-        PRIVATE :: getParticlesInCell
-        PRIVATE :: getParticleCoorDepth
-        PRIVATE :: inDomain
-        PRIVATE :: is_xset_Neighbor
+        !-------------------------------------------------------------------------
+        ! PUBLIC
+        !-------------------------------------------------------------------------
+        PUBLIC :: ppm_inl_xset_vlist
 
-        !-------------------------------------------------------------------------
-        !  Privatizing arrays, variables and parameters
-        !-------------------------------------------------------------------------
 !!! to be completed when test driver is removed!
 
         CONTAINS

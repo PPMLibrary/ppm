@@ -128,8 +128,8 @@
       INTEGER,  DIMENSION(:,:)     , POINTER :: ndata
       INTEGER,  DIMENSION(:)       , POINTER :: ilist1
       INTEGER,  DIMENSION(:)       , POINTER :: ilist2
-      REAL(mk), DIMENSION(:)       , POINTER :: min_phys
-      REAL(mk), DIMENSION(:)       , POINTER :: max_phys
+      REAL(MK), DIMENSION(:)       , POINTER :: min_phys
+      REAL(MK), DIMENSION(:)       , POINTER :: max_phys
       REAL(MK),  DIMENSION(ppm_dim)          :: dxi,dx
       REAL(MK),  DIMENSION(ppm_dim)          :: len_phys
       REAL(MK)                               :: x1,x2,x3,epsilon
@@ -148,8 +148,8 @@
       INTEGER                                :: iq
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub
+      REAL(MK), DIMENSION(:,:),      POINTER :: min_sub
+      REAL(MK), DIMENSION(:,:),      POINTER :: max_sub
       REAL(MK)                               :: myeps
       REAL(MK)                               :: tim1s, tim1e
       REAL(MK)                               :: xp1,xp2,xp3
@@ -171,73 +171,73 @@
       !-------------------------------------------------------------------------
       !  Variables for unrolled versions
       !-------------------------------------------------------------------------
-      REAL(mk) :: x10,x11,x12,x13,x20,x21,x22,x23,x30,x31,x32,x33
-      REAL(mk) :: a10,a11,a12,a13,a20,a21,a22,a23,a30,a31,a32,a33
+      REAL(MK) :: x10,x11,x12,x13,x20,x21,x22,x23,x30,x31,x32,x33
+      REAL(MK) :: a10,a11,a12,a13,a20,a21,a22,a23,a30,a31,a32,a33
       INTEGER  :: ip10,ip11,ip12,ip13,ip20,ip21,ip22,ip23,ip30,ip31,ip32,ip33,ldn
-      REAL(mk) :: a10a20a30
-      REAL(mk) :: a10a20a31
-      REAL(mk) :: a10a20a32
-      REAL(mk) :: a10a20a33
-      REAL(mk) :: a10a21a30
-      REAL(mk) :: a10a21a31
-      REAL(mk) :: a10a21a32
-      REAL(mk) :: a10a21a33
-      REAL(mk) :: a10a22a30
-      REAL(mk) :: a10a22a31
-      REAL(mk) :: a10a22a32
-      REAL(mk) :: a10a22a33
-      REAL(mk) :: a10a23a30
-      REAL(mk) :: a10a23a31
-      REAL(mk) :: a10a23a32
-      REAL(mk) :: a10a23a33
-      REAL(mk) :: a11a20a30
-      REAL(mk) :: a11a20a31
-      REAL(mk) :: a11a20a32
-      REAL(mk) :: a11a20a33
-      REAL(mk) :: a11a21a30
-      REAL(mk) :: a11a21a31
-      REAL(mk) :: a11a21a32
-      REAL(mk) :: a11a21a33
-      REAL(mk) :: a11a22a30
-      REAL(mk) :: a11a22a31
-      REAL(mk) :: a11a22a32
-      REAL(mk) :: a11a22a33
-      REAL(mk) :: a11a23a30
-      REAL(mk) :: a11a23a31
-      REAL(mk) :: a11a23a32
-      REAL(mk) :: a11a23a33
-      REAL(mk) :: a12a20a30
-      REAL(mk) :: a12a20a31
-      REAL(mk) :: a12a20a32
-      REAL(mk) :: a12a20a33
-      REAL(mk) :: a12a21a30
-      REAL(mk) :: a12a21a31
-      REAL(mk) :: a12a21a32
-      REAL(mk) :: a12a21a33
-      REAL(mk) :: a12a22a30
-      REAL(mk) :: a12a22a31
-      REAL(mk) :: a12a22a32
-      REAL(mk) :: a12a22a33
-      REAL(mk) :: a12a23a30
-      REAL(mk) :: a12a23a31
-      REAL(mk) :: a12a23a32
-      REAL(mk) :: a12a23a33
-      REAL(mk) :: a13a20a30
-      REAL(mk) :: a13a20a31
-      REAL(mk) :: a13a20a32
-      REAL(mk) :: a13a20a33
-      REAL(mk) :: a13a21a30
-      REAL(mk) :: a13a21a31
-      REAL(mk) :: a13a21a32
-      REAL(mk) :: a13a21a33
-      REAL(mk) :: a13a22a30
-      REAL(mk) :: a13a22a31
-      REAL(mk) :: a13a22a32
-      REAL(mk) :: a13a22a33
-      REAL(mk) :: a13a23a30
-      REAL(mk) :: a13a23a31
-      REAL(mk) :: a13a23a32
-      REAL(mk) :: a13a23a33
+      REAL(MK) :: a10a20a30
+      REAL(MK) :: a10a20a31
+      REAL(MK) :: a10a20a32
+      REAL(MK) :: a10a20a33
+      REAL(MK) :: a10a21a30
+      REAL(MK) :: a10a21a31
+      REAL(MK) :: a10a21a32
+      REAL(MK) :: a10a21a33
+      REAL(MK) :: a10a22a30
+      REAL(MK) :: a10a22a31
+      REAL(MK) :: a10a22a32
+      REAL(MK) :: a10a22a33
+      REAL(MK) :: a10a23a30
+      REAL(MK) :: a10a23a31
+      REAL(MK) :: a10a23a32
+      REAL(MK) :: a10a23a33
+      REAL(MK) :: a11a20a30
+      REAL(MK) :: a11a20a31
+      REAL(MK) :: a11a20a32
+      REAL(MK) :: a11a20a33
+      REAL(MK) :: a11a21a30
+      REAL(MK) :: a11a21a31
+      REAL(MK) :: a11a21a32
+      REAL(MK) :: a11a21a33
+      REAL(MK) :: a11a22a30
+      REAL(MK) :: a11a22a31
+      REAL(MK) :: a11a22a32
+      REAL(MK) :: a11a22a33
+      REAL(MK) :: a11a23a30
+      REAL(MK) :: a11a23a31
+      REAL(MK) :: a11a23a32
+      REAL(MK) :: a11a23a33
+      REAL(MK) :: a12a20a30
+      REAL(MK) :: a12a20a31
+      REAL(MK) :: a12a20a32
+      REAL(MK) :: a12a20a33
+      REAL(MK) :: a12a21a30
+      REAL(MK) :: a12a21a31
+      REAL(MK) :: a12a21a32
+      REAL(MK) :: a12a21a33
+      REAL(MK) :: a12a22a30
+      REAL(MK) :: a12a22a31
+      REAL(MK) :: a12a22a32
+      REAL(MK) :: a12a22a33
+      REAL(MK) :: a12a23a30
+      REAL(MK) :: a12a23a31
+      REAL(MK) :: a12a23a32
+      REAL(MK) :: a12a23a33
+      REAL(MK) :: a13a20a30
+      REAL(MK) :: a13a20a31
+      REAL(MK) :: a13a20a32
+      REAL(MK) :: a13a20a33
+      REAL(MK) :: a13a21a30
+      REAL(MK) :: a13a21a31
+      REAL(MK) :: a13a21a32
+      REAL(MK) :: a13a21a33
+      REAL(MK) :: a13a22a30
+      REAL(MK) :: a13a22a31
+      REAL(MK) :: a13a22a32
+      REAL(MK) :: a13a22a33
+      REAL(MK) :: a13a23a30
+      REAL(MK) :: a13a23a31
+      REAL(MK) :: a13a23a32
+      REAL(MK) :: a13a23a33
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_interp_p2m_renorm'
       !--------------------------------------------------------------------------
@@ -603,12 +603,12 @@
                DO i=1-ghostsize(1),ndata(1,isubl)+ghostsize(1)
 #if __MODE == __VEC
                   DO ldn=1,lda
-                     field_up(ldn,i,j,k,isub) = 0.0_mk
+                     field_up(ldn,i,j,k,isub) = 0.0_MK
                   END DO
 #else
-                  field_up(i,j,k,isub) = 0.0_mk
+                  field_up(i,j,k,isub) = 0.0_MK
 #endif
-                  field_reno(i,j,k,isub) = 0.0_mk
+                  field_reno(i,j,k,isub) = 0.0_MK
                END DO
             END DO
          END DO
@@ -668,36 +668,36 @@
                xp2 = x0(2)-REAL(ip20,mk)
                xp3 = x0(3)-REAL(ip30,mk)
 
-               x10 = xp1 + 1.0_mk
-               x11 = x10 - 1.0_mk
-               x12 = x10 - 2.0_mk
-               x13 = x10 - 3.0_mk
+               x10 = xp1 + 1.0_MK
+               x11 = x10 - 1.0_MK
+               x12 = x10 - 2.0_MK
+               x13 = x10 - 3.0_MK
 
-               x20 = xp2 + 1.0_mk
-               x21 = x20 - 1.0_mk
-               x22 = x20 - 2.0_mk
-               x23 = x20 - 3.0_mk
+               x20 = xp2 + 1.0_MK
+               x21 = x20 - 1.0_MK
+               x22 = x20 - 2.0_MK
+               x23 = x20 - 3.0_MK
 
-               x30 = xp3 + 1.0_mk
-               x31 = x30 - 1.0_mk
-               x32 = x30 - 2.0_mk
-               x33 = x30 - 3.0_mk
+               x30 = xp3 + 1.0_MK
+               x31 = x30 - 1.0_MK
+               x32 = x30 - 2.0_MK
+               x33 = x30 - 3.0_MK
 
-               a10 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x10)*x10)*x10
-               a20 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x20)*x20)*x20
-               a30 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x30)*x30)*x30
+               a10 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x10)*x10)*x10
+               a20 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x20)*x20)*x20
+               a30 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x30)*x30)*x30
 
-               a11 = 1.0_mk + (-2.5_mk+1.5_mk*x11)*x11**2
-               a21 = 1.0_mk + (-2.5_mk+1.5_mk*x21)*x21**2
-               a31 = 1.0_mk + (-2.5_mk+1.5_mk*x31)*x31**2
+               a11 = 1.0_MK + (-2.5_mk+1.5_MK*x11)*x11**2
+               a21 = 1.0_MK + (-2.5_mk+1.5_MK*x21)*x21**2
+               a31 = 1.0_MK + (-2.5_mk+1.5_MK*x31)*x31**2
 
-               a12 = 1.0_mk + (-2.5_mk-1.5_mk*x12)*x12**2
-               a22 = 1.0_mk + (-2.5_mk-1.5_mk*x22)*x22**2
-               a32 = 1.0_mk + (-2.5_mk-1.5_mk*x32)*x32**2
+               a12 = 1.0_MK + (-2.5_mk-1.5_MK*x12)*x12**2
+               a22 = 1.0_MK + (-2.5_mk-1.5_MK*x22)*x22**2
+               a32 = 1.0_MK + (-2.5_mk-1.5_MK*x32)*x32**2
 
-               a13 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x13)*x13)*x13
-               a23 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x23)*x23)*x23
-               a33 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x33)*x33)*x33
+               a13 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x13)*x13)*x13
+               a23 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x23)*x23)*x23
+               a33 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x33)*x33)*x33
 
 
                a10a20a30 = a10*a20*a30
@@ -1518,36 +1518,36 @@ field_up(1:3,ip13,ip23,ip33,isub)=field_up(1:3,ip13,ip23,ip33,isub)+&
                xp2 = x0(2)-REAL(ip20,mk)
                xp3 = x0(3)-REAL(ip30,mk)
 
-               x10 = xp1 + 1.0_mk
-               x11 = x10 - 1.0_mk
-               x12 = x10 - 2.0_mk
-               x13 = x10 - 3.0_mk
+               x10 = xp1 + 1.0_MK
+               x11 = x10 - 1.0_MK
+               x12 = x10 - 2.0_MK
+               x13 = x10 - 3.0_MK
 
-               x20 = xp2 + 1.0_mk
-               x21 = x20 - 1.0_mk
-               x22 = x20 - 2.0_mk
-               x23 = x20 - 3.0_mk
+               x20 = xp2 + 1.0_MK
+               x21 = x20 - 1.0_MK
+               x22 = x20 - 2.0_MK
+               x23 = x20 - 3.0_MK
 
-               x30 = xp3 + 1.0_mk
-               x31 = x30 - 1.0_mk
-               x32 = x30 - 2.0_mk
-               x33 = x30 - 3.0_mk
+               x30 = xp3 + 1.0_MK
+               x31 = x30 - 1.0_MK
+               x32 = x30 - 2.0_MK
+               x33 = x30 - 3.0_MK
 
-               a10 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x10)*x10)*x10
-               a20 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x20)*x20)*x20
-               a30 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x30)*x30)*x30
+               a10 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x10)*x10)*x10
+               a20 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x20)*x20)*x20
+               a30 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x30)*x30)*x30
 
-               a11 = 1.0_mk + (-2.5_mk+1.5_mk*x11)*x11**2
-               a21 = 1.0_mk + (-2.5_mk+1.5_mk*x21)*x21**2
-               a31 = 1.0_mk + (-2.5_mk+1.5_mk*x31)*x31**2
+               a11 = 1.0_MK + (-2.5_mk+1.5_MK*x11)*x11**2
+               a21 = 1.0_MK + (-2.5_mk+1.5_MK*x21)*x21**2
+               a31 = 1.0_MK + (-2.5_mk+1.5_MK*x31)*x31**2
 
-               a12 = 1.0_mk + (-2.5_mk-1.5_mk*x12)*x12**2
-               a22 = 1.0_mk + (-2.5_mk-1.5_mk*x22)*x22**2
-               a32 = 1.0_mk + (-2.5_mk-1.5_mk*x32)*x32**2
+               a12 = 1.0_MK + (-2.5_mk-1.5_MK*x12)*x12**2
+               a22 = 1.0_MK + (-2.5_mk-1.5_MK*x22)*x22**2
+               a32 = 1.0_MK + (-2.5_mk-1.5_MK*x32)*x32**2
 
-               a13 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x13)*x13)*x13
-               a23 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x23)*x23)*x23
-               a33 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x33)*x33)*x33
+               a13 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x13)*x13)*x13
+               a23 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x23)*x23)*x23
+               a33 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x33)*x33)*x33
 
                PRINT*,'###################################################'
                PRINT*,'RENORMALIZATION NOT IMPLEMENTED FOR LDA = 2'
@@ -2049,36 +2049,36 @@ field_up(1:2,ip13,ip23,ip33,isub)=field_up(1:2,ip13,ip23,ip33,isub)+&
                xp2 = x0(2)-REAL(ip20,mk)
                xp3 = x0(3)-REAL(ip30,mk)
 
-               x10 = xp1 + 1.0_mk
-               x11 = x10 - 1.0_mk
-               x12 = x10 - 2.0_mk
-               x13 = x10 - 3.0_mk
+               x10 = xp1 + 1.0_MK
+               x11 = x10 - 1.0_MK
+               x12 = x10 - 2.0_MK
+               x13 = x10 - 3.0_MK
 
-               x20 = xp2 + 1.0_mk
-               x21 = x20 - 1.0_mk
-               x22 = x20 - 2.0_mk
-               x23 = x20 - 3.0_mk
+               x20 = xp2 + 1.0_MK
+               x21 = x20 - 1.0_MK
+               x22 = x20 - 2.0_MK
+               x23 = x20 - 3.0_MK
 
-               x30 = xp3 + 1.0_mk
-               x31 = x30 - 1.0_mk
-               x32 = x30 - 2.0_mk
-               x33 = x30 - 3.0_mk
+               x30 = xp3 + 1.0_MK
+               x31 = x30 - 1.0_MK
+               x32 = x30 - 2.0_MK
+               x33 = x30 - 3.0_MK
 
-               a10 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x10)*x10)*x10
-               a20 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x20)*x20)*x20
-               a30 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x30)*x30)*x30
+               a10 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x10)*x10)*x10
+               a20 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x20)*x20)*x20
+               a30 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x30)*x30)*x30
 
-               a11 = 1.0_mk + (-2.5_mk+1.5_mk*x11)*x11**2
-               a21 = 1.0_mk + (-2.5_mk+1.5_mk*x21)*x21**2
-               a31 = 1.0_mk + (-2.5_mk+1.5_mk*x31)*x31**2
+               a11 = 1.0_MK + (-2.5_mk+1.5_MK*x11)*x11**2
+               a21 = 1.0_MK + (-2.5_mk+1.5_MK*x21)*x21**2
+               a31 = 1.0_MK + (-2.5_mk+1.5_MK*x31)*x31**2
 
-               a12 = 1.0_mk + (-2.5_mk-1.5_mk*x12)*x12**2
-               a22 = 1.0_mk + (-2.5_mk-1.5_mk*x22)*x22**2
-               a32 = 1.0_mk + (-2.5_mk-1.5_mk*x32)*x32**2
+               a12 = 1.0_MK + (-2.5_mk-1.5_MK*x12)*x12**2
+               a22 = 1.0_MK + (-2.5_mk-1.5_MK*x22)*x22**2
+               a32 = 1.0_MK + (-2.5_mk-1.5_MK*x32)*x32**2
 
-               a13 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x13)*x13)*x13
-               a23 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x23)*x23)*x23
-               a33 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x33)*x33)*x33
+               a13 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x13)*x13)*x13
+               a23 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x23)*x23)*x23
+               a33 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x33)*x33)*x33
                PRINT*,'###################################################'
                PRINT*,'RENORMALIZATION NOT IMPLEMENTED FOR LDA = 1'
                PRINT*,'###################################################'
@@ -2320,36 +2320,36 @@ field_up(1,ip13,ip23,ip33,isub)=field_up(1,ip13,ip23,ip33,isub)+&
                xp2 = x0(2)-REAL(ip20,mk)
                xp3 = x0(3)-REAL(ip30,mk)
 
-               x10 = xp1 + 1.0_mk
-               x11 = x10 - 1.0_mk
-               x12 = x10 - 2.0_mk
-               x13 = x10 - 3.0_mk
+               x10 = xp1 + 1.0_MK
+               x11 = x10 - 1.0_MK
+               x12 = x10 - 2.0_MK
+               x13 = x10 - 3.0_MK
 
-               x20 = xp2 + 1.0_mk
-               x21 = x20 - 1.0_mk
-               x22 = x20 - 2.0_mk
-               x23 = x20 - 3.0_mk
+               x20 = xp2 + 1.0_MK
+               x21 = x20 - 1.0_MK
+               x22 = x20 - 2.0_MK
+               x23 = x20 - 3.0_MK
 
-               x30 = xp3 + 1.0_mk
-               x31 = x30 - 1.0_mk
-               x32 = x30 - 2.0_mk
-               x33 = x30 - 3.0_mk
+               x30 = xp3 + 1.0_MK
+               x31 = x30 - 1.0_MK
+               x32 = x30 - 2.0_MK
+               x33 = x30 - 3.0_MK
 
-               a10 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x10)*x10)*x10
-               a20 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x20)*x20)*x20
-               a30 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x30)*x30)*x30
+               a10 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x10)*x10)*x10
+               a20 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x20)*x20)*x20
+               a30 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x30)*x30)*x30
 
-               a11 = 1.0_mk + (-2.5_mk+1.5_mk*x11)*x11**2
-               a21 = 1.0_mk + (-2.5_mk+1.5_mk*x21)*x21**2
-               a31 = 1.0_mk + (-2.5_mk+1.5_mk*x31)*x31**2
+               a11 = 1.0_MK + (-2.5_mk+1.5_MK*x11)*x11**2
+               a21 = 1.0_MK + (-2.5_mk+1.5_MK*x21)*x21**2
+               a31 = 1.0_MK + (-2.5_mk+1.5_MK*x31)*x31**2
 
-               a12 = 1.0_mk + (-2.5_mk-1.5_mk*x12)*x12**2
-               a22 = 1.0_mk + (-2.5_mk-1.5_mk*x22)*x22**2
-               a32 = 1.0_mk + (-2.5_mk-1.5_mk*x32)*x32**2
+               a12 = 1.0_MK + (-2.5_mk-1.5_MK*x12)*x12**2
+               a22 = 1.0_MK + (-2.5_mk-1.5_MK*x22)*x22**2
+               a32 = 1.0_MK + (-2.5_mk-1.5_MK*x32)*x32**2
 
-               a13 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x13)*x13)*x13
-               a23 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x23)*x23)*x23
-               a33 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x33)*x33)*x33
+               a13 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x13)*x13)*x13
+               a23 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x23)*x23)*x23
+               a33 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x33)*x33)*x33
 
                a10a20a30 = a10*a20*a30
                a10a20a31 = a10*a20*a31
@@ -2588,36 +2588,36 @@ field_up(ldn,ip13,ip23,ip33,isub)=field_up(ldn,ip13,ip23,ip33,isub)+&
                xp2 = x0(2)-REAL(ip20,mk)
                xp3 = x0(3)-REAL(ip30,mk)
 
-               x10 = xp1 + 1.0_mk
-               x11 = x10 - 1.0_mk
-               x12 = x10 - 2.0_mk
-               x13 = x10 - 3.0_mk
+               x10 = xp1 + 1.0_MK
+               x11 = x10 - 1.0_MK
+               x12 = x10 - 2.0_MK
+               x13 = x10 - 3.0_MK
 
-               x20 = xp2 + 1.0_mk
-               x21 = x20 - 1.0_mk
-               x22 = x20 - 2.0_mk
-               x23 = x20 - 3.0_mk
+               x20 = xp2 + 1.0_MK
+               x21 = x20 - 1.0_MK
+               x22 = x20 - 2.0_MK
+               x23 = x20 - 3.0_MK
 
-               x30 = xp3 + 1.0_mk
-               x31 = x30 - 1.0_mk
-               x32 = x30 - 2.0_mk
-               x33 = x30 - 3.0_mk
+               x30 = xp3 + 1.0_MK
+               x31 = x30 - 1.0_MK
+               x32 = x30 - 2.0_MK
+               x33 = x30 - 3.0_MK
 
-               a10 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x10)*x10)*x10
-               a20 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x20)*x20)*x20
-               a30 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x30)*x30)*x30
+               a10 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x10)*x10)*x10
+               a20 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x20)*x20)*x20
+               a30 = 2.0_MK + (-4.0_MK+(2.5_mk-0.5_MK*x30)*x30)*x30
 
-               a11 = 1.0_mk + (-2.5_mk+1.5_mk*x11)*x11**2
-               a21 = 1.0_mk + (-2.5_mk+1.5_mk*x21)*x21**2
-               a31 = 1.0_mk + (-2.5_mk+1.5_mk*x31)*x31**2
+               a11 = 1.0_MK + (-2.5_mk+1.5_MK*x11)*x11**2
+               a21 = 1.0_MK + (-2.5_mk+1.5_MK*x21)*x21**2
+               a31 = 1.0_MK + (-2.5_mk+1.5_MK*x31)*x31**2
 
-               a12 = 1.0_mk + (-2.5_mk-1.5_mk*x12)*x12**2
-               a22 = 1.0_mk + (-2.5_mk-1.5_mk*x22)*x22**2
-               a32 = 1.0_mk + (-2.5_mk-1.5_mk*x32)*x32**2
+               a12 = 1.0_MK + (-2.5_mk-1.5_MK*x12)*x12**2
+               a22 = 1.0_MK + (-2.5_mk-1.5_MK*x22)*x22**2
+               a32 = 1.0_MK + (-2.5_mk-1.5_MK*x32)*x32**2
 
-               a13 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x13)*x13)*x13
-               a23 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x23)*x23)*x23
-               a33 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x33)*x33)*x33
+               a13 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x13)*x13)*x13
+               a23 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x23)*x23)*x23
+               a33 = 2.0_MK + (4.0_MK + (2.5_mk+0.5_MK*x33)*x33)*x33
 
                a10a20a30 = a10*a20*a30
                a10a20a31 = a10*a20*a31
@@ -2856,21 +2856,21 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
-                x11 = x10 - 1.0_mk
+                x11 = x10 - 1.0_MK
 
                 x20 = xp2
-                x21 = x20 - 1.0_mk
+                x21 = x20 - 1.0_MK
 
                 x30 = xp3
-                x31 = x30 - 1.0_mk
+                x31 = x30 - 1.0_MK
 
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+                a10 = 1.0_MK - x10
+                a20 = 1.0_MK - x20
+                a30 = 1.0_MK - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
+                a11 = 1.0_MK + x11
+                a21 = 1.0_MK + x21
+                a31 = 1.0_MK + x31
 
                 field_up(1,ip10,ip20,ip30,isub) = field_up(1,ip10,ip20,ip30,isub) + &
                     & a10*a20*a30*up(1,iq)
@@ -2975,21 +2975,21 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
-                x11 = x10 - 1.0_mk
+                x11 = x10 - 1.0_MK
 
                 x20 = xp2
-                x21 = x20 - 1.0_mk
+                x21 = x20 - 1.0_MK
 
                 x30 = xp3
-                x31 = x30 - 1.0_mk
+                x31 = x30 - 1.0_MK
 
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+                a10 = 1.0_MK - x10
+                a20 = 1.0_MK - x20
+                a30 = 1.0_MK - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
+                a11 = 1.0_MK + x11
+                a21 = 1.0_MK + x21
+                a31 = 1.0_MK + x31
 
 
                 a10a20a30 = a10*a20*a30
@@ -3104,21 +3104,21 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
-                x11 = x10 - 1.0_mk
+                x11 = x10 - 1.0_MK
 
                 x20 = xp2
-                x21 = x20 - 1.0_mk
+                x21 = x20 - 1.0_MK
 
                 x30 = xp3
-                x31 = x30 - 1.0_mk
+                x31 = x30 - 1.0_MK
 
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+                a10 = 1.0_MK - x10
+                a20 = 1.0_MK - x20
+                a30 = 1.0_MK - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
+                a11 = 1.0_MK + x11
+                a21 = 1.0_MK + x21
+                a31 = 1.0_MK + x31
 
 
                 a10a20a30 = a10*a20*a30
@@ -3216,21 +3216,21 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
-                x11 = x10 - 1.0_mk
+                x11 = x10 - 1.0_MK
 
                 x20 = xp2
-                x21 = x20 - 1.0_mk
+                x21 = x20 - 1.0_MK
 
                 x30 = xp3
-                x31 = x30 - 1.0_mk
+                x31 = x30 - 1.0_MK
 
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+                a10 = 1.0_MK - x10
+                a20 = 1.0_MK - x20
+                a30 = 1.0_MK - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
+                a11 = 1.0_MK + x11
+                a21 = 1.0_MK + x21
+                a31 = 1.0_MK + x31
 
 
                 a10a20a30 = a10*a20*a30
@@ -3293,21 +3293,21 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
-                x11 = x10 - 1.0_mk
+                x11 = x10 - 1.0_MK
 
                 x20 = xp2
-                x21 = x20 - 1.0_mk
+                x21 = x20 - 1.0_MK
 
                 x30 = xp3
-                x31 = x30 - 1.0_mk
+                x31 = x30 - 1.0_MK
 
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+                a10 = 1.0_MK - x10
+                a20 = 1.0_MK - x20
+                a30 = 1.0_MK - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
+                a11 = 1.0_MK + x11
+                a21 = 1.0_MK + x21
+                a31 = 1.0_MK + x31
 
                 a10a20a30 = a10*a20*a30
                 a10a20a31 = a10*a20*a31
@@ -3370,21 +3370,21 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
-                x11 = x10 - 1.0_mk
+                x11 = x10 - 1.0_MK
 
                 x20 = xp2
-                x21 = x20 - 1.0_mk
+                x21 = x20 - 1.0_MK
 
                 x30 = xp3
-                x31 = x30 - 1.0_mk
+                x31 = x30 - 1.0_MK
 
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+                a10 = 1.0_MK - x10
+                a20 = 1.0_MK - x20
+                a30 = 1.0_MK - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
+                a11 = 1.0_MK + x11
+                a21 = 1.0_MK + x21
+                a31 = 1.0_MK + x31
 
                 a10a20a30 = a10*a20*a30
                 a10a20a31 = a10*a20*a31
@@ -3436,10 +3436,10 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
             DO i=1-ghostsize(1),ndata(1,isubl)+ghostsize(1)
 #if __MODE == __VEC
                DO ldn=1,lda
-                  field_up(ldn,i,j,isub) = 0.0_mk
+                  field_up(ldn,i,j,isub) = 0.0_MK
                END DO
 #else
-               field_up(i,j,isub) = 0.0_mk
+               field_up(i,j,isub) = 0.0_MK
 #endif
             END DO
          END DO
@@ -3471,10 +3471,10 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
 
                   x2 = ABS(xp2 - REAL(jj,mk))
 
-                  IF(x2.LT.1.0_mk) THEN
-                     wx2 = 1.0_mk - x2**2*(2.5_mk-1.5_mk*x2)
+                  IF(x2.LT.1.0_MK) THEN
+                     wx2 = 1.0_MK - x2**2*(2.5_mk-1.5_MK*x2)
                   ELSE
-                     wx2 = 2.0_mk + (-4.0_mk + &
+                     wx2 = 2.0_MK + (-4.0_MK + &
                           &(2.5_mk - 0.5_mk * x2)*x2)*x2
                   END IF
 
@@ -3483,11 +3483,11 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                      x1 = ABS(xp1 - REAL(ii,mk))
 
                      IF(x1.LT.1.0_MK) THEN
-                        wx1 =  1.0_mk - x1**2*(2.5_mk - &
-                             & 1.5_mk*x1)
+                        wx1 =  1.0_MK - x1**2*(2.5_mk - &
+                             & 1.5_MK*x1)
                      ELSE
-                        wx1 =  2.0_mk + (-4.0_mk + &
-                             & (2.5_mk - 0.5_mk*x1)*x1)*x1
+                        wx1 =  2.0_MK + (-4.0_MK + &
+                             & (2.5_mk - 0.5_MK*x1)*x1)*x1
                      END IF
 #if __MODE == __SCA
                      field_up(ii+ip1,jj+ip2,isub) &
@@ -3524,7 +3524,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
              DO k=1-ghostsize(3),0
                  DO j=1,ndata(2,isubl)
                      DO i=1,ndata(1,isubl)
-                         field_reno(i,j,k,isub) = 0.0_mk
+                         field_reno(i,j,k,isub) = 0.0_MK
                      END DO
                  END DO
              END DO
@@ -3533,7 +3533,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
              DO k=ndata(3,isubl)+1,ndata(3,isubl)+ghostsize(3)
                  DO j=1,ndata(2,isubl)
                      DO i=1,ndata(1,isubl)
-                         field_reno(i,j,k,isub) = 0.0_mk
+                         field_reno(i,j,k,isub) = 0.0_MK
                      END DO
                  END DO
              END DO
@@ -3582,8 +3582,8 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                      !-----------------------------------------------------
                      ! TODO: What if the unity samples to something finite
                      ! but negative, this could happen in some cases...
-                     !IF(field_reno(i,j,k,isub).GT.0.0_mk) THEN
-                     IF(ABS(field_reno(i,j,k,isub)).GT.0.0_mk) THEN
+                     !IF(field_reno(i,j,k,isub).GT.0.0_MK) THEN
+                     IF(ABS(field_reno(i,j,k,isub)).GT.0.0_MK) THEN
                          field_up(1,i,j,k,isub) = field_up(1,i,j,k,isub) / &
                           & field_reno(i,j,k,isub)
                          field_up(2,i,j,k,isub) = field_up(2,i,j,k,isub) / &
@@ -3607,8 +3607,8 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                      !-----------------------------------------------------
                      ! TODO: What if the unity samples to something finite
                      ! but negative, this could happen in some cases...
-                     !IF(field_reno(i,j,k,isub).GT.0.0_mk) THEN
-                     IF (ABS(field_reno(i,j,k,isub)).GT.0.0_mk) THEN
+                     !IF(field_reno(i,j,k,isub).GT.0.0_MK) THEN
+                     IF (ABS(field_reno(i,j,k,isub)).GT.0.0_MK) THEN
                         field_up(1,i,j,k,isub) = field_up(1,i,j,k,isub) / &
                         &                        field_reno(i,j,k,isub)
                         field_up(2,i,j,k,isub) = field_up(2,i,j,k,isub) / &

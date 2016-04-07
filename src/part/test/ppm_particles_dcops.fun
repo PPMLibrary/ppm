@@ -10,9 +10,9 @@ USE ppm_module_data
 USE ppm_module_io_vtk
 
 INTEGER, PARAMETER              :: debug = 0
-INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
-REAL(MK),PARAMETER              :: tol=EPSILON(1._mk)*100
-REAL(MK),PARAMETER              :: pi = acos(-1._mk)
+INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
+REAL(MK),PARAMETER              :: tol=EPSILON(1.0_MK)*100
+REAL(MK),PARAMETER              :: pi = aCOS(-1.0_MK)
 INTEGER,PARAMETER               :: ndim=2
 INTEGER                         :: decomp,assig,tolexp
 INTEGER                         :: info,comm,rank,nproc,topoid
@@ -31,9 +31,9 @@ TYPE(ppm_t_field)               :: VFieldD,VField2,VField3,VField5
 INTEGER                         :: seedsize
 INTEGER, DIMENSION(:),POINTER   :: nvlist=>NULL()
 INTEGER, DIMENSION(:,:),POINTER :: vlist=>NULL()
-INTEGER, DIMENSION(:),allocatable:: seed,degree,order
-REAL(MK),DIMENSION(:,:),allocatable:: randn
-REAL(MK),DIMENSION(:),allocatable:: coeffs
+INTEGER, DIMENSION(:),ALLOCATABLE:: seed,degree,order
+REAL(MK),DIMENSION(:,:),ALLOCATABLE:: randn
+REAL(MK),DIMENSION(:),ALLOCATABLE:: coeffs
 INTEGER, DIMENSION(:),  POINTER :: gi => NULL()
 REAL(MK),DIMENSION(:),  POINTER :: wp_1r => NULL()
 REAL(MK),DIMENSION(:,:),POINTER :: wp_2r => NULL()
@@ -54,8 +54,8 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 
         ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),STAT=info)
 
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
+        min_phys(1:ndim) = 0.0_MK
+        max_phys(1:ndim) = 1.0_MK
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6) = ppm_param_bcdef_periodic
 
@@ -67,7 +67,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
         rank = 0
         nproc = 1
 #endif
-        tolexp = int(log10(EPSILON(1._mk)))+10
+        tolexp = int(log10(EPSILON(1.0_MK)))+10
         CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
         CALL RANDOM_SEED(size=seedsize)
@@ -109,7 +109,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 
         CALL Part1%comp_global_index(info)
 
-        CALL Part1%map(info,global=.true.,topoid=topoid)
+        CALL Part1%map(info,global=.TRUE.,topoid=topoid)
 
         CALL Part1%map_ghosts(info)
 
@@ -122,11 +122,11 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
         CALL VField3%discretize_on(Part1,info)
 
         !Perturb the  particles positions
-        CALL Part1%set_cutoff(3._mk * Part1%h_avg,info)
+        CALL Part1%set_cutoff(3.0_MK * Part1%h_avg,info)
 
         ALLOCATE(wp_2r(ndim,Part1%Npart))
 
-        CALL Part1%get(Part1%gi,gi,info,read_only=.true.)
+        CALL Part1%get(Part1%gi,gi,info,read_only=.TRUE.)
 
         FORALL (ip=1:Part1%Npart) wp_2r(1:ndim,ip) = randn(1:ndim,gi(ip))
 
@@ -141,11 +141,11 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 
         foreach p in particles(Part1) with positions(x) sca_fields(S1=SField1,S2=SField2,S3=SField3) vec_fields(VD=VFieldD,V2=VField2,V3=VField3)
             S1_p = f0_test(x_p(1:ndim),ndim)
-            S2_p = 0._mk !f0_test(x_p(1:ndim),ndim)
-            S3_p = -8._mk * pi*pi * f0_test(x_p(1:ndim),ndim)
-            VD_p(1:ndim)    = -10._mk
-            V2_p(1:2)       = -10._mk
-            V3_p(1:3)       = -10._mk
+            S2_p = 0.0_MK !f0_test(x_p(1:ndim),ndim)
+            S3_p = -8.0_MK * pi*pi * f0_test(x_p(1:ndim),ndim)
+            VD_p(1:ndim)    = -10.0_MK
+            V2_p(1:2)       = -10.0_MK
+            V3_p(1:3)       = -10.0_MK
         end foreach
 
         end_subroutine()
@@ -190,7 +190,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
         start_subroutine("test_laplacian")
         tol_error = 2e-2
 
-        CALL Part1%set_cutoff(3._mk * Part1%h_avg,info)
+        CALL Part1%set_cutoff(3.0_MK * Part1%h_avg,info)
         Assert_Equal(info,0)
 
         CALL Part1%map_ghosts(info)
@@ -206,7 +206,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
         else
                degree =  (/2,0,0, 0,2,0, 0,0,2/)
         endif
-        coeffs = 1.0_mk
+        coeffs = 1.0_MK
 
         CALL Op%create(ndim,coeffs,degree,info,name="Laplacian")
         Assert_Equal(info,0)
@@ -239,7 +239,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 
         tol_error = 1e-2
 
-        CALL Part1%set_cutoff(3._mk * Part1%h_avg,info)
+        CALL Part1%set_cutoff(3.0_MK * Part1%h_avg,info)
         Assert_Equal(info,0)
 
         CALL Part1%map_ghosts(info)
@@ -256,13 +256,13 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
         else
                degree =  (/1,0,0, 0,1,0, 0,0,1/)
         endif
-        coeffs = 1.0_mk
+        coeffs = 1.0_MK
 
         CALL Op%create(ndim,coeffs,degree,info,name="Gradient")
         Assert_Equal(info,0)
 
         CALL opts_op%create(ppm_param_op_dcpse,info,order=2,&
-        c=1.4D0,vector=.true.)
+        c=1.4D0,vector=.TRUE.)
         or_fail("failed to initialize option object for operator")
 
         CALL Op%discretize_on(Part1,DCop,opts_op,info)
@@ -279,82 +279,82 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 !-------------------------------------------------------------
 ! test function
 !-------------------------------------------------------------
-pure function f0_test(pos,ndim)
+PURE FUNCTION f0_test(pos,ndim)
 
     REAL(MK)                              :: f0_test
-    INTEGER                 ,  intent(in) :: ndim
-    REAL(MK), DIMENSION(ndim), intent(in) :: pos
+    INTEGER                 ,  INTENT(IN) :: ndim
+    REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
     if (ndim .eq. 2) then
-        f0_test =  sin(2._mk*pi*pos(1)) * cos(2._mk*pi*pos(2))
+        f0_test =  SIN(2._MK*pi*pos(1)) * COS(2._MK*pi*pos(2))
     else
-        f0_test =  sin(2._mk*pi*pos(1)) * cos(2._mk*pi*pos(2)) * &
-            & sin(2._mk*pi*pos(3))
+        f0_test =  SIN(2._MK*pi*pos(1)) * COS(2._MK*pi*pos(2)) * &
+            & SIN(2._MK*pi*pos(3))
     endif
 
     return
 
-end function f0_test
+END FUNCTION f0_test
 
 
 !-------------------------------------------------------------
 ! derivatives of the test function
 !-------------------------------------------------------------
-pure function df0_test(pos,order_deriv,ndim)
+PURE FUNCTION df0_test(pos,order_deriv,ndim)
 
     REAL(MK)                                  :: df0_test
-    INTEGER                     , intent(in)  :: ndim
-    REAL(MK), DIMENSION(ppm_dim), intent(in)  :: pos
-    INTEGER,  DIMENSION(ppm_dim), intent(in)  :: order_deriv
+    INTEGER                     , INTENT(IN)  :: ndim
+    REAL(MK), DIMENSION(ppm_dim), INTENT(IN)  :: pos
+    INTEGER,  DIMENSION(ppm_dim), INTENT(IN)  :: order_deriv
 
     select case (order_deriv(1))
     case (0)
-        df0_test =    sin (2._mk*pi * pos(1))
+        df0_test =    sin (2._MK*pi * pos(1))
     case (1)
-        df0_test =    2._mk*pi*cos(2._mk*pi * pos(1))
+        df0_test =    2._MK*pi*COS(2._MK*pi * pos(1))
     case (2)
-        df0_test =  -(2._mk*pi)**2*sin(2._mk*pi * pos(1))
+        df0_test =  -(2._MK*pi)**2*SIN(2._MK*pi * pos(1))
     case (3)
-        df0_test =  -(2._mk*pi)**3*cos(2._mk*pi * pos(1))
+        df0_test =  -(2._MK*pi)**3*COS(2._MK*pi * pos(1))
     case (4)
-        df0_test =   (2._mk*pi)**4*sin(2._mk*pi * pos(1))
+        df0_test =   (2._MK*pi)**4*SIN(2._MK*pi * pos(1))
     case default
-        df0_test =  0._mk
+        df0_test =  0.0_MK
     endselect
 
     select case (order_deriv(2))
     case (0)
-        df0_test =   df0_test * cos (2._mk*pi * pos(2))
+        df0_test =   df0_test * cos (2._MK*pi * pos(2))
     case (1)
-        df0_test =   df0_test * (-2._mk*pi)*sin(2._mk*pi * pos(2))
+        df0_test =   df0_test * (-2._MK*pi)*SIN(2._MK*pi * pos(2))
     case (2)
-        df0_test =  df0_test * (-(2._mk*pi)**2)*cos(2._mk*pi * pos(2))
+        df0_test =  df0_test * (-(2._MK*pi)**2)*COS(2._MK*pi * pos(2))
     case (3)
-        df0_test =  df0_test * ( (2._mk*pi)**3)*sin(2._mk*pi * pos(2))
+        df0_test =  df0_test * ( (2._MK*pi)**3)*SIN(2._MK*pi * pos(2))
     case (4)
-        df0_test =  df0_test * ( (2._mk*pi)**4)*cos(2._mk*pi * pos(2))
+        df0_test =  df0_test * ( (2._MK*pi)**4)*COS(2._MK*pi * pos(2))
     case default
-        df0_test =  0._mk
+        df0_test =  0.0_MK
     endselect
 
     if (ndim .eq. 3 ) then
         select case (order_deriv(3))
         case (0)
-            df0_test =   df0_test * sin (2._mk*pi * pos(3))
+            df0_test =   df0_test * sin (2._MK*pi * pos(3))
         case (1)
-            df0_test =   df0_test * (2._mk*pi)*cos(2._mk*pi * pos(3))
+            df0_test =   df0_test * (2._MK*pi)*COS(2._MK*pi * pos(3))
         case (2)
-            df0_test =  df0_test * (-(2._mk*pi)**2)*sin(2._mk*pi * pos(3))
+            df0_test =  df0_test * (-(2._MK*pi)**2)*SIN(2._MK*pi * pos(3))
         case (3)
-            df0_test =  df0_test * (-(2._mk*pi)**3)*cos(2._mk*pi * pos(3))
+            df0_test =  df0_test * (-(2._MK*pi)**3)*COS(2._MK*pi * pos(3))
         case (4)
-            df0_test =  df0_test * ( (2._mk*pi)**4)*sin(2._mk*pi * pos(3))
+            df0_test =  df0_test * ( (2._MK*pi)**4)*SIN(2._MK*pi * pos(3))
         case default
-            df0_test =  0._mk
+            df0_test =  0.0_MK
         endselect
     endif
 
-end function df0_test
+END FUNCTION df0_test
 
 
 !-------------------------------------------------------------
@@ -368,31 +368,31 @@ function inf_error(Part1,Field1,Field2,Op)
     INTEGER                          :: ip,nterms
     REAL(MK), DIMENSION(:),  POINTER :: wp_1 => NULL(), dwp_1 => NULL()
     REAL(MK), DIMENSION(:,:),POINTER :: xp=>NULL(), wp_2=>NULL(), dwp_2=>NULL()
-    REAL(MK), DIMENSION(:), allocatable :: err,exact
+    REAL(MK), DIMENSION(:), ALLOCATABLE :: err,exact
     REAL(MK)                         :: linf,inf_error,coeff
     LOGICAL                          :: input_vec,output_vec
-    INTEGER,DIMENSION(:),allocatable :: degree,order
+    INTEGER,DIMENSION(:),ALLOCATABLE :: degree,order
     INTEGER,DIMENSION(ndim)          :: dg
     character(len=100)               :: fname
 
     if (op%flags(ppm_ops_vector)) then
-        CALL Part1%get(Field2,dwp_2,info,read_only=.true.)
+        CALL Part1%get(Field2,dwp_2,info,read_only=.TRUE.)
         if (info.ne.0) write(*,*) "Failed te get Field2"
-        output_vec = .true.
+        output_vec = .TRUE.
     else
-        CALL Part1%get(Field2,dwp_1,info,read_only=.true.)
+        CALL Part1%get(Field2,dwp_1,info,read_only=.TRUE.)
         if (info.ne.0) write(*,*) "Failed te get Field2"
-        output_vec = .false.
+        output_vec = .FALSE.
     endif
 
     if (Field1%lda.EQ.1) THEN
-        CALL Part1%get(Field1,wp_1,info,read_only=.true.)
+        CALL Part1%get(Field1,wp_1,info,read_only=.TRUE.)
         if (info.ne.0) write(*,*) "Failed te get Field1"
-        input_vec = .false.
+        input_vec = .FALSE.
     else
-        CALL Part1%get(Field1,wp_2,info,read_only=.true.)
+        CALL Part1%get(Field1,wp_2,info,read_only=.TRUE.)
         if (info.ne.0) write(*,*) "Failed te get Field1"
-        input_vec = .true.
+        input_vec = .TRUE.
     endif
 
     nterms = op%op_ptr%nterms
@@ -401,10 +401,10 @@ function inf_error(Part1,Field1,Field2,Op)
     CALL Part1%get_xp(xp,info)
         if (info.ne.0) write(*,*) "Could not get xp"
 
-    err = 0._mk
-    linf = 0._mk
+    err = 0.0_MK
+    linf = 0.0_MK
     do ip=1,Part1%Npart
-        exact = 0._mk
+        exact = 0.0_MK
         do i=1,nterms
             coeff = op%op_ptr%coeffs(i)
             dg = op%op_ptr%degree(1+(i-1)*ndim:i*ndim)
@@ -416,14 +416,14 @@ function inf_error(Part1,Field1,Field2,Op)
         enddo
         if (output_vec) then
             do i=1,nterms
-                err(i) = MAX(err(i),abs(dwp_2(i,ip) - exact(i)))
+                err(i) = MAX(err(i),ABS(dwp_2(i,ip) - exact(i)))
                 !REMOVME
                 !dwp_2(i,ip) = err(i)
             enddo
         else
-            err(1) = MAX(err(1),abs(dwp_1(ip) - exact(1)))
+            err(1) = MAX(err(1),ABS(dwp_1(ip) - exact(1)))
         endif
-        linf = MAX(linf,MAXVAL(abs(exact)))
+        linf = MAX(linf,MAXVAL(ABS(exact)))
     enddo
 
 #ifdef __MPI
@@ -438,6 +438,6 @@ function inf_error(Part1,Field1,Field2,Op)
         write(*,*) '[',ppm_rank,']','Error is ',inf_error
 
     DEALLOCATE(err,exact,degree,order)
-end function inf_error
+END FUNCTION inf_error
 
 end test_suite

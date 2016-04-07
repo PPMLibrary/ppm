@@ -2,7 +2,7 @@ include macro ppm_header(ppm_module_name=ppm_module_name)
 !--*- f90 -*--------------------------------------------------------------
 !  Module   :                   <%= ppm_module_name %>
 !-------------------------------------------------------------------------
-! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
+! Copyright (c) 2016 CSE Lab (ETH Zurich), MOSAIC Group (MPI-CBG Dresden),
 !                    Center for Fluid Dynamics (DTU)
 !
 !
@@ -23,9 +23,10 @@ include macro ppm_header(ppm_module_name=ppm_module_name)
 ! and the GNU Lesser General Public License along with PPM. If not,
 ! see <http://www.gnu.org/licenses/>.
 !
-! Parallel Particle Mesh Library (PPM)
-! ETH Zurich
-! CH-8092 Zurich, Switzerland
+!-------------------------------------------------------------------------
+!  MOSAIC Group
+!  Max Planck Institute of Molecular Cell Biology and Genetics
+!  Pfotenhauerstr. 108, 01307 Dresden, Germany
 !-------------------------------------------------------------------------
 end macro
 

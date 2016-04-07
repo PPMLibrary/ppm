@@ -149,12 +149,12 @@
       nmtot(2) = nm(2) + ngl(2) + ngl(4)
       !TODO
       !One should fix all the INTEGER numbers!
-      IF (REAL(nmtot(1),MK)*REAL(nmtot(2),MK).GE.REAL(ppm_big_i-1,MK)) THEN
+      IF (REAL(nmtot(1),MK)*REAL(nmtot(2),MK).GE.REAL(ppm_big_i,MK)) THEN
          stdout("INTEGER Overflow!")
          fail("INTEGER Overflow!",ppm_error=ppm_error_fatal)
       ENDIF
 
-      nbox  = nmtot(1)*nmtot(2)
+      nbox=nmtot(1)*nmtot(2)
 
       !-------------------------------------------------------------------------
       !  Allocate memory
@@ -280,7 +280,6 @@
          ENDIF
       ENDDO
 
-
       IF (icorr.GT.0) THEN
          WRITE(cbuf,'(I8,A)')icorr,' particle indices corrected'
          fail(cbuf,ppm_err_index_corr,exit_point=no,ppm_error=ppm_error_notice)
@@ -335,12 +334,10 @@
       IF (info2.EQ.1) THEN
          mean = REAL(icount,MK)/REAL(nbox,MK)
          stdout_f('(A,F8.2)',"Mean number of particles per cell: ",mean)
-      ENDIF
 
-      !-------------------------------------------------------------------------
-      !  Check that npbx adds to icount
-      !-------------------------------------------------------------------------
-      IF (info2.EQ.1) THEN
+         !-------------------------------------------------------------------------
+         !  Check that npbx adds to icount
+         !-------------------------------------------------------------------------
          !----------------------------------------------------------------------
          !  Count number of particles in each box. This vectorizes.
          !----------------------------------------------------------------------

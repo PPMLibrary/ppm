@@ -40,7 +40,10 @@ minclude ppm_create_collection(DTYPE(neighlist),DTYPE(neighlist),generate="exten
           PROCEDURE :: create                   => DTYPE(part_create)
           PROCEDURE :: destroy                  => DTYPE(part_destroy)
           PROCEDURE :: initialize               => DTYPE(part_initialize)
-          PROCEDURE :: del_parts                => DTYPE(part_del_parts)
+          PROCEDURE :: part_del_parts           => DTYPE(part_del_parts)
+          PROCEDURE :: part_del_part            => DTYPE(part_del_part)
+          PROCEDURE :: size                     => DTYPE(part_size)
+          PROCEDURE :: grow_size                => DTYPE(part_grow_size)
 
           PROCEDURE :: create_prop              => DTYPE(part_prop_create)
           PROCEDURE :: destroy_prop             => DTYPE(part_prop_destroy)

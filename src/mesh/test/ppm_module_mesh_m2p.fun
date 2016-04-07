@@ -170,7 +170,7 @@ REAL(MK), DIMENSION(:,:), POINTER              :: wp_2r => NULL()
         CALL Part1%apply_bc(info)
         Assert_Equal(info,0)
 
-        CALL Part1%map(info,global=.true.,topoid=topoid)
+        CALL Part1%map(info,global=.TRUE.,topoid=topoid)
         Assert_Equal(info,0)
 
 

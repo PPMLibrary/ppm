@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE decomp_pcell_s(xp,Npart,min_phys,max_phys, &
-      &   ghostsize,min_sub,max_sub,nsubs,info,pcost)
+      &          ghostsize,min_sub,max_sub,nsubs,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE decomp_pcell_d(xp,Npart,min_phys,max_phys, &
-      &   ghostsize,min_sub,max_sub,nsubs,info,pcost)
+      &          ghostsize,min_sub,max_sub,nsubs,info,pcost)
 #endif
       !!! This routine performs a domain decomposition using a
       !!! pruned (incomplete) cell index list.
@@ -51,6 +51,7 @@
       USE ppm_module_alloc
       USE ppm_module_mpi
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -87,8 +88,8 @@
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double), DIMENSION(ppm_dim) :: dmx
-      REAL(MK)                                  :: rdx,rdy,rdz
-      REAL(MK)                                  :: x0,y0,z0,rmean_npbx
+      REAL(ppm_kind_double)                     :: rdx,rdy,rdz
+      REAL(ppm_kind_double)                     :: x0,y0,z0
       REAL(ppm_kind_double)                     :: t0
 
       INTEGER, DIMENSION(ppm_dim) :: Nm
@@ -172,8 +173,8 @@
       !-------------------------------------------------------------------------
       SELECT CASE (ppm_dim)
       CASE (2)
-         rdx = REAL(1.0_ppm_kind_double/dmx(1),MK)
-         rdy = REAL(1.0_ppm_kind_double/dmx(2),MK)
+         rdx = 1.0_ppm_kind_double/dmx(1)
+         rdy = 1.0_ppm_kind_double/dmx(2)
          x0  = min_phys(1)*rdx
          y0  = min_phys(2)*rdy
          n1  = Nm(1)
@@ -185,9 +186,9 @@
          ENDDO
 
       CASE (3)
-         rdx = REAL(1.0_ppm_kind_double/dmx(1),MK)
-         rdy = REAL(1.0_ppm_kind_double/dmx(2),MK)
-         rdz = REAL(1.0_ppm_kind_double/dmx(3),MK)
+         rdx = 1.0_ppm_kind_double/dmx(1)
+         rdy = 1.0_ppm_kind_double/dmx(2)
+         rdz = 1.0_ppm_kind_double/dmx(3)
          x0  = min_phys(1)*rdx
          y0  = min_phys(2)*rdy
          z0  = min_phys(3)*rdz

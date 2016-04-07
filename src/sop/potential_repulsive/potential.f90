@@ -7,7 +7,7 @@
 !------------------------------------------------------------------------------!
 
 !confining potential
- !Psi_part = Psi_part + meanD**2 * (-log(rd) + 0.5_mk*rd **2)
+ !Psi_part = Psi_part + meanD**2 * (-log(rd) + 0.5_MK*rd **2)
 
 
 IF (rd .GT. attractive_radius) THEN

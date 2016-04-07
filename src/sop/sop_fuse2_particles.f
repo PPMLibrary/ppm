@@ -133,8 +133,8 @@
               IF(.NOT.PRESENT(wp_fun)) &
                   wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
           ENDIF
-          fuse_part  => Get_wpi(Particles,fuse_id,with_ghosts=.true.)
-          nb_neigh  => Get_wpi(Particles,nb_neigh_id,with_ghosts=.true.)
+          fuse_part  => Get_wpi(Particles,fuse_id,with_ghosts=.TRUE.)
+          nb_neigh  => Get_wpi(Particles,nb_neigh_id,with_ghosts=.TRUE.)
 
           !!-------------------------------------------------------------------------!
           !! Mark particles for deletion (by changing nvlist to 999)
@@ -180,7 +180,7 @@
                       rr = SQRT(SUM((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))**2)) / &
                           MIN(D(ip),D(iq))
 
-                      IF (rr .LT. 1.0_mk) THEN
+                      IF (rr .LT. 1.0_MK) THEN
                           close_neigh = close_neigh + 1
                           !sort vlist (only for the close neighbours)
                           vlist(ineigh,ip) = vlist(close_neigh,ip)

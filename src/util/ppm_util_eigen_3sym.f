@@ -59,6 +59,7 @@
       USE ppm_module_write
       USE ppm_module_util_cubeq_real
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -84,17 +85,19 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double) :: t0
-      REAL(MK)                                :: Etmp,lmyeps,inv,t,sqeps
-      REAL(MK)                                :: root_lmyeps
-      REAL(MK), DIMENSION(3,3)                :: Udet,As
-      REAL(MK), DIMENSION(3  )                :: row
-      REAL(MK), DIMENSION(4  )                :: chp
-      INTEGER , DIMENSION(3  )                :: isort
-      INTEGER                                 :: i,j,ip1,np1,np2
-      LOGICAL                                 :: correct
-      CHARACTER(LEN=ppm_char)                 :: mesg
-      CHARACTER(LEN=ppm_char)                 :: caller='ppm_util_eigen_3sym'
+      REAL(ppm_kind_double)    :: t0
+      REAL(MK)                 :: Etmp,lmyeps,inv,t,sqeps
+      REAL(MK)                 :: root_lmyeps
+      REAL(MK), DIMENSION(3,3) :: Udet,As
+      REAL(MK), DIMENSION(3)   :: row
+      REAL(MK), DIMENSION(4)   :: chp
+
+      INTEGER, DIMENSION(3) :: isort
+      INTEGER               :: i,j,ip1,np1,np2
+
+      LOGICAL :: correct
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_util_eigen_3sym'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -103,12 +106,14 @@
       !  Initialize
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
+
 #if   __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif __KIND == __DOUBLE_PRECISION
       lmyeps = ppm_myepsd
 #endif
       root_lmyeps = SQRT(lmyeps)
+
       Eval = 0.0_MK
       Evec = 0.0_MK
 
@@ -147,7 +152,7 @@
       !-------------------------------------------------------------------------
       !  Solve the cubic equation chp=0 for the Eigenvalues
       !------------------------------------------------------------------------
-      CALL ppm_util_cubeq_real(chp,Eval,sqeps,info)
+      CALL ppm_util_cubeq_REAL(chp,Eval,sqeps,info)
       or_fail('Matrix is not symmetric and has complex Eigenvalues. Exiting.')
 
       !-------------------------------------------------------------------------
@@ -408,9 +413,10 @@
         IF (Eval(3) .GT. Eval(1)) correct = .FALSE.
         IF (Eval(3) .GT. Eval(2)) correct = .FALSE.
         IF (.NOT. correct) THEN
-          fail('Eigenvalues are not sorted correctly!',ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
+           fail('Eigenvalues are not sorted correctly!',ppm_err_test_fail, &
+           & exit_point=no,ppm_error=ppm_error_warning)
         ELSEIF (ppm_debug .GT. 0) THEN
-          CALL ppm_write(ppm_rank,caller,'Eigenvalues are properly sorted.',info)
+           stdout("Eigenvalues are properly sorted.")
         ENDIF
 
         !---------------------------------------------------------------------
@@ -418,29 +424,28 @@
         !---------------------------------------------------------------------
         correct = .TRUE.
         DO i=1,3
-            row = MATMUL(Am,Evec(:,i)) - Eval(i)*Evec(:,i)
-            IF (ABS(row(1)) .GT. sqeps) THEN
-                correct = .FALSE.
-                WRITE(mesg,'(A,2(A,E12.4))') 'Eigensystem is not correct.', &
-                &    ' Row 1 has error: ',ABS(row(1)),' Tolerance: ',sqeps
-                fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
-            ENDIF
-            IF (ABS(row(2)) .GT. sqeps) THEN
-                correct = .FALSE.
-                WRITE(mesg,'(A,2(A,E12.4))') 'Eigensystem is not correct.', &
-                &    ' Row 2 has error: ',ABS(row(2)),' Tolerance: ',sqeps
-                fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
-            ENDIF
-            IF (ABS(row(3)) .GT. sqeps) THEN
-                correct = .FALSE.
-                WRITE(mesg,'(A,2(A,E12.4))') 'Eigensystem is not correct.', &
-                &    ' Row 3 has error: ',ABS(row(3)),' Tolerance: ',sqeps
-                fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
-            ENDIF
+           row = MATMUL(Am,Evec(:,i)) - Eval(i)*Evec(:,i)
+           IF (ABS(row(1)) .GT. sqeps) THEN
+              correct = .FALSE.
+              WRITE(cbuf,'(A,2(A,E12.4))') 'Eigensystem is not correct.', &
+              &    ' Row 1 has error: ',ABS(row(1)),' Tolerance: ',sqeps
+              fail(cbuf,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
+           ENDIF
+           IF (ABS(row(2)) .GT. sqeps) THEN
+              correct = .FALSE.
+              WRITE(cbuf,'(A,2(A,E12.4))') 'Eigensystem is not correct.', &
+              &    ' Row 2 has error: ',ABS(row(2)),' Tolerance: ',sqeps
+              fail(cbuf,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
+           ENDIF
+           IF (ABS(row(3)) .GT. sqeps) THEN
+              correct = .FALSE.
+              WRITE(cbuf,'(A,2(A,E12.4))') 'Eigensystem is not correct.', &
+              &    ' Row 3 has error: ',ABS(row(3)),' Tolerance: ',sqeps
+              fail(cbuf,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
+           ENDIF
         ENDDO
         IF (correct .AND. ppm_debug .GT. 0) THEN
-            WRITE(mesg,'(2A,E12.4)') 'Eigendecomposition is correct to ','tolerance ',sqeps
-            CALL ppm_write(ppm_rank,caller,mesg,info)
+           stdout_f('(A,E12.4)',"Eigendecomposition is correct to tolerance ",sqeps)
         ENDIF
 
         !---------------------------------------------------------------------
@@ -448,14 +453,14 @@
         !---------------------------------------------------------------------
         correct = .TRUE.
         DO i=1,3
-            row(1) = Evec(1,i)*Evec(1,i) + Evec(2,i)*Evec(2,i)+Evec(3,i)*Evec(3,i)
-            IF (ABS(row(1)-1.0_MK) .GT. lmyeps) correct = .FALSE.
+           row(1) = Evec(1,i)*Evec(1,i) + Evec(2,i)*Evec(2,i)+Evec(3,i)*Evec(3,i)
+           IF (ABS(row(1)-1.0_MK) .GT. lmyeps) correct = .FALSE.
         ENDDO
         IF (.NOT. correct) THEN
-           fail('Eigenvectors are not normalized!',ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
+           fail('Eigenvectors are not normalized!',ppm_err_test_fail, &
+           & exit_point=no,ppm_error=ppm_error_warning)
         ELSEIF (ppm_debug .GT. 0) THEN
-           WRITE(mesg,'(2A,E12.4)') 'Eigenvectors are normalized to ','tolerance ',lmyeps
-           CALL ppm_write(ppm_rank,caller,mesg,info)
+           stdout_f('(A,E12.4)',"Eigenvectors are normalized to tolerance ",lmyeps)
         ENDIF
 
         !---------------------------------------------------------------------
@@ -469,27 +474,25 @@
         ! 2 -- 3
         row(3) = Evec(1,2)*Evec(1,3)+Evec(2,2)*Evec(2,3)+Evec(3,2)*Evec(3,3)
         IF (ABS(row(1)) .GT. sqeps) THEN
-            correct = .FALSE.
-            WRITE(mesg,'(A,2(A,E12.4))') 'Eigenvectors not orthogonal.', &
-            & ' 1--2 has error: ',ABS(row(1)),' Tolerance: ',sqeps
-            fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
+           correct = .FALSE.
+           WRITE(cbuf,'(A,2(A,E12.4))') 'Eigenvectors not orthogonal.', &
+           & ' 1--2 has error: ',ABS(row(1)),' Tolerance: ',sqeps
+           fail(cbuf,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
         ENDIF
         IF (ABS(row(2)) .GT. sqeps) THEN
-            correct = .FALSE.
-            WRITE(mesg,'(A,2(A,E12.4))') 'Eigenvectors not orthogonal.',  &
-            & ' 1--3 has error: ',ABS(row(2)),' Tolerance: ',sqeps
-            fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
+           correct = .FALSE.
+           WRITE(cbuf,'(A,2(A,E12.4))') 'Eigenvectors not orthogonal.',  &
+           & ' 1--3 has error: ',ABS(row(2)),' Tolerance: ',sqeps
+           fail(cbuf,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
         ENDIF
         IF (ABS(row(3)) .GT. sqeps) THEN
-            correct = .FALSE.
-            WRITE(mesg,'(A,2(A,E12.4))') 'Eigenvectors not orthogonal.',  &
-            & ' 2--3 has error: ',ABS(row(3)),' Tolerance: ',sqeps
-            fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
+           correct = .FALSE.
+           WRITE(cbuf,'(A,2(A,E12.4))') 'Eigenvectors not orthogonal.',  &
+           & ' 2--3 has error: ',ABS(row(3)),' Tolerance: ',sqeps
+           fail(cbuf,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
         ENDIF
         IF (correct .AND. ppm_debug .GT. 0) THEN
-            WRITE(mesg,'(2A,E12.4)') 'Eigenvectors are orthogonal to ', &
-            & 'tolerance ',sqeps
-            CALL ppm_write(ppm_rank,caller,mesg,info)
+           stdout_f('(A,E12.4)',"Eigenvectors are orthogonal to tolerance ",sqeps)
         ENDIF
       ENDIF
 

@@ -46,6 +46,7 @@
         USE ppm_module_mktopo
         IMPLICIT NONE
 
+        PRIVATE
         !-------------------------------------------------------------------------
         !  Declaration of parameters
         !-------------------------------------------------------------------------
@@ -54,7 +55,6 @@
         !  Declaration of arrays
         !-------------------------------------------------------------------------
         TYPE ppm_clist
-
             INTEGER, DIMENSION(:,:), POINTER :: borders => NULL()
             !!! contains the boundaries in the particle rank array separating the
             !!! particles belonging to different cells.
@@ -90,7 +90,6 @@
             INTEGER :: n_all_p          = 0
 
             TYPE(ppm_htable) :: lookup
-
         END TYPE
 
         INTERFACE ppm_create_inl_clist
@@ -164,8 +163,17 @@
         END INTERFACE
 
         !-------------------------------------------------------------------------
-        !  Privatizing arrays, variables and parameters of the module
+        ! PUBLIC
         !-------------------------------------------------------------------------
+        PUBLIC :: ppm_clist
+        PUBLIC :: ppm_create_inl_clist
+        PUBLIC :: ppm_destroy_inl_clist
+
+        PUBLIC :: getCellIdx
+        PUBLIC :: getcellcoor_depth
+
+        PUBLIC :: isEmpty
+        PUBLIC :: parent
 
         CONTAINS
 

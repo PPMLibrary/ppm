@@ -361,7 +361,7 @@
       ENDIF
 
       !Updating internal state variables
-      CALL this%set_xp(xp,info,read_only=.true.)
+      CALL this%set_xp(xp,info,read_only=.TRUE.)
       or_fail("Set_xp failed")
 
       end_subroutine()

@@ -28,11 +28,9 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE decomp_bsplit_s(xp,ppb,npbx,kbox,nbox, &
-      &          min_box,max_box,info)
+      SUBROUTINE decomp_bsplit_s(xp,ppb,npbx,kbox,nbox,min_box,max_box,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE decomp_bsplit_d(xp,ppb,npbx,kbox,nbox, &
-      &          min_box,max_box,info)
+      SUBROUTINE decomp_bsplit_d(xp,ppb,npbx,kbox,nbox,min_box,max_box,info)
 #endif
       !!! This routine splits a (parent) box in its 4 or 8 children for
       !!! 2D and 3D problems. The particles contained within
@@ -82,9 +80,9 @@
       REAL(ppm_kind_double)        :: t0
       REAL(MK), DIMENSION(ppm_dim) :: cen_box
 
-      INTEGER , DIMENSION(:), ALLOCATABLE :: npbx_temp
-      INTEGER , DIMENSION(ppm_dim)        :: Nm
-      INTEGER                             :: idx,jdx,k
+      INTEGER, DIMENSION(:), ALLOCATABLE :: npbx_temp
+      INTEGER, DIMENSION(ppm_dim)        :: Nm
+      INTEGER                            :: idx,jdx,k
 
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_decomp_boxsplit'
       !-------------------------------------------------------------------------

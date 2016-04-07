@@ -152,11 +152,11 @@ test_suite ppm_module_particles
         Assert_Equal(info,0)
         DEALLOCATE(wp_2r)
 
-        Assert_true(Part1%has_neighlist(Part1))
+        Assert_True(Part1%has_neighlist(Part1))
         CALL Part1%apply_bc(info)
         Assert_Equal(info,0)
 
-        CALL Part1%map(info,global=.true.,topoid=topoid)
+        CALL Part1%map(info,global=.TRUE.,topoid=topoid)
         Assert_Equal(info,0)
 
         CALL Part1%map_ghosts(info)
@@ -177,7 +177,7 @@ test_suite ppm_module_particles
         Assert_Equal(info,0)
 
         Nlist => Part1%get_neighlist(Part1)
-        Assert_true(associated(Nlist))
+        Assert_True(associated(Nlist))
         Nlist => NULL()
 
         !Set field values

@@ -5,7 +5,7 @@ test_suite ppm_module_tiff
 #endif
 
   INTEGER,  PARAMETER                 :: debug = 0
-  INTEGER,  PARAMETER                 :: MK = kind(1.0D0)
+  INTEGER,  PARAMETER                 :: MK = KIND(1.0D0)
   INTEGER,  PARAMETER                 :: ndim=2
   INTEGER,  DIMENSION(4)              :: bcdef
   INTEGER                             :: decomp,assig,tolexp
@@ -36,7 +36,7 @@ test_suite ppm_module_tiff
 #endif
 
     bcdef = ppm_param_bcdef_freespace
-    tolexp = INT(LOG10(EPSILON(1._mk)))+10
+    tolexp = INT(LOG10(EPSILON(1.0_MK)))+10
 
     CALL ppm_init(ndim,MK,tolexp,comm,debug,info,99)
 

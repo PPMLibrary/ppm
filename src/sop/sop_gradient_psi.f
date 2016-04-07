@@ -85,14 +85,14 @@
 
           !offset potential so that it is zero at r=r_cutoff
           rho = opts%param_morse
-          Psi_at_cutoff = (-rho**(-4._mk*opts%rcp_over_D) + &
-              0.8_mk*rho**(1._mk-5._mk*opts%rcp_over_D))
-          coeff = 1._mk
+          Psi_at_cutoff = (-rho**(-4._MK*opts%rcp_over_D) + &
+              0.8_MK*rho**(1.0_MK-5._MK*opts%rcp_over_D))
+          coeff = 1.0_MK
 
           !!-------------------------------------------------------------------------!
           !! Compute interaction potential and its gradient
           !!-------------------------------------------------------------------------!
-          IF(PRESENT(gradPsi_max)) gradPsi_max = 0._mk
+          IF(PRESENT(gradPsi_max)) gradPsi_max = 0.0_MK
           attractive_radius = opts%attractive_radius0
           particle_loop: DO ip = 1,Particles%Npart
               Psi_part = 0._MK
@@ -133,9 +133,9 @@
                   ENDIF
 
                   !if (fuse(ip)+fuse(iq).GE.1 ) then
-                      !coeff = 1._mk / REAL(MAX(fuse(ip),fuse(iq)),MK)
+                      !coeff = 1.0_MK / REAL(MAX(fuse(ip),fuse(iq)),MK)
                   !else
-                      !coeff = 1._mk
+                      !coeff = 1.0_MK
                   !endif
 
 

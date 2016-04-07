@@ -110,13 +110,13 @@
       INTEGER, DIMENSION(6)                  :: bcdef
       LOGICAL                                :: internal_weights
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub
+      REAL(MK), DIMENSION(:,:),      POINTER :: min_sub
+      REAL(MK), DIMENSION(:,:),      POINTER :: max_sub
       REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx1
       REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx2
       REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx3
-      REAL(mk)                               :: myeps
-      REAL(mk)                               :: tim1s, tim1e
+      REAL(MK)                               :: myeps
+      REAL(MK)                               :: tim1s, tim1e
       CHARACTER(len=256)                     :: msg
       LOGICAL                                :: valid
       TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
@@ -263,7 +263,7 @@
         len_phys(i) = max_phys(i) - min_phys(i)
         dx(i)       = len_phys(i)/REAL(Nc(i),MK)
       ENDDO
-      dxi     = 1.0_mk/dx
+      dxi     = 1.0_MK/dx
       epsilon = 0.000001_mk
 
      !--------------------------------------------------------------------------
@@ -678,9 +678,9 @@
      !  Initialize Weights
      !--------------------------------------------------------------------------
      CALL ppm_util_time(tim1s)
-     wx1 = 0.0_mk
-     wx2 = 0.0_mk
-     IF(ppm_dim.EQ.3) wx3 = 0.0_mk
+     wx1 = 0.0_MK
+     wx2 = 0.0_MK
+     IF(ppm_dim.EQ.3) wx3 = 0.0_MK
      !--------------------------------------------------------------------------
      !  Beginning of the computation
      !--------------------------------------------------------------------------
@@ -717,8 +717,8 @@
                  x1 = ABS(REAL(ii-2+istart(1,isubl),mk)-( &
      &               xp(1,list_sub(isub,ip))-min_phys(1))*dxi(1))
 
-                 IF(x1.LE.1.0_mk) THEN
-                    wx1(iidec,isub,ip) =  1.0_mk - x1
+                 IF(x1.LE.1.0_MK) THEN
+                    wx1(iidec,isub,ip) =  1.0_MK - x1
                  END IF
               END DO
 
@@ -728,8 +728,8 @@
                  x2 = ABS(REAL(jj-2+istart(2,isubl),mk)-( &
      &               xp(2,list_sub(isub,ip))-min_phys(2))*dxi(2))
 
-                 IF(x2.LE.1.0_mk) THEN
-                    wx2(jjdec,isub,ip) =  1.0_mk - x2
+                 IF(x2.LE.1.0_MK) THEN
+                    wx2(jjdec,isub,ip) =  1.0_MK - x2
                  END IF
               END DO
               IF(ppm_dim.EQ.3) THEN
@@ -739,8 +739,8 @@
                     x3 = ABS(REAL(kk-2+istart(3,isubl),mk)- (&
      &                  xp(3,list_sub(isub,ip))-min_phys(3))*dxi(3))
 
-                    IF(x3.LE.1.0_mk) THEN
-                       wx3(kkdec,isub,ip) =  1.0_mk - x3
+                    IF(x3.LE.1.0_MK) THEN
+                       wx3(kkdec,isub,ip) =  1.0_MK - x3
                     END IF
                  END DO
               END IF
@@ -777,9 +777,9 @@
                  iidec = iidec + 1
                  x1 = ABS(REAL(ii-2+istart(1,isubl),mk)-( &
      &               xp(1,list_sub(isub,ip))-min_phys(1))*dxi(1))
-                 IF(x1.LE.2.0_mk) THEN
-                    IF(x1.LE.1.0_mk) THEN
-                       wx1(iidec,isub,ip) = 1.0_mk - x1**2*(2.5_mk-1.5_mk*x1)
+                 IF(x1.LE.2.0_MK) THEN
+                    IF(x1.LE.1.0_MK) THEN
+                       wx1(iidec,isub,ip) = 1.0_MK - x1**2*(2.5_mk-1.5_MK*x1)
                     ELSE
                        wx1(iidec,isub,ip) = 2.0_MK + (-4.0_MK + &
      &                     (2.5_MK - 0.5_MK * x1)*x1)*x1
@@ -792,9 +792,9 @@
                  x2 = ABS(REAL(jj-2+istart(2,isubl),mk)-( &
      &               xp(2,list_sub(isub,ip))-min_phys(2))*dxi(2))
 
-                 IF(x2.LE.2.0_mk) THEN
-                    IF(x2.LE.1.0_mk) THEN
-                       wx2(jjdec,isub,ip) = 1.0_mk - x2**2*(2.5_mk-1.5_mk*x2)
+                 IF(x2.LE.2.0_MK) THEN
+                    IF(x2.LE.1.0_MK) THEN
+                       wx2(jjdec,isub,ip) = 1.0_MK - x2**2*(2.5_mk-1.5_MK*x2)
                     ELSE
                        wx2(jjdec,isub,ip) = 2.0_MK + (-4.0_MK + &
      &                     (2.5_MK - 0.5_MK * x2)*x2)*x2

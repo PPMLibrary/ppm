@@ -6,9 +6,9 @@ test_suite ppm_module_mktopo
 #endif
 
 INTEGER, PARAMETER              :: debug = 0
-INTEGER, PARAMETER              :: mk = kind(1.0d0) !kind(1.0e0)
+INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
 REAL(MK),PARAMETER              :: pi = 3.1415926535897931_mk
-REAL(MK),PARAMETER              :: skin = 0._mk
+REAL(MK),PARAMETER              :: skin = 0.0_MK
 INTEGER,PARAMETER               :: ndim=2
 INTEGER,PARAMETER               :: pdim=2
 INTEGER                         :: decomp,assig,tolexp
@@ -32,10 +32,10 @@ INTEGER, DIMENSION(6)           :: bcdef
 REAL(MK),DIMENSION(:  ),POINTER :: cost
 INTEGER, DIMENSION(:  ),POINTER :: nm
 INTEGER                         :: seedsize
-INTEGER,  DIMENSION(:),allocatable :: seed
-REAL(MK), DIMENSION(:),allocatable :: randnb
+INTEGER,  DIMENSION(:),ALLOCATABLE :: seed
+REAL(MK), DIMENSION(:),ALLOCATABLE :: randnb
 INTEGER                          :: isymm = 0
-LOGICAL                          :: lsymm = .false.,ok
+LOGICAL                          :: lsymm = .FALSE.,ok
 REAL(MK)                         :: t0,t1,t2,t3
 
     init
@@ -48,8 +48,8 @@ REAL(MK)                         :: t0,t1,t2,t3
             &         ghostsize(ndim),ghostlayer(2*ndim),&
             &         nm(ndim),h(ndim),p_h(ndim),STAT=info)
 
-        min_phys(1:ndim) = 0.0_mk
-        max_phys(1:ndim) = 1.0_mk
+        min_phys(1:ndim) = 0.0_MK
+        max_phys(1:ndim) = 1.0_MK
         len_phys(1:ndim) = max_phys-min_phys
         ghostsize(1:ndim) = 2
         ghostlayer(1:2*ndim) = cutoff
@@ -65,7 +65,7 @@ REAL(MK)                         :: t0,t1,t2,t3
         rank = 0
         nproc = 1
 #endif
-        tolexp = INT(LOG10(EPSILON(1._mk)))+10
+        tolexp = INT(LOG10(EPSILON(1.0_MK)))+10
         CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
     end init
@@ -161,7 +161,7 @@ REAL(MK)                         :: t0,t1,t2,t3
 
       Assert_Equal(info, 0)
 
-!       CALL ppm_dbg_print(topoid,0.0_mk,1,1,info)
+!       CALL ppm_dbg_print(topoid,0.0_MK,1,1,info)
 
     end test
 

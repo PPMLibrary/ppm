@@ -53,13 +53,13 @@
           LOGICAL  :: check_dcops = .FALSE.
 
           LOGICAL :: add_parts = .TRUE.
-          !!! add new particles when needed. Default is .true.
+          !!! add new particles when needed. Default is .TRUE.
           LOGICAL :: del_parts = .TRUE.
-          !!! delete particles when too many neighbours. Default is .true.
+          !!! delete particles when too many neighbours. Default is .TRUE.
           LOGICAL :: remove_large_parts = .FALSE.
           !!! delete particles that have a cutoff equal to the maximum cutoff
           !!! This is useful in simulations where not some regions of space
-          !!! should be left empty (like in level-sets).  Default is .false.
+          !!! should be left empty (like in level-sets).  Default is .FALSE.
           LOGICAL :: D_needs_gradients = .TRUE.
           !!! The monitor function depends on the fields gradient
           REAL(MK) :: scale_D = 1._MK
