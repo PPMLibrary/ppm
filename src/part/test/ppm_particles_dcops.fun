@@ -181,7 +181,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 
     teardown
 
-        IF (allocated(degree)) DEALLOCATE(degree,coeffs,order)
+        IF (ALLOCATED(degree)) DEALLOCATE(degree,coeffs,order)
 
     end teardown
 
@@ -201,7 +201,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 
         nterms=ndim
         ALLOCATE(degree(nterms*ndim),coeffs(nterms),order(nterms))
-        IF (ndim .EQ. 2) then
+        IF (ndim .EQ. 2) THEN
                degree =  (/2,0,   0,2/)
         else
                degree =  (/2,0,0, 0,2,0, 0,0,2/)
@@ -251,7 +251,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
         nterms=ndim
         ALLOCATE(degree(nterms*ndim),coeffs(nterms),order(nterms))
 
-        IF (ndim .EQ. 2) then
+        IF (ndim .EQ. 2) THEN
                degree =  (/1,0,   0,1/)
         else
                degree =  (/1,0,0, 0,1,0, 0,0,1/)
@@ -285,7 +285,7 @@ PURE FUNCTION f0_test(pos,ndim)
     INTEGER                 ,  INTENT(IN) :: ndim
     REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
-    IF (ndim .EQ. 2) then
+    IF (ndim .EQ. 2) THEN
         f0_test =  SIN(2._MK*pi*pos(1)) * COS(2._MK*pi*pos(2))
     else
         f0_test =  SIN(2._MK*pi*pos(1)) * COS(2._MK*pi*pos(2)) * &
@@ -337,7 +337,7 @@ PURE FUNCTION df0_test(pos,order_deriv,ndim)
         df0_test =  0.0_MK
     endselect
 
-    IF (ndim .EQ. 3 ) then
+    IF (ndim .EQ. 3 ) THEN
         select case (order_deriv(3))
         case (0)
             df0_test =   df0_test * sin (2._MK*pi * pos(3))
@@ -375,23 +375,23 @@ function inf_error(Part1,Field1,Field2,Op)
     INTEGER,DIMENSION(ndim)          :: dg
     character(len=100)               :: fname
 
-    IF (op%flags(ppm_ops_vector)) then
+    IF (op%flags(ppm_ops_vector)) THEN
         CALL Part1%get(Field2,dwp_2,info,read_only=.TRUE.)
-        IF (info.ne.0) write(*,*) "Failed te get Field2"
+        IF (info.NE.0) WRITE(*,*) "Failed te get Field2"
         output_vec = .TRUE.
     else
         CALL Part1%get(Field2,dwp_1,info,read_only=.TRUE.)
-        IF (info.ne.0) write(*,*) "Failed te get Field2"
+        IF (info.NE.0) WRITE(*,*) "Failed te get Field2"
         output_vec = .FALSE.
     ENDIF
 
     IF (Field1%lda.EQ.1) THEN
         CALL Part1%get(Field1,wp_1,info,read_only=.TRUE.)
-        IF (info.ne.0) write(*,*) "Failed te get Field1"
+        IF (info.NE.0) WRITE(*,*) "Failed te get Field1"
         input_vec = .FALSE.
     else
         CALL Part1%get(Field1,wp_2,info,read_only=.TRUE.)
-        IF (info.ne.0) write(*,*) "Failed te get Field1"
+        IF (info.NE.0) WRITE(*,*) "Failed te get Field1"
         input_vec = .TRUE.
     ENDIF
 
@@ -399,7 +399,7 @@ function inf_error(Part1,Field1,Field2,Op)
     ALLOCATE(err(nterms),exact(nterms),degree(nterms*ndim),order(nterms))
 
     CALL Part1%get_xp(xp,info)
-        IF (info.ne.0) write(*,*) "Could not get xp"
+        IF (info.NE.0) WRITE(*,*) "Could not get xp"
 
     err = 0.0_MK
     linf = 0.0_MK
@@ -408,13 +408,13 @@ function inf_error(Part1,Field1,Field2,Op)
         DO i=1,nterms
             coeff = op%op_ptr%coeffs(i)
             dg = op%op_ptr%degree(1+(i-1)*ndim:i*ndim)
-            IF (output_vec) then
+            IF (output_vec) THEN
                 exact(i) = coeff*df0_test(xp(1:ndim,ip),dg,ndim)
             else
                 exact(1) = exact(1) + coeff*df0_test(xp(1:ndim,ip),dg,ndim)
             ENDIF
         ENDDO
-        IF (output_vec) then
+        IF (output_vec) THEN
             DO i=1,nterms
                 err(i) = MAX(err(i),ABS(dwp_2(i,ip) - exact(i)))
                 !REMOVME
@@ -428,14 +428,14 @@ function inf_error(Part1,Field1,Field2,Op)
 
 #ifdef __MPI
     CALL MPI_Allreduce(linf,linf,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
-    CALL MPI_Allreduce(maxval(err),inf_error,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
+    CALL MPI_Allreduce(MAXVAL(err),inf_error,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
 #else
-    inf_error = maxval(err)
+    inf_error = MAXVAL(err)
 #endif
     inf_error = inf_error/linf
 
     IF (ppm_rank.EQ.0) &
-        write(*,*) '[',ppm_rank,']','Error is ',inf_error
+        WRITE(*,*) '[',ppm_rank,']','Error is ',inf_error
 
     DEALLOCATE(err,exact,degree,order)
 END FUNCTION inf_error

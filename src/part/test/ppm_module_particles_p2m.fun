@@ -153,7 +153,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
         !----------------
         ! Add a patch
         !----------------
-        IF (ndim.EQ.2) then
+        IF (ndim.EQ.2) THEN
             my_patch(1:4) = REAL((/0.15_MK,0.10_MK,0.99_MK,0.7_MK/),ppm_kind_double)
             my_patch(1:4) = REAL((/0.15_MK,0.15_MK,0.7_MK,0.7_MK/),ppm_kind_double)
         else
@@ -324,7 +324,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
         foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) indices(i,j)
             for real
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                write(100+rank,'(9(E12.5,1X))') pos(1),pos(2),pos(ndim),&
+                WRITE(100+rank,'(9(E12.5,1X))') pos(1),pos(2),pos(ndim),&
                     f_cst(pos(1:ndim),ndim), &
                     f_lin(pos(1:ndim),ndim),&
                     f_sq(pos(1:ndim),ndim),&
@@ -336,7 +336,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
         foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) indices(i,j,k)
             for real
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                write(100+rank,'(9(E12.5,1X))') pos(1),pos(2),pos(ndim),&
+                WRITE(100+rank,'(9(E12.5,1X))') pos(1),pos(2),pos(ndim),&
                     f_cst(pos(1:ndim),ndim), &
                     f_lin(pos(1:ndim),ndim),&
                     f_sq(pos(1:ndim),ndim),&
@@ -347,7 +347,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
         ENDIF
 
         foreach p in particles(Part1) with positions(x) sca_fields(S1=SField1,S2=SField2,S3=SField3,V=Vol)
-                write(200+rank,'(6(E12.5,1X))') x_p(1),x_p(2),x_p(ndim),&
+                WRITE(200+rank,'(6(E12.5,1X))') x_p(1),x_p(2),x_p(ndim),&
                     S1_p/V_p, S2_p/V_p, S3_p/V_p
         end foreach
         ENDIF

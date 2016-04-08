@@ -286,14 +286,14 @@
                       new_part_list: DO i=1,ABS(nvlist(ip))
                           add_part = add_part + 1
 
-                          if(nvlist(ip) .GT.0) then
+                          if(nvlist(ip) .GT.0) THEN
                               iq = Particles%vlist(i,ip)
-                              !if (iq.GT.ip) then
+                              !if (iq.GT.ip) THEN
                                   !add_part = add_part -1
                                   !cycle new_part_list
                               !endif
-                              IF (iq .le. Npart) then
-                                  dist = SQRT(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
+                              IF (iq .LE. Npart) THEN
+                                  dist = SQRT(SUM((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
                                   xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
                                       opts%spawn_radius*D(ip) * &
                                       ((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)))/dist
@@ -301,7 +301,7 @@
                                       ! mirror image of q
 
                               else
-                                  dist = SQRT(sum((xp(1:ppm_dim,ip)-xp_g(1:ppm_dim,iq))**2))
+                                  dist = SQRT(SUM((xp(1:ppm_dim,ip)-xp_g(1:ppm_dim,iq))**2))
                                   xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
                                       opts%spawn_radius*D(ip) * &
                                       ((xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq)))/dist
@@ -354,7 +354,7 @@
                   GOTO 9999
               ENDIF
 
-              IF (add_part .ne. add_part_alloc) THEN
+              IF (add_part .NE. add_part_alloc) THEN
                   WRITE(cbuf,'(A,I0,A,I0)') 'add_part = ',&
                       add_part,' add_part_alloc = ',add_part_alloc
                   CALL ppm_write(ppm_rank,caller,cbuf,info)
@@ -466,7 +466,7 @@
               fuse_part(ip) = very_close_neigh
 
               !when the density is not too high, don't fuse particles
-              IF (close_neigh .le.6) fuse_part(ip) = 0
+              IF (close_neigh .LE.6) fuse_part(ip) = 0
 
               IF (ppm_dim.EQ.2) THEN
                   nb_close_theo = 6
@@ -477,7 +477,7 @@
              ! IF (nb_fuse_neigh .GE.1) nb_close_theo = nb_close_theo / 2
 
               IF (close_neigh .LE. nb_close_theo-1) THEN
-                  IF (close_neigh .LE. nb_close_theo-2) then
+                  IF (close_neigh .LE. nb_close_theo-2) THEN
                       adaptation_ok = .FALSE.
                   ENDIF
                   !IF (nn .GT. opts%attractive_radius0 .AND. opts%add_parts) THEN
@@ -493,9 +493,9 @@
                               vlist(close_neigh,ip) = iq
                           ENDIF
                       ENDDO
-                      nvlist(ip) = min(close_neigh,3)
+                      nvlist(ip) = MIN(close_neigh,3)
                                     !min(close_neigh,nb_close_theo-close_neigh)
-                      IF (nvlist(ip) .EQ. 0) then
+                      IF (nvlist(ip) .EQ. 0) THEN
                           nvlist(ip) = -6
                       ENDIF
                   ELSE
@@ -532,7 +532,7 @@
 
           avg_nn = avg_nn / Particles%Npart
 #if debug_verbosity > 1
-          write(cbuf,*) 'AVG nearest-neighbour dist ',avg_nn, 'nb fuse ',&
+          WRITE(cbuf,*) 'AVG nearest-neighbour dist ',avg_nn, 'nb fuse ',&
               COUNT(fuse_part(1:Particles%Npart).GE.1)
           CALL ppm_write(ppm_rank,caller,cbuf,info)
 #endif

@@ -55,7 +55,7 @@
           !!! particles (or points) where the operators are computed
           REAL(MK), DIMENSION(:,:), POINTER     :: xp2 => NULL()
           !!! particles that contain the data to be used (xp1 can be equal to xp2)
-          !!! A case where xp1 .ne. xp2 is for interpolation.
+          !!! A case where xp1 .NE. xp2 is for interpolation.
           REAL(MK), DIMENSION(:),   POINTER     :: rcp => NULL()
           REAL(MK), DIMENSION(:),   POINTER     :: nn_sq => NULL()
           REAL(MK), DIMENSION(:,:), POINTER     :: eta => NULL()

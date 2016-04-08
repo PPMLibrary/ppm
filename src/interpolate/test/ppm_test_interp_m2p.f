@@ -233,7 +233,7 @@ program ppm_test_interp_m2p
     ENDDO
 
     do aj = 1,6
-        IF (ABS(p_moments(aj) - f_moments(aj)) .GT. tol) then
+        IF (ABS(p_moments(aj) - f_moments(aj)) .GT. tol) THEN
             print *, 'failed at moment: ', aj
             print *, 'particle moments: ',p_moments
             print *, 'field moments: ',   f_moments

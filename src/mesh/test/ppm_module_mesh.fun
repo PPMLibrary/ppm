@@ -189,7 +189,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         CALL Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
 
-        IF (ndim .EQ. 2) then
+        IF (ndim .EQ. 2) THEN
 
             mypatchid = 0
             DO i = 1,Nm(1)/4
@@ -277,7 +277,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         & ghostsize=ighostsize,name='Test_Mesh_1')
         Assert_Equal(info,0)
 
-        IF (ndim.EQ.2) then
+        IF (ndim.EQ.2) THEN
            my_patch(1:4) = (/0.15_MK,0.10_MK,0.99_MK,0.7_MK/)
         else
            my_patch(1:6) = (/0.15_MK,0.10_MK,0.41_MK,0.99_MK,0.7_MK,0.78_MK/)
@@ -418,7 +418,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .LT. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) THEN
                     nb_errors = nb_errors + 1
                 ENDIF
                 Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
@@ -429,7 +429,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                IF (Field2_n .LT. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) THEN
                     nb_errors = nb_errors + 1
                 ENDIF
                 Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
@@ -454,7 +454,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         REAL(ppm_kind_double) :: val
         REAL(ppm_kind_double),DIMENSION(1:ndim),INTENT(IN) :: x
 
-        val = sum(x)
+        val = SUM(x)
     END FUNCTION
 !============ Test cases ======================
 !    test mesh_define

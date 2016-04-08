@@ -431,7 +431,7 @@
                !----------------------------------------------------------------
                !  flipped upside down for ppm conformance
                !----------------------------------------------------------------
-               if(lda.EQ.3.AND.ppm_dim.EQ.3) then
+               if(lda.EQ.3.AND.ppm_dim.EQ.3) THEN
 #if     __DIME == __3D
                kkdec = 0
                DO kk=ip3-1,ip3+2
@@ -485,7 +485,7 @@
 #if  __DIME == __3D
                END DO
 #endif
-            ELSEIF (lda.EQ.4.AND.ppm_dim.EQ.3) then
+            ELSEIF (lda.EQ.4.AND.ppm_dim.EQ.3) THEN
 #if     __DIME == __3D
                kkdec = 0
                DO kk=ip3-1,ip3+2

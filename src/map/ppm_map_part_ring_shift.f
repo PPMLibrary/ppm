@@ -53,11 +53,9 @@
 #else
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
-
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -76,10 +74,13 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(1)       :: ldu
-      INTEGER                     :: i
-      INTEGER                     :: iopt,ibuffer,ipart
       REAL(ppm_kind_double) :: t0
+
+      INTEGER, DIMENSION(1) :: ldu
+      INTEGER               :: i
+      INTEGER               :: iopt,ibuffer,ipart
+
+      CHARACTER(LEN=ppm_char) :: caller="ppm_map_part_ring_shift"
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -87,23 +88,22 @@
       !-------------------------------------------------------------------------
       !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_part_ring_shift',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
       !  If there is still some data left in the buffer, warn the user
       !-------------------------------------------------------------------------
       IF (ppm_buffer_set .GT. 0) THEN
-         info = ppm_error_warning
-         CALL ppm_error(ppm_err_map_incomp,'ppm_map_part_ring_shift',  &
-     &        'Buffer was not empty. Possible loss of data!',__LINE__,info)
+         fail("Buffer was not empty. Possible loss of data!",ppm_err_map_incomp, &
+         & ppm_error=ppm_error_warning,exit_point=no)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -113,22 +113,12 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = 3
       CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_ring_shift',     &
-     &        'particle send buffer PPM_PSENDBUFFER',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc("particle send buffer PPM_PSENDBUFFER",ppm_error=ppm_error_fatal)
 
       iopt   = ppm_param_alloc_fit
       ldu(1) = Npart
       CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_ring_shift',     &
-     &        'buffer-to-particles map PPM_BUFFER2PART',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc("buffer-to-particles map PPM_BUFFER2PART",ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Store the number of buffer entries (this is the first)
@@ -142,19 +132,10 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = ppm_buffer_set
       CALL ppm_alloc(ppm_buffer_dim,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_ring_shift',     &
-     &        'buffer dimensions PPM_BUFFER_DIM',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc("buffer dimensions PPM_BUFFER_DIM",ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(ppm_buffer_type,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_ring_shift',     &
-     &        'buffer types PPM_BUFFER_TYPE',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc("buffer types PPM_BUFFER_TYPE",ppm_error=ppm_error_fatal)
 
       ppm_buffer_dim(ppm_buffer_set)  = lda
       IF (ppm_kind .EQ. ppm_kind_single) THEN
@@ -173,13 +154,7 @@
 #else
       CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
 #endif
-
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_ring_shift',     &
-     &        'global send buffer PPM_SENDBUFFER',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc("global send buffer PPM_SENDBUFFER",ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the sendlist
@@ -190,21 +165,11 @@
       iopt = ppm_param_alloc_fit
       ldu(1) = ppm_nsendlist
       CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_ring_shift',     &
-     &        'send list PPM_ISENDLIST',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc("send list PPM_ISENDLIST",ppm_error=ppm_error_fatal)
 
       ldu(1) = ppm_nrecvlist
       CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_ring_shift',     &
-     &        'receive list PPM_IRECVLIST',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc("receive list PPM_IRECVLIST",ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Fill the sendbuffer with the particles that will stay on this
@@ -259,44 +224,24 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_map_part_ring_shift',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (.NOT. ppm_initialized) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_ppm_noinit,'ppm_map_part_ring_shift',  &
-     &           'Please call ppm_init first!',__LINE__,info)
-            GOTO 8888
+            fail("Please call ppm_init first!",ppm_err_ppm_noinit,exit_point=8888)
          ENDIF
          IF (lda .LT. 1) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ring_shift',  &
-     &           'LDA must be >0',__LINE__,info)
-            GOTO 8888
+            fail("LDA must be >0",exit_point=8888,ppm_error=ppm_error_fatal)
          ENDIF
          IF (Npart .LT. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ring_shift',  &
-     &           'NPART must be >=0',__LINE__,info)
-            GOTO 8888
+            fail("NPART must be >=0",exit_point=8888,ppm_error=ppm_error_fatal)
          ENDIF
          IF ((itarget .LT. 0) .OR. (itarget .GE. ppm_nproc)) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ring_shift',       &
-     &           'ITARGET must be >=0 and smaller than the number processors',&
-     &           __LINE__,info)
-            GOTO 8888
+            fail("ITARGET must be >=0 and smaller than the number processors",exit_point=8888,ppm_error=ppm_error_fatal)
          ENDIF
-         IF ((isource .LT. 0) .OR. (isource .GE. ppm_nproc)) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ring_shift',       &
-     &           'ISOURCE must be >=0 and smaller than the number processors',&
-     &           __LINE__,info)
-            GOTO 8888
-         ENDIF
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_map_part_ring_shift_s

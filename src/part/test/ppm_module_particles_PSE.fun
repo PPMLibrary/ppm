@@ -170,7 +170,7 @@ INTEGER                                        :: nterms
 
         nterms=ndim
         ALLOCATE(degree(nterms*ndim),coeffs(nterms),order(nterms))
-        IF (ndim .EQ. 2) then
+        IF (ndim .EQ. 2) THEN
                degree =  (/2,0,   0,2/)
         else
                degree =  (/2,0,0, 0,2,0, 0,0,2/)

@@ -669,7 +669,7 @@ test_suite ppm_module_ctrl
     Assert_Array_Equal( parray, (/(1,0),(0,1),(-1,0)/))
     Assert_Array_Equal( xarray, (/(1_8,0_8),(0_8,1_8),(-1_8,0_8)/))
 #else
-    write(*,*) "WARNING: Default functions and validators are not supported!!!"
+    WRITE(*,*) "WARNING: Default functions and validators are not supported!!!"
 #endif
   end test
 

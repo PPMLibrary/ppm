@@ -520,11 +520,11 @@ test_suite ppm_module_map_part
     found = 0
     DO i=1,n
         if((ABS(ghosts(1,i) - cp(1)).LT.tol).AND. &
-        &  (ABS(ghosts(2,i) - cp(2)).LT.tol)) then
+        &  (ABS(ghosts(2,i) - cp(2)).LT.tol)) THEN
             found = found + 1
         ENDIF
     ENDDO
-    IF (found.EQ.1) then
+    IF (found.EQ.1) THEN
         found_ghost = .TRUE.
     ENDIF
 

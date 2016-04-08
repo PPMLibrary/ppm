@@ -88,7 +88,7 @@ test_suite ppm_module_container_typedef
     M => c_M%begin()
     DO WHILE (ASSOCIATED(M))
         count_el = count_el + 1
-        IF (mod(count_el,3).EQ.0) then
+        IF (mod(count_el,3).EQ.0) THEN
          CALL c_M%remove(info)
          Assert_Equal(info,0)
         ENDIF

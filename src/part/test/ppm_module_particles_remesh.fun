@@ -141,7 +141,7 @@ INTEGER :: np_global
 !not for now... (first try with a mesh that covers the whole domain)
 !               (which is the default, when no patches are defined)
 
-        IF (ndim.EQ.2) then
+        IF (ndim.EQ.2) THEN
             my_patch(1:4) = (/0.15_MK,0.10_MK,0.99_MK,0.7_MK/)
             my_patch(1:4) = (/0.15_MK,0.15_MK,0.7_MK,0.7_MK/)
             !works (at least on one proc)

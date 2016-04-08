@@ -113,7 +113,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
 
 
 
-        IF (ppm_debug.GT.0) then
+        IF (ppm_debug.GT.0) THEN
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
 #endif
@@ -221,7 +221,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
             ENDDO
         ENDDO
 
-        IF (ppm_debug.GT.0) then
+        IF (ppm_debug.GT.0) THEN
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
 #endif
@@ -237,7 +237,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
             stdout("NB patch =  ",Mesh1%npatch)
             stdout("NB subpatch =  ",Mesh1%subpatch%nb)
             p => Mesh1%subpatch%begin()
-                IF (ASSOCIATED(p)) then
+                IF (ASSOCIATED(p)) THEN
                     stdout("********************************")
                     stdout("patch     istart_p ",'p%istart_p(1:2)')
                     stdout("patch     iend_p ",'p%iend_p(1:2)')
@@ -305,7 +305,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .LT. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) THEN
                     nb_errors = nb_errors + 1
                 ENDIF
                 !stdout_f('(A,2(I0,1X),A,2(E24.16,1X))',&

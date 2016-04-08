@@ -146,7 +146,7 @@
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_get_decomp',     &
      &        'failed to allocate sub2proc',__LINE__,info)
-          goto 9999
+          GOTO 9999
       ENDIF
 
       nsub = topo%nsubs

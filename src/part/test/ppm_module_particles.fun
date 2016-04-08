@@ -88,7 +88,7 @@ test_suite ppm_module_particles
         assig  = ppm_param_assign_internal
 
         topoid = 0
-        IF (ndim.EQ.2) then
+        IF (ndim.EQ.2) THEN
            cutoff = 0.15_MK
         ELSE
            cutoff = 0.25_MK

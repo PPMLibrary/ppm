@@ -501,7 +501,7 @@
 !write(mesg,'(a,i4.4)') 'recvbuf',ppm_rank
 !open(10,file=mesg)
 !DO i=1,ppm_nrecvbuffer,2
-!   write(10,*) ppm_recvbuffers(i),ppm_recvbuffers(i+1)
+!   WRITE(10,*) ppm_recvbuffers(i),ppm_recvbuffers(i+1)
 !ENDDO
 !close(10)
 

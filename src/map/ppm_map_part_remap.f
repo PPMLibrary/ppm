@@ -45,6 +45,7 @@
       USE ppm_module_error
       USE ppm_module_topo_check
       IMPLICIT NONE
+
 #if    __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #else
@@ -64,8 +65,11 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      LOGICAL             :: topo_ok
       REAL(ppm_kind_double) :: t0
+
+      LOGICAL :: topo_ok
+
+      CHARACTER(LEN=ppm_char) :: caller="ppm_map_part_remap"
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -73,22 +77,21 @@
       !-------------------------------------------------------------------------
       !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_part_remap',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+      IF (ppm_debug.GT.0) THEN
+         CALL check
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
 
       ! if there is still some data left in the buffer, warn the user
-      IF (ppm_buffer_set .GT. 0) THEN
-        info = ppm_error_warning
-        CALL ppm_error(ppm_err_map_incomp,'ppm_map_part_remap',  &
-     &      'Buffer was not empty. Possible loss of data!',__LINE__,info)
+      IF (ppm_buffer_set.GT.0) THEN
+         fail("Buffer was not empty. Possible loss of data!",ppm_err_map_incomp, &
+         & ppm_error=ppm_error_warning,exit_point=no)
       ENDIF
 
 
@@ -96,6 +99,7 @@
       !  Check if current topology is ok
       !-------------------------------------------------------------------------
       CALL ppm_topo_check(topoid,xp,Npart,topo_ok,info)
+      or_fail("ppm_topo_check")
 
       !-------------------------------------------------------------------------
       !  if topology is ok remap particles otherwise abort remapping
@@ -103,35 +107,26 @@
       IF (topo_ok) THEN
          CALL ppm_map_part_global(topoid,xp,Npart,info)
       ELSE
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_topo_missm,'ppm_map_part_remap',  &
-     &     'Particles are not on current topology. Mapping discarded.',  &
-     &     __LINE__,info)
-         GOTO 9999
+         fail("Particles are not on current topology. Mapping discarded.",ppm_err_topo_missm)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_map_part_remap',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF (Npart .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_remap',  &
-     &            'Npart must be >0',__LINE__,info)
-              GOTO 8888
+          IF (Npart.LE.0) THEN
+             fail("Npart must be >0",exit_point=8888)
           ENDIF
+
           CALL ppm_check_topoid(topoid,topo_ok,info)
-          IF (.NOT. topo_ok) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_remap',  &
-     &            'topoid out of range',__LINE__,info)
-              GOTO 8888
+          IF (.NOT.topo_ok) THEN
+             fail("topoid out of range",exit_point=8888)
           ENDIF
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_map_part_remap_s

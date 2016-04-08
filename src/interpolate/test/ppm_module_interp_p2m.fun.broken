@@ -232,7 +232,7 @@ test_suite ppm_module_interp_p2m
             ENDDO
             do aj = 1,6
                 Assert_Equal_Within(f_mom_global2(aj),p_moments2(aj),tol)
-!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. tol) then
+!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. tol) THEN
 !                    print *, 'particle pos:',     xp(:,p_i)
 !                    print *, 'failed at moment: ', aj
 !                    print *, 'field moments: ',   f_moments
@@ -241,7 +241,7 @@ test_suite ppm_module_interp_p2m
 !                ENDIF
             ENDDO
 !            do aj = 7,10
-!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
+!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. maxm3) THEN
 !                    maxm3 = ABS(f_moments(aj) - p_moments(aj))
 !                ENDIF
 !            ENDDO
@@ -372,7 +372,7 @@ test_suite ppm_module_interp_p2m
             ENDDO
             do aj = 1,10
                 Assert_Equal_Within(f_mom_global3(aj),p_moments3(aj),tol)
-!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. tol) then
+!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. tol) THEN
 !                    print *, 'particle pos:',     xp(:,p_i)
 !                    print *, 'failed at moment: ', aj
 !                    print *, 'field moments: ',   f_moments
@@ -381,7 +381,7 @@ test_suite ppm_module_interp_p2m
 !                ENDIF
             ENDDO
 !            do aj = 7,10
-!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
+!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. maxm3) THEN
 !                    maxm3 = ABS(f_moments(aj) - p_moments(aj))
 !                ENDIF
 !            ENDDO

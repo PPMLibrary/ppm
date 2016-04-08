@@ -159,9 +159,9 @@ program ppm_test_interp_p2m
     CALL ppm_map_part_send(np,mp,info)          ! send
     CALL ppm_map_part_pop(wp,nspec,np,mp,info)  ! strengths
     CALL ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
-    IF (info .NE. 0) then
+    IF (info .NE. 0) THEN
        print *, 'Failed to do global mapping'
-       goto 8000
+       GOTO 8000
     ENDIF
     np = mp
 
@@ -192,7 +192,7 @@ program ppm_test_interp_p2m
            p_moments(aj) = xp(1,p_i)**alpha(1,aj)*xp(2,p_i)**alpha(2,aj)
         ENDDO
         do aj = 1,6
-            IF (ABS(f_moments(aj) - p_moments(aj)) .GT. tol) then
+            IF (ABS(f_moments(aj) - p_moments(aj)) .GT. tol) THEN
                 print *, 'particle pos:',     xp(:,p_i)
                 print *, 'failed at moment: ', aj
                 print *, 'field moments: ',   f_moments
@@ -201,7 +201,7 @@ program ppm_test_interp_p2m
             ENDIF
         ENDDO
         do aj = 7,10
-            IF (ABS(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
+            IF (ABS(f_moments(aj) - p_moments(aj)) .GT. maxm3) THEN
                 maxm3 = ABS(f_moments(aj) - p_moments(aj))
             ENDIF
         ENDDO

@@ -144,8 +144,8 @@ SUBROUTINE old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
 
 
                         !special treatment for ghost cells
-                        if(jbox.le.0) CYCLE
-                        if(jbox.GT.(product(ncells(1:ndim,isub))) ) CYCLE
+                        if(jbox.LE.0) CYCLE
+                        if(jbox.GT.(PRODUCT(ncells(1:ndim,isub))) ) CYCLE
 
                         !  get pointers to first and last particle
                         ibegin = clist(isub)%lhbx(cbox)
@@ -167,19 +167,19 @@ SUBROUTINE old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
                             IF (ip .GT. nred) CYCLE
                             ! check against all particles in the other cell
                             jpart_loop: DO jpart=jbegin,jend
-                                IF (jpart .ne. ipart) then
+                                IF (jpart .NE. ipart) THEN
                                     ! translate to real particle index
                                     iq = clist(isub)%lpdx(jpart)
 
-                                    IF (iq .le. nred) then
+                                    IF (iq .LE. nred) THEN
                                         ! iq belongs to the new set
                                     else
                                         ! iq belongs to the old set
-                                        dist2= sum((all_xp(1:ndim,ip)- &
+                                        dist2= SUM((all_xp(1:ndim,ip)- &
                                             all_xp(1:ndim,iq))**2)
                                             cutoff2 = rcp_blue(iq-nred)**2
 
-                                        IF (dist2 .le. cutoff2) then
+                                        IF (dist2 .LE. cutoff2) THEN
                                             ! populate nvlist_cross
                                             nvlist_cross(ip) = &
                                                 nvlist_cross(ip) + 1
@@ -202,7 +202,7 @@ SUBROUTINE old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
         !!--------------------------------------------------------------------!
         !! allocate verlet list length
         !!--------------------------------------------------------------------!
-        maxvlen = maxval(nvlist_cross)
+        maxvlen = MAXVAL(nvlist_cross)
         ALLOCATE(vlist_cross(maxvlen,nred),STAT=info)
 
         ! initialise nvlist_cross to zero
@@ -264,19 +264,19 @@ SUBROUTINE old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
 
                             ! check against all particles in the other cell
                             DO jpart=jbegin,jend
-                                IF (jpart .ne. ipart) then
+                                IF (jpart .NE. ipart) THEN
                                     ! translate to real particle index
                                     iq = clist(isub)%lpdx(jpart)
 
-                                    IF (iq .le. nred) then
+                                    IF (iq .LE. nred) THEN
                                         ! iq belongs to the new set
                                     else
                                         ! iq belongs to the old set
-                                        dist2= sum((all_xp(1:ndim,ip)- &
+                                        dist2= SUM((all_xp(1:ndim,ip)- &
                                             all_xp(1:ndim,iq))**2)
                                             cutoff2 = rcp_blue(iq-nred)**2
 
-                                        IF (dist2 .le. cutoff2) then
+                                        IF (dist2 .LE. cutoff2) THEN
                                             !populate nvlist_cross
                                             nvlist_cross(ip) = &
                                                 nvlist_cross(ip) + 1
@@ -300,9 +300,9 @@ SUBROUTINE old_xset_vlist_2d(topo_id,topo,xp_red,nred, &
         9999 CONTINUE ! jump here upon error
         DEALLOCATE(all_xp)
 
-end subroutine old_xset_vlist_2d
+END SUBROUTINE old_xset_vlist_2d
 
-end module old_xset
+END MODULE old_xset
 
 program ppm_test_xset
 !-------------------------------------------------------------------------
@@ -451,9 +451,9 @@ call ppm_map_part_pop(xp_blue,ndim,nblue,newnp,info)
 nblue=newnp
 
 call ppm_topo_check(topoid,xp_red,nred,ok,info)
-if (.not. ok) write(*,*) '[',rank,'] topo_check failed for red'
+if (.NOT. ok) WRITE(*,*) '[',rank,'] topo_check failed for red'
 call ppm_topo_check(topoid,xp_blue,nblue,ok,info)
-if (.not. ok) write(*,*) '[',rank,'] topo_check failed for blue'
+if (.NOT. ok) WRITE(*,*) '[',rank,'] topo_check failed for blue'
 
 call ppm_map_part_ghost_get(topoid,xp_red,ndim,nred,isymm,max_rcp,info)
 call ppm_map_part_send(nred,mred,info)
@@ -480,41 +480,41 @@ call old_xset_vlist_2d(topoid,topo,xp_red,nred, &
 
 !compare neighbour lists obtained by the 2 different routines
 DO i=1,nred
-    IF (nvlist(i).ne.nvlist2(i)) then
-        write(*,'(a)') '!! --------------- !!'
-        write(*,'(a)') '!! failed'
+    IF (nvlist(i).NE.nvlist2(i)) THEN
+        WRITE(*,'(a)') '!! --------------- !!'
+        WRITE(*,'(a)') '!! failed'
         print *, '!!    nvlist are not equal for ip = ',i
         print * ,'!! nvlist:  ',nvlist(i)
         print * ,'!! nvlist2: ',nvlist2(i)
-        write(*,'(a)') '!! --------------- !!'
-        goto 8000
+        WRITE(*,'(a)') '!! --------------- !!'
+        GOTO 8000
     ENDIF
     sum1=0;sum2=0;
     DO j=1,nvlist(i)
         sum1 = sum1 + vlist(j,i)**2
         sum2 = sum2 + vlist2(j,i)**2
     ENDDO
-    IF (sum1 .ne. sum2) then
-        write(*,'(a)') '!! --------------- !!'
-        write(*,'(a)') '!! failed'
+    IF (sum1 .NE. sum2) THEN
+        WRITE(*,'(a)') '!! --------------- !!'
+        WRITE(*,'(a)') '!! failed'
         print *, '!!    vlist are not equal for ip = ',i
-        write(*,'(a)') '!! --------------- !!'
-        goto 8000
+        WRITE(*,'(a)') '!! --------------- !!'
+        GOTO 8000
     ENDIF
 ENDDO
 
 
-if (rank.EQ.0) then
-    write(*,'(a)') '!! --------------- !!'
-    write(*,'(a)') '!! success'
-    write(*,'(2(a,i6),a)') '!!     completed test for xset with ',nred,&
+if (rank.EQ.0) THEN
+    WRITE(*,'(a)') '!! --------------- !!'
+    WRITE(*,'(a)') '!! success'
+    WRITE(*,'(2(a,i6),a)') '!!     completed test for xset with ',nred,&
     ' red particles and ',nblue,' blue particles'
-    write(*,'(2(a,e10.4))') '!!     smallest cutoff was ', &
-        minval(rcp_blue(1:nblue)),&
-        ' and largest ',maxval(rcp_blue(1:nblue))
-    write(*,'(2(a,i6))') '!!     smallest nb of neigh was ',&
-        minval(nvlist),' and largest ',maxval(nvlist)
-    write(*,'(a)') '!! --------------- !!'
+    WRITE(*,'(2(a,e10.4))') '!!     smallest cutoff was ', &
+        MINVAL(rcp_blue(1:nblue)),&
+        ' and largest ',MAXVAL(rcp_blue(1:nblue))
+    WRITE(*,'(2(a,i6))') '!!     smallest nb of neigh was ',&
+        MINVAL(nvlist),' and largest ',MAXVAL(nvlist)
+    WRITE(*,'(a)') '!! --------------- !!'
 endif
 
 !----------------

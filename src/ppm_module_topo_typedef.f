@@ -192,7 +192,7 @@
       !!!
       !!! at initialization this is set to ppm_param_undefined              +
       !!! if it points within (1,size(ppm_topo)) this slot is (re)used to
-      !!! store the new topology, if it is > size(ppm_topo) then the ppm_topo
+      !!! store the new topology, if it is > size(ppm_topo) THEN the ppm_topo
       !!! array must be extended
 
       !----------------------------------------------------------------------

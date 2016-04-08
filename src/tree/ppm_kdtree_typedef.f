@@ -139,7 +139,7 @@
         LOGICAL                           :: rearrange = .FALSE.
 
         REAL(MK), DIMENSION(:,:), POINTER :: rearranged_data => NULL()
-        ! if (rearrange .eqv. .TRUE.) then rearranged_data has been
+        ! if (rearrange .eqv. .TRUE.) THEN rearranged_data has been
         ! created so that rearranged_data(:,i) = the_data(:,ind(i)),
         ! permitting search to use more cache-friendly rearranged_data, at
         ! some initial computation and storage cost.

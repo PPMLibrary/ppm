@@ -2885,7 +2885,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
                 ENDDO ! ASSOCIATED(prop)
              ENDIF !PRESENT(Field)
 
-          ELSE ! if cutoff .le. 0
+          ELSE ! if cutoff .LE. 0
              !stdout("cutoff = 0, nothing to do")
           ENDIF ! Pc%ghostlayer .GT. 0._MK
 
@@ -3244,7 +3244,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
              ELSE
                 fail("Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
              ENDIF
-          ELSE ! if cutoff .le. 0
+          ELSE ! if cutoff .LE. 0
              ! Update states
              prop => Pc%props%begin()
              DO WHILE (ASSOCIATED(prop))
@@ -3308,7 +3308,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
              CALL ppm_map_part_push(Pc%xp,ppm_dim,Pc%Npart,info,pushpp=.TRUE.)
              or_fail("map_part_push")
 
-          ELSE ! if cutoff .le. 0
+          ELSE ! if cutoff .LE. 0
              !stdout("cutoff = 0, nothing to do")
              !stdout("setting all %has_ghost properties to true")
           ENDIF
@@ -3369,7 +3369,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
              CALL ppm_map_part_pop(Pc%xp,ppm_dim,Pc%Npart,Pc%Mpart,info)
              or_fail("map_part_pop")
-          ELSE ! if cutoff .le. 0
+          ELSE ! if cutoff .LE. 0
              !stdout("cutoff = 0, nothing to do")
              !stdout("setting all %has_ghost properties to true")
           ENDIF
@@ -3558,7 +3558,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
                 ENDIF
              ENDIF !.NOT.skip_send
 
-          ELSE ! if cutoff .le. 0
+          ELSE ! if cutoff .LE. 0
              !stdout("cutoff = 0, nothing to do")
              !stdout("setting all %has_ghost properties to true")
 

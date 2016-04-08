@@ -26,11 +26,11 @@
 ! ETH Zurich
 ! CH-8092 Zurich, Switzerland
 !-------------------------------------------------------------------------
-module old_inl
+MODULE old_inl
 IMPLICIT NONE
 contains
 
-subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
+SUBROUTINE old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
         nvlist,vlist,info)
 
 
@@ -78,8 +78,7 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
     !! create cell lists with maximum cutoff
     !!-------------------------------------------------------------------------!
     cellsize = cutoff
-    CALL ppm_neighlist_clist(topo_id,xp,mpart,cellsize,&
-        .FALSE.,clist,ncells,info)
+    CALL ppm_neighlist_clist(topo_id,xp,mpart,cellsize,.FALSE.,clist,ncells,info)
 
     !!-------------------------------------------------------------------------!
     !! create the index list of cell-cell interactons
@@ -91,12 +90,12 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
     !!-------------------------------------------------------------------------!
 
     !reallocate nvlist only if the number of particles has changed
-    IF (ASSOCIATED(nvlist)) then
-        IF (size(nvlist).LT.npart) then
+    IF (ASSOCIATED(nvlist)) THEN
+        IF (SIZE(nvlist).LT.npart) THEN
             DEALLOCATE(nvlist)
             ALLOCATE(nvlist(npart),STAT=info)
         ENDIF
-    else
+    ELSE
         ALLOCATE(nvlist(npart),STAT=info)
     ENDIF
 
@@ -122,8 +121,8 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
                     ! determine box indices for this interaction
                     jbox = cbox + (jnd(1,iinter) + n1*jnd(2,iinter))
                     !special treatment for ghost cells
-                    if(jbox.le.0) CYCLE
-                    if(jbox.GT.(product(ncells(:,isub))) ) CYCLE
+                    IF (jbox.LE.0) CYCLE
+                    IF (jbox.GT.(PRODUCT(ncells(:,isub))) ) CYCLE
 
                     !  get pointers to first and last particle
                     ibegin = clist(isub)%lhbx(cbox)
@@ -132,25 +131,25 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
 
                     ! within the box itself use symmetry and avoid adding
                     ! the particle itself to its own list
-                    IF (cbox .EQ. jbox) then
+                    IF (cbox .EQ. jbox) THEN
                         DO ipart=ibegin,iend
 
                             ! translate to real particle index
                             ip = clist(isub)%lpdx(ipart)
 
-                            IF (ip .le. npart) then
+                            IF (ip .LE. npart) THEN
                                 DO jpart=ibegin,iend
 
-                                    IF (jpart .ne. ipart) then
+                                    IF (jpart .NE. ipart) THEN
                                         ! translate to real particle index
                                         iq = clist(isub)%lpdx(jpart)
 
                                         ! if not a ghost cell
                                         dist2=&
-                                            sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
+                                            SUM((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
 
-                                        cutoff2 = min(rcp(iq),rcp(ip))**2
-                                        IF (dist2 .le. cutoff2) then
+                                        cutoff2 = MIN(rcp(iq),rcp(ip))**2
+                                        IF (dist2 .LE. cutoff2) THEN
                                             ! add particle iq to
                                             !list of particle ip
                                             nvlist(ip) = nvlist(ip) + 1
@@ -161,7 +160,7 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
                         ENDDO
 
                         !  for the other boxes check all particles
-                    else
+                    ELSE
                         ! get pointers to first and last particle
                         jbegin = clist(isub)%lhbx(jbox)
                         jend   = clist(isub)%lhbx(jbox+1)-1
@@ -171,15 +170,15 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
                         DO ipart=ibegin,iend
                             ! translate to real particle index
                             ip = clist(isub)%lpdx(ipart)
-                            IF (ip .le. npart) then
+                            IF (ip .LE. npart) THEN
                                 ! check against all particles in the other cell
                                 DO jpart=jbegin,jend
                                     ! translate to real particle index
                                     iq = clist(isub)%lpdx(jpart)
                                     dist2=&
-                                        sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
-                                    cutoff2 = min(rcp(iq),rcp(ip))**2
-                                    IF (dist2 .le. cutoff2) then
+                                        SUM((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
+                                    cutoff2 = MIN(rcp(iq),rcp(ip))**2
+                                    IF (dist2 .LE. cutoff2) THEN
                                         !add particle
                                         !iq to list of particle ip
                                         nvlist(ip) = nvlist(ip) + 1
@@ -196,13 +195,13 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
     !!-------------------------------------------------------------------------!
     !! allocate verlet list length
     !!-------------------------------------------------------------------------!
-    maxvlen = maxval(nvlist)
-    IF (ASSOCIATED(vlist)) then
-        if(size(vlist,1).LT.maxvlen .OR. size(vlist,2).LT.npart) then
+    maxvlen = MAXVAL(nvlist)
+    IF (ASSOCIATED(vlist)) THEN
+        IF (size(vlist,1).LT.maxvlen .OR. size(vlist,2).LT.npart) THEN
             DEALLOCATE(vlist)
             ALLOCATE(vlist(maxvlen,npart),STAT=info)
         ENDIF
-    else
+    ELSE
         ALLOCATE(vlist(maxvlen,npart),STAT=info)
     ENDIF
 
@@ -233,23 +232,23 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
 
                     ! within the box itself use symmetry and avoid adding
                     ! the particle itself to its own list
-                    IF (cbox .EQ. jbox) then
+                    IF (cbox .EQ. jbox) THEN
                         DO ipart=ibegin,iend
 
                             ! translate to real particle index
                             ip = clist(isub)%lpdx(ipart)
 
-                            IF (ip .le. npart) then
+                            IF (ip .LE. npart) THEN
                                 DO jpart=ibegin,iend
 
-                                    IF (jpart .ne. ipart) then
+                                    IF (jpart .NE. ipart) THEN
                                         ! translate to real particle index
                                         iq = clist(isub)%lpdx(jpart)
 
                                         dist2=&
-                                            sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
-                                        cutoff2 = min(rcp(iq),rcp(ip))**2
-                                        IF (dist2 .le. cutoff2) then
+                                            SUM((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
+                                        cutoff2 = MIN(rcp(iq),rcp(ip))**2
+                                        IF (dist2 .LE. cutoff2) THEN
                                             ! add particle iq to
                                             ! list of particle ip
                                             nvlist(ip) = nvlist(ip) + 1
@@ -261,7 +260,7 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
                         ENDDO
 
                         !  for the other boxes check all particles
-                    else
+                    ELSE
 
                         ! get pointers to first and last particle
                         jbegin = clist(isub)%lhbx(jbox)
@@ -275,7 +274,7 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
                             ! translate to real particle index
                             ip = clist(isub)%lpdx(ipart)
 
-                            IF (ip .le. npart) then
+                            IF (ip .LE. npart) THEN
                                 ! check against all particles in the other cell
                                 DO jpart=jbegin,jend
 
@@ -283,9 +282,9 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
                                     iq = clist(isub)%lpdx(jpart)
 
                                     dist2=&
-                                        sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
-                                    cutoff2 = min(rcp(iq),rcp(ip))**2
-                                    IF (dist2 .le. cutoff2) then
+                                        SUM((xp(1:ndim,ip)-xp(1:ndim,iq))**2)
+                                    cutoff2 = MIN(rcp(iq),rcp(ip))**2
+                                    IF (dist2 .LE. cutoff2) THEN
                                         ! add particle iq to list
                                         ! of particle ip
                                         nvlist(ip) = nvlist(ip) + 1
@@ -303,11 +302,11 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
     ENDDO                      ! isub
     9999 CONTINUE ! jump here upon error
 
-end subroutine old_inl_vlist_2d
+END SUBROUTINE old_inl_vlist_2d
 
-end module old_inl
+END MODULE old_inl
 
-program ppm_test_inl
+PROGRAM ppm_test_inl
 !-------------------------------------------------------------------------
 !     Test Case   :   Inhomogeneous neighbour lists - 2D
 !                           Particles placed uniformly randomly in a box
@@ -321,7 +320,7 @@ USE ppm_module_init
 USE ppm_module_finalize
 USE ppm_module_core
 USE ppm_module_inl_vlist
-use old_inl
+USE old_inl
 
 IMPLICIT NONE
 ! #include "../../ppm_define.h"
@@ -383,12 +382,12 @@ NULLIFY(xp,rcp)
 
 #ifdef __MPI
 comm = MPI_COMM_WORLD
-call mpi_init(info)
+CALL mpi_init(info)
 CALL MPI_Comm_rank(comm,rank,info)
 #else
 rank = 0
 #endif
-call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
 CALL RANDOM_SEED(size=seedsize)
 ALLOCATE(seed(seedsize))
@@ -424,70 +423,70 @@ assig  = ppm_param_assign_internal
 
 topoid = 0
 
-call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
+CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
     &               max_rcp,cost,info)
 
-call ppm_map_part_global(topoid,xp,np,info)
-call ppm_map_part_push(rcp,np,info)
-call ppm_map_part_send(np,newnp,info)
-call ppm_map_part_pop(rcp,np,newnp,info)
-call ppm_map_part_pop(xp,ndim,np,newnp,info)
+CALL ppm_map_part_global(topoid,xp,np,info)
+CALL ppm_map_part_push(rcp,np,info)
+CALL ppm_map_part_send(np,newnp,info)
+CALL ppm_map_part_pop(rcp,np,newnp,info)
+CALL ppm_map_part_pop(xp,ndim,np,newnp,info)
 np=newnp
 
-call ppm_topo_check(topoid,xp,np,ok,info)
-if (.not. ok) write(*,*) '[',rank,'] topo_check failed'
+CALL ppm_topo_check(topoid,xp,np,ok,info)
+if (.NOT. ok) WRITE(*,*) '[',rank,'] topo_check failed'
 
-call ppm_map_part_ghost_get(topoid,xp,ndim,np,isymm,max_rcp,info)
-call ppm_map_part_push(rcp,np,info)
-call ppm_map_part_send(np,mp,info)
-call ppm_map_part_pop(rcp,np,mp,info)
-call ppm_map_part_pop(xp,ndim,np,mp,info)
+CALL ppm_map_part_ghost_get(topoid,xp,ndim,np,isymm,max_rcp,info)
+CALL ppm_map_part_push(rcp,np,info)
+CALL ppm_map_part_send(np,mp,info)
+CALL ppm_map_part_pop(rcp,np,mp,info)
+CALL ppm_map_part_pop(xp,ndim,np,mp,info)
 
-call ppm_dbg_print(topoid,max_rcp,2,1,info,xp,np,mp)
+CALL ppm_dbg_print(topoid,max_rcp,2,1,info,xp,np,mp)
 
 
-call ppm_inl_vlist(topoid,xp,np,mp,rcp,skin, &
+CALL ppm_inl_vlist(topoid,xp,np,mp,rcp,skin, &
     & lsymm,ghostlayer,info,vlist,nvlist)
 
-call ppm_topo_get(topoid,topo,info)
+CALL ppm_topo_get(topoid,topo,info)
 
-call old_inl_vlist_2d(topoid,topo,xp,rcp,max_rcp,np,mp,&
+CALL old_inl_vlist_2d(topoid,topo,xp,rcp,max_rcp,np,mp,&
         nvlist2,vlist2,info)
 
 !compare neighbour lists obtained by the 2 different routines
 DO i=1,np
-    IF (nvlist(i).NE.nvlist2(i)) then
-        write(*,'(A)') '!! --------------- !!'
-        write(*,'(A)') '!! FAILED'
+    IF (nvlist(i).NE.nvlist2(i)) THEN
+        WRITE(*,'(A)') '!! --------------- !!'
+        WRITE(*,'(A)') '!! FAILED'
         print *, '!!    nvlist are not equal for ip = ',i
-        write(*,'(A)') '!! --------------- !!'
-        goto 8000
+        WRITE(*,'(A)') '!! --------------- !!'
+        GOTO 8000
     ENDIF
     sum1=0;sum2=0;
     DO j=1,nvlist(i)
         sum1 = sum1 + vlist(j,i)**2
         sum2 = sum2 + vlist2(j,i)**2
     ENDDO
-    IF (sum1 .NE. sum2) then
-        write(*,'(A)') '!! --------------- !!'
-        write(*,'(A)') '!! FAILED'
+    IF (sum1 .NE. sum2) THEN
+        WRITE(*,'(A)') '!! --------------- !!'
+        WRITE(*,'(A)') '!! FAILED'
         print *, '!!    vlist are not equal for ip = ',i
-        write(*,'(A)') '!! --------------- !!'
-        goto 8000
+        WRITE(*,'(A)') '!! --------------- !!'
+        GOTO 8000
     ENDIF
 ENDDO
 
 
-if (rank.EQ.0) then
-    write(*,'(A)') '!! --------------- !!'
-    write(*,'(A)') '!! SUCCESS'
-    write(*,'(2(A,I6),A)') '!!     Completed test for INL with ',np,&
+if (rank.EQ.0) THEN
+    WRITE(*,'(A)') '!! --------------- !!'
+    WRITE(*,'(A)') '!! SUCCESS'
+    WRITE(*,'(2(A,I6),A)') '!!     Completed test for INL with ',np,&
         ' real particles and ',mp-np,' ghosts'
-    write(*,'(2(A,E10.4))') '!!     Smallest cutoff was ', minval(rcp(1:np)),&
-        ' and largest ',maxval(rcp(1:np))
-    write(*,'(2(A,I6))') '!!     Smallest nb of neigh was ',&
-        minval(nvlist),' and largest ',maxval(nvlist)
-    write(*,'(A)') '!! --------------- !!'
+    WRITE(*,'(2(A,E10.4))') '!!     Smallest cutoff was ', MINVAL(rcp(1:np)),&
+        ' and largest ',MAXVAL(rcp(1:np))
+    WRITE(*,'(2(A,I6))') '!!     Smallest nb of neigh was ',&
+        MINVAL(nvlist),' and largest ',MAXVAL(nvlist)
+    WRITE(*,'(A)') '!! --------------- !!'
 endif
 
 !----------------
@@ -495,9 +494,9 @@ endif
 !----------------
 8000 CONTINUE
 
-call ppm_finalize(info)
+CALL ppm_finalize(info)
 #ifdef __MPI
-call MPI_finalize(info)
+CALL MPI_finalize(info)
 #endif
 
 DEALLOCATE(xp,rcp,min_phys,max_phys,len_phys,ghostsize,nm)

@@ -176,7 +176,7 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
         Assert_Equal(info,0)
 
 
-        IF (ndim.EQ.2) then
+        IF (ndim.EQ.2) THEN
             my_patch(1:2*ndim) = (/0.15_MK,0.10_MK,0.99_MK,0.7_MK/)
         else
             my_patch(1:6) = (/0.15_MK,0.10_MK,0.51_MK,0.99_MK,0.7_MK,0.78_MK/)
@@ -213,7 +213,7 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
             p => Mesh1%subpatch%next()
         ENDDO
 
-        IF (ppm_debug.GT.0) then
+        IF (ppm_debug.GT.0) THEN
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
 #endif
@@ -231,7 +231,7 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
             stdout("NB patch =  ",Mesh1%npatch)
             stdout("NB subpatch =  ",Mesh1%subpatch%nb)
             p => Mesh1%subpatch%begin()
-            IF (ASSOCIATED(p)) then
+            IF (ASSOCIATED(p)) THEN
                stdout("********************************")
                stdout("patch     istart_p ",'p%istart_p(1:ndim)')
                stdout("patch     iend_p ",'p%iend_p(1:ndim)')
@@ -300,7 +300,7 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
             for all
             !for real_and_ghosts
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .LT. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) THEN
                     nb_errors = nb_errors + 1
                 ENDIF
                 Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)

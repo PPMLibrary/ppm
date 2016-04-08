@@ -85,12 +85,10 @@
       !  Local variables
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
-!       TYPE(ppm_t_topo), POINTER      :: target_topo => NULL()
 
       REAL(ppm_kind_double) :: t0
 
       INTEGER, DIMENSION(3) :: ldu
-!       INTEGER, DIMENSION(:), POINTER :: bcdef
       INTEGER               :: i,j,k,idom,ipart,nlist1,nlist2
       INTEGER               :: sendrank,recvrank
       INTEGER               :: iopt,iset,ibuffer

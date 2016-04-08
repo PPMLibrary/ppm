@@ -427,7 +427,7 @@
             or_fail("could not create property for D")
         ENDIF
         !---------------------------------------------------------------------!
-        ! D^(n+1) = min(D_tilde^(n+1)(iq)) over all neighbours iq
+        ! D^(n+1) = MIN(D_tilde^(n+1)(iq)) over all neighbours iq
         !---------------------------------------------------------------------!
         CALL this%get(this%D,D,info)
         or_fail("failed to access D")
@@ -443,9 +443,9 @@
             !either this ....
                 IF (Dtilde(iq).GE.Dtilde(ip)) CYCLE
 
-                !alpha = (SQRT(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))/&
+                !alpha = (SQRT(SUM((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))/&
                     !Dtilde(iq)-1._MK) / (opts%rcp_over_D-1._MK)
-                !if(alpha.le.0) then
+                !if(alpha.LE.0) THEN
                     !D(ip)=MIN(D(ip),Dtilde(iq))
                 !else
                     !D(ip)=MIN(D(ip),SQRT(alpha)*Dtilde(ip)+(1._MK-SQRT(alpha))*Dtilde(iq))
@@ -453,7 +453,7 @@
 
                 alpha = (SQRT(SUM((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))/&
                     Dtilde(iq)-1._MK)
-                IF (alpha.LE.0) then
+                IF (alpha.LE.0) THEN
                    D(ip)=MIN(D(ip),Dtilde(iq))
                 ELSE
                    D(ip)=MIN(D(ip),2._MK**(alpha)*Dtilde(iq))

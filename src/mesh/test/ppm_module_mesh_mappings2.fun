@@ -115,7 +115,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
 
         decomp=ppm_param_decomp_xy_slab
 
-        IF (ppm_debug.GE.1 .AND. rank.EQ.0) then
+        IF (ppm_debug.GE.1 .AND. rank.EQ.0) THEN
            stdout("STARTING test with decomp = ",decomp,topoid,sizex,sizey)
         ENDIF
 #ifdef __MPI
@@ -237,7 +237,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                IF (Field2_n .LT. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) THEN
                     nb_errors = nb_errors + 1
                 ENDIF
                 Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
@@ -331,7 +331,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
 #ifdef __MPI
         CALL MPI_BARRIER(comm,info)
 #endif
-        IF (ppm_debug.GE.1 .AND. rank.EQ.0) then
+        IF (ppm_debug.GE.1 .AND. rank.EQ.0) THEN
             stdout("FINISHED test with decomp = ",decomp,topoid)
         ENDIF
 #ifdef __MPI

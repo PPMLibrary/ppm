@@ -365,15 +365,15 @@
               !Insert (spawn) new particles where needed
 
               !if (lbfgs_continue .AND. gradPsi_max.LT.1e-1 .OR. &
-                  !&  Particles%nneighmin.LT.opts%nneigh_critical) then
+                  !&  Particles%nneighmin.LT.opts%nneigh_critical) THEN
 
               Dtilde => Particles%wps(Particles%Dtilde_id)%vec
               DO ip=1,Particles%Npart
-                  write(400+it_adapt,'(3(E20.12,2X))') Particles%xp(1:2,ip),Dtilde(ip)
+                  WRITE(400+it_adapt,'(3(E20.12,2X))') Particles%xp(1:2,ip),Dtilde(ip)
               ENDDO
               Dtilde => NULL()
 
-              IF (.not.adaptation_ok) then
+              IF (.NOT.adaptation_ok) THEN
 #ifdef __USE_DEL_METHOD2
                   CALL  sop_spawn2_particles(Particles,opts,info,&
                       nb_part_added=nb_spawn,wp_fun=wp_fun)
@@ -398,7 +398,7 @@
               ENDIF
               Dtilde => Particles%wps(Particles%Dtilde_id)%vec
               DO ip=1,Particles%Npart
-                  write(500+it_adapt,'(3(E20.12,2X))') Particles%xp(1:2,ip),Dtilde(ip)
+                  WRITE(500+it_adapt,'(3(E20.12,2X))') Particles%xp(1:2,ip),Dtilde(ip)
               ENDDO
               Dtilde => NULL()
               CALL check_duplicates(Particles)
@@ -589,7 +589,7 @@
 
               !Linear interpolation of D_tilde
                   DO ip=1,Particles%Npart
-                      IF (nvlist_cross(ip).EQ.0) then
+                      IF (nvlist_cross(ip).EQ.0) THEN
                           Dtilde(ip) = opts%maximum_D
                           D(ip) = opts%maximum_D
                       else
@@ -786,14 +786,14 @@
                   adaptation_ok = .TRUE.
               ELSE
 
-                  write(*,*) 'before LBFGS: info = ',info, Particles%Npart
+                  WRITE(*,*) 'before LBFGS: info = ',info, Particles%Npart
                   Dtilde=>Get_wps(Particles,Particles%Dtilde_id)
                   CALL LBFGS(ppm_dim*Particles%Npart,3,&
                       Particles%xp(1:ppm_dim,1:Particles%Npart),&
                       Psi_global,Gradient_Psi(1:ppm_dim,1:Particles%Npart),&
                       .FALSE.,DIAG,(/1,0/),1D-3,ppm_myepsd,Work,info,scaling=Dtilde)
                   Dtilde=>Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
-                  write(*,*) 'after LBFGS: info = ',info
+                  WRITE(*,*) 'after LBFGS: info = ',info
                   IF (info.LT.0) THEN
                       lbfgs_continue = .FALSE.
 
@@ -814,7 +814,7 @@
                       adaptation_ok = .FALSE.
                   ELSE
                       IF (lbfgs_continue) THEN
-                          write(*,*) 'found suitable minimum in LBFGS'
+                          WRITE(*,*) 'found suitable minimum in LBFGS'
                           adaptation_ok = .TRUE.
                       ENDIF
                   ENDIF
@@ -872,11 +872,11 @@
 #if debug_verbosity > 1
               CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
               IF (Psi_global .NE. Psi_global_old) THEN
-                  write(*,*) 'global potential different in ', &
+                  WRITE(*,*) 'global potential different in ', &
                       'sop_gradient_psi and sop_potential_psi'
-                  write(*,*) 'Psi_global(sop_potential) = ',Psi_global
-                  write(*,*) 'Psi_global(sop_gradient) = ',Psi_global_old
-                  write(*,*) 'difference = ', Psi_global_old - Psi_global
+                  WRITE(*,*) 'Psi_global(sop_potential) = ',Psi_global
+                  WRITE(*,*) 'Psi_global(sop_gradient) = ',Psi_global_old
+                  WRITE(*,*) 'difference = ', Psi_global_old - Psi_global
                   info = -1
                   GOTO 9999
               ENDIF
@@ -899,7 +899,7 @@
               alpha2 = -1._MK
               step_previous = 0._MK
 
-              !IF (gradPsi_max .LT. 1e-3) then
+              !IF (gradPsi_max .LT. 1e-3) THEN
                   !step_max = 10.0_MK
               !else
                   !step_max = 1.5_MK
@@ -1494,10 +1494,10 @@
                       CALL ppm_write(ppm_rank,caller,&
                           'xlist empty dumping some debug data',info)
                       DO ip=1,Particles%Npart
-                          write(801,*) Particles%xp(1:ppm_dim,ip), nvlist_cross(ip)
+                          WRITE(801,*) Particles%xp(1:ppm_dim,ip), nvlist_cross(ip)
                       ENDDO
                       DO ip=1,Particles_old%Npart
-                          write(802,*) Particles_old%xp(1:ppm_dim,ip), &
+                          WRITE(802,*) Particles_old%xp(1:ppm_dim,ip), &
                               opts%rcp_over_D*D_old(ip)
                       ENDDO
                       info = -1
@@ -1640,7 +1640,7 @@
                           ENDDO
                           xp => Set_xp(Particles,read_only=.TRUE.)
                       ELSE
-                          write(*,*) 'need to provide either level_id or wp_fun'
+                          WRITE(*,*) 'need to provide either level_id or wp_fun'
                           info = -1
                           GOTO 9999
                       ENDIF

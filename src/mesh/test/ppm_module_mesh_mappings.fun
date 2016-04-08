@@ -116,7 +116,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
         IF (decomp.EQ.ppm_param_decomp_ypencil .AND. (sizex/nproc).LE.2) return
         IF (ndim.EQ.2 .AND. decomp.EQ.ppm_param_decomp_xy_slab) return
 
-        IF (ppm_debug.GE.1 .AND. rank.EQ.0) then
+        IF (ppm_debug.GE.1 .AND. rank.EQ.0) THEN
             stdout("STARTING test with decomp = ",decomp,topoid,sizex,sizey)
         ENDIF
 #ifdef __MPI
@@ -141,7 +141,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
             Assert_Equal(info,0)
 
         IF (.NOT.unifpatch) THEN
-            IF (ndim.EQ.2) then
+            IF (ndim.EQ.2) THEN
                 my_patch(1:4) = (/0.15_MK,0.10_MK,0.99_MK,0.7_MK/)
                 my_patch(1:4) = (/0.17_MK,0.17_MK,0.70_MK,0.70_MK/)
             else
@@ -287,7 +287,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .LT. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) THEN
                     nb_errors = nb_errors + 1
                 ENDIF
                 Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
@@ -298,7 +298,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                IF (Field2_n .LT. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) THEN
                     nb_errors = nb_errors + 1
                 ENDIF
                 Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
@@ -322,7 +322,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
 #ifdef __MPI
         CALL MPI_BARRIER(comm,info)
 #endif
-        IF (ppm_debug.GE.1 .AND. rank.EQ.0) then
+        IF (ppm_debug.GE.1 .AND. rank.EQ.0) THEN
             stdout("FINISHED test with decomp = ",decomp,topoid)
         ENDIF
 #ifdef __MPI
@@ -351,7 +351,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
         bcdef(3) = bcdefY
         bcdef(4) = bcdefY
 
-        IF (ppm_debug.GE.1 .AND. rank.EQ.0) then
+        IF (ppm_debug.GE.1 .AND. rank.EQ.0) THEN
             stdout("STARTING test with bcdef = ",'bcdef(1:2*ndim)')
             stdout(" patch covers the whole domain? ",unifpatch)
         ENDIF
@@ -375,8 +375,8 @@ REAL(MK),DIMENSION(ndim)         :: offset
             ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
 
-        IF (.not.unifpatch) then
-            IF (ndim.EQ.2) then
+        IF (.NOT.unifpatch) THEN
+            IF (ndim.EQ.2) THEN
                 my_patch(1:4) = (/0.15_MK,0.10_MK,0.99_MK,0.7_MK/)
                 my_patch(1:4) = (/0.17_MK,0.17_MK,0.70_MK,0.70_MK/)
             else
@@ -396,7 +396,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
         CALL Field2%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
 
-        IF (ppm_debug.GE.1) then
+        IF (ppm_debug.GE.1) THEN
             topo => ppm_topo(Mesh1%topoid)%t
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
@@ -418,7 +418,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
             stdout("NB patch =  ",Mesh1%npatch)
             stdout("NB subpatch =  ",Mesh1%subpatch%nb)
             p => Mesh1%subpatch%begin()
-                IF (ASSOCIATED(p)) then
+                IF (ASSOCIATED(p)) THEN
                     stdout("********************************")
                     stdout("patch     istart_p ",'p%istart_p(1:ndim)')
                     stdout("patch     iend_p ",'p%iend_p(1:ndim)')
@@ -586,7 +586,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for valid_nodes
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .LT. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) THEN
                     nb_errors = nb_errors + 1
                 ENDIF
                 !stdout("i,j = ",i,j,'sbpitr%istart(1)-1+i','sbpitr%istart(2)-1+j')
@@ -599,7 +599,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for valid_nodes
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                IF (Field2_n .LT. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) THEN
                     nb_errors = nb_errors + 1
                 ENDIF
                 Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
@@ -628,7 +628,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
 #ifdef __MPI
         CALL MPI_BARRIER(comm,info)
 #endif
-        IF (ppm_debug.GE.1 .AND. rank.EQ.0) then
+        IF (ppm_debug.GE.1 .AND. rank.EQ.0) THEN
             stdout("FINISHED test with decomp = ",decomp,topoid)
         ENDIF
 #ifdef __MPI
@@ -641,7 +641,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
         REAL(ppm_kind_double) :: val
         REAL(ppm_kind_double),DIMENSION(1:ndim),INTENT(IN) :: x
 
-        val = sum(x)
+        val = SUM(x)
     END FUNCTION
 
 end test_suite

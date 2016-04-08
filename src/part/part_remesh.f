@@ -176,25 +176,25 @@
         foreach n in equi_mesh(Mesh) with sca_fields(cutoff_field) indices(i,j)
             for real
                  IF (cutoff_field_n .GE. cutoff_val(1) .AND. &
-                     cutoff_field_n .le. cutoff_val(2) )  nb_part = nb_part + 1
+                     cutoff_field_n .LE. cutoff_val(2) )  nb_part = nb_part + 1
         end foreach
         ELSE IF (ndim.EQ.2 .AND. cutoff_field%lda.GT.1) THEN
         foreach n in equi_mesh(Mesh) with vec_fields(cutoff_field) indices(i,j)
             for real
                  IF (norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .GE. cutoff_val(1) .AND. &
-                     norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .le. cutoff_val(2) )  nb_part = nb_part + 1
+                     norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .LE. cutoff_val(2) )  nb_part = nb_part + 1
         end foreach
         ELSE IF (ndim.EQ.3 .AND. cutoff_field%lda.EQ.1) THEN
         foreach n in equi_mesh(Mesh) with sca_fields(cutoff_field) indices(i,j,k)
             for real
                  IF (cutoff_field_n .GE. cutoff_val(1) .AND. &
-                     cutoff_field_n .le. cutoff_val(2) )  nb_part = nb_part + 1
+                     cutoff_field_n .LE. cutoff_val(2) )  nb_part = nb_part + 1
         end foreach
         ELSE IF (ndim.EQ.3 .AND. cutoff_field%lda.GT.1) THEN
         foreach n in equi_mesh(Mesh) with vec_fields(cutoff_field) indices(i,j,k)
             for real
                  IF (norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .GE. cutoff_val(1) .AND. &
-                     norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .le. cutoff_val(2) )  nb_part = nb_part + 1
+                     norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .LE. cutoff_val(2) )  nb_part = nb_part + 1
         end foreach
         ENDIF
       ENDIF
@@ -241,7 +241,7 @@
             foreach n in equi_mesh(Mesh) with sca_fields(cutoff_field) indices(i,j)
                 for real
                      IF (cutoff_field_n .GE. cutoff_val(1) .AND. &
-                         cutoff_field_n .le. cutoff_val(2) )  then
+                         cutoff_field_n .LE. cutoff_val(2) )  then
                          ip = ip + 1
                          xp(1:ndim,ip) = sbpitr%get_pos(i,j)
                      ENDIF
@@ -250,7 +250,7 @@
             foreach n in equi_mesh(Mesh) with vec_fields(cutoff_field) indices(i,j)
                 for real
                      IF (norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .GE. cutoff_val(1) .AND. &
-                         norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .le. cutoff_val(2) )  then
+                         norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .LE. cutoff_val(2) )  then
                          ip = ip + 1
                          xp(1:ndim,ip) = sbpitr%get_pos(i,j)
                      ENDIF
@@ -259,7 +259,7 @@
             foreach n in equi_mesh(Mesh) with sca_fields(cutoff_field) indices(i,j,k)
                 for real
                      IF (cutoff_field_n .GE. cutoff_val(1) .AND. &
-                         cutoff_field_n .le. cutoff_val(2) )  then
+                         cutoff_field_n .LE. cutoff_val(2) )  then
                          ip = ip + 1
                          xp(1:ndim,ip) = sbpitr%get_pos(i,j,k)
                      ENDIF
@@ -268,7 +268,7 @@
             foreach n in equi_mesh(Mesh) with vec_fields(cutoff_field) indices(i,j,k)
                 for real
                      IF (norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .GE. cutoff_val(1) .AND. &
-                         norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .le. cutoff_val(2) )  then
+                         norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .LE. cutoff_val(2) )  then
                          ip = ip + 1
                          xp(1:ndim,ip) = sbpitr%get_pos(i,j,k)
                      ENDIF
@@ -316,7 +316,7 @@
                        foreach n in equi_mesh(Mesh) with sca_fields(V=field,cutoff_field) indices(i,j)
                           for real
                                 IF (cutoff_field_n .GE. cutoff_val(1) .AND. &
-                                    cutoff_field_n .le. cutoff_val(2) )  then
+                                    cutoff_field_n .LE. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_s(ip) = V_n
                                 ENDIF
@@ -325,7 +325,7 @@
                        foreach n in equi_mesh(Mesh) with sca_fields(V=field,cutoff_field) indices(i,j,k)
                           for real
                                 IF (cutoff_field_n .GE. cutoff_val(1) .AND. &
-                                    cutoff_field_n .le. cutoff_val(2) )  then
+                                    cutoff_field_n .LE. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_s(ip) = V_n
                                 ENDIF
@@ -334,7 +334,7 @@
                        foreach n in equi_mesh(Mesh) with sca_fields(V=field) vec_fields(cutoff_field) indices(i,j)
                           for real
                                 IF (norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .GE. cutoff_val(1) .AND. &
-                                    norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .le. cutoff_val(2) )  then
+                                    norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .LE. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_s(ip) = V_n
                                 ENDIF
@@ -343,7 +343,7 @@
                        foreach n in equi_mesh(Mesh) with sca_fields(V=field) vec_fields(cutoff_field) indices(i,j,k)
                           for real
                                 IF (norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .GE. cutoff_val(1) .AND. &
-                                    norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .le. cutoff_val(2) )  then
+                                    norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .LE. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_s(ip) = V_n
                                 ENDIF
@@ -370,7 +370,7 @@
                       foreach n in equi_mesh(Mesh) with sca_fields(cutoff_field) vec_fields(V=field) indices(i,j)
                           for real
                                 IF (cutoff_field_n .GE. cutoff_val(1) .AND. &
-                                    cutoff_field_n .le. cutoff_val(2) )  then
+                                    cutoff_field_n .LE. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_v(1:field%lda,ip) = V_n(1:field%lda)
                                 ENDIF
@@ -379,7 +379,7 @@
                       foreach n in equi_mesh(Mesh) with sca_fields(cutoff_field) vec_fields(V=field) indices(i,j,k)
                           for real
                                 IF (cutoff_field_n .GE. cutoff_val(1) .AND. &
-                                    cutoff_field_n .le. cutoff_val(2) )  then
+                                    cutoff_field_n .LE. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_v(1:field%lda,ip) = V_n(1:field%lda)
                                 ENDIF
@@ -388,7 +388,7 @@
                       foreach n in equi_mesh(Mesh) with vec_fields(V=field, cutoff_field) indices(i,j)
                           for real
                                 IF (norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .GE. cutoff_val(1) .AND. &
-                                    norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .le. cutoff_val(2) )  then
+                                    norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .LE. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_v(1:field%lda,ip) = V_n(1:field%lda)
                                 ENDIF
@@ -397,7 +397,7 @@
                       foreach n in equi_mesh(Mesh) with vec_fields(V=field, cutoff_field) indices(i,j,k)
                           for real
                                 IF (norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .GE. cutoff_val(1) .AND. &
-                                    norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .le. cutoff_val(2) )  then
+                                    norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .LE. cutoff_val(2) )  then
                                     ip = ip + 1
                                     wp_v(1:field%lda,ip) = V_n(1:field%lda)
                                 ENDIF

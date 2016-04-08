@@ -221,7 +221,7 @@
                or_fail_MPI("failed to sendrecv ctag",ppm_error=ppm_error_fatal)
 #endif
             ENDDO
-            IF (PRESENT(append).AND.append) then
+            IF (PRESENT(append).AND.append) THEN
                OPEN(iunit,FILE=pfname,ACCESS='APPEND')
             ELSE
                OPEN(iunit,FILE=pfname)
@@ -264,7 +264,7 @@
          or_fail_dealloc("Failed to deallocate temporary array allctag.")
 !Non-MPI
 #else
-         IF (PRESENT(append).AND.append) then
+         IF (PRESENT(append).AND.append) THEN
             OPEN(iunit,FILE=pfname,ACCESS='APPEND')
          ELSE
             OPEN(iunit,FILE=pfname)

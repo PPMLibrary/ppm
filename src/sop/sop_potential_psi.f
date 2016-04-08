@@ -101,14 +101,14 @@
 
                   rd = rr / meanD
 
-                  !if (fuse(ip)*fuse(iq).GE.1 .AND. max(fuse(ip),fuse(iq)).GE.4 ) then
-                  IF (max(fuse(ip),fuse(iq)).GE.4 ) then
+                  !if (fuse(ip)*fuse(iq).GE.1 .AND. max(fuse(ip),fuse(iq)).GE.4 ) THEN
+                  IF (max(fuse(ip),fuse(iq)).GE.4 ) THEN
                       no_fusion = .FALSE.
                   else
                       no_fusion = .TRUE.
                   ENDIF
 
-                  !if (fuse(ip)+fuse(iq).GE.1) then
+                  !if (fuse(ip)+fuse(iq).GE.1) THEN
                       !coeff = 1.0_MK / REAL(MAX(fuse(ip),fuse(iq)),MK)
                   !else
                       !coeff = 1.0_MK
