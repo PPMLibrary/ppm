@@ -286,13 +286,13 @@
                       new_part_list: DO i=1,ABS(nvlist(ip))
                           add_part = add_part + 1
 
-                          if(nvlist(ip) .gt.0) then
+                          if(nvlist(ip) .GT.0) then
                               iq = Particles%vlist(i,ip)
-                              !if (iq.gt.ip) then
+                              !if (iq.GT.ip) then
                                   !add_part = add_part -1
                                   !cycle new_part_list
                               !endif
-                              if (iq .le. Npart) then
+                              IF (iq .le. Npart) then
                                   dist = SQRT(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
                                   xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
                                       opts%spawn_radius*D(ip) * &
@@ -307,11 +307,11 @@
                                       ((xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq)))/dist
                                       ! + 0.0_MK*default_stencil(1:ppm_dim,1))
                                       !mirror image of q
-                              endif
+                              ENDIF
                           else
                               xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                                  D(ip) * 0.98_mk * default_stencil(1:ppm_dim,i)
-                          endif
+                                  D(ip) * 0.98_MK * default_stencil(1:ppm_dim,i)
+                          ENDIF
 
 
                           D(Npart + add_part)   = D(ip)
@@ -480,7 +480,7 @@
                   IF (close_neigh .LE. nb_close_theo-2) then
                       adaptation_ok = .FALSE.
                   ENDIF
-                  !IF (nn .gt. opts%attractive_radius0 .and. opts%add_parts) THEN
+                  !IF (nn .GT. opts%attractive_radius0 .AND. opts%add_parts) THEN
                   IF (opts%add_parts) THEN
                       close_neigh=0
                       DO ineigh=1,nvlist(ip)
@@ -495,9 +495,9 @@
                       ENDDO
                       nvlist(ip) = min(close_neigh,3)
                                     !min(close_neigh,nb_close_theo-close_neigh)
-                      if (nvlist(ip) .eq. 0) then
+                      IF (nvlist(ip) .EQ. 0) then
                           nvlist(ip) = -6
-                      endif
+                      ENDIF
                   ELSE
                       nvlist(ip) = 0
                   ENDIF
@@ -505,7 +505,7 @@
                   nvlist(ip) = 0
               ENDIF
               !max_nn = MAX(nn,max_nn)
-              if (fuse_part(ip).ge.1) nvlist(ip) = 0
+              IF (fuse_part(ip).GE.1) nvlist(ip) = 0
 
               nb_neigh(ip) = close_neigh
 

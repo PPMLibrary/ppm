@@ -2,48 +2,48 @@ test_suite ppm_module_interp_p2m
 
     USE ppm_module_mpi
 
-    integer, parameter              :: debug = 0
-    integer, parameter              :: MK = KIND(1.0d0) !KIND(1.0e0)
+    INTEGER, PARAMETER              :: debug = 0
+    INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
 #ifdef __MPI
-    integer, parameter              :: comm = MPI_COMM_WORLD
+    INTEGER, PARAMETER              :: comm = MPI_COMM_WORLD
 #endif
-    integer                         :: ndim
-    integer                         :: nspec
-    integer                         :: rank
-    integer                         :: nproc
-    integer                         :: decomp
-    integer                         :: assig
-    integer                         :: tolexp
+    INTEGER                         :: ndim
+    INTEGER                         :: nspec
+    INTEGER                         :: rank
+    INTEGER                         :: nproc
+    INTEGER                         :: decomp
+    INTEGER                         :: assig
+    INTEGER                         :: tolexp
     REAL(MK)                        :: tol
-    integer                         :: info
-    integer                         :: topoid,meshid
-    REAL(MK),dimension(:,:),pointer :: xp => NULL()
-    REAL(MK),dimension(:,:),pointer :: wp => NULL()
-    REAL(MK),dimension(:  ),pointer :: min_phys => NULL()
-    REAL(MK),dimension(:  ),pointer :: max_phys => NULL()
-    REAL(MK),dimension(:  ),pointer :: h => NULL()
-    integer, dimension(:  ),pointer :: ghostsize => NULL()
-    integer                         :: i,j,k,p_i,ai,aj,it,isub
-    integer, dimension(:  ),pointer :: bcdef => NULL()
-    REAL(MK),dimension(:  ),pointer :: cost => NULL()
-    integer, dimension(:,:),pointer :: istart => NULL()
-    integer, dimension(:,:),pointer :: ndata => NULL()
-    integer, dimension(:  ),pointer :: nm => NULL()
-    integer                         :: np,mp
-    integer                         :: kernel
-    REAL(MK),dimension(:,:,:,:  ), pointer :: field_wp2 => NULL()! field_wp(ldn,i,j,isub)
-    REAL(MK),dimension(:,:,:,:,:), pointer :: field_wp3 => NULL()! field_wp(ldn,i,j,k,isub)
-    REAL(MK),dimension(:  ),pointer :: field_x => NULL()
+    INTEGER                         :: info
+    INTEGER                         :: topoid,meshid
+    REAL(MK),DIMENSION(:,:),POINTER :: xp => NULL()
+    REAL(MK),DIMENSION(:,:),POINTER :: wp => NULL()
+    REAL(MK),DIMENSION(:  ),POINTER :: min_phys => NULL()
+    REAL(MK),DIMENSION(:  ),POINTER :: max_phys => NULL()
+    REAL(MK),DIMENSION(:  ),POINTER :: h => NULL()
+    INTEGER, DIMENSION(:  ),POINTER :: ghostsize => NULL()
+    INTEGER                         :: i,j,k,p_i,ai,aj,it,isub
+    INTEGER, DIMENSION(:  ),POINTER :: bcdef => NULL()
+    REAL(MK),DIMENSION(:  ),POINTER :: cost => NULL()
+    INTEGER, DIMENSION(:,:),POINTER :: istart => NULL()
+    INTEGER, DIMENSION(:,:),POINTER :: ndata => NULL()
+    INTEGER, DIMENSION(:  ),POINTER :: nm => NULL()
+    INTEGER                         :: np,mp
+    INTEGER                         :: kernel
+    REAL(MK),DIMENSION(:,:,:,:  ), POINTER :: field_wp2 => NULL()! field_wp(ldn,i,j,isub)
+    REAL(MK),DIMENSION(:,:,:,:,:), POINTER :: field_wp3 => NULL()! field_wp(ldn,i,j,k,isub)
+    REAL(MK),DIMENSION(:  ),POINTER :: field_x => NULL()
     REAL(MK)                        :: maxm3
-    integer                         :: seedsize
-    integer,  dimension(:),ALLOCATABLE :: seed
+    INTEGER                         :: seedsize
+    INTEGER,  DIMENSION(:),ALLOCATABLE :: seed
     !---- The following variables are needed for testing the moments
-    integer, parameter              :: nmom2 = 10
-    integer, parameter              :: nmom3 = 19
-    integer, dimension(2,nmom2)     :: alpha2
-    integer, dimension(3,nmom3)     :: alpha3
-    REAL(MK),dimension(nmom2)       :: f_moments2, f_mom_global2, p_moments2
-    REAL(MK),dimension(nmom3)       :: f_moments3, f_mom_global3, p_moments3
+    INTEGER, PARAMETER              :: nmom2 = 10
+    INTEGER, PARAMETER              :: nmom3 = 19
+    INTEGER, DIMENSION(2,nmom2)     :: alpha2
+    INTEGER, DIMENSION(3,nmom3)     :: alpha3
+    REAL(MK),DIMENSION(nmom2)       :: f_moments2, f_mom_global2, p_moments2
+    REAL(MK),DIMENSION(nmom3)       :: f_moments3, f_mom_global3, p_moments3
 
     data ((alpha2(ai,aj), ai=1,2), aj=1,nmom2) /0,0, 1,0, 0,1, 2,0, 0,2, &
     &                                           1,1, 3,0, 0,3, 2,1, 1,2/
@@ -56,10 +56,10 @@ test_suite ppm_module_interp_p2m
         USE ppm_module_data
 
         tol = 100.0_MK*EPSILON(1.0_MK)
-        tolexp = int(log10(EPSILON(1.0_MK)))
+        tolexp = INT(LOG10(EPSILON(1.0_MK)))
 
         ALLOCATE(min_phys(3),max_phys(3),ghostsize(3),&
-        &         nm(3),h(3),field_x(3),stat=info)
+        &         nm(3),h(3),field_x(3),STAT=info)
 
 
 #ifdef __MPI
@@ -95,12 +95,12 @@ test_suite ppm_module_interp_p2m
         np = 400*nproc
         mp = 0
 
-        call random_seed(size=seedsize)
+        CALL random_seed(size=seedsize)
         ALLOCATE(seed(seedsize))
-        do i=1,seedsize
+        DO i=1,seedsize
             seed(i)=10+i*i*(rank+1)
-        enddo
-        call random_seed(put=seed)
+        ENDDO
+        CALL random_seed(put=seed)
 
     end setup
 !------------------------------------------------------------------------------
@@ -111,10 +111,10 @@ test_suite ppm_module_interp_p2m
 
         USE ppm_module_finalize
 
-        call ppm_finalize(info)
+        CALL ppm_finalize(info)
 
-        DEALLOCATE(xp,wp,stat=info)
-        DEALLOCATE(field_wp2,field_wp3,stat=info)
+        DEALLOCATE(xp,wp,STAT=info)
+        DEALLOCATE(field_wp2,field_wp3,STAT=info)
         DEALLOCATE(seed)
         DEALLOCATE(cost)
         DEALLOCATE(bcdef)
@@ -134,25 +134,25 @@ test_suite ppm_module_interp_p2m
         USE ppm_module_finalize
         USE ppm_module_map
 
-        implicit none
-        integer, dimension(2)            :: maxndata
-        integer, dimension(:  ), pointer :: isublist => NULL()
-        integer                          :: nsublist
+        IMPLICIT NONE
+        INTEGER, DIMENSION(2)            :: maxndata
+        INTEGER, DIMENSION(:  ), POINTER :: isublist => NULL()
+        INTEGER                          :: nsublist
         ndim = 2
         nspec = 1
         ALLOCATE(bcdef(2*ndim))
         bcdef(1:2*ndim) = ppm_param_bcdef_freespace
         kernel = ppm_param_rmsh_kernel_mp4
-        do i=1,ndim
+        DO i=1,ndim
             min_phys(i) = 0.0_MK
             max_phys(i) = 1.0_MK
             ghostsize(i) = 2
-        enddo
+        ENDDO
 
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-        ALLOCATE(xp(ndim,np),wp(nspec,np),stat=info)
-        call random_number(xp)
+        ALLOCATE(xp(ndim,np),wp(nspec,np),STAT=info)
+        CALL RANDOM_NUMBER(xp)
         wp = 0.0_MK
 
 
@@ -167,31 +167,31 @@ test_suite ppm_module_interp_p2m
 
 
 
-        ALLOCATE(nm(ndim),stat=info)
-        do i=1,ndim
+        ALLOCATE(nm(ndim),STAT=info)
+        DO i=1,ndim
             nm(i) = 16*nproc
-        enddo
+        ENDDO
 
-        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        CALL ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
         &               bcdef,ghostsize,cost,nm,info)
 
-        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        CALL ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
         &               isublist,nsublist,info)
 
 
         ALLOCATE(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
         &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
-        &        stat=info) ! 2d
+        &        STAT=info) ! 2d
 
-        do i=1,ndim
+        DO i=1,ndim
             h(i) = (max_phys(i) - min_phys(i)) / REAL(ndata(i,1)-1,mk)
-        enddo
+        ENDDO
 
-        call ppm_map_part_global(topoid,xp,np,info) ! positions
-        call ppm_map_part_push(wp,nspec,np,info)    ! strengths
-        call ppm_map_part_send(np,mp,info)          ! send
-        call ppm_map_part_pop(wp,nspec,np,mp,info)  ! strengths
-        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        CALL ppm_map_part_global(topoid,xp,np,info) ! positions
+        CALL ppm_map_part_push(wp,nspec,np,info)    ! strengths
+        CALL ppm_map_part_send(np,mp,info)          ! send
+        CALL ppm_map_part_pop(wp,nspec,np,mp,info)  ! strengths
+        CALL ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
         np = mp
 
 !        maxm3 = 0.0_MK
@@ -200,7 +200,7 @@ test_suite ppm_module_interp_p2m
             ! p --> m
             !----------------
             wp(1,p_i) = 1.0_MK
-            call ppm_interp_p2m(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+            CALL ppm_interp_p2m(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
             &                   field_wp2,info)
 
             !----------------
@@ -208,45 +208,45 @@ test_suite ppm_module_interp_p2m
             !----------------
             f_moments2 = 0.0_MK
             p_moments2 = 0.0_MK
-            do it=1,nsublist
+            DO it=1,nsublist
             isub = isublist(it)
-            do j = 1-ghostsize(2), ndata(2,isub)+ghostsize(2)
-                do i = 1-ghostsize(1),ndata(1,isub)+ghostsize(1)
+            DO j = 1-ghostsize(2), ndata(2,isub)+ghostsize(2)
+                DO i = 1-ghostsize(1),ndata(1,isub)+ghostsize(1)
                     field_x(1) = min_phys(1) + h(1)*REAL(i-1,mk)
                     field_x(2) = min_phys(2) + h(2)*REAL(j-1,mk)
                     do aj = 1,nmom2
                         f_moments2(aj) = f_moments2(aj) + field_wp2(1,i,j,isub)* &
                         &         field_x(1)**alpha2(1,aj)*field_x(2)**alpha2(2,aj)
-                    enddo
-                enddo
-            enddo
-            enddo
+                    ENDDO
+                ENDDO
+            ENDDO
+            ENDDO
 #ifdef __MPI
-            call mpi_allreduce(f_moments2,f_mom_global2,nmom2,ppm_mpi_kind,MPI_SUM,&
+            CALL mpi_allreduce(f_moments2,f_mom_global2,nmom2,ppm_mpi_kind,MPI_SUM,&
             &                  comm,info)
 #else
             f_mom_global2 = f_moments2
 #endif
             do aj = 1,nmom2
                 p_moments2(aj) = xp(1,p_i)**alpha2(1,aj)*xp(2,p_i)**alpha2(2,aj)
-            enddo
+            ENDDO
             do aj = 1,6
                 Assert_Equal_Within(f_mom_global2(aj),p_moments2(aj),tol)
-!                if (ABS(f_moments(aj) - p_moments(aj)) .GT. tol) then
+!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. tol) then
 !                    print *, 'particle pos:',     xp(:,p_i)
 !                    print *, 'failed at moment: ', aj
 !                    print *, 'field moments: ',   f_moments
 !                    print *, 'particle moments: ',p_moments
 !                    stop 'ERROR: p2m interpolation: moments not conserved.'
-!                endif
-            enddo
+!                ENDIF
+            ENDDO
 !            do aj = 7,10
-!                if (ABS(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
+!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
 !                    maxm3 = ABS(f_moments(aj) - p_moments(aj))
-!                endif
-!            enddo
+!                ENDIF
+!            ENDDO
             wp(1,p_i) = 0.0_MK
-        enddo
+        ENDDO
 
 !        print *, 'Maximum 3rd moment difference / h^3', maxm3/h**3
 
@@ -264,26 +264,26 @@ test_suite ppm_module_interp_p2m
         USE ppm_module_finalize
         USE ppm_module_map
 
-        implicit none
-        integer, dimension(3)            :: maxndata
-        integer, dimension(:  ), pointer :: isublist => NULL()
-        integer                          :: nsublist
+        IMPLICIT NONE
+        INTEGER, DIMENSION(3)            :: maxndata
+        INTEGER, DIMENSION(:  ), POINTER :: isublist => NULL()
+        INTEGER                          :: nsublist
 
         ndim = 3
         nspec = 1
         ALLOCATE(bcdef(2*ndim))
         bcdef(1:2*ndim) = ppm_param_bcdef_freespace
         kernel = ppm_param_rmsh_kernel_mp4
-        do i=1,ndim
+        DO i=1,ndim
             min_phys(i) = 0.0_MK
             max_phys(i) = 1.0_MK
             ghostsize(i) = 2
-        enddo
+        ENDDO
 
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-        ALLOCATE(xp(ndim,np),wp(nspec,np),stat=info)
-        call random_number(xp)
+        ALLOCATE(xp(ndim,np),wp(nspec,np),STAT=info)
+        CALL RANDOM_NUMBER(xp)
         wp = 0.0_MK
 
 
@@ -298,32 +298,32 @@ test_suite ppm_module_interp_p2m
 
 
 
-        ALLOCATE(nm(ndim),stat=info)
-        do i=1,ndim
+        ALLOCATE(nm(ndim),STAT=info)
+        DO i=1,ndim
             nm(i) = 16*nproc
-        enddo
+        ENDDO
 
-        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        CALL ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
         &               bcdef,ghostsize,cost,nm,info)
 
-        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        CALL ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
         &               isublist,nsublist,info)
 
 
         ALLOCATE(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
         &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
         &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
-        &       stat=info) ! 3d
+        &       STAT=info) ! 3d
 
-        do i=1,ndim
+        DO i=1,ndim
             h(i) = (max_phys(i) - min_phys(i)) / REAL(ndata(i,1)-1,mk)
-        enddo
+        ENDDO
 
-        call ppm_map_part_global(topoid,xp,np,info) ! positions
-        call ppm_map_part_push(wp,nspec,np,info)    ! strengths
-        call ppm_map_part_send(np,mp,info)          ! send
-        call ppm_map_part_pop(wp,nspec,np,mp,info)  ! strengths
-        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        CALL ppm_map_part_global(topoid,xp,np,info) ! positions
+        CALL ppm_map_part_push(wp,nspec,np,info)    ! strengths
+        CALL ppm_map_part_send(np,mp,info)          ! send
+        CALL ppm_map_part_pop(wp,nspec,np,mp,info)  ! strengths
+        CALL ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
         np = mp
 
 !        maxm3 = 0.0_MK
@@ -332,7 +332,7 @@ test_suite ppm_module_interp_p2m
             ! p --> m
             !----------------
             wp(1,p_i) = 1.0_MK
-            call ppm_interp_p2m(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+            CALL ppm_interp_p2m(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
             &                   field_wp3,info)
 
             !----------------
@@ -340,11 +340,11 @@ test_suite ppm_module_interp_p2m
             !----------------
             f_moments3 = 0.0_MK
             p_moments3 = 0.0_MK
-            do it=1,nsublist
+            DO it=1,nsublist
             isub = isublist(it)
-            do k = 1-ghostsize(3), ndata(3,isub)+ghostsize(3)
-                do j = 1-ghostsize(2), ndata(2,isub)+ghostsize(2)
-                    do i = 1-ghostsize(1),ndata(1,isub)+ghostsize(1)
+            DO k = 1-ghostsize(3), ndata(3,isub)+ghostsize(3)
+                DO j = 1-ghostsize(2), ndata(2,isub)+ghostsize(2)
+                    DO i = 1-ghostsize(1),ndata(1,isub)+ghostsize(1)
                         field_x(1) = min_phys(1) + h(1)*REAL(i-1,mk)
                         field_x(2) = min_phys(2) + h(2)*REAL(j-1,mk)
                         field_x(3) = min_phys(3) + h(3)*REAL(k-1,mk)
@@ -354,13 +354,13 @@ test_suite ppm_module_interp_p2m
                             &   field_x(1)**alpha3(1,aj)*&
                             &   field_x(2)**alpha3(2,aj)*&
                             &   field_x(3)**alpha3(3,aj)
-                        enddo
-                    enddo
-                enddo
-            enddo
-            enddo
+                        ENDDO
+                    ENDDO
+                ENDDO
+            ENDDO
+            ENDDO
 #ifdef __MPI
-            call mpi_allreduce(f_moments3,f_mom_global3,nmom3,ppm_mpi_kind,MPI_SUM,&
+            CALL mpi_allreduce(f_moments3,f_mom_global3,nmom3,ppm_mpi_kind,MPI_SUM,&
             &                  comm,info)
 #else
             f_mom_global3 = f_moments3
@@ -369,24 +369,24 @@ test_suite ppm_module_interp_p2m
                 p_moments3(aj) = xp(1,p_i)**alpha3(1,aj)*&
                 &                xp(2,p_i)**alpha3(2,aj)*&
                 &                xp(3,p_i)**alpha3(3,aj)
-            enddo
+            ENDDO
             do aj = 1,10
                 Assert_Equal_Within(f_mom_global3(aj),p_moments3(aj),tol)
-!                if (ABS(f_moments(aj) - p_moments(aj)) .GT. tol) then
+!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. tol) then
 !                    print *, 'particle pos:',     xp(:,p_i)
 !                    print *, 'failed at moment: ', aj
 !                    print *, 'field moments: ',   f_moments
 !                    print *, 'particle moments: ',p_moments
 !                    stop 'ERROR: p2m interpolation: moments not conserved.'
-!                endif
-            enddo
+!                ENDIF
+            ENDDO
 !            do aj = 7,10
-!                if (ABS(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
+!                IF (ABS(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
 !                    maxm3 = ABS(f_moments(aj) - p_moments(aj))
-!                endif
-!            enddo
+!                ENDIF
+!            ENDDO
             wp(1,p_i) = 0.0_MK
-        enddo
+        ENDDO
 
 !        print *, 'Maximum 3rd moment difference / h^3', maxm3/h**3
 

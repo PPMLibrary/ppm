@@ -141,7 +141,7 @@ REAL(MK), DIMENSION(:,:), POINTER              :: wp_2r => NULL()
         !----------------
         ! Add a patch
         !----------------
-        IF (ndim.eq.2) THEN
+        IF (ndim.EQ.2) THEN
            my_patch(1:4) = (/0.15_MK,0.10_MK,0.99_MK,0.7_MK/)
         ELSE
            my_patch(1:6) = (/0.15_MK,0.10_MK,0.5_MK,0.89_MK,0.7_MK,0.78_MK/)

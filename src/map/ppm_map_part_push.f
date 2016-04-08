@@ -1333,7 +1333,7 @@
                      & ppm_ghost_offsetd(icount)
                   ENDDO
                ENDIF ! end of lda = 3
-            ENDDO ! enddo of nsendlist
+            ENDDO ! ENDDO of nsendlist
 
          CASE DEFAULT ! buffers are single precision
             DO i=1,ppm_nsendlist
@@ -1384,7 +1384,7 @@
                      & ppm_ghost_offsets(icount)
                   ENDDO
                ENDIF ! end of lda = 3
-            ENDDO ! enddo of nsendlist
+            ENDDO ! ENDDO of nsendlist
 
          END SELECT ! end of single/double precision buffers
       ENDIF ! end of lpushpp

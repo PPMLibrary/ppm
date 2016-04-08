@@ -94,7 +94,7 @@
           DO ip=1,Particles%Npart
               vor(ip) = 0._MK
               DO j=1,nsamples
-                  call kdtree_n_nearest(tp=tree,qv=xsamples(1:ppm_dim,ip,j),&
+                  CALL kdtree_n_nearest(tp=tree,qv=xsamples(1:ppm_dim,ip,j),&
                       nn=knn+1,results=results)
 
                   IF (results(1)%idx .EQ. ip) THEN
@@ -104,7 +104,7 @@
               vor(ip) = vor(ip)/REAL(nsamples,MK) ! * pi*D(ip)**2
           ENDDO
 
-          call kdtree_destroy(tree)
+          CALL kdtree_destroy(tree)
           DEALLOCATE(results)
 
 

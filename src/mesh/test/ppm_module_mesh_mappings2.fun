@@ -115,9 +115,9 @@ REAL(MK),DIMENSION(ndim)         :: offset
 
         decomp=ppm_param_decomp_xy_slab
 
-        if (ppm_debug.ge.1 .and. rank.eq.0) then
+        IF (ppm_debug.GE.1 .AND. rank.EQ.0) then
            stdout("STARTING test with decomp = ",decomp,topoid,sizex,sizey)
-        endif
+        ENDIF
 #ifdef __MPI
         CALL MPI_BARRIER(comm,info)
 #endif
@@ -152,15 +152,15 @@ REAL(MK),DIMENSION(ndim)         :: offset
         Assert_Equal(info,0)
 
         p => Mesh1%subpatch%begin()
-        IF (associated(p)) THEN
+        IF (ASSOCIATED(p)) THEN
            p_idx = Field1%get_pid(Mesh1)
            Assert_True(p_idx.GT.0)
            p_idx = Field2%get_pid(Mesh1)
            Assert_True(p_idx.GT.0)
         ENDIF
-        do while (ASSOCIATED(p))
-           Assert_True(associated(p%mesh,Mesh1))
-           Assert_True(associated(p%subpatch_data))
+        DO WHILE (ASSOCIATED(p))
+           Assert_True(ASSOCIATED(p%mesh,Mesh1))
+           Assert_True(ASSOCIATED(p%subpatch_data))
            Assert_True(ALL(p%istart.GE.0))
            Assert_True(ALL(p%iend.GE.0))
            p_idx = Field1%get_pid(p%mesh)
@@ -168,7 +168,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
            p_idx = Field2%get_pid(p%mesh)
            Assert_True(p_idx.GT.0)
            p => Mesh1%subpatch%next()
-        enddo
+        ENDDO
 
         ! Check if the subpatch nodes are all exactly within the right subdomain
         topo => ppm_topo(Mesh1%topoid)%t
@@ -237,7 +237,7 @@ REAL(MK),DIMENSION(ndim)         :: offset
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                IF (Field2_n .lt. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
                 Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
@@ -331,9 +331,9 @@ REAL(MK),DIMENSION(ndim)         :: offset
 #ifdef __MPI
         CALL MPI_BARRIER(comm,info)
 #endif
-        if (ppm_debug.ge.1 .and. rank.eq.0) then
+        IF (ppm_debug.GE.1 .AND. rank.EQ.0) then
             stdout("FINISHED test with decomp = ",decomp,topoid)
-        endif
+        ENDIF
 #ifdef __MPI
         CALL MPI_BARRIER(comm,info)
 #endif

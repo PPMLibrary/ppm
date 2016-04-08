@@ -621,7 +621,7 @@
       ! size of memory allocated for results(1:nalloc).  Upon
       ! EXIT, nfound is the number actually found within the ball.
       !
-      !  Note that if nfound .gt. nalloc then more neighbors were found
+      !  Note that if nfound .GT. nalloc then more neighbors were found
       !  than there were storage to store.  The resulting list is NOT
       !  the smallest ball inside norm r^2
       !

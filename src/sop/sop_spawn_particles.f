@@ -284,13 +284,13 @@
                       new_part_list: DO i=1,ABS(nvlist(ip))
                           add_part = add_part + 1
 
-                          if(nvlist(ip) .gt.0) then
+                          if(nvlist(ip) .GT.0) then
                               iq = Particles%vlist(i,ip)
-                              !if (iq.gt.ip) then
+                              !if (iq.GT.ip) then
                                   !add_part = add_part -1
                                   !cycle new_part_list
                               !endif
-                              if (iq .le. Npart) then
+                              IF (iq .le. Npart) then
                                   dist = SQRT(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
                                   xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
                                       0.1_MK*D(ip) * &
@@ -303,11 +303,11 @@
                                       0.1_MK*D(ip) * &
                                       ((xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq))/dist + & !mirror image of q
                                       default_stencil(1:ppm_dim,1))
-                              endif
+                              ENDIF
                           else
                               xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                                  D(ip) * 0.8_mk * default_stencil(1:ppm_dim,i)
-                          endif
+                                  D(ip) * 0.8_MK * default_stencil(1:ppm_dim,i)
+                          ENDIF
 
 
                           D(Npart + add_part)   = D(ip)
@@ -412,7 +412,7 @@
 
           DO ip=1,Particles%Npart
               ineigh = 1
-              !IF (D(ip)/Dtilde(ip) .LT. 1.5_mk) THEN
+              !IF (D(ip)/Dtilde(ip) .LT. 1.5_MK) THEN
                   !needs_neigh_l = .FALSE.
                   !CYCLE
               !ENDIF
@@ -438,7 +438,7 @@
               ENDIF
 
               !IF (ANY(needs_neigh_l)) THEN
-              IF (COUNT(needs_neigh_l).ge.2) THEN
+              IF (COUNT(needs_neigh_l).GE.2) THEN
                   loop_quadrants: DO iq=1,4
                       IF(needs_neigh_l(iq)) THEN
                           nvlist(ip) = iq
@@ -598,7 +598,7 @@
                   IF (close_neigh .LE. nb_close_theo-2) then
                       adaptation_ok = .FALSE.
                   ENDIF
-                  !IF (nn .gt. opts%attractive_radius0 .and. opts%add_parts) THEN
+                  !IF (nn .GT. opts%attractive_radius0 .AND. opts%add_parts) THEN
                   IF (opts%add_parts) THEN
                       close_neigh=0
                       DO ineigh=1,nvlist(ip)
@@ -612,9 +612,9 @@
                           ENDIF
                       ENDDO
                       nvlist(ip) = min(1,close_neigh) !close_neigh ! min(close_neigh,6-close_neigh)
-                      if (nvlist(ip) .eq. 0) then
+                      IF (nvlist(ip) .EQ. 0) then
                           nvlist(ip) = -6
-                      endif
+                      ENDIF
                   ELSE
                       nvlist(ip) = 0
                   ENDIF
@@ -622,7 +622,7 @@
                   nvlist(ip) = 0
               ENDIF
               !max_nn = MAX(nn,max_nn)
-              if (fuse_part(ip).ge.1) nvlist(ip) = 0
+              IF (fuse_part(ip).GE.1) nvlist(ip) = 0
 
               nb_neigh(ip) = close_neigh
 

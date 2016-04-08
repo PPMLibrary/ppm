@@ -99,7 +99,7 @@ test_suite ppm_module_neighlist
 
   test memleak
     USE ppm_module_topo_typedef
-    USE ppm_module_MKtopo
+    USE ppm_module_mktopo
     USE ppm_module_map
     USE ppm_module_topo_check
     USE ppm_module_util_dbg
@@ -121,8 +121,9 @@ test_suite ppm_module_neighlist
     TYPE(ppm_t_clist),DIMENSION(:),POINTER :: clist => NULL()
 
     npart=1000
-    CALL part_init(p,npart,min_phys,max_phys,info,&
-    &    ppm_param_part_init_cartesian,0.5_MK)
+    CALL part_init(p,npart,min_phys,max_phys,info,ppm_param_part_init_cartesian,0.5_MK)
+    Assert_Equal(info,0)
+
     h = 2.0_MK*(len_phys(1)/(SQRT(REAL(npart,mk))))
     gl = 0.0_MK
     bcdef(1:6) = ppm_param_bcdef_freespace
@@ -136,20 +137,28 @@ test_suite ppm_module_neighlist
 
     topoid = 0
 
-    CALL ppm_MKtopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl+skin,cost,info)
+    CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl+skin,cost,info)
 
     CALL ppm_map_part_global(topoid,p,npart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_send(npart,newnpart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+    Assert_Equal(info,0)
     npart=newnpart
 
 
     CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl+skin,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_send(npart,mpart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+    Assert_Equal(info,0)
 
     CALL ppm_topo_check(topoid,p,npart,ok,info)
+    Assert_Equal(info,0)
     !CALL ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
+    Assert_Equal(info,0)
 
     ALLOCATE(pidx(npart))
     FORALL(k=1:npart) pidx(k) = k
@@ -166,7 +175,7 @@ test_suite ppm_module_neighlist
   !test stack_overflow({npart: [10,1000,10000,100000,1000000,10000000]})
   test stack_overflow({npart: [10,1000,10000,100000]})
     USE ppm_module_topo_typedef
-    USE ppm_module_MKtopo
+    USE ppm_module_mktopo
     USE ppm_module_map
     USE ppm_module_topo_check
     USE ppm_module_util_dbg
@@ -186,10 +195,10 @@ test_suite ppm_module_neighlist
     INTEGER             :: i,j,k
     INTEGER, DIMENSION(:),POINTER   :: pidx
 
-    CALL part_init(p,npart,min_phys,max_phys,info,&
-    &    ppm_param_part_init_cartesian,0.5_MK)
+    CALL part_init(p,npart,min_phys,max_phys,info,ppm_param_part_init_cartesian,0.5_MK)
+    Assert_Equal(info,0)
     !print *,npart
-    h = 2.0_MK*(len_phys(1)/(SQRT(REAL(npart,mk))))
+    h = 2.0_MK*(len_phys(1)/(SQRT(REAL(npart,MK))))
     gl = 0.0_MK
     bcdef(1:6) = ppm_param_bcdef_freespace
     NULLIFY(nvlist,vlist,pidx)
@@ -202,35 +211,43 @@ test_suite ppm_module_neighlist
 
     topoid = 0
 
-    CALL ppm_MKtopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl+skin,cost,info)
+    CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl+skin,cost,info)
+    Assert_Equal(info,0)
 
     CALL ppm_map_part_global(topoid,p,npart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_send(npart,newnpart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+    Assert_Equal(info,0)
     npart=newnpart
 
 
     CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl+skin,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_send(npart,mpart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+    Assert_Equal(info,0)
 
     CALL ppm_topo_check(topoid,p,npart,ok,info)
+    Assert_Equal(info,0)
     !CALL ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
+    Assert_Equal(info,0)
 
     ALLOCATE(pidx(npart))
     FORALL(k=1:npart) pidx(k) = k
 
-    CALL ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,&
-    &            vlist,nvlist,info)!,pidx)
-
+    CALL ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,vlist,nvlist,info)!,pidx)
     Assert_Equal(info,0)
-    deALLOCATE(p,vlist,nvlist,pidx)
+
+    DEALLOCATE(p,vlist,nvlist,pidx)
   end test
 
   test symbcvlistsize
     ! tests symmetric boundary conditions and vlist size/content
     USE ppm_module_topo_typedef
-    USE ppm_module_MKtopo
+    USE ppm_module_mktopo
     USE ppm_module_topo_check
     USE ppm_module_util_dbg
     USE ppm_module_map
@@ -272,30 +289,43 @@ test_suite ppm_module_neighlist
     topoid = 0
 
     CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl,cost,info)
+    Assert_Equal(info,0)
 
     CALL ppm_map_part_global(topoid,p,npart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_push(w,npart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_send(npart,newnpart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_pop(w,npart,newnpart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+    Assert_Equal(info,0)
     npart=newnpart
 
     CALL ppm_topo_check(topoid,p,npart,ok,info)
-
+    Assert_Equal(info,0)
     Assert_True(ok)
+
     !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
     CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_push(w,npart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_send(npart,mpart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_pop(w,npart,mpart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+    Assert_Equal(info,0)
 
     CALL ppm_topo_check(topoid,p,npart,ok,info)
-
+    Assert_Equal(info,0)
     Assert_True(ok)
-    CALL ppm_neighlist_vlist(topoid,p,mpart,gl/2.0_MK,skin,.TRUE.,&
-    &            vlist,nvlist,info)
+
+    CALL ppm_neighlist_vlist(topoid,p,mpart,gl/2.0_MK,skin,.TRUE.,vlist,nvlist,info)
+    Assert_Equal(info,0)
 
     !CALL ppm_dbg_print(topoid,gl,1,nvlist,info,p,npart,mpart)
 
@@ -311,7 +341,7 @@ test_suite ppm_module_neighlist
   test symBC_neighlist
     ! tests symmetric boundary conditions and ghost get
     USE ppm_module_topo_typedef
-    USE ppm_module_MKtopo
+    USE ppm_module_mktopo
     USE ppm_module_map
     USE ppm_module_topo_check
     USE ppm_module_util_dbg
@@ -349,24 +379,32 @@ test_suite ppm_module_neighlist
 
     topoid = 0
 
-    CALL ppm_MKtopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-    &           gl+skin,cost,info)
+    CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl+skin,cost,info)
+    Assert_Equal(info,0)
 
     CALL ppm_map_part_global(topoid,p,npart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_send(npart,newnpart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+    Assert_Equal(info,0)
     npart=newnpart
 
 
     CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl+skin,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_send(npart,mpart,info)
+    Assert_Equal(info,0)
     CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+    Assert_Equal(info,0)
 
     CALL ppm_topo_check(topoid,p,npart,ok,info)
+    Assert_Equal(info,0)
     !CALL ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
+    Assert_Equal(info,0)
 
-    CALL ppm_neighlist_vlist(topoid,p,mpart,gl,skin,.TRUE.,&
-    &            vlist,nvlist,info)
+    CALL ppm_neighlist_vlist(topoid,p,mpart,gl,skin,.TRUE.,vlist,nvlist,info)
+    Assert_Equal(info,0)
 
     !DO i=1,mpart
     !    print *,i,p(:,i)
@@ -381,48 +419,48 @@ test_suite ppm_module_neighlist
     cp(2) = 0.5_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
-        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).LT.eps).AND.&
+        &   (ABS(p(2,i)-cp(2)).LT.eps)) THEN
           ip = i
           exit
         ENDIF
     ENDDO
-    IF (nproc.eq.1) THEN
-       Assert_False(ip.eq.-1)
-       Assert_True((vlist(1,1).eq.ip).or.(vlist(1,ip).eq.1))
+    IF (nproc.EQ.1) THEN
+       Assert_False(ip.EQ.-1)
+       Assert_True((vlist(1,1).EQ.ip).OR.(vlist(1,ip).EQ.1))
     ENDIF
     ! p(2)
     cp(1) = 0.5_MK
     cp(2) = -0.05_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
-        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).LT.eps).AND.&
+        &   (ABS(p(2,i)-cp(2)).LT.eps)) THEN
         ip = i
         exit
         ENDIF
     ENDDO
-    IF (nproc.eq.1) THEN
-       Assert_False(ip.eq.-1)
-       Assert_True((vlist(1,2).eq.ip).or.(vlist(1,ip).eq.2))
+    IF (nproc.EQ.1) THEN
+       Assert_False(ip.EQ.-1)
+       Assert_True((vlist(1,2).EQ.ip).OR.(vlist(1,ip).EQ.2))
     ENDIF
     ! p(3)
     cp(1) = 0.05_MK
     cp(2) = -0.05_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
-        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).LT.eps).AND.&
+        &   (ABS(p(2,i)-cp(2)).LT.eps)) THEN
         ip = i
         exit
         ENDIF
     ENDDO
-    IF (nproc.eq.1) THEN
-       Assert_False(ip.eq.-1)
-       ok = (vlist(1,3).eq.ip).or.&
-       &    (vlist(2,3).eq.ip).or.&
-       &    (vlist(1,ip).eq.3).or.&
-       &    (vlist(2,ip).eq.3)
+    IF (nproc.EQ.1) THEN
+       Assert_False(ip.EQ.-1)
+       ok = (vlist(1,3).EQ.ip).OR.&
+       &    (vlist(2,3).EQ.ip).OR.&
+       &    (vlist(1,ip).EQ.3).OR.&
+       &    (vlist(2,ip).EQ.3)
        Assert_True(ok)
     ENDIF
 
@@ -430,36 +468,36 @@ test_suite ppm_module_neighlist
     cp(2) = 0.05_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
-        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).LT.eps).AND.&
+        &   (ABS(p(2,i)-cp(2)).LT.eps)) THEN
         ip = i
         exit
         ENDIF
     ENDDO
-    IF (nproc.eq.1) THEN
-       Assert_False(ip.eq.-1)
-       ok = (vlist(1,3).eq.ip).or.&
-       &    (vlist(2,3).eq.ip).or.&
-       &    (vlist(1,ip).eq.3).or.&
-       &    (vlist(2,ip).eq.3)
+    IF (nproc.EQ.1) THEN
+       Assert_False(ip.EQ.-1)
+       ok = (vlist(1,3).EQ.ip).OR.&
+       &    (vlist(2,3).EQ.ip).OR.&
+       &    (vlist(1,ip).EQ.3).OR.&
+       &    (vlist(2,ip).EQ.3)
        Assert_True(ok)
     ENDIF
     cp(1) = -0.05_MK
     cp(2) = -0.05_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
-        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).LT.eps).AND.&
+        &   (ABS(p(2,i)-cp(2)).LT.eps)) THEN
         ip = i
         exit
         ENDIF
     ENDDO
-    IF (nproc.eq.1) THEN
-       Assert_False(ip.eq.-1)
-       ok = (vlist(1,3).eq.ip).or.&
-       &    (vlist(2,3).eq.ip).or.&
-       &    (vlist(1,ip).eq.3).or.&
-       &    (vlist(2,ip).eq.3)
+    IF (nproc.EQ.1) THEN
+       Assert_False(ip.EQ.-1)
+       ok = (vlist(1,3).EQ.ip).OR.&
+       &    (vlist(2,3).EQ.ip).OR.&
+       &    (vlist(1,ip).EQ.3).OR.&
+       &    (vlist(2,ip).EQ.3)
        Assert_True(ok)
     ENDIF
 
@@ -468,15 +506,15 @@ test_suite ppm_module_neighlist
     cp(2) = 1.05_MK
     ip = -1
     DO i=npart+1,mpart
-        IF ((ABS(p(1,i)-cp(1)).lt.eps).and.&
-        &   (ABS(p(2,i)-cp(2)).lt.eps)) THEN
+        IF ((ABS(p(1,i)-cp(1)).LT.eps).AND.&
+        &   (ABS(p(2,i)-cp(2)).LT.eps)) THEN
         ip = i
         exit
         ENDIF
     ENDDO
-    IF (nproc.eq.1) THEN
-       Assert_False(ip.eq.-1)
-       Assert_True((vlist(1,4).eq.ip).or.(vlist(1,ip).eq.4))
+    IF (nproc.EQ.1) THEN
+       Assert_False(ip.EQ.-1)
+       Assert_True((vlist(1,4).EQ.ip).OR.(vlist(1,ip).EQ.4))
     ENDIF
   end test
 

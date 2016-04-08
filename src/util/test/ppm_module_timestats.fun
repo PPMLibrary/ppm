@@ -29,7 +29,7 @@ test_suite ppm_module_timestats
     len_phys(1:ndim) = max_phys-min_phys
     bcdef(1:6) = ppm_param_bcdef_periodic
     tol = EPSILON(1.0_MK)
-    tolexp = int(log10(EPSILON(1.0_MK)))
+    tolexp = INT(LOG10(EPSILON(1.0_MK)))
 
     NULLIFY(xp)
 
@@ -67,7 +67,7 @@ test_suite ppm_module_timestats
     ! test netstat
 
     USE ppm_module_data
-    USE ppm_module_MKtopo
+    USE ppm_module_mktopo
     USE ppm_module_topo_check
     USE ppm_module_test
     IMPLICIT NONE
@@ -102,7 +102,7 @@ test_suite ppm_module_timestats
     Assert_Equal(info,0)
     CALL ppm_tstats_tic(test2,1,info)
     Assert_Equal(info,0)
-    CALL ppm_MKtopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef,0.1_MK,cost,info)
+    CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef,0.1_MK,cost,info)
     Assert_Equal(info,0)
     CALL ppm_tstats_toc(test2,1,time,info)
     Assert_Equal(info,0)

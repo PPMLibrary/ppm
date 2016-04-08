@@ -105,7 +105,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         decomp = ppm_param_decomp_cuboid
         assig  = ppm_param_assign_internal
         topoid = 0
-        sca_ghostsize = 0.05_mk
+        sca_ghostsize = 0.05_MK
         CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
@@ -134,25 +134,25 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         Assert_Equal(info,0)
 
         !One patch
-        my_patch(1:6) = (/0.5_mk,0.3_mk,0.1_mk,5.1_mk,1.1_mk,10.0_MK/)
+        my_patch(1:6) = (/0.5_MK,0.3_MK,0.1_MK,5.1_MK,1.1_MK,10.0_MK/)
         my_patch(ndim) = 5.1
         my_patch(2*ndim) = 10.0
 
         CALL Mesh1%def_patch(my_patch,info,patchid(1))
         Assert_Equal(info,0)
-        Assert_True(associated(Mesh1%subpatch))
+        Assert_True(ASSOCIATED(Mesh1%subpatch))
 
         ipatch = 0
         topo => ppm_topo(Mesh1%topoid)%t
-        do i = 1,topo%nsublist
+        DO i = 1,topo%nsublist
             isub = topo%isublist(i)
-            if (all(my_patch(1:ndim).LT.topo%max_subd(1:ndim,isub)) .AND. &
+            IF (all(my_patch(1:ndim).LT.topo%max_subd(1:ndim,isub)) .AND. &
                 all(my_patch(ndim+1:2*ppm_dim).GT.topo%min_subd(1:ndim,isub)))&
                 then
                 !count one subpatch
                 ipatch = ipatch + 1
-            endif
-        enddo
+            ENDIF
+        ENDDO
 
         isub = 0
         p => Mesh1%subpatch%begin()
@@ -163,7 +163,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         Assert_Equal(isub,ipatch)
 
         !Second patch
-        my_patch(1:6) = (/0.5_mk,0.3_mk,0.1_mk,5.1_mk,1.1_mk,10.0_MK/)
+        my_patch(1:6) = (/0.5_MK,0.3_MK,0.1_MK,5.1_MK,1.1_MK,10.0_MK/)
         my_patch(ndim) = 5.1
         my_patch(2*ndim) = 10.0
 
@@ -179,7 +179,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         CALL Mesh1%destroy(info)
         Assert_Equal(info,0)
 
-        Assert_False(associated(Mesh1%subpatch))
+        Assert_False(ASSOCIATED(Mesh1%subpatch))
     end test
 
     test mesh_add_many_patches
@@ -189,7 +189,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         CALL Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
 
-        if (ndim .eq. 2) then
+        IF (ndim .EQ. 2) then
 
             mypatchid = 0
             DO i = 1,Nm(1)/4
@@ -198,7 +198,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
                 my_patch(1:4) = (/h(1)*i,h(2)*j,h(1)*(i+4),h(2)*(j+4)/)
                 CALL Mesh1%def_patch(my_patch,info,mypatchid)
                 Assert_Equal(info,0)
-                Assert_True(associated(Mesh1%subpatch))
+                Assert_True(ASSOCIATED(Mesh1%subpatch))
             ENDDO
             ENDDO
 
@@ -212,16 +212,16 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
                     h(1)*(i+4),h(2)*(j+4),h(3)*(k+4)/)
                 CALL Mesh1%def_patch(my_patch,info,mypatchid)
                 Assert_Equal(info,0)
-                Assert_True(associated(Mesh1%subpatch))
+                Assert_True(ASSOCIATED(Mesh1%subpatch))
             ENDDO
             ENDDO
             ENDDO
-        endif
+        ENDIF
 
         CALL Mesh1%destroy(info)
         Assert_Equal(info,0)
 
-        Assert_False(associated(Mesh1%subpatch))
+        Assert_False(ASSOCIATED(Mesh1%subpatch))
         end_subroutine()
     end test
 
@@ -240,7 +240,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         CALL Mesh1%def_patch(my_patch,info,mypatchid)
             Assert_Equal(info,0)
 
-        Assert_True(associated(Mesh1%subpatch))
+        Assert_True(ASSOCIATED(Mesh1%subpatch))
 
         isub = 0
         p => Mesh1%subpatch%begin()
@@ -277,11 +277,11 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         & ghostsize=ighostsize,name='Test_Mesh_1')
         Assert_Equal(info,0)
 
-        if (ndim.eq.2) then
-           my_patch(1:4) = (/0.15_mk,0.10_MK,0.99_mk,0.7_mk/)
+        IF (ndim.EQ.2) then
+           my_patch(1:4) = (/0.15_MK,0.10_MK,0.99_MK,0.7_MK/)
         else
-           my_patch(1:6) = (/0.15_mk,0.10_MK,0.41_mk,0.99_mk,0.7_mk,0.78_mk/)
-        endif
+           my_patch(1:6) = (/0.15_MK,0.10_MK,0.41_MK,0.99_MK,0.7_MK,0.78_MK/)
+        ENDIF
 
         CALL Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
@@ -297,15 +297,15 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
 
 
         p => Mesh1%subpatch%begin()
-        IF (associated(p)) THEN
+        IF (ASSOCIATED(p)) THEN
             p_idx = Field1%get_pid(Mesh1)
             Assert_True(p_idx.GT.0)
             p_idx = Field2%get_pid(Mesh1)
             Assert_True(p_idx.GT.0)
         ENDIF
-        do while (ASSOCIATED(p))
-            Assert_True(associated(p%mesh,Mesh1))
-            Assert_True(associated(p%subpatch_data))
+        DO WHILE (ASSOCIATED(p))
+            Assert_True(ASSOCIATED(p%mesh,Mesh1))
+            Assert_True(ASSOCIATED(p%subpatch_data))
             Assert_True(ALL(p%istart_p.GE.0))
             Assert_True(ALL(p%iend_p.GE.0))
             p_idx = Field1%get_pid(p%mesh)
@@ -313,12 +313,12 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
             p_idx = Field2%get_pid(p%mesh)
             Assert_True(p_idx.GT.0)
             p => Mesh1%subpatch%next()
-        enddo
+        ENDDO
 
         ! Check if the subpatch nodes are all exactly within the right subdomain
         topo => ppm_topo(Mesh1%topoid)%t
         ! loop through all subdomains on this processor
-        IF (ndim.eq.2) THEN
+        IF (ndim.EQ.2) THEN
             DO jsub = 1,topo%nsublist
                 isub = topo%isublist(jsub)
                 DO ipatch=1,Mesh1%subpatch_by_sub(isub)%nsubpatch
@@ -418,7 +418,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .lt. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
                 Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
@@ -429,7 +429,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                IF (Field2_n .lt. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
                 Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
@@ -470,9 +470,9 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
 !
 !
 !        ALLOCATE(nm(ndim),STAT=info)
-!        do i=1,ndim
+!        DO i=1,ndim
 !            nm(i) = 32*nproc
-!        enddo
+!        ENDDO
 !
 !        !----------------
 !        ! make topology
@@ -506,9 +506,9 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
 !!        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
 !!        &       STAT=info) ! 3d
 !
-!        do i=1,ndim
+!        DO i=1,ndim
 !            h(i) = (max_phys(i) - min_phys(i)) / REAL(ndata(i,1)-1,mk)
-!        enddo
+!        ENDDO
 !
 !        meshid_ref = -1
 !        nm_ref = nm

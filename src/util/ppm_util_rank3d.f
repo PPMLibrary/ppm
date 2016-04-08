@@ -256,30 +256,30 @@
 
          ! if particle is outside the physical domain but index belongs to a
          ! real cell -> move particle to ghost cell
-         if (xp(1,ipart) .GE. xmax(1) .AND. i .LT. nm(1)+ngl(1)) THEN
+         IF (xp(1,ipart) .GE. xmax(1) .AND. i .LT. nm(1)+ngl(1)) THEN
             i = nm(1) + ngl(1)
             icorr = icorr + 1
          ENDIF
-         if (xp(2,ipart) .GE. xmax(2) .AND. j .LT. nm(2)+ngl(2)) THEN
+         IF (xp(2,ipart) .GE. xmax(2) .AND. j .LT. nm(2)+ngl(2)) THEN
             j = nm(2) + ngl(2)
             icorr = icorr + 1
          ENDIF
-         if (xp(3,ipart) .GE. xmax(3) .AND. k .LT. nm(3)+ngl(3)) THEN
+         IF (xp(3,ipart) .GE. xmax(3) .AND. k .LT. nm(3)+ngl(3)) THEN
             k = nm(3) + ngl(3)
             icorr = icorr + 1
          ENDIF
 
          ! if particle is inside the physical domain but index belongs to a
          ! ghost cell -> move particle in real cell
-         if (xp(1,ipart) .LT. xmax(1) .AND. i .GE. nm(1)+ngl(1)) THEN
+         IF (xp(1,ipart) .LT. xmax(1) .AND. i .GE. nm(1)+ngl(1)) THEN
             i = nm(1) + ngl(1) - 1
             icorr = icorr + 1
          ENDIF
-         if (xp(2,ipart) .LT. xmax(2) .AND. j .GE. nm(2)+ngl(2)) THEN
+         IF (xp(2,ipart) .LT. xmax(2) .AND. j .GE. nm(2)+ngl(2)) THEN
             j = nm(2) + ngl(2) - 1
             icorr = icorr + 1
          ENDIF
-         if (xp(3,ipart) .LT. xmax(3) .AND. k .GE. nm(3)+ngl(3)) THEN
+         IF (xp(3,ipart) .LT. xmax(3) .AND. k .GE. nm(3)+ngl(3)) THEN
             k = nm(3) + ngl(3) - 1
             icorr = icorr + 1
          ENDIF

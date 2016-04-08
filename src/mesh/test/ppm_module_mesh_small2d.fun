@@ -105,7 +105,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         decomp = ppm_param_decomp_cuboid
         assig  = ppm_param_assign_internal
         topoid = 0
-        sca_ghostsize = 0.05_mk
+        sca_ghostsize = 0.05_MK
         CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
@@ -113,27 +113,27 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
 
 
 
-        if (ppm_debug.gt.0) then
+        IF (ppm_debug.GT.0) then
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
 #endif
             topo => ppm_topo(topoid)%t
             stdout("NB subdomains GLOBAL =  ",topo%nsubs)
             stdout("NB subdomains LOCAL  =  ",topo%nsublist)
-            do i = 1,topo%nsublist
+            DO i = 1,topo%nsublist
                 isub = topo%isublist(i)
                 stdout("Subdomain number ",isub)
                 stdout("coordinates  Min =  ",'topo%min_subd(1:2,isub)')
                 stdout("coordinates  Max =  ",'topo%max_subd(1:2,isub)')
                 stdout("number of neighs  =  ",'topo%nneighsubs(i)')
-                do j=1,topo%nneighsubs(i)
+                DO j=1,topo%nneighsubs(i)
                 stdout("list of neighs        :  ",'topo%ineighsubs(j,i)')
-                enddo
-            enddo
+                ENDDO
+            ENDDO
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
 #endif
-        endif
+        ENDIF
 
         Nm = 125
         offset = 0.0_MK
@@ -167,7 +167,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         &    ghostsize=ighostsize,name='Test_Mesh_1')
         Assert_Equal(info,0)
 
-        my_patch(1:2*ndim) = (/0.15_mk,0.10_MK,0.99_mk,0.7_mk/)
+        my_patch(1:2*ndim) = (/0.15_MK,0.10_MK,0.99_MK,0.7_MK/)
         CALL Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
 
@@ -184,15 +184,15 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         Assert_Equal(info,0)
 
         p => Mesh1%subpatch%begin()
-        IF (associated(p)) THEN
+        IF (ASSOCIATED(p)) THEN
             p_idx = Field1%get_pid(Mesh1)
             Assert_True(p_idx.GT.0)
             p_idx = Field2%get_pid(Mesh1)
             Assert_True(p_idx.GT.0)
         ENDIF
-        do while (ASSOCIATED(p))
-            Assert_True(associated(p%mesh,Mesh1))
-            Assert_True(associated(p%subpatch_data))
+        DO WHILE (ASSOCIATED(p))
+            Assert_True(ASSOCIATED(p%mesh,Mesh1))
+            Assert_True(ASSOCIATED(p%subpatch_data))
             Assert_True(ALL(p%istart_p.GE.0))
             Assert_True(ALL(p%iend_p.GE.0))
             p_idx = Field1%get_pid(p%mesh)
@@ -200,7 +200,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
             p_idx = Field2%get_pid(p%mesh)
             Assert_True(p_idx.GT.0)
             p => Mesh1%subpatch%next()
-        enddo
+        ENDDO
 
         ! Check if the subpatch nodes are all exactly within the right subdomain
         topo => ppm_topo(Mesh1%topoid)%t
@@ -221,29 +221,29 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
             ENDDO
         ENDDO
 
-        if (ppm_debug.GT.0) then
+        IF (ppm_debug.GT.0) then
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
 #endif
             stdout("NB subdomains =  ",topo%nsubs)
-            do i = 1,topo%nsublist
+            DO i = 1,topo%nsublist
                 isub = topo%isublist(i)
                 stdout("coordinates subs Min =  ",'topo%min_subd(1:2,isub)')
                 stdout("coordinates subs Max =  ",'topo%max_subd(1:2,isub)')
-            enddo
+            ENDDO
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
 #endif
             stdout("NB patch =  ",Mesh1%npatch)
             stdout("NB subpatch =  ",Mesh1%subpatch%nb)
             p => Mesh1%subpatch%begin()
-                if(associated(p)) then
+                IF (ASSOCIATED(p)) then
                     stdout("********************************")
                     stdout("patch     istart_p ",'p%istart_p(1:2)')
                     stdout("patch     iend_p ",'p%iend_p(1:2)')
                     stdout("********************************")
-                endif
-            do while (ASSOCIATED(p))
+                ENDIF
+            DO WHILE (ASSOCIATED(p))
                 stdout("--------------------------------")
                 stdout("patch     istart ",'p%istart(1:2)')
                 stdout("patch     iend   ",'p%iend(1:2)')
@@ -253,11 +253,11 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
                 stdout("            to   ",'p%hi_a(1:2)')
                 stdout("--------------------------------")
                 p => Mesh1%subpatch%next()
-            enddo
+            ENDDO
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
 #endif
-        endif
+        ENDIF
 
         !Fill in the allocated field arrays (incl. ghost nodes) with some data
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
@@ -305,7 +305,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .lt. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
                 !stdout_f('(A,2(I0,1X),A,2(E24.16,1X))',&

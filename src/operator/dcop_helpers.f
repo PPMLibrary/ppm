@@ -1160,7 +1160,7 @@
           !!! Raise an error if the singular value is below a threshold
           !!!----------------------------------------------------------------------
 
-          !IF (MINVAL(diag) .LT. 0.001_mk) THEN
+          !IF (MINVAL(diag) .LT. 0.001_MK) THEN
               !WRITE(cbuf,'(A,E20.6)')'singular value. Min = ', MINVAL(diag)
               !CALL ppm_write(ppm_rank,caller,cbuf, info)
               !info = -1

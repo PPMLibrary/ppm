@@ -16,7 +16,7 @@ INTEGER,PARAMETER               :: ndim=2
 INTEGER                         :: decomp,assig,tolexp
 INTEGER                         :: info,comm,rank,nproc,topoid
 INTEGER                         :: np_global = 3000
-REAL(MK),PARAMETER              :: cutoff = 0.15_mk
+REAL(MK),PARAMETER              :: cutoff = 0.15_MK
 REAL(MK),DIMENSION(:,:),POINTER :: xp=>NULL()
 REAL(MK),DIMENSION(:  ),POINTER :: min_phys=>NULL(),max_phys=>NULL()
 REAL(MK),DIMENSION(:  ),POINTER :: len_phys=>NULL()
@@ -67,14 +67,14 @@ INTEGER                                        :: nterms
         rank = 0
         nproc = 1
 #endif
-        tolexp = int(log10(EPSILON(1.0_MK)))+10
+        tolexp = INT(LOG10(EPSILON(1.0_MK)))+10
         CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
         CALL RANDOM_SEED(size=seedsize)
         ALLOCATE(seed(seedsize))
-        do i=1,seedsize
+        DO i=1,seedsize
             seed(i)=10+i*i*(rank+1)
-        enddo
+        ENDDO
         CALL RANDOM_SEED(put=seed)
 
         !----------------
@@ -137,7 +137,7 @@ INTEGER                                        :: nterms
 
         ALLOCATE(wp_2r(ndim,Part1%Npart))
         CALL RANDOM_NUMBER(wp_2r)
-        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.15_mk
+        wp_2r = (wp_2r - 0.5_MK) * Part1%h_avg * 0.15_MK
         CALL Part1%move(wp_2r,info)
         Assert_Equal(info,0)
         DEALLOCATE(wp_2r)
@@ -170,11 +170,11 @@ INTEGER                                        :: nterms
 
         nterms=ndim
         ALLOCATE(degree(nterms*ndim),coeffs(nterms),order(nterms))
-        if (ndim .eq. 2) then
+        IF (ndim .EQ. 2) then
                degree =  (/2,0,   0,2/)
         else
                degree =  (/2,0,0, 0,2,0, 0,0,2/)
-        endif
+        ENDIF
         coeffs = 1.0_MK
 
         CALL Laplacian%create(ndim,coeffs,degree,info,name="Laplacian")
@@ -185,10 +185,10 @@ INTEGER                                        :: nterms
 
         CALL Laplacian%discretize_on(Part1,DCop,opts_op,info)
         Assert_Equal(info,0)
-        Assert_True(associated(DCop))
+        Assert_True(ASSOCIATED(DCop))
         !CALL Laplacian%discretize_on(Part1,PSEop,info,method="PSE")
         !Assert_Equal(info,0)
-        !Assert_True(associated(PSEop))
+        !Assert_True(ASSOCIATED(PSEop))
 
         CALL DCop%compute(Field1,Field2,info)
         Assert_Equal(info,0)

@@ -154,7 +154,7 @@
               !
               ! Canonical heapify() algorithm has tail-ecursive call:
               !
-              !        call heapify(a,largest)
+              !        CALL heapify(a,largest)
               ! we will simulate with cycle
               !
               i = largest
@@ -837,7 +837,7 @@
               rb     =rb-1
            ENDIF
         ENDDO
-        ! now lb .eq. ub
+        ! now lb .EQ. ub
         IF (tdata(c,ind(lb)).LE.alpha) THEN
            res = lb
         ELSE

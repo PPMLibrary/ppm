@@ -37,7 +37,7 @@ test_suite ppm_module_io_vtk
     bcdef(1:ndim) = ppm_param_bcdef_periodic
 
     eps = EPSILON(1.0_MK)
-    tolexp = int(log10(EPSILON(1.0_MK)))
+    tolexp = INT(LOG10(EPSILON(1.0_MK)))
 
 #ifdef __MPI
     comm = MPI_COMM_WORLD
@@ -84,7 +84,7 @@ test_suite ppm_module_io_vtk
     USE ppm_module_interfaces
     USE ppm_module_particles_typedef
     USE ppm_module_field_typedef
-    USE ppm_module_MKtopo
+    USE ppm_module_mktopo
     USE ppm_module_map
     USE ppm_module_topo_check
     USE ppm_module_util_dbg
@@ -114,7 +114,7 @@ test_suite ppm_module_io_vtk
     assig  = ppm_param_assign_internal
 
     topoid = 0
-    CALL ppm_MKtopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
+    CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
     Assert_Equal(info,0)
 
     CALL Field1%create(ndim,info,name="F_vec") !vector field

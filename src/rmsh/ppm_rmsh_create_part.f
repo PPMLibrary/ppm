@@ -624,19 +624,19 @@
 
          DO k=startz,nnz
             IF (k.EQ.klowbc .OR. k.EQ.khighbc) THEN
-               zbc_factor = 0.5_mk
+               zbc_factor = 0.5_MK
             ELSE
                zbc_factor = 1.0_MK
             END IF
             DO j=starty,nny
                IF (j.EQ.jlowbc .OR. j.EQ.jhighbc) THEN
-                  ybc_factor = 0.5_mk
+                  ybc_factor = 0.5_MK
                ELSE
                   ybc_factor = 1.0_MK
                END IF
                DO i=startx,nnx
                   IF (i.EQ.ilowbc .OR. i.EQ.ihighbc) THEN
-                     xbc_factor = 0.5_mk
+                     xbc_factor = 0.5_MK
                   ELSE
                      xbc_factor = 1.0_MK
                   END IF
@@ -708,13 +708,13 @@
          END IF
          DO j=starty,nny
             IF (j.EQ.jlowbc .OR. j.EQ.jhighbc) THEN
-               ybc_factor = 0.5_mk
+               ybc_factor = 0.5_MK
             ELSE
                ybc_factor = 1.0_MK
             END IF
             DO i=startx,nnx
                IF (i.EQ.ilowbc .OR. i.EQ.ihighbc) THEN
-                  xbc_factor = 0.5_mk
+                  xbc_factor = 0.5_MK
                ELSE
                   xbc_factor = 1.0_MK
                END IF

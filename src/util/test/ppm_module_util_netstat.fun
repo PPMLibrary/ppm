@@ -95,14 +95,14 @@ LOGICAL                         :: ok
 
         topoid = 0
 
-        CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef,0.1_mk,cost,info)
+        CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef,0.1_MK,cost,info)
 
         CALL ppm_netstat(topoid,latency,bandwidth,info)
         write(*,'(A,I3,A,F12.6,A,F10.2,A)') 'rank: ',ppm_rank,'  latency: ',&
         & latency*1000.0_MK,' ms  bandwidth: ',bandwidth/REAL(1024**2,mk),' MB/s'
-        if (info.ge.-2) then
+        IF (info.GE.-2) then
             ok = .TRUE.
-        endif
+        ENDIF
         Assert_True(ok)
 
     end test

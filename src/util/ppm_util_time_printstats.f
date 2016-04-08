@@ -73,7 +73,7 @@
       CALL MPI_Reduce(ppm_tstats_times(1:isize),&
           ppm_tstats_times_avg(1:isize),isize,MPTYPE,MPI_SUM,0,ppm_comm,info)
 
-      IF (ppm_rank .eq. 0) THEN
+      IF (ppm_rank .EQ. 0) THEN
           stdout("----- TIMINGS - [max/avg/min] ----")
           DO i = 1,isize
               mesg = ppm_tstats_labels(i)

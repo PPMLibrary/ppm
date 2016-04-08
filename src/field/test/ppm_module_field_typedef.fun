@@ -100,19 +100,19 @@ test_suite ppm_module_field_typedef
 
         CALL RANDOM_SEED(size=seedsize)
         ALLOCATE(seed(seedsize))
-        do i=1,seedsize
+        DO i=1,seedsize
             seed(i)=10+i*i*(rank+1)
-        enddo
+        ENDDO
         CALL RANDOM_SEED(put=seed)
 
         bcdef(1:2*ndim) = ppm_param_bcdef_freespace
         kernel = ppm_param_rmsh_kernel_mp4
-        do i=1,ndim
+        DO i=1,ndim
             min_phys(i) = 0.0_MK
             max_phys(i) = 1.0_MK
             ighostsize(i) = 2
-            ghostsize(i) = 0.05_mk
-        enddo
+            ghostsize(i) = 0.05_MK
+        ENDDO
 
   end setup
   !------------------------------------------------------------------------------
@@ -121,10 +121,10 @@ test_suite ppm_module_field_typedef
   !--------------------------- test teardown ------------------------------------
   teardown
 
-        if (associated(xp)) DEALLOCATE(xp)
-        if (associated(wp)) DEALLOCATE(wp)
-        if (associated(cost)) DEALLOCATE(cost)
-        if (allocated(seed)) DEALLOCATE(seed)
+        IF (ASSOCIATED(xp)) DEALLOCATE(xp)
+        IF (ASSOCIATED(wp)) DEALLOCATE(wp)
+        IF (ASSOCIATED(cost)) DEALLOCATE(cost)
+        IF (allocated(seed)) DEALLOCATE(seed)
 
   end teardown
   !------------------------------------------------------------------------------
@@ -150,7 +150,7 @@ test_suite ppm_module_field_typedef
         ALLOCATE(nm(ndim),STAT=info)
         nm(1:ndim) = 16*nproc
 
-        sca_ghostsize = 0.05_mk
+        sca_ghostsize = 0.05_MK
 
         CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
         &               bcdef,sca_ghostsize,cost,info)
@@ -173,13 +173,13 @@ test_suite ppm_module_field_typedef
 
         CALL Mesh1%def_uniform(info)
         Assert_Equal(info,0)
-        Assert_True(associated(Mesh1%subpatch))
+        Assert_True(ASSOCIATED(Mesh1%subpatch))
 
         p => Mesh1%subpatch%begin()
-        do while(associated(p))
-           Assert_True(associated(p%subpatch_data))
+        DO WHILE(ASSOCIATED(p))
+           Assert_True(ASSOCIATED(p%subpatch_data))
            p => Mesh1%subpatch%next()
-        enddo
+        ENDDO
 
         !--------------------------
         !Create data arrays on the mesh for the vorticity and velocity fields
@@ -195,47 +195,47 @@ test_suite ppm_module_field_typedef
         !--------------------------
         p => Mesh1%subpatch%begin()
 
-        do while (ASSOCIATED(p))
+        DO WHILE (ASSOCIATED(p))
             CALL p%get_field(Vort,field2d_1,info)
             CALL p%get_field(Veloc,field3d_1,info)
 
-            do i = 1,p%nnodes(1)
-                do j = 1,p%nnodes(2)
+            DO i = 1,p%nnodes(1)
+                DO j = 1,p%nnodes(2)
                     field2d_1(i,j) = COS(i*h(1)+j)
                     field3d_1(1,i,j) = SIN(field2d_1(i,j))
                     field3d_1(2,i,j) = COS(field2d_1(i,j))
-                enddo
-            enddo
+                ENDDO
+            ENDDO
             p => Mesh1%subpatch%next()
-        enddo
+        ENDDO
 
         !Second version
-        do ipatch = 1,Mesh1%subpatch%nb
+        DO ipatch = 1,Mesh1%subpatch%nb
             p => Mesh1%subpatch%vec(ipatch)%t
             CALL p%get_field(Vort,field2d_1,info)
             CALL p%get_field(Veloc,field3d_1,info)
 
-            do i = 1,p%nnodes(1)
-                do j = 1,p%nnodes(2)
+            DO i = 1,p%nnodes(1)
+                DO j = 1,p%nnodes(2)
                     field2d_1(i,j) = COS(i*h(1)+j)
                     field3d_1(1,i,j) = SIN(field2d_1(i,j))
                     field3d_1(2,i,j) = COS(field2d_1(i,j))
-                enddo
-            enddo
-        enddo
+                ENDDO
+            ENDDO
+        ENDDO
 
         field2d_1 => NULL()
         field3d_1 => NULL()
 
 
         ilist => Mesh1%list_of_fields(info)
-        if (associated(ilist)) then
+        IF (ASSOCIATED(ilist)) then
            stdout("mesh1%list: ",ilist)
-        endif
+        ENDIF
         ilist => Mesh2%list_of_fields(info)
-        if (associated(ilist)) then
+        IF (ASSOCIATED(ilist)) then
            stdout("mesh2%list: ",ilist)
-        endif
+        ENDIF
 
         !--------------------
         ! Remove a patch
@@ -278,7 +278,7 @@ test_suite ppm_module_field_typedef
         ALLOCATE(nm(ndim),STAT=info)
         nm(1:ndim) = 16*nproc
 
-        sca_ghostsize = 0.05_mk
+        sca_ghostsize = 0.05_MK
 
         CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
         &               bcdef,sca_ghostsize,cost,info)
@@ -304,13 +304,13 @@ test_suite ppm_module_field_typedef
 
         CALL Mesh1%def_patch(my_patch,info,mypatchid)
         Assert_Equal(info,0)
-        Assert_True(associated(Mesh1%subpatch))
+        Assert_True(ASSOCIATED(Mesh1%subpatch))
 
         p => Mesh1%subpatch%begin()
-        do while(associated(p))
-           Assert_True(associated(p%subpatch_data))
+        DO WHILE(ASSOCIATED(p))
+           Assert_True(ASSOCIATED(p%subpatch_data))
            p => Mesh1%subpatch%next()
-        enddo
+        ENDDO
 
         !--------------------------
         !Create data arrays on the mesh for the vorticity and velocity fields
@@ -325,32 +325,32 @@ test_suite ppm_module_field_typedef
         ! Iterate through patches and initialize the data arrays
         !--------------------------
         p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
+        DO WHILE (ASSOCIATED(p))
            CALL p%get_field(Vort,field2d_1,info)
            CALL p%get_field(Veloc,field3d_1,info)
 
-           do i = 1,p%nnodes(1)
-              do j = 1,p%nnodes(2)
+           DO i = 1,p%nnodes(1)
+              DO j = 1,p%nnodes(2)
                  field2d_1(i,j) = COS(i*h(1)+j)
                  field3d_1(1:ndim,i,j) = 17.4
-              enddo
-           enddo
+              ENDDO
+           ENDDO
            p => Mesh1%subpatch%next()
-        enddo
+        ENDDO
 
         !Second version
-        do ipatch = 1,Mesh1%subpatch%nb
+        DO ipatch = 1,Mesh1%subpatch%nb
             p => Mesh1%subpatch%vec(ipatch)%t
             CALL p%get_field(Vort,field2d_1,info)
             CALL p%get_field(Veloc,field3d_1,info)
 
-            do i = 1,p%nnodes(1)
-                do j = 1,p%nnodes(2)
+            DO i = 1,p%nnodes(1)
+                DO j = 1,p%nnodes(2)
                     field2d_1(i,j) = COS(i*h(1)+j)
                     field3d_1(1:ndim,i,j) = 17.4
-                enddo
-            enddo
-        enddo
+                ENDDO
+            ENDDO
+        ENDDO
 
         !--------------------
         ! Remove a patch

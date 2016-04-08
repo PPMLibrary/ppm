@@ -116,7 +116,7 @@ test_suite ppm_module_neighlist_kdtree
     assig  = ppm_param_assign_internal
 
     topoid = 0
-    cutoff = 0.15_mk
+    cutoff = 0.15_MK
     CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
     Assert_Equal(info,0)
 

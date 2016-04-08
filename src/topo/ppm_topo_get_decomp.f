@@ -142,12 +142,12 @@
       ENDIF
       lda(1) = topo%nsubs
       CALL ppm_alloc(sub2proc,lda,ppm_param_alloc_fit,info)
-      if (info .NE. 0) THEN
+      IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_get_decomp',     &
      &        'failed to allocate sub2proc',__LINE__,info)
           goto 9999
-      endif
+      ENDIF
 
       nsub = topo%nsubs
       IF (topo%prec.EQ.ppm_kind_single) THEN

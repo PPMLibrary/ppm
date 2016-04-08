@@ -264,7 +264,7 @@
         dx(i)       = len_phys(i)/REAL(Nc(i),MK)
       ENDDO
       dxi     = 1.0_MK/dx
-      epsilon = 0.000001_mk
+      epsilon = 0.000001_MK
 
      !--------------------------------------------------------------------------
      !  Initialize the particle list
@@ -541,7 +541,7 @@
      IF(((PRESENT(wx1_user)).AND.PRESENT(wx2_user).AND. &
           & PRESENT(wx3_user).AND.ppm_dim.EQ.3).OR.&
           &(PRESENT(wx1_user).AND.PRESENT(wx2_user).AND.&
-          ppm_dim.eq.2)) THEN
+          ppm_dim.EQ.2)) THEN
         internal_weights = .FALSE.
 
         IF (.NOT.(ASSOCIATED(wx1_user)).OR. &
@@ -779,7 +779,7 @@
      &               xp(1,list_sub(isub,ip))-min_phys(1))*dxi(1))
                  IF(x1.LE.2.0_MK) THEN
                     IF(x1.LE.1.0_MK) THEN
-                       wx1(iidec,isub,ip) = 1.0_MK - x1**2*(2.5_mk-1.5_MK*x1)
+                       wx1(iidec,isub,ip) = 1.0_MK - x1**2*(2.5_MK-1.5_MK*x1)
                     ELSE
                        wx1(iidec,isub,ip) = 2.0_MK + (-4.0_MK + &
      &                     (2.5_MK - 0.5_MK * x1)*x1)*x1
@@ -794,7 +794,7 @@
 
                  IF(x2.LE.2.0_MK) THEN
                     IF(x2.LE.1.0_MK) THEN
-                       wx2(jjdec,isub,ip) = 1.0_MK - x2**2*(2.5_mk-1.5_MK*x2)
+                       wx2(jjdec,isub,ip) = 1.0_MK - x2**2*(2.5_MK-1.5_MK*x2)
                     ELSE
                        wx2(jjdec,isub,ip) = 2.0_MK + (-4.0_MK + &
      &                     (2.5_MK - 0.5_MK * x2)*x2)*x2
@@ -827,7 +827,7 @@
 
      CALL ppm_util_time(tim1e)
 
-     IF (ppm_debug.gt.0) THEN
+     IF (ppm_debug.GT.0) THEN
         WRITE(msg,*) 'naked calc of weights took [ms]: ',1000.0*(tim1e-tim1s)
         CALL ppm_write(ppm_rank,'ppm_rmsh_comp_weights',msg,info)
      END IF

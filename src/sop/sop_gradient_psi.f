@@ -125,7 +125,7 @@
                   !------------------------------------------------------------------!
                   rd = rr / meanD
 
-                  !if (fuse(ip)*fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then
+                  !if (fuse(ip)*fuse(iq).GE.1 .AND. max(fuse(ip),fuse(iq)).GE.4 ) then
                   IF (MAX(fuse(ip),fuse(iq)).GE.4 ) THEN
                       no_fusion = .FALSE.
                   ELSE

@@ -500,9 +500,9 @@
       !-------------------------------------------------------------------------
 !write(mesg,'(a,i4.4)') 'recvbuf',ppm_rank
 !open(10,file=mesg)
-!do i=1,ppm_nrecvbuffer,2
+!DO i=1,ppm_nrecvbuffer,2
 !   write(10,*) ppm_recvbuffers(i),ppm_recvbuffers(i+1)
-!enddo
+!ENDDO
 !close(10)
 
       !-------------------------------------------------------------------------

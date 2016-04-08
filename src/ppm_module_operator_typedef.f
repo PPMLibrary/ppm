@@ -221,11 +221,11 @@ minclude ppm_create_collection_procedures(operator,operator_)
              CLASS IS (ppm_t_particles_s_)
                 SELECT CASE (opts%method)
                 CASE (ppm_param_op_dcpse)
-                   ALLOCATE(ppm_t_dcop_s::op_discr,stat=info)
+                   ALLOCATE(ppm_t_dcop_s::op_discr,STAT=info)
                    fail("single-precision DCops not yet implemented (no big deal: just waiting for templating features...")
 
                 CASE (ppm_param_op_pse)
-                   !ALLOCATE(ppm_t_pseop::op_discr,stat=info)
+                   !ALLOCATE(ppm_t_pseop::op_discr,STAT=info)
                    fail("PSE method not yet implemented")
 
                 CASE DEFAULT
@@ -236,7 +236,7 @@ minclude ppm_create_collection_procedures(operator,operator_)
              CLASS IS (ppm_t_particles_d_)
                 SELECT CASE (opts%method)
                 CASE (ppm_param_op_dcpse)
-                   ALLOCATE(ppm_t_dcop_d::op_discr,stat=info)
+                   ALLOCATE(ppm_t_dcop_d::op_discr,STAT=info)
                    SELECT TYPE(op_discr)
                    TYPE IS (ppm_t_dcop_d)
                       CALL op_discr%create(this,Discr_to,Discr2,info, &
@@ -249,7 +249,7 @@ minclude ppm_create_collection_procedures(operator,operator_)
                    END SELECT
 
                 CASE (ppm_param_op_pse)
-                   !ALLOCATE(ppm_t_pseop::op_discr,stat=info)
+                   !ALLOCATE(ppm_t_pseop::op_discr,STAT=info)
                    fail("PSE method not yet implemented")
 
                 CASE (ppm_param_op_fd)

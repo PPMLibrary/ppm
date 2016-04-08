@@ -112,13 +112,13 @@ test_suite ppm_module_inl_hash
 
     Assert_True(ht%search(2_8).EQ.3)
     Assert_True(ht%search(3_8).EQ.htable_null)
-    Assert_True(ht%search(10300_8).eq.103)
-    Assert_True(ht%search(220350_8).eq.220)
-    Assert_True(ht%search(13000_8).eq.130)
+    Assert_True(ht%search(10300_8).EQ.103)
+    Assert_True(ht%search(220350_8).EQ.220)
+    Assert_True(ht%search(13000_8).EQ.130)
 
     CALL ht%grow(info)
     Assert_True(info.EQ.0)
-    Assert_True(ht%nrow.eq.32768)
+    Assert_True(ht%nrow.EQ.32768)
 
     DO i=1,9990,10
        Assert_True(ht%search(INT(i,KIND=8)).EQ.i*i+1)
@@ -127,9 +127,9 @@ test_suite ppm_module_inl_hash
 
     Assert_True(ht%search(2_8).EQ.3)
     Assert_True(ht%search(3_8).EQ.htable_null)
-    Assert_True(ht%search(10300_8).eq.103)
-    Assert_True(ht%search(220350_8).eq.220)
-    Assert_True(ht%search(13000_8).eq.130)
+    Assert_True(ht%search(10300_8).EQ.103)
+    Assert_True(ht%search(220350_8).EQ.220)
+    Assert_True(ht%search(13000_8).EQ.130)
 
     ! destroy
     CALL ht%destroy(info)

@@ -17,7 +17,7 @@ INTEGER,PARAMETER               :: ndim=2
 INTEGER                         :: decomp,assig,tolexp
 INTEGER                         :: info,comm,rank,nproc,topoid
 INTEGER                         :: np_global = 3000
-REAL(MK),PARAMETER              :: cutoff = 0.15_mk
+REAL(MK),PARAMETER              :: cutoff = 0.15_MK
 REAL(MK),DIMENSION(:,:),POINTER :: xp=>NULL()
 REAL(MK),DIMENSION(:  ),POINTER :: min_phys,max_phys,len_phys
 INTEGER                         :: i,j,k,ip,nterms
@@ -67,14 +67,14 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
         rank = 0
         nproc = 1
 #endif
-        tolexp = int(log10(EPSILON(1.0_MK)))+10
+        tolexp = INT(LOG10(EPSILON(1.0_MK)))+10
         CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
         CALL RANDOM_SEED(size=seedsize)
         ALLOCATE(seed(seedsize))
-        do i=1,seedsize
+        DO i=1,seedsize
             seed(i)=10+i*i !*(rank+1)
-        enddo
+        ENDDO
         CALL RANDOM_SEED(put=seed)
         ALLOCATE(randn(ndim,np_global))
         CALL RANDOM_NUMBER(randn)
@@ -130,7 +130,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 
         FORALL (ip=1:Part1%Npart) wp_2r(1:ndim,ip) = randn(1:ndim,gi(ip))
 
-        wp_2r = 0.5_mk * (wp_2r - 0.5_mk) * Part1%h_avg
+        wp_2r = 0.5_MK * (wp_2r - 0.5_MK) * Part1%h_avg
 
         CALL Part1%move(wp_2r,info)
 
@@ -181,7 +181,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 
     teardown
 
-        if (allocated(degree)) DEALLOCATE(degree,coeffs,order)
+        IF (allocated(degree)) DEALLOCATE(degree,coeffs,order)
 
     end teardown
 
@@ -201,11 +201,11 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 
         nterms=ndim
         ALLOCATE(degree(nterms*ndim),coeffs(nterms),order(nterms))
-        if (ndim .eq. 2) then
+        IF (ndim .EQ. 2) then
                degree =  (/2,0,   0,2/)
         else
                degree =  (/2,0,0, 0,2,0, 0,0,2/)
-        endif
+        ENDIF
         coeffs = 1.0_MK
 
         CALL Op%create(ndim,coeffs,degree,info,name="Laplacian")
@@ -217,10 +217,10 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 
         CALL Op%discretize_on(Part1,DCop,opts_op,info)
         Assert_Equal(info,0)
-        Assert_True(associated(DCop))
+        Assert_True(ASSOCIATED(DCop))
         !CALL Op%discretize_on(Part1,PSEop,info,method="PSE")
         !Assert_Equal(info,0)
-        !Assert_True(associated(PSEop))
+        !Assert_True(ASSOCIATED(PSEop))
 
         CALL DCop%compute(SField1,SField2,info)
         Assert_Equal(info,0)
@@ -251,11 +251,11 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
         nterms=ndim
         ALLOCATE(degree(nterms*ndim),coeffs(nterms),order(nterms))
 
-        if (ndim .eq. 2) then
+        IF (ndim .EQ. 2) then
                degree =  (/1,0,   0,1/)
         else
                degree =  (/1,0,0, 0,1,0, 0,0,1/)
-        endif
+        ENDIF
         coeffs = 1.0_MK
 
         CALL Op%create(ndim,coeffs,degree,info,name="Gradient")
@@ -267,7 +267,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
 
         CALL Op%discretize_on(Part1,DCop,opts_op,info)
         Assert_Equal(info,0)
-        Assert_True(associated(DCop))
+        Assert_True(ASSOCIATED(DCop))
 
         CALL DCop%compute(SField1,VFieldD,info)
         Assert_Equal(info,0)
@@ -285,12 +285,12 @@ PURE FUNCTION f0_test(pos,ndim)
     INTEGER                 ,  INTENT(IN) :: ndim
     REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
-    if (ndim .eq. 2) then
+    IF (ndim .EQ. 2) then
         f0_test =  SIN(2._MK*pi*pos(1)) * COS(2._MK*pi*pos(2))
     else
         f0_test =  SIN(2._MK*pi*pos(1)) * COS(2._MK*pi*pos(2)) * &
             & SIN(2._MK*pi*pos(3))
-    endif
+    ENDIF
 
     return
 
@@ -337,7 +337,7 @@ PURE FUNCTION df0_test(pos,order_deriv,ndim)
         df0_test =  0.0_MK
     endselect
 
-    if (ndim .eq. 3 ) then
+    IF (ndim .EQ. 3 ) then
         select case (order_deriv(3))
         case (0)
             df0_test =   df0_test * sin (2._MK*pi * pos(3))
@@ -352,7 +352,7 @@ PURE FUNCTION df0_test(pos,order_deriv,ndim)
         case default
             df0_test =  0.0_MK
         endselect
-    endif
+    ENDIF
 
 END FUNCTION df0_test
 
@@ -375,56 +375,56 @@ function inf_error(Part1,Field1,Field2,Op)
     INTEGER,DIMENSION(ndim)          :: dg
     character(len=100)               :: fname
 
-    if (op%flags(ppm_ops_vector)) then
+    IF (op%flags(ppm_ops_vector)) then
         CALL Part1%get(Field2,dwp_2,info,read_only=.TRUE.)
-        if (info.ne.0) write(*,*) "Failed te get Field2"
+        IF (info.ne.0) write(*,*) "Failed te get Field2"
         output_vec = .TRUE.
     else
         CALL Part1%get(Field2,dwp_1,info,read_only=.TRUE.)
-        if (info.ne.0) write(*,*) "Failed te get Field2"
+        IF (info.ne.0) write(*,*) "Failed te get Field2"
         output_vec = .FALSE.
-    endif
+    ENDIF
 
-    if (Field1%lda.EQ.1) THEN
+    IF (Field1%lda.EQ.1) THEN
         CALL Part1%get(Field1,wp_1,info,read_only=.TRUE.)
-        if (info.ne.0) write(*,*) "Failed te get Field1"
+        IF (info.ne.0) write(*,*) "Failed te get Field1"
         input_vec = .FALSE.
     else
         CALL Part1%get(Field1,wp_2,info,read_only=.TRUE.)
-        if (info.ne.0) write(*,*) "Failed te get Field1"
+        IF (info.ne.0) write(*,*) "Failed te get Field1"
         input_vec = .TRUE.
-    endif
+    ENDIF
 
     nterms = op%op_ptr%nterms
     ALLOCATE(err(nterms),exact(nterms),degree(nterms*ndim),order(nterms))
 
     CALL Part1%get_xp(xp,info)
-        if (info.ne.0) write(*,*) "Could not get xp"
+        IF (info.ne.0) write(*,*) "Could not get xp"
 
     err = 0.0_MK
     linf = 0.0_MK
-    do ip=1,Part1%Npart
+    DO ip=1,Part1%Npart
         exact = 0.0_MK
-        do i=1,nterms
+        DO i=1,nterms
             coeff = op%op_ptr%coeffs(i)
             dg = op%op_ptr%degree(1+(i-1)*ndim:i*ndim)
-            if (output_vec) then
+            IF (output_vec) then
                 exact(i) = coeff*df0_test(xp(1:ndim,ip),dg,ndim)
             else
                 exact(1) = exact(1) + coeff*df0_test(xp(1:ndim,ip),dg,ndim)
-            endif
-        enddo
-        if (output_vec) then
-            do i=1,nterms
+            ENDIF
+        ENDDO
+        IF (output_vec) then
+            DO i=1,nterms
                 err(i) = MAX(err(i),ABS(dwp_2(i,ip) - exact(i)))
                 !REMOVME
                 !dwp_2(i,ip) = err(i)
-            enddo
+            ENDDO
         else
             err(1) = MAX(err(1),ABS(dwp_1(ip) - exact(1)))
-        endif
+        ENDIF
         linf = MAX(linf,MAXVAL(ABS(exact)))
-    enddo
+    ENDDO
 
 #ifdef __MPI
     CALL MPI_Allreduce(linf,linf,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
@@ -434,7 +434,7 @@ function inf_error(Part1,Field1,Field2,Op)
 #endif
     inf_error = inf_error/linf
 
-    if (ppm_rank.eq.0) &
+    IF (ppm_rank.EQ.0) &
         write(*,*) '[',ppm_rank,']','Error is ',inf_error
 
     DEALLOCATE(err,exact,degree,order)

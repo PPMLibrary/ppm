@@ -17,7 +17,7 @@ test_suite ppm_module_particles_big
   INTEGER                         :: decomp,assig,tolexp
   INTEGER                         :: info,comm,rank,nproc,topoid
   INTEGER                         :: np_global = 3000
-  REAL(MK),PARAMETER              :: cutoff = 0.15_mk
+  REAL(MK),PARAMETER              :: cutoff = 0.15_MK
   REAL(MK),DIMENSION(:,:),POINTER :: xp=>NULL()
   REAL(MK),DIMENSION(:  ),POINTER :: min_phys=>NULL(),max_phys=>NULL()
   REAL(MK),DIMENSION(:  ),POINTER :: len_phys=>NULL()
@@ -67,14 +67,14 @@ test_suite ppm_module_particles_big
     rank = 0
     nproc = 1
 #endif
-    tolexp = int(log10(EPSILON(1.0_MK)))+10
+    tolexp = INT(LOG10(EPSILON(1.0_MK)))+10
     CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
     CALL RANDOM_SEED(size=seedsize)
     ALLOCATE(seed(seedsize))
-    do i=1,seedsize
+    DO i=1,seedsize
         seed(i)=10+i*i*(rank+1)
-    enddo
+    ENDDO
     CALL RANDOM_SEED(put=seed)
 
     !----------------
@@ -109,7 +109,7 @@ test_suite ppm_module_particles_big
 
     CALL Part1%initialize(np_global,info,topoid=topoid,distrib=ppm_param_part_init_random)
     Assert_Equal(info,0)
-    Assert_True(associated(Part1%xp))
+    Assert_True(ASSOCIATED(Part1%xp))
 
     CALL Part1%get_xp(xp,info)
     Assert_Equal(info,0)
@@ -135,7 +135,7 @@ test_suite ppm_module_particles_big
 
     CALL Part1%initialize(np_global,info,topoid=topoid)
     Assert_Equal(info,0)
-    Assert_True(associated(Part1%xp))
+    Assert_True(ASSOCIATED(Part1%xp))
 
     CALL Field1%create(3,info,name="Field1")
     Assert_Equal(info,0)

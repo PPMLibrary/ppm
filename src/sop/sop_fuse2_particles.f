@@ -87,7 +87,7 @@
           !!-------------------------------------------------------------------------!
           info = 0
           IF (opts%del_parts) THEN
-              IF (ppm_dim .eq. 2) THEN
+              IF (ppm_dim .EQ. 2) THEN
                   nb_neigh_max_thresh = 8
               ELSE
                   nb_neigh_max_thresh = 15
@@ -203,7 +203,7 @@
                       ENDIF
                   ENDDO
                   nvlist(ip) = 999
-                  cycle particle_loop2
+                  CYCLE particle_loop2
               ENDIF
               neighbour_loop2: DO ineigh=1,nvlist(ip)
                   iq=vlist(ineigh,ip)

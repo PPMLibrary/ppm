@@ -70,7 +70,7 @@ test_suite ppm_module_particles
         rank = 0
         nproc = 1
 #endif
-        tolexp = int(log10(EPSILON(1._MK)))+10
+        tolexp = INT(LOG10(EPSILON(1._MK)))+10
         CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
         CALL RANDOM_SEED(SIZE=seedsize)
@@ -88,7 +88,7 @@ test_suite ppm_module_particles
         assig  = ppm_param_assign_internal
 
         topoid = 0
-        IF (ndim.eq.2) then
+        IF (ndim.EQ.2) then
            cutoff = 0.15_MK
         ELSE
            cutoff = 0.25_MK
@@ -177,7 +177,7 @@ test_suite ppm_module_particles
         Assert_Equal(info,0)
 
         Nlist => Part1%get_neighlist(Part1)
-        Assert_True(associated(Nlist))
+        Assert_True(ASSOCIATED(Nlist))
         Nlist => NULL()
 
         !Set field values
@@ -231,7 +231,7 @@ test_suite ppm_module_particles
 
         !Move particles
         ALLOCATE(wp_2r(ndim,Part1%Npart))
-        CALL random_number(wp_2r)
+        CALL RANDOM_NUMBER(wp_2r)
         wp_2r = (wp_2r - 0.5_MK) * Part1%ghostlayer * 0.99_MK
         CALL Part1%move(wp_2r,info)
         Assert_Equal(info,0)

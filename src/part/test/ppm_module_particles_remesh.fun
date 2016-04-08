@@ -84,9 +84,9 @@ INTEGER :: np_global
 
         CALL RANDOM_SEED(size=seedsize)
         ALLOCATE(seed(seedsize))
-        do i=1,seedsize
+        DO i=1,seedsize
             seed(i)=9+i*(rank+1)
-        enddo
+        ENDDO
         CALL RANDOM_SEED(put=seed)
 
     end init
@@ -118,7 +118,7 @@ INTEGER :: np_global
         decomp = ppm_param_decomp_cuboid
         assig  = ppm_param_assign_internal
         topoid = 0
-        sca_ghostsize = 0.07_mk
+        sca_ghostsize = 0.07_MK
         CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
 
@@ -141,15 +141,15 @@ INTEGER :: np_global
 !not for now... (first try with a mesh that covers the whole domain)
 !               (which is the default, when no patches are defined)
 
-        if (ndim.eq.2) then
-            my_patch(1:4) = (/0.15_mk,0.10_MK,0.99_mk,0.7_mk/)
-            my_patch(1:4) = (/0.15_mk,0.15_mk,0.7_mk,0.7_mk/)
+        IF (ndim.EQ.2) then
+            my_patch(1:4) = (/0.15_MK,0.10_MK,0.99_MK,0.7_MK/)
+            my_patch(1:4) = (/0.15_MK,0.15_MK,0.7_MK,0.7_MK/)
             !works (at least on one proc)
             my_patch(1:4) = (/-10000.0_MK,-1000.0_MK,1000.0_MK,1000.0_MK/)
             !does not work (problem with ghosts)
         else
-            my_patch(1:6) = (/0.15_mk,0.10_MK,0.25_mk,0.89_mk,0.7_mk,0.78_mk/)
-        endif
+            my_patch(1:6) = (/0.15_MK,0.10_MK,0.25_MK,0.89_MK,0.7_MK,0.78_MK/)
+        ENDIF
         CALL Mesh1%def_patch(my_patch,info)
 
         !----------------
@@ -159,8 +159,8 @@ INTEGER :: np_global
 
         ALLOCATE(wp_2r(ndim,Part1%Npart))
 !        CALL RANDOM_NUMBER(wp_2r)
-!        wp_2r = (wp_2r-0.5_mk)*Part1%h_avg * 0.3_mk
-        wp_2r = Part1%h_avg*0.04997_mk
+!        wp_2r = (wp_2r-0.5_MK)*Part1%h_avg * 0.3_MK
+        wp_2r = Part1%h_avg*0.04997_MK
 
         CALL Part1%move(wp_2r,info)
         DEALLOCATE(wp_2r)
@@ -413,7 +413,7 @@ PURE FUNCTION f_lin(pos,ndim) RESULT(res)
     INTEGER                 ,  INTENT(IN) :: ndim
     REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
-    res =  1.337_mk + pos(1) + 10._MK*pos(2) + 100._MK*pos(ndim)
+    res =  1.337_MK + pos(1) + 10._MK*pos(2) + 100._MK*pos(ndim)
 END FUNCTION
 
 PURE FUNCTION f_sq(pos,ndim) RESULT(res)

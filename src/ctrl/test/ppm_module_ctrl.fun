@@ -164,10 +164,10 @@ test_suite ppm_module_ctrl
        Assert_Equal(iflag,2)
     END IF
     IF (idefault .EQ. 2) THEN
-       Assert_True(iflag .eq. 1 .or. iflag .eq. 3 .or. iflag .eq. 5)
+       Assert_True(iflag .EQ. 1 .OR. iflag .EQ. 3 .OR. iflag .EQ. 5)
     END IF
     IF (idefault .EQ. 3) THEN
-       Assert_True(iflag .eq. 1 .or. iflag .eq. 3 .or. iflag .eq. 5)
+       Assert_True(iflag .EQ. 1 .OR. iflag .EQ. 3 .OR. iflag .EQ. 5)
     END IF
   end test
 
@@ -609,24 +609,24 @@ test_suite ppm_module_ctrl
 
   test default_funcs
 #ifdef __F2003
-    ! procedure declarations
-    procedure(INTEGER_func)        int_def
-    procedure(INTEGER_func)        revert_on_fail
-    procedure(longint_func)        lng_def
-    procedure(single_func)         flt_def
-    procedure(double_func)         dbl_def
-    procedure(string_func)         chr_def
-    procedure(LOGICAL_func)        log_def
-    procedure(COMPLEX_func)        cpx_def
-    procedure(dCOMPLEX_func)       dcp_def
-    procedure(INTEGER_array_func)  inta_def
-    procedure(longint_array_func)  lnga_def
-    procedure(single_array_func)   flta_def
-    procedure(double_array_func)   dbla_def
-    procedure(string_array_func)   chra_def
-    procedure(LOGICAL_array_func)  loga_def
-    procedure(COMPLEX_array_func)  cpxa_def
-    procedure(dCOMPLEX_array_func) dcpa_def
+    ! PROCEDURE declarations
+    PROCEDURE(INTEGER_func)        int_def
+    PROCEDURE(INTEGER_func)        revert_on_fail
+    PROCEDURE(longint_func)        lng_def
+    PROCEDURE(single_func)         flt_def
+    PROCEDURE(double_func)         dbl_def
+    PROCEDURE(string_func)         chr_def
+    PROCEDURE(LOGICAL_func)        log_def
+    PROCEDURE(COMPLEX_func)        cpx_def
+    PROCEDURE(dCOMPLEX_func)       dcp_def
+    PROCEDURE(INTEGER_array_func)  inta_def
+    PROCEDURE(longint_array_func)  lnga_def
+    PROCEDURE(single_array_func)   flta_def
+    PROCEDURE(double_array_func)   dbla_def
+    PROCEDURE(string_array_func)   chra_def
+    PROCEDURE(LOGICAL_array_func)  loga_def
+    PROCEDURE(COMPLEX_array_func)  cpxa_def
+    PROCEDURE(dCOMPLEX_array_func) dcpa_def
     ! define
     CALL arg(idefault, 'idefault', default_func = int_def)
     CALL arg(iflag,    'iflag',    default_func = revert_on_fail, &
@@ -676,102 +676,102 @@ test_suite ppm_module_ctrl
 end test_suite
 
 #ifdef __F2003
-LOGICAL function int_def(var)
+LOGICAL FUNCTION int_def(var)
   INTEGER, POINTER, INTENT(IN) :: var
   var = 42
   int_def = .TRUE.
 END FUNCTION int_def
 
-LOGICAL function revert_on_fail(var)
+LOGICAL FUNCTION revert_on_fail(var)
   INTEGER, POINTER, INTENT(IN) :: var
   revert_on_fail = .FALSE.
 END FUNCTION revert_on_fail
 
-LOGICAL function lng_def(var)
+LOGICAL FUNCTION lng_def(var)
   INTEGER(8), POINTER, INTENT(IN) :: var
   var = 42
   lng_def = .TRUE.
 END FUNCTION lng_def
 
-LOGICAL function flt_def(var)
+LOGICAL FUNCTION flt_def(var)
   REAL, POINTER, INTENT(IN) :: var
   var = 0.1337
   flt_def = .TRUE.
 END FUNCTION flt_def
 
-LOGICAL function dbl_def(var)
+LOGICAL FUNCTION dbl_def(var)
   REAL(8), POINTER, INTENT(IN) :: var
   var = 0.1337_8
   dbl_def = .TRUE.
 END FUNCTION dbl_def
 
-LOGICAL function chr_def(var)
+LOGICAL FUNCTION chr_def(var)
   CHARACTER(len=*), POINTER, INTENT(IN) :: var
   var = "hrkljus"
   chr_def = .TRUE.
 END FUNCTION chr_def
 
-LOGICAL function log_def(var)
+LOGICAL FUNCTION log_def(var)
   LOGICAL, POINTER, INTENT(IN) :: var
   var = .TRUE.
   log_def = .TRUE.
 END FUNCTION log_def
 
-LOGICAL function cpx_def(var)
+LOGICAL FUNCTION cpx_def(var)
   COMPLEX, POINTER, INTENT(IN) :: var
   var = (0,1)
   cpx_def = .TRUE.
 END FUNCTION cpx_def
 
-LOGICAL function dcp_def(var)
+LOGICAL FUNCTION dcp_def(var)
   COMPLEX(8), POINTER, INTENT(IN) :: var
   var = (0_8,1_8)
   dcp_def = .TRUE.
 END FUNCTION dcp_def
 
-LOGICAL function inta_def(var)
+LOGICAL FUNCTION inta_def(var)
   INTEGER, DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/1,2,3/)
   inta_def = .TRUE.
 END FUNCTION inta_def
 
-LOGICAL function lnga_def(var)
+LOGICAL FUNCTION lnga_def(var)
   INTEGER(8), DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/1,2,3/)
   lnga_def = .TRUE.
 END FUNCTION lnga_def
 
-LOGICAL function flta_def(var)
+LOGICAL FUNCTION flta_def(var)
   REAL, DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/1.1,2.2,3.3/)
   flta_def = .TRUE.
 END FUNCTION flta_def
 
-LOGICAL function dbla_def(var)
+LOGICAL FUNCTION dbla_def(var)
   REAL(8), DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/1.1_8,2.2_8,3.3_8/)
   dbla_def = .TRUE.
 END FUNCTION dbla_def
 
-LOGICAL function chra_def(var)
+LOGICAL FUNCTION chra_def(var)
   CHARACTER(len=*), DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/'foo','bar','baz'/)
   chra_def = .TRUE.
 END FUNCTION chra_def
 
-LOGICAL function loga_def(var)
+LOGICAL FUNCTION loga_def(var)
   LOGICAL, DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/.TRUE.,.FALSE.,.TRUE./)
   loga_def = .TRUE.
 END FUNCTION loga_def
 
-LOGICAL function cpxa_def(var)
+LOGICAL FUNCTION cpxa_def(var)
   COMPLEX, DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/(1,0),(0,1),(-1,0)/)
   cpxa_def = .TRUE.
 END FUNCTION cpxa_def
 
-LOGICAL function dcpa_def(var)
+LOGICAL FUNCTION dcpa_def(var)
   COMPLEX(8), DIMENSION(:), POINTER, INTENT(IN) :: var
   var = (/(1,0),(0,1),(-1,0)/)
   dcpa_def = .TRUE.

@@ -1235,7 +1235,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           ! local variables
           !-------------------------------------------------------------------------
           INTEGER                        :: i,offset
-          INTEGER, DIMENSION(:), POINTER :: wp => NULL()
+          INTEGER, DIMENSION(:), POINTER :: wp
 #ifdef __MPI3
           INTEGER                        :: request
 #endif
@@ -1261,6 +1261,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              Pc%flags(ppm_part_global_index)=.TRUE.
           END IF
 
+          NULLIFY(wp)
           CALL Pc%get(Pc%gi,wp,info)
 #ifdef __MPI3
           CALL MPI_Wait(request,MPI_STATUS_IGNORE,info)

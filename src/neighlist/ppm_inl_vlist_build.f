@@ -223,7 +223,7 @@
            ENDDO
 
            ! If computed coordinates are not inside the domain, skip!
-           IF (.NOT. inDomain(n_coor, domain))   cycle
+           IF (.NOT. inDomain(n_coor, domain))   CYCLE
 
            ! Get index of the neighbor cell.
            n_idx = getCellIdx(n_coor, c_depth, domain)
@@ -319,7 +319,7 @@
                  ENDDO
 
                  ! If coordinates are not inside the domain, skip!
-                 IF(.NOT. inDomain(n_coor, domain))   cycle
+                 IF(.NOT. inDomain(n_coor, domain))   CYCLE
 
                  ! Get index of the neighbor cell
                  n_idx = getCellIdx(n_coor, c_depth, domain)
@@ -731,7 +731,7 @@
                  ENDDO
 
                  ! If coordinates are not inside the domain, skip!
-                 IF(.NOT. inDomain(n_coor, domain))   cycle
+                 IF(.NOT. inDomain(n_coor, domain))   CYCLE
 
                  ! Get index of the neighbor cell
                  n_idx = getCellIdx(n_coor, c_depth, domain)

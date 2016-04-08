@@ -78,9 +78,9 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
 
         CALL RANDOM_SEED(size=seedsize)
         ALLOCATE(seed(seedsize))
-        do i=1,seedsize
+        DO i=1,seedsize
             seed(i)=10+i*i*(rank+1)
-        enddo
+        ENDDO
         CALL RANDOM_SEED(put=seed)
 
     end init
@@ -138,7 +138,7 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
         decomp = ppm_param_decomp_cuboid
         assig  = ppm_param_assign_internal
         topoid = 0
-        sca_ghostsize = 0.07_mk
+        sca_ghostsize = 0.07_MK
         CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
         &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
@@ -160,7 +160,7 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
 
         ALLOCATE(wp_2r(ndim,Part1%Npart))
         CALL RANDOM_NUMBER(wp_2r)
-        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.15_mk
+        wp_2r = (wp_2r - 0.5_MK) * Part1%h_avg * 0.15_MK
         CALL Part1%move(wp_2r,info)
         Assert_Equal(info,0)
         DEALLOCATE(wp_2r)
@@ -176,11 +176,11 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
         Assert_Equal(info,0)
 
 
-        if (ndim.eq.2) then
-            my_patch(1:2*ndim) = (/0.15_mk,0.10_MK,0.99_mk,0.7_mk/)
+        IF (ndim.EQ.2) then
+            my_patch(1:2*ndim) = (/0.15_MK,0.10_MK,0.99_MK,0.7_MK/)
         else
-            my_patch(1:6) = (/0.15_mk,0.10_MK,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
-        endif
+            my_patch(1:6) = (/0.15_MK,0.10_MK,0.51_MK,0.99_MK,0.7_MK,0.78_MK/)
+        ENDIF
         CALL Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
 
@@ -195,15 +195,15 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
 
 
         p => Mesh1%subpatch%begin()
-        IF (associated(p)) THEN
+        IF (ASSOCIATED(p)) THEN
             p_idx = Field1%get_pid(Mesh1)
             Assert_True(p_idx.GT.0)
             p_idx = Field2%get_pid(Mesh1)
             Assert_True(p_idx.GT.0)
         ENDIF
-        do while (ASSOCIATED(p))
-            Assert_True(associated(p%mesh,Mesh1))
-            Assert_True(associated(p%subpatch_data))
+        DO WHILE (ASSOCIATED(p))
+            Assert_True(ASSOCIATED(p%mesh,Mesh1))
+            Assert_True(ASSOCIATED(p%subpatch_data))
             Assert_True(ALL(p%istart_p.GE.0))
             Assert_True(ALL(p%iend_p.GE.0))
             p_idx = Field1%get_pid(p%mesh)
@@ -211,33 +211,33 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
             p_idx = Field2%get_pid(p%mesh)
             Assert_True(p_idx.GT.0)
             p => Mesh1%subpatch%next()
-        enddo
+        ENDDO
 
-        if (ppm_debug.GT.0) then
+        IF (ppm_debug.GT.0) then
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
 #endif
             topo => ppm_topo(topoid)%t
 
             stdout("NB subdomains =  ",topo%nsubs)
-            do i = 1,topo%nsublist
+            DO i = 1,topo%nsublist
                isub = topo%isublist(i)
                stdout("coordinates subs Min =  ",'topo%min_subd(1:ndim,isub)')
                stdout("coordinates subs Max =  ",'topo%max_subd(1:ndim,isub)')
-            enddo
+            ENDDO
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
 #endif
             stdout("NB patch =  ",Mesh1%npatch)
             stdout("NB subpatch =  ",Mesh1%subpatch%nb)
             p => Mesh1%subpatch%begin()
-            if (associated(p)) then
+            IF (ASSOCIATED(p)) then
                stdout("********************************")
                stdout("patch     istart_p ",'p%istart_p(1:ndim)')
                stdout("patch     iend_p ",'p%iend_p(1:ndim)')
                stdout("********************************")
-            endif
-            do while (ASSOCIATED(p))
+            ENDIF
+            DO WHILE (ASSOCIATED(p))
                 stdout("--------------------------------")
                 stdout("patch     istart ",'p%istart(1:ndim)')
                 stdout("patch     iend   ",'p%iend(1:ndim)')
@@ -245,11 +245,11 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
                 stdout("            to   ",'p%hi_a(1:ndim)')
                 stdout("--------------------------------")
                 p => Mesh1%subpatch%next()
-            enddo
+            ENDDO
 #ifdef __MPI
             CALL MPI_BARRIER(comm,info)
 #endif
-        endif
+        ENDIF
 
         !Fill in the allocated field arrays (incl. ghost nodes) with some data
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
@@ -300,7 +300,7 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
             for all
             !for real_and_ghosts
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                IF (Field2_n .lt. 0.0_MK) then
+                IF (Field2_n .LT. 0.0_MK) then
                     nb_errors = nb_errors + 1
                 ENDIF
                 Assert_Equal_Within(Field1_n(1) ,COS(2._MK*pi*pos(1)),        1e-5)
@@ -333,7 +333,7 @@ PURE FUNCTION test_constant(pos,ndim) RESULT(res)
     INTEGER                 ,  INTENT(IN) :: ndim
     REAL(MK), DIMENSION(ndim), INTENT(IN) :: pos
 
-    res =  1.0_MK !42.17_mk
+    res =  1.0_MK !42.17_MK
 END FUNCTION
 
 PURE FUNCTION test_linear(pos,ndim) RESULT(res)

@@ -189,8 +189,8 @@
           CLASS(DTYPE(ppm_t_part_prop)_),POINTER     :: nn_sq => NULL()
           CLASS(ppm_t_discr_data),POINTER            :: discr_data => NULL()
 
-          integer, dimension(ppm_dim)                :: degree
-          REAL(ppm_kind_double),dimension(1)         :: coeffs
+          INTEGER, DIMENSION(ppm_dim)                :: degree
+          REAL(ppm_kind_double),DIMENSION(1)         :: coeffs
 
           REAL(MK), PARAMETER :: big=HUGE(1.0_MK)
 

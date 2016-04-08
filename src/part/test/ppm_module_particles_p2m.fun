@@ -153,12 +153,12 @@ TYPE(ppm_v_main_abstr)  :: LFields
         !----------------
         ! Add a patch
         !----------------
-        if (ndim.eq.2) then
+        IF (ndim.EQ.2) then
             my_patch(1:4) = REAL((/0.15_MK,0.10_MK,0.99_MK,0.7_MK/),ppm_kind_double)
             my_patch(1:4) = REAL((/0.15_MK,0.15_MK,0.7_MK,0.7_MK/),ppm_kind_double)
         else
             my_patch(1:6) = REAL((/0.15_MK,0.10_MK,0.25_MK,0.89_MK,0.7_MK,0.78_MK/),ppm_kind_double)
-        endif
+        ENDIF
 
         CALL Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
@@ -170,7 +170,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
         Assert_Equal(info,0)
 
         ALLOCATE(wp_2r(ndim,Part1%Npart))
-!        CALL random_number(wp_2r)
+!        CALL RANDOM_NUMBER(wp_2r)
         wp_2r(1,:) = -0.1100010000_MK !(wp_2r - 0.5_MK) * Part1%h_avg * 0.0015_MK
         wp_2r(2,:) = 0.1300010000_MK !(wp_2r - 0.5_MK) * Part1%h_avg * 0.0015_MK
         CALL Part1%move(wp_2r,info)

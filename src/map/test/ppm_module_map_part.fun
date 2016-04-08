@@ -2,14 +2,14 @@ test_suite ppm_module_map_part
 
   INTEGER, PARAMETER              :: debug = 0
   INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
-  REAL(MK),PARAMETER              :: pi = 3.1415926535897931_mk
+  REAL(MK),PARAMETER              :: pi = 3.1415926535897931_MK
   REAL(MK),PARAMETER              :: skin = 0.0_MK
   INTEGER,PARAMETER               :: ndim=2
   INTEGER,PARAMETER               :: pdim=2
   INTEGER                         :: decomp,assig,tolexp
   REAL(MK)                        :: tol
-  REAL(MK)                        :: min_rcp = 0.01_mk
-  REAL(MK)                        :: max_rcp = 0.1_mk
+  REAL(MK)                        :: min_rcp = 0.01_MK
+  REAL(MK)                        :: max_rcp = 0.1_MK
   INTEGER                         :: info,comm,rank,nproc
   INTEGER                         :: topoid
   INTEGER, PARAMETER              :: np_init = 10000
@@ -84,12 +84,12 @@ test_suite ppm_module_map_part
     setup
 
         np = np_init
-        CALL RANDOM_SEED(size=seedsize)
+        CALL RANDOM_SEED(SIZE=seedsize)
         ALLOCATE(seed(seedsize))
         ALLOCATE(randnb((1+ndim)*np),STAT=info)
-        do i=1,seedsize
+        DO i=1,seedsize
            seed(i)=10+i*i*(rank+1)
-        enddo
+        ENDDO
         CALL RANDOM_SEED(put=seed)
         CALL RANDOM_NUMBER(randnb)
 
@@ -102,7 +102,7 @@ test_suite ppm_module_map_part
 
         DEALLOCATE(xp,rcp,wp,STAT=info)
         DEALLOCATE(seed,randnb)
-        IF (associated(cost)) DEALLOCATE(cost)
+        IF (ASSOCIATED(cost)) DEALLOCATE(cost)
         cost => NULL()
 
     end teardown
@@ -123,27 +123,27 @@ test_suite ppm_module_map_part
         rcp = 0.0_MK
 
         !p_h = len_phys / REAL(npgrid,mk)
-        !do j=1,npgrid
-        !    do i=1,npgrid
+        !DO j=1,npgrid
+        !    DO i=1,npgrid
         !        p_i = i + (j-1)*npgrid
         !        xp(1,p_i) = min_phys(1)+REAL(i-1,mk)*p_h(1)
         !        xp(2,p_i) = min_phys(2)+REAL(j-1,mk)*p_h(2)
         !        rcp(p_i) = min_rcp + (max_rcp-min_rcp)*randnb(p_i)
-        !        do k=1,pdim
+        !        DO k=1,pdim
         !            wp(k,i) = rcp(i)*REAL(k,MK)
-        !        enddo
-        !    enddo
-        !enddo
-        do i=1,np
-            do j=1,ndim
+        !        ENDDO
+        !    ENDDO
+        !ENDDO
+        DO i=1,np
+            DO j=1,ndim
                 xp(j,i) = min_phys(j)+&
                 len_phys(j)*randnb((ndim+1)*i-(ndim-j))
-            enddo
+            ENDDO
             rcp(i) = min_rcp + (max_rcp-min_rcp)*randnb((ndim+1)*i-ndim)
-            do j=1,pdim
+            DO j=1,pdim
                 wp(j,i) = rcp(i)*REAL(j,MK)
-            enddo
-        enddo
+            ENDDO
+        ENDDO
 
         CALL RANDOM_NUMBER(xp)
         CALL RANDOM_NUMBER(wp)
@@ -157,19 +157,26 @@ test_suite ppm_module_map_part
 
         topoid = 0
 
-        CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
-        &               max_rcp,cost,info)
+        CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef,max_rcp,cost,info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_global(topoid,xp,np,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(rcp,np,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(wp,pdim,np,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(np,newnp,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(wp,pdim,np,newnp,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(rcp,np,newnp,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(xp,ndim,np,newnp,info)
+        Assert_Equal(info,0)
 
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-
+        Assert_Equal(info,0)
         Assert_True(ok)
 
     end test
@@ -189,16 +196,16 @@ test_suite ppm_module_map_part
         xp = 0.0_MK
         rcp = 0.0_MK
 
-        do i=1,np
-            do j=1,ndim
+        DO i=1,np
+            DO j=1,ndim
                 xp(j,i) = min_phys(j)+&
                 len_phys(j)*randnb((ndim+1)*i-(ndim-j))
-            enddo
+            ENDDO
             rcp(i) = min_rcp + (max_rcp-min_rcp)*randnb((ndim+1)*i-ndim)
-            do j=1,pdim
+            DO j=1,pdim
                 wp(j,i) = rcp(i)*REAL(j,MK)
-            enddo
-        enddo
+            ENDDO
+        ENDDO
 
         !----------------
         ! make topology
@@ -209,16 +216,23 @@ test_suite ppm_module_map_part
         topoid = 0
 
 
-        CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
-        &               max_rcp,cost,info)
+        CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef,max_rcp,cost,info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_global(topoid,xp,np,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(rcp,np,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(wp,pdim,np,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(np,newnp,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(wp,pdim,np,newnp,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(rcp,np,newnp,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(xp,ndim,np,newnp,info)
+        Assert_Equal(info,0)
         np=newnp
 
         ! move all particles
@@ -226,24 +240,32 @@ test_suite ppm_module_map_part
         ALLOCATE(randnb((1+ndim)*np))
         CALL RANDOM_NUMBER(randnb)
 
-        do i=1,np
-            do j=1,ndim
+        DO i=1,np
+            DO j=1,ndim
                 xp(j,i) = xp(j,i) + (len_phys(j)/REAL(nproc,mk))*&
                 &         randnb((ndim+1)*i-(ndim-j))
-            enddo
-        enddo
+            ENDDO
+        ENDDO
 
         ! do local mapping
         CALL ppm_map_part_partial(topoid,xp,np,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(rcp,np,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(wp,pdim,np,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(np,newnp,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(wp,pdim,np,newnp,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(rcp,np,newnp,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(xp,ndim,np,newnp,info)
+        Assert_Equal(info,0)
         np=newnp
 
         CALL ppm_topo_check(topoid,xp,np,ok,info)
+        Assert_Equal(info,0)
         Assert_True(ok)
 
     end test
@@ -260,13 +282,13 @@ test_suite ppm_module_map_part
           INTEGER                         :: newnpart
           INTEGER                         :: mpart
           REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
-          REAL(MK), PARAMETER             :: gl = 0.1_mk
+          REAL(MK), PARAMETER             :: gl = 0.1_MK
 
-        if (nproc.GT.1) return
+        IF (nproc.GT.1) return
 
         ALLOCATE(p(ndim,npart))
-        p(1,1) = 0.05_mk
-        p(2,1) = 0.05_mk
+        p(1,1) = 0.05_MK
+        p(2,1) = 0.05_MK
         bcdef(1:6) = ppm_param_bcdef_periodic
 
         !----------------
@@ -278,24 +300,32 @@ test_suite ppm_module_map_part
 
         topoid = 0
 
-        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl,cost,info)
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl,cost,info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_global(topoid,p,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,newnpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        Assert_Equal(info,0)
         npart=newnpart
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-
+        Assert_Equal(info,0)
         Assert_True(ok)
+
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+        Assert_Equal(info,0)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
+        Assert_Equal(info,0)
         Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
 
@@ -315,28 +345,28 @@ test_suite ppm_module_map_part
           REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
           REAL(MK),DIMENSION(:)  ,POINTER :: w => NULL()
           REAL(MK),DIMENSION(2)           :: check
-          REAL(MK), PARAMETER             :: gl = 0.1_mk
+          REAL(MK), PARAMETER             :: gl = 0.1_MK
 
-        if (nproc.GT.1) return
+        IF (nproc.GT.1) return
 
         ALLOCATE(p(ndim,npart),w(npart))
-        p(1,1) = 0.05_mk  ! left
-        p(2,1) = 0.5_mk
-        p(1,2) = 0.95_mk  ! right
-        p(2,2) = 0.5_mk
-        p(1,3) = 0.5_mk   ! bottom
-        p(2,3) = 0.05_mk
-        p(1,4) = 0.5_mk   ! top
-        p(2,4) = 0.95_mk
+        p(1,1) = 0.05_MK  ! left
+        p(2,1) = 0.5_MK
+        p(1,2) = 0.95_MK  ! right
+        p(2,2) = 0.5_MK
+        p(1,3) = 0.5_MK   ! bottom
+        p(2,3) = 0.05_MK
+        p(1,4) = 0.5_MK   ! top
+        p(2,4) = 0.95_MK
 
-        p(1,5) = 0.05_mk  ! left-bottom
-        p(2,5) = 0.05_mk
-        p(1,6) = 0.05_mk  ! left-top
-        p(2,6) = 0.95_mk
-        p(1,7) = 0.95_mk  ! right-bottom
-        p(2,7) = 0.05_mk
-        p(1,8) = 0.95_mk  ! right-top
-        p(2,8) = 0.95_mk
+        p(1,5) = 0.05_MK  ! left-bottom
+        p(2,5) = 0.05_MK
+        p(1,6) = 0.05_MK  ! left-top
+        p(2,6) = 0.95_MK
+        p(1,7) = 0.95_MK  ! right-bottom
+        p(2,7) = 0.05_MK
+        p(1,8) = 0.95_MK  ! right-top
+        p(2,8) = 0.95_MK
 
         w(:) = 1.0_MK
 
@@ -351,41 +381,63 @@ test_suite ppm_module_map_part
 
         topoid = 0
 
-        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl,cost,info)
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl,cost,info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_global(topoid,p,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(w,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,newnpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(w,npart,newnpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        Assert_Equal(info,0)
         npart=newnpart
         CALL ppm_topo_check(topoid,p,npart,ok,info)
+        Assert_Equal(info,0)
         Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(w,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(w,npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+        Assert_Equal(info,0)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
+        Assert_Equal(info,0)
         Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
         CALL ppm_map_part_store(info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_ghost_put(topoid,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(w,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_ghost_pop(w,1,npart,mpart,info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_load(info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(p,ndim,npart,info,.TRUE.)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+        Assert_Equal(info,0)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
+        Assert_Equal(info,0)
         Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
@@ -393,61 +445,61 @@ test_suite ppm_module_map_part
 
         ! now go through all particles and try to find their ghosts
 
-        check(1) = 1.05_mk  ! left
-        check(2) = 0.5_mk
+        check(1) = 1.05_MK  ! left
+        check(2) = 0.5_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
-        check(1) = -0.05_mk  ! right
-        check(2) =  0.5_mk
+        check(1) = -0.05_MK  ! right
+        check(2) =  0.5_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
-        check(1) = 0.5_mk   ! bottom
-        check(2) = 1.05_mk
+        check(1) = 0.5_MK   ! bottom
+        check(2) = 1.05_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
-        check(1) =  0.5_mk   ! top
-        check(2) = -0.05_mk
+        check(1) =  0.5_MK   ! top
+        check(2) = -0.05_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
 
-        check(1) = 1.05_mk  ! left-bottom
-        check(2) = 0.05_mk
+        check(1) = 1.05_MK  ! left-bottom
+        check(2) = 0.05_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) = 0.05_mk
-        check(2) = 1.05_mk
+        check(1) = 0.05_MK
+        check(2) = 1.05_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) = 1.05_mk
-        check(2) = 1.05_mk
-        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-
-        check(1) =  1.05_mk  ! left-top
-        check(2) =  0.95_mk
-        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) =  0.05_mk
-        check(2) = -0.05_mk
-        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) =  1.05_mk
-        check(2) = -0.05_mk
+        check(1) = 1.05_MK
+        check(2) = 1.05_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
-        check(1) = -0.05_mk  ! right-bottom
-        check(2) =  0.05_mk
+        check(1) =  1.05_MK  ! left-top
+        check(2) =  0.95_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) =  0.95_mk
-        check(2) =  1.05_mk
+        check(1) =  0.05_MK
+        check(2) = -0.05_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) = -0.05_mk
-        check(2) =  1.05_mk
+        check(1) =  1.05_MK
+        check(2) = -0.05_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
-        check(1) = -0.05_mk  ! right-top
-        check(2) =  0.95_mk
+        check(1) = -0.05_MK  ! right-bottom
+        check(2) =  0.05_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) =  0.95_mk
-        check(2) = -0.05_mk
+        check(1) =  0.95_MK
+        check(2) =  1.05_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) = -0.05_mk
-        check(2) = -0.05_mk
+        check(1) = -0.05_MK
+        check(2) =  1.05_MK
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+
+        check(1) = -0.05_MK  ! right-top
+        check(2) =  0.95_MK
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        check(1) =  0.95_MK
+        check(2) = -0.05_MK
+        Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        check(1) = -0.05_MK
+        check(2) = -0.05_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         DEALLOCATE(w)
@@ -466,15 +518,15 @@ test_suite ppm_module_map_part
     found_ghost = .FALSE.
 
     found = 0
-    do i=1,n
-        if((ABS(ghosts(1,i) - cp(1)).lt.tol).and. &
-        &  (ABS(ghosts(2,i) - cp(2)).lt.tol)) then
+    DO i=1,n
+        if((ABS(ghosts(1,i) - cp(1)).LT.tol).AND. &
+        &  (ABS(ghosts(2,i) - cp(2)).LT.tol)) then
             found = found + 1
-        endif
-    enddo
-    if (found.eq.1) then
+        ENDIF
+    ENDDO
+    IF (found.EQ.1) then
         found_ghost = .TRUE.
-    endif
+    ENDIF
 
     END FUNCTION found_ghost
 
@@ -489,13 +541,13 @@ test_suite ppm_module_map_part
           INTEGER                         :: newnpart
           INTEGER                         :: mpart
           REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
-          REAL(MK), PARAMETER             :: gl = 0.1_mk
+          REAL(MK), PARAMETER             :: gl = 0.1_MK
 
-        if (nproc.GT.1) return
+        IF (nproc.GT.1) return
 
         ALLOCATE(p(ndim,npart))
-        p(1,1) = 0.05_mk
-        p(2,1) = 0.05_mk
+        p(1,1) = 0.05_MK
+        p(2,1) = 0.05_MK
         bcdef(1:6) = ppm_param_bcdef_symmetry
 
         !----------------
@@ -507,24 +559,32 @@ test_suite ppm_module_map_part
 
         topoid = 0
 
-        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl,cost,info)
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl,cost,info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_global(topoid,p,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,newnpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        Assert_Equal(info,0)
         npart=newnpart
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-
+        Assert_Equal(info,0)
         Assert_True(ok)
+
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+        Assert_Equal(info,0)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
+        Assert_Equal(info,0)
         Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
 
@@ -542,21 +602,21 @@ test_suite ppm_module_map_part
           INTEGER                         :: newnpart
           INTEGER                         :: mpart
           REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
-          REAL(MK), PARAMETER             :: gl = 0.1_mk
+          REAL(MK), PARAMETER             :: gl = 0.1_MK
           REAL(MK)                        :: h
 
-        if (nproc.GT.1) return
+        IF (nproc.GT.1) return
 
         h = len_phys(1)/(snpart)
         ALLOCATE(p(ndim,npart))
         k = 0
-        do i=1,snpart
-            do j=1,snpart
+        DO i=1,snpart
+            DO j=1,snpart
                 k = k + 1
                 p(1,k) = h/2 + (i-1)*h
                 p(2,k) = h/2 + (j-1)*h
-            enddo
-        enddo
+            ENDDO
+        ENDDO
         npart = k
         bcdef(1:2) = ppm_param_bcdef_periodic
         bcdef(3:4) = ppm_param_bcdef_symmetry
@@ -572,23 +632,30 @@ test_suite ppm_module_map_part
 
         topoid = 0
 
-        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl,cost,info)
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl,cost,info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_global(topoid,p,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,newnpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        Assert_Equal(info,0)
         npart=newnpart
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-
+        Assert_Equal(info,0)
         Assert_True(ok)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+        Assert_Equal(info,0)
         Assert_Equal(mpart-npart,104)
         CALL ppm_topo_check(topoid,p,npart,ok,info)
+        Assert_Equal(info,0)
         Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart,mpart)
 
@@ -609,19 +676,19 @@ test_suite ppm_module_map_part
           REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
           REAL(MK),DIMENSION(:)  ,POINTER :: w => NULL()
           REAL(MK),DIMENSION(2)           :: check
-          REAL(MK), PARAMETER             :: gl = 0.1_mk
+          REAL(MK), PARAMETER             :: gl = 0.1_MK
 
-        if (nproc.GT.1) return
+        IF (nproc.GT.1) return
 
         ALLOCATE(p(ndim,npart),w(npart))
-        p(1,1) = 0.05_mk  ! left
-        p(2,1) = 0.5_mk
-        p(1,2) = 0.95_mk  ! right
-        p(2,2) = 0.5_mk
-        !p(1,3) = 0.5_mk   ! bottom
-        !p(2,3) = 0.05_mk
-        !p(1,4) = 0.5_mk   ! top
-        !p(2,4) = 0.95_mk
+        p(1,1) = 0.05_MK  ! left
+        p(2,1) = 0.5_MK
+        p(1,2) = 0.95_MK  ! right
+        p(2,2) = 0.5_MK
+        !p(1,3) = 0.5_MK   ! bottom
+        !p(2,3) = 0.05_MK
+        !p(1,4) = 0.5_MK   ! top
+        !p(2,4) = 0.95_MK
 
 
         w(:) = 1.0_MK
@@ -638,47 +705,70 @@ test_suite ppm_module_map_part
 
         topoid = 0
 
-        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl,cost,info)
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl,cost,info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_global(topoid,p,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(w,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,newnpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(w,npart,newnpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        Assert_Equal(info,0)
         npart=newnpart
         CALL ppm_topo_check(topoid,p,npart,ok,info)
-
+        Assert_Equal(info,0)
         Assert_True(ok)
+
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
+        !Assert_Equal(info,0)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(w,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(w,npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+        Assert_Equal(info,0)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
+        Assert_Equal(info,0)
         Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
         CALL ppm_map_part_store(info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_ghost_put(topoid,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(w,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_ghost_pop(w,1,npart,mpart,info)
+        Assert_Equal(info,0)
 
-        p(1,1) = p(1,1)-0.01_mk
-        p(2,1) = p(2,1)+0.1_mk
-        p(1,2) = p(1,2)+0.01_mk
-        p(2,2) = p(2,2)+0.1_mk
+        p(1,1) = p(1,1)-0.01_MK
+        p(2,1) = p(2,1)+0.1_MK
+        p(1,2) = p(1,2)+0.01_MK
+        p(2,2) = p(2,2)+0.1_MK
 
         CALL ppm_map_part_load(info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(p,ndim,npart,info,.TRUE.)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+        Assert_Equal(info,0)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
+        Assert_Equal(info,0)
         Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
@@ -686,12 +776,12 @@ test_suite ppm_module_map_part
 
         ! now go through all particles and try to find their ghosts
 
-        check(1) = -0.04_mk  ! left
-        check(2) =  0.6_mk
+        check(1) = -0.04_MK  ! left
+        check(2) =  0.6_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
-        check(1) =  1.04_mk  ! right
-        check(2) =  0.6_mk
+        check(1) =  1.04_MK  ! right
+        check(2) =  0.6_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
 
@@ -714,15 +804,15 @@ test_suite ppm_module_map_part
           REAL(MK),DIMENSION(:,:),POINTER :: p => NULL()
           REAL(MK),DIMENSION(:)  ,POINTER :: w => NULL()
           REAL(MK),DIMENSION(2)           :: check
-          REAL(MK), PARAMETER             :: gl = 0.1_mk
+          REAL(MK), PARAMETER             :: gl = 0.1_MK
 
-        if (nproc.GT.1) return
+        IF (nproc.GT.1) return
 
         ALLOCATE(p(ndim,npart),w(npart))
-        p(1,1) = 0.5_mk   ! bottom
-        p(2,1) = 0.05_mk
-        p(1,2) = 0.5_mk   ! top
-        p(2,2) = 0.95_mk
+        p(1,1) = 0.5_MK   ! bottom
+        p(2,1) = 0.05_MK
+        p(1,2) = 0.5_MK   ! top
+        p(2,2) = 0.95_MK
 
 
         w(:) = 1.0_MK
@@ -739,47 +829,69 @@ test_suite ppm_module_map_part
 
         topoid = 0
 
-        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl,cost,info)
+        CALL ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef,gl,cost,info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_global(topoid,p,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(w,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,newnpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(w,npart,newnpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        Assert_Equal(info,0)
         npart=newnpart
         CALL ppm_topo_check(topoid,p,npart,ok,info)
+        Assert_Equal(info,0)
 
         Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         CALL ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(w,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(w,npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+        Assert_Equal(info,0)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
+        Assert_Equal(info,0)
         Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
         CALL ppm_map_part_store(info)
+        Assert_Equal(info,0)
 
         CALL ppm_map_part_ghost_put(topoid,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(w,npart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_ghost_pop(w,1,npart,mpart,info)
+        Assert_Equal(info,0)
 
-        p(1,1) = p(1,1)+0.1_mk
-        p(2,1) = p(2,1)+0.01_mk
-        p(1,2) = p(1,2)-0.1_mk
-        p(2,2) = p(2,2)+0.01_mk
+        p(1,1) = p(1,1)+0.1_MK
+        p(2,1) = p(2,1)+0.01_MK
+        p(1,2) = p(1,2)-0.1_MK
+        p(2,2) = p(2,2)+0.01_MK
 
         CALL ppm_map_part_load(info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_push(p,ndim,npart,info,.TRUE.)
+        Assert_Equal(info,0)
         CALL ppm_map_part_send(npart,mpart,info)
+        Assert_Equal(info,0)
         CALL ppm_map_part_pop(p,ndim,npart,mpart,info)
+        Assert_Equal(info,0)
 
         CALL ppm_topo_check(topoid,p,npart,ok,info)
+        Assert_Equal(info,0)
         Assert_True(ok)
         !CALL ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
@@ -787,12 +899,12 @@ test_suite ppm_module_map_part
 
         ! now go through all particles and try to find their ghosts
 
-        check(1) =  0.6_mk  ! left
-        check(2) = -0.06_mk
+        check(1) =  0.6_MK  ! left
+        check(2) = -0.06_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
-        check(1) =  0.4_mk  ! right
-        check(2) =  1.04_mk
+        check(1) =  0.4_MK  ! right
+        check(2) =  1.04_MK
         Assert_True(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
 
         DEALLOCATE(w)

@@ -364,8 +364,8 @@
 
               !Insert (spawn) new particles where needed
 
-              !if (lbfgs_continue .and. gradPsi_max.lt.1e-1 .or. &
-                  !&  Particles%nneighmin.lt.opts%nneigh_critical) then
+              !if (lbfgs_continue .AND. gradPsi_max.LT.1e-1 .OR. &
+                  !&  Particles%nneighmin.LT.opts%nneigh_critical) then
 
               Dtilde => Particles%wps(Particles%Dtilde_id)%vec
               DO ip=1,Particles%Npart
@@ -373,7 +373,7 @@
               ENDDO
               Dtilde => NULL()
 
-              if (.not.adaptation_ok) then
+              IF (.not.adaptation_ok) then
 #ifdef __USE_DEL_METHOD2
                   CALL  sop_spawn2_particles(Particles,opts,info,&
                       nb_part_added=nb_spawn,wp_fun=wp_fun)
@@ -395,13 +395,13 @@
 #endif
               else
                   adding_particles = .FALSE.
-              endif
+              ENDIF
               Dtilde => Particles%wps(Particles%Dtilde_id)%vec
               DO ip=1,Particles%Npart
                   write(500+it_adapt,'(3(E20.12,2X))') Particles%xp(1:2,ip),Dtilde(ip)
               ENDDO
               Dtilde => NULL()
-              call check_duplicates(Particles)
+              CALL check_duplicates(Particles)
 
 #ifdef __USE_LBFGS
               IF (adding_particles) lbfgs_continue = .FALSE.
@@ -565,7 +565,7 @@
                       !MAXVAL(nvlist_cross(1:Particles%Npart))
 
 #if debug_verbosity > 0
-                  IF (it_adapt.eq.1 .and. &
+                  IF (it_adapt.EQ.1 .AND. &
                       MINVAL(nvlist_cross(1:Particles%Npart)).LE.0) THEN
                       CALL ppm_write(ppm_rank,caller,&
                           'Insufficient number of xset neighbours to compute D',info)
@@ -589,7 +589,7 @@
 
               !Linear interpolation of D_tilde
                   DO ip=1,Particles%Npart
-                      if (nvlist_cross(ip).eq.0) then
+                      IF (nvlist_cross(ip).EQ.0) then
                           Dtilde(ip) = opts%maximum_D
                           D(ip) = opts%maximum_D
                       else
@@ -640,7 +640,7 @@
                           !ENDDO n_loop2
                           !D(ip) = Dtilde(ip)
 
-                      endif
+                      ENDIF
 
                       !when Dtilde/D is large, increase rcp
                       rcp(ip) = opts%rcp_over_D * MIN(Dtilde(ip),2._MK*D(ip))
@@ -702,7 +702,7 @@
               ENDIF
 
 #if debug_verbosity>1
-              call check_duplicates(Particles)
+              CALL check_duplicates(Particles)
 #endif
 
               !!---------------------------------------------------------------------!
@@ -753,7 +753,7 @@
                   !GOTO 9999
               !ENDIF
               !call check_duplicates(Particles)
-              call particles_check_arrays(Particles,info)
+              CALL particles_check_arrays(Particles,info)
               IF (info .NE. 0) THEN
                   CALL ppm_write(ppm_rank,caller,&
                       'particles_check_arrays before failed.',info)
@@ -781,8 +781,8 @@
               Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
 
 
-              !IF (lbfgs_continue .and. gradPsi_max .LE. 5E-2) THEN
-              IF (lbfgs_continue .and. gradPsi_max .LE. 5E-12) THEN
+              !IF (lbfgs_continue .AND. gradPsi_max .LE. 5E-2) THEN
+              IF (lbfgs_continue .AND. gradPsi_max .LE. 5E-12) THEN
                   adaptation_ok = .TRUE.
               ELSE
 
@@ -902,10 +902,10 @@
               !IF (gradPsi_max .LT. 1e-3) then
                   !step_max = 10.0_MK
               !else
-                  !step_max = 1.5_mk
+                  !step_max = 1.5_MK
               !endif
-              step_max = MIN(0.3_mk / MIN(gradPsi_max,3.0_MK), 10000.0_MK)
-              !step_max = MIN(0.3_mk / MIN(gradPsi_max,3.0_MK), 0.5_mk)
+              step_max = MIN(0.3_MK / MIN(gradPsi_max,3.0_MK), 10000.0_MK)
+              !step_max = MIN(0.3_MK / MIN(gradPsi_max,3.0_MK), 0.5_MK)
 
               !!---------------------------------------------------------------------!
               !! Evaluate potential after different step sizes

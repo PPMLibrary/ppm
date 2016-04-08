@@ -402,7 +402,7 @@
       dxi = 1.0_MK/dx
       dv1 = dx(1)
       dv2 = dx(2)
-      if(ppm_dim.eq.3) dv3 = dx(3)
+      if(ppm_dim.EQ.3) dv3 = dx(3)
 
       !-------------------------------------------------------------------------
       !  Start computation, taking out the select case for speed
@@ -431,7 +431,7 @@
                !----------------------------------------------------------------
                !  flipped upside down for ppm conformance
                !----------------------------------------------------------------
-               if(lda.eq.3.and.ppm_dim.eq.3) then
+               if(lda.EQ.3.AND.ppm_dim.EQ.3) then
 #if     __DIME == __3D
                kkdec = 0
                DO kk=ip3-1,ip3+2

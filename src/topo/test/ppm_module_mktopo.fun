@@ -85,9 +85,9 @@ REAL(MK)                         :: t0,t1,t2,t3
 
         CALL RANDOM_SEED(size=seedsize)
         ALLOCATE(seed(seedsize))
-        do i=1,seedsize
+        DO i=1,seedsize
             seed(i)=10+i*i*(rank+1)
-        enddo
+        ENDDO
         CALL RANDOM_SEED(put=seed)
         ALLOCATE(randnb((1+ndim)*np),STAT=info)
         CALL RANDOM_NUMBER(randnb)
