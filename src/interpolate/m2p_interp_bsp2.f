@@ -263,7 +263,7 @@
                up(iq) = up(iq) + a10a21*field_up(ip10,ip21)
                up(iq) = up(iq) + a11a20*field_up(ip11,ip20)
                up(iq) = up(iq) + a11a21*field_up(ip11,ip21)
-            END DO  ! end loop over particles in the current subdomain
+            ENDDO  ! end loop over particles in the current subdomain
 #elif __MODE == __VEC
             !-------------------------------------------------------------------
             !  Unrolled version for 1-vectors
@@ -309,7 +309,7 @@
                   up(1,iq) = up(1,iq) + a10a21*field_up(1,ip10,ip21)
                   up(1,iq) = up(1,iq) + a11a20*field_up(1,ip11,ip20)
                   up(1,iq) = up(1,iq) + a11a21*field_up(1,ip11,ip21)
-               END DO ! end loop over particles in the current subdomain
+               ENDDO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  Unrolled version for 2-vectors
                !----------------------------------------------------------------
@@ -359,7 +359,7 @@
                   up(2,iq) = up(2,iq) + a10a21*field_up(2,ip10,ip21)
                   up(2,iq) = up(2,iq) + a11a20*field_up(2,ip11,ip20)
                   up(2,iq) = up(2,iq) + a11a21*field_up(2,ip11,ip21)
-               END DO ! end loop over particles in the current subdomain
+               ENDDO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  Unrolled version for 3-vectors
                !----------------------------------------------------------------
@@ -414,7 +414,7 @@
                   up(3,iq) = up(3,iq) + a10a21*field_up(3,ip10,ip21)
                   up(3,iq) = up(3,iq) + a11a20*field_up(3,ip11,ip20)
                   up(3,iq) = up(3,iq) + a11a21*field_up(3,ip11,ip21)
-               END DO ! end loop over particles in the current subdomain
+               ENDDO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  All other lda are not unrolled. This will vectorize over lda!
                !----------------------------------------------------------------
@@ -459,9 +459,9 @@
                      up(ldn,iq) = up(ldn,iq) + a10a21*field_up(ldn,ip10,ip21)
                      up(ldn,iq) = up(ldn,iq) + a11a20*field_up(ldn,ip11,ip20)
                      up(ldn,iq) = up(ldn,iq) + a11a21*field_up(ldn,ip11,ip21)
-                  END DO   ! ldn
-               END DO ! end loop over particles in the current subdomain
-            END IF
+                  ENDDO   ! ldn
+               ENDDO ! end loop over particles in the current subdomain
+            ENDIF
 #endif
 #elif __DIME == __3D
             !-------------------------------------------------------------------
@@ -537,7 +537,7 @@
      &                     a11a21a30*field_up(ip11,ip21,ip30)
                up(iq) = up(iq) + &
      &                     a11a21a31*field_up(ip11,ip21,ip31)
-            END DO  ! iq
+            ENDDO  ! iq
 #elif __MODE == __VEC
             !-------------------------------------------------------------------
             !  Unrolled version for 1-vectors
@@ -612,7 +612,7 @@
      &                        a11a21a30*field_up(1,ip11,ip21,ip30)
                   up(1,iq) = up(1,iq) + &
      &                        a11a21a31*field_up(1,ip11,ip21,ip31)
-               END DO ! end loop over particles in the current subdomain
+               ENDDO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  Unrolled version for 2-vectors
                !----------------------------------------------------------------
@@ -706,7 +706,7 @@
      &                        a11a21a30*field_up(2,ip11,ip21,ip30)
                   up(2,iq) = up(2,iq) + &
      &                        a11a21a31*field_up(2,ip11,ip21,ip31)
-               END DO ! end loop over particles in the current subdomain
+               ENDDO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  Unrolled version for 3-vectors
                !----------------------------------------------------------------
@@ -820,7 +820,7 @@
      &                        a11a21a30*field_up(3,ip11,ip21,ip30)
                   up(3,iq) = up(3,iq) + &
      &                        a11a21a31*field_up(3,ip11,ip21,ip31)
-               END DO ! end loop over particles in the current subdomain
+               ENDDO ! end loop over particles in the current subdomain
 
                !----------------------------------------------------------------
                !  All other lda are not unrolled. This will vectorize over lda!
@@ -896,9 +896,9 @@
      &                           a11a21a30*field_up(ldn,ip11,ip21,ip30)
                      up(ldn,iq) = up(ldn,iq) + &
      &                           a11a21a31*field_up(ldn,ip11,ip21,ip31)
-                  END DO   ! ldn
-               END DO ! end loop over particles in the current subdomain
-            END IF ! lda unroll
+                  ENDDO   ! ldn
+               ENDDO ! end loop over particles in the current subdomain
+            ENDIF ! lda unroll
 #endif
 #endif
           p => Mesh%subpatch%next()

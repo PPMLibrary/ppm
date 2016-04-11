@@ -9,7 +9,7 @@
 #else
                 CALL find_flag(WRAP(DTYPE)_args(i)%flag(1:2), ok)
 #endif
-             END IF
+             ENDIF
              IF ((.NOT.ok).AND.(WRAP(DTYPE)_args(i)%long_flag_set)) THEN
                 ! long flag
 #ifndef __LOGICAL
@@ -21,7 +21,7 @@
                 &    %long_flag(1:LEN_TRIM(WRAP(DTYPE)_args(i) &
                 &    %long_flag)), ok)
 #endif
-             END IF
+             ENDIF
              IF (ok) THEN
 #ifndef __LOGICAL
                 ! match found - convert the arg
@@ -32,13 +32,13 @@
                    & WRAP(DTYPE)_args(i)%name(1:LEN_TRIM(WRAP(DTYPE)_args(i)%name))
 
                    fail(cvar,ppm_error=ppm_error_fatal)
-                END IF
+                ENDIF
 #else
                 IF (WRAP(DTYPE)_args(i)%vtype .EQV. enabling_flag) THEN
                    WRAP(DTYPE)_args(i)%variable = .TRUE.
                 ELSE
                    WRAP(DTYPE)_args(i)%variable = .FALSE.
-                END IF
+                ENDIF
 #endif
                 WRAP(DTYPE)_args(i)%clf_supplied = .TRUE.
              ELSE IF (err) THEN
@@ -46,7 +46,7 @@
                 & ' has to be supplied with a value.'
 
                 fail(cvar,ppm_error=ppm_error_fatal)
-             END IF
-          END DO
+             ENDIF
+          ENDDO
 #undef DTYPE
 #undef __LOGICAL

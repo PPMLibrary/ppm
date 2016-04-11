@@ -136,12 +136,12 @@
         IF ((kernel.LT.1).OR.(kernel.GT.4)) THEN
             fail("Wrong kernel definition",&
                 ppm_err_ppm_noinit,exit_point=8888)
-        END IF
+        ENDIF
         kernel_support = ppm_rmsh_kernelsize(kernel)*2
         IF(.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
      &               .OR.(kernel_support.EQ.6))) THEN
             fail("Wrong kernel support",ppm_err_argument,exit_point=8888)
-        END IF
+        ENDIF
         IF (this%Npart .GT. 0) THEN
            IF (SIZE(this%xp,2) .LT. this%Npart) THEN
             fail("this%Npart is wrong. Corrupted data structure?",exit_point=8888)

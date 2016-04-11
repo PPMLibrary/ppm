@@ -353,7 +353,7 @@
               ELSE
                  nlist2         = nlist2 + 1
                  ilist2(nlist2) = ipart
-              END IF
+              ENDIF
            ELSEIF (ppm_dim.EQ.2) THEN
 
               IF( ( xp(1,ipart).GE.min_sub(1,idoml) .AND. &
@@ -377,9 +377,9 @@
               ELSE
                  nlist2         = nlist2 + 1
                  ilist2(nlist2) = ipart
-              END IF
-           END IF
-        END DO
+              ENDIF
+           ENDIF
+        ENDDO
         !----------------------------------------------------------------------
         !  Copy the lists (well, only if nlist2 changed - decreased)
         !----------------------------------------------------------------------
@@ -394,7 +394,7 @@
         !  Exit if the list is empty
         !----------------------------------------------------------------------!
         IF (nlist1.EQ.0) EXIT
-     END DO
+     ENDDO
 
      !-------------------------------------------------------------------------!
      !  Check that we sold all the particles
@@ -410,8 +410,8 @@
      DO idom=1,topo%nsublist
         IF(store_info(idom).GE.max_partnumber) THEN
            max_partnumber = store_info(idom)
-        END IF
-     END DO
+        ENDIF
+     ENDDO
      iopt   = ppm_param_alloc_fit
      ldu(1) = topo%nsublist
      ldu(2) = max_partnumber
@@ -422,7 +422,7 @@
         CALL ppm_error(ppm_err_alloc,'ppm_interp_p2m_3d',     &
      &                     'problem in internal allocation',__LINE__,info)
         GOTO 9999
-     END IF
+     ENDIF
 
      list_sub=0
 
@@ -481,7 +481,7 @@
               ELSE
                  nlist2         = nlist2 + 1
                  ilist2(nlist2) = ipart
-              END IF
+              ENDIF
            ELSEIF (ppm_dim.EQ.2) THEN
 
               IF( ( xp(1,ipart).GE.min_sub(1,idoml) .AND. &
@@ -505,10 +505,10 @@
               ELSE
                  nlist2         = nlist2 + 1
                  ilist2(nlist2) = ipart
-              END IF
-           END IF
+              ENDIF
+           ENDIF
 
-        END DO
+        ENDDO
         !----------------------------------------------------------------------!
         !  Copy the lists (well, only if nlist2 changed - decreased)
         !----------------------------------------------------------------------!
@@ -523,7 +523,7 @@
         !  Exit if the list is empty
         !----------------------------------------------------------------------!
         IF (nlist1.EQ.0) EXIT
-     END DO
+     ENDDO
 
      !-------------------------------------------------------------------------!
      !  Check that we sold all the particles
@@ -542,8 +542,8 @@
      DO idom = 1,topo%nsublist
         IF(store_info(idom).GE.max_partnumber) THEN
            max_partnumber = store_info(idom)
-        END IF
-     END DO
+        ENDIF
+     ENDDO
 
 9998 CONTINUE
 #if __DIME == __3D
@@ -564,14 +564,14 @@
 #if __MODE == __VEC
                  DO ldn=1,lda
                     field_up(ldn,i,j,k,isub) = 0.0_MK
-                 END DO
+                 ENDDO
 #else
                  field_up(i,j,k,isub) = 0.0_MK
 #endif
-              END DO
-           END DO
-        END DO
-      END DO
+              ENDDO
+           ENDDO
+        ENDDO
+      ENDDO
 #elif __DIME == __2D
      !-------------------------------------------------------------------------!
      !  --- 2D ---
@@ -588,14 +588,14 @@
 #if __MODE == __VEC
               DO ldn=1,lda
                  field_up(ldn,i,j,isub) = 0.0_MK
-              END DO
+              ENDDO
 #else
               field_up(i,j,isub) = 0.0_MK
 #endif
-           END DO
-        END DO
+           ENDDO
+        ENDDO
 
-      END DO
+      ENDDO
 #endif
       IF(np.EQ.0) GOTO 9997
 
@@ -664,17 +664,17 @@
                      DO i=xlo,xhi
                         field_up(i,j,idom) = field_up(i,j,idom) + &
      &                       field_up(xlo-i+1,j,idom)
-                     END DO
-                  END DO
+                     ENDDO
+                  ENDDO
                CASE(ppm_param_bcdef_antisymmetry)
                   DO j=ylo,yhi
                      DO i=xlo,xhi
                         field_up(i,j,idom) = field_up(i,j,idom) - &
      &                      field_up(xlo-i+1,j,idom)
-                     END DO
-                  END DO
+                     ENDDO
+                  ENDDO
                END SELECT
-            END IF
+            ENDIF
             IF (topo%subs_bc(2,idoml).EQ.1) THEN
                xlo = ndata(1,idoml) - ghostsize(1)
                ylo = 1
@@ -686,17 +686,17 @@
                      DO i=xlo,xhi
                         field_up(i,j,idom) = field_up(i,j,idom) + &
      &                           field_up(2*xhi-i,j,idom)
-                     END DO
-                  END DO
+                     ENDDO
+                  ENDDO
                CASE(ppm_param_bcdef_antisymmetry)
                   DO j=ylo,yhi
                      DO i=xlo,xhi
                         field_up(i,j,idom) = field_up(i,j,idom) - &
      &                           field_up(2*xhi-i,j,idom)
-                     END DO
-                  END DO
+                     ENDDO
+                  ENDDO
                END SELECT
-            END IF
+            ENDIF
             IF (topo%subs_bc(3,idoml).EQ.1) THEN
                xlo = 1
                ylo = 1
@@ -708,17 +708,17 @@
                      DO i=xlo,xhi
                         field_up(i,j,idom) = field_up(i,j,idom) + &
      &                           field_up(i,ylo-j+1,idom)
-                     END DO
-                  END DO
+                     ENDDO
+                  ENDDO
                CASE(ppm_param_bcdef_antisymmetry)
                   DO j=ylo,yhi
                      DO i=xlo,xhi
                         field_up(i,j,idom) = field_up(i,j,idom) - &
      &                           field_up(i,ylo-j+1,idom)
-                     END DO
-                  END DO
+                     ENDDO
+                  ENDDO
                END SELECT
-            END IF
+            ENDIF
             IF (topo%subs_bc(4,idoml).EQ.1) THEN
                xlo = 1
                ylo = ndata(2,idoml) - ghostsize(2)
@@ -730,18 +730,18 @@
                      DO i=xlo,xhi
                         field_up(i,j,idom) = field_up(i,j,idom) + &
      &                           field_up(i,2*yhi-j,idom)
-                     END DO
-                  END DO
+                     ENDDO
+                  ENDDO
                CASE(ppm_param_bcdef_antisymmetry)
                   DO j=ylo,yhi
                      DO i=xlo,xhi
                         field_up(i,j,idom) = field_up(i,j,idom) - &
      &                           field_up(i,2*yhi-j,idom)
-                     END DO
-                  END DO
+                     ENDDO
+                  ENDDO
                END SELECT
-            END IF
-         END DO
+            ENDIF
+         ENDDO
 #elif __MODE == __VEC
          DO idom = 1,topo%nsublist
             idoml = topo%isublist(idom)
@@ -757,18 +757,18 @@
                         DO i=xlo,xhi
                            field_up(l,i,j,idom) = field_up(l,i,j,idom) + &
      &                              field_up(l,xlo-i+1,j,idom)
-                        END DO
-                     END DO
+                        ENDDO
+                     ENDDO
                   CASE(ppm_param_bcdef_antisymmetry)
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(l,i,j,idom) = field_up(l,i,j,idom) - &
      &                              field_up(l,xlo-i+1,j,idom)
-                        END DO
-                     END DO
+                        ENDDO
+                     ENDDO
                   END SELECT
-               END DO
-            END IF
+               ENDDO
+            ENDIF
             IF (topo%subs_bc(2,idoml).EQ.1) THEN
                DO l=1,lda
                   xlo = ndata(1,idoml) - ghostsize(1)
@@ -781,18 +781,18 @@
                         DO i=xlo,xhi
                            field_up(l,i,j,idom) = field_up(l,i,j,idom) + &
      &                              field_up(l,2*xhi-i,j,idom)
-                        END DO
-                     END DO
+                        ENDDO
+                     ENDDO
                   CASE(ppm_param_bcdef_antisymmetry)
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(l,i,j,idom) = field_up(l,i,j,idom) - &
      &                              field_up(l,2*xhi-i,j,idom)
-                        END DO
-                     END DO
+                        ENDDO
+                     ENDDO
                   END SELECT
-               END DO
-            END IF
+               ENDDO
+            ENDIF
             IF (topo%subs_bc(3,idoml).EQ.1) THEN
                DO l=1,lda
                   xlo = 1
@@ -805,18 +805,18 @@
                         DO i=xlo,xhi
                            field_up(l,i,j,idom) = field_up(l,i,j,idom) + &
      &                              field_up(l,i,ylo-j+1,idom)
-                        END DO
-                     END DO
+                        ENDDO
+                     ENDDO
                   CASE(ppm_param_bcdef_antisymmetry)
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(l,i,j,idom) = field_up(l,i,j,idom) - &
      &                              field_up(l,i,ylo-j+1,idom)
-                        END DO
-                     END DO
+                        ENDDO
+                     ENDDO
                   END SELECT
-               END DO
-            END IF
+               ENDDO
+            ENDIF
             IF (topo%subs_bc(4,idoml).EQ.1) THEN
                DO l=1,lda
                   xlo = 1
@@ -829,19 +829,19 @@
                         DO i=xlo,xhi
                            field_up(l,i,j,idom) = field_up(l,i,j,idom) + &
      &                              field_up(l,i,2*yhi-j,idom)
-                        END DO
-                     END DO
+                        ENDDO
+                     ENDDO
                   CASE(ppm_param_bcdef_antisymmetry)
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(l,i,j,idom) = field_up(l,i,j,idom) - &
      &                              field_up(l,i,2*yhi-j,idom)
-                        END DO
-                     END DO
+                        ENDDO
+                     ENDDO
                  END SELECT
-               END DO
-            END IF
-         END DO
+               ENDDO
+            ENDIF
+         ENDDO
 #endif
 #elif __DIME == __3D
 #if   __MODE == __SCA
@@ -861,20 +861,20 @@
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) + &
      &                              field_up(xlo-i+1,j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) - &
      &                              field_up(xlo-i+1,j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                END SELECT
-            END IF
+            ENDIF
             IF (topo%subs_bc(2,idoml).EQ.1) THEN
                xlo = ndata(1,idoml) - ghostsize(1)
                ylo = 1
@@ -889,20 +889,20 @@
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) + &
      &                              field_up(2*xhi-i,j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) - &
      &                              field_up(2*xhi-i,j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                END SELECT
-            END IF
+            ENDIF
             IF (topo%subs_bc(3,idoml).EQ.1) THEN
                xlo = 1
                ylo = 1
@@ -917,20 +917,20 @@
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) + &
      &                              field_up(i,ylo-j+1,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) - &
      &                              field_up(i,ylo-j+1,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                END SELECT
-            END IF
+            ENDIF
             IF (topo%subs_bc(4,idoml).EQ.1) THEN
                xlo = 1
                ylo = ndata(2,idoml) - ghostsize(2)
@@ -945,20 +945,20 @@
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) + &
      &                              field_up(i,2*yhi-j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) - &
      &                              field_up(i,2*yhi-j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                END SELECT
-            END IF
+            ENDIF
             IF (topo%subs_bc(5,idoml).EQ.1) THEN
                xlo = 1
                ylo = 1
@@ -973,20 +973,20 @@
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) + &
      &                              field_up(i,j,zlo-k+1,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) - &
      &                              field_up(i,j,zlo-k+1,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                END SELECT
-            END IF
+            ENDIF
             IF (topo%subs_bc(6,idoml).EQ.1) THEN
                xlo = 1
                ylo = 1
@@ -1001,21 +1001,21 @@
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) + &
      &                              field_up(i,j,2*zhi-k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(i,j,k,idom) = field_up(i,j,k,idom) - &
      &                              field_up(i,j,2*zhi-k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                END SELECT
-            END IF
-         END DO
+            ENDIF
+         ENDDO
 #elif __MODE == __VEC
          DO idom = 1,topo%nsublist
             idoml = topo%isublist(idom)
@@ -1034,21 +1034,21 @@
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) + &
      &                              field_up(l,xlo-i+1,j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                   CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) - &
      &                              field_up(l,xlo-i+1,j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                   END SELECT
-               END DO
-            END IF
+               ENDDO
+            ENDIF
             IF (topo%subs_bc(2,idoml).EQ.1) THEN
                DO l=1,lda
                   xlo = ndata(1,idoml) - ghostsize(1)
@@ -1064,21 +1064,21 @@
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) + &
      &                              field_up(l,2*xhi-i,j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                   CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) - &
      &                              field_up(l,2*xhi-i,j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                   END SELECT
-               END DO
-            END IF
+               ENDDO
+            ENDIF
             IF (topo%subs_bc(3,idoml).EQ.1) THEN
                DO l=1,lda
                   xlo = 1
@@ -1094,21 +1094,21 @@
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) + &
      &                              field_up(l,i,ylo-j+1,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                   CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) - &
      &                              field_up(l,i,ylo-j+1,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                   END SELECT
-               END DO
-            END IF
+               ENDDO
+            ENDIF
             IF (topo%subs_bc(4,idoml).EQ.1) THEN
                DO l=1,lda
                   xlo = 1
@@ -1124,21 +1124,21 @@
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) + &
      &                              field_up(l,i,2*yhi-j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                   CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) - &
      &                              field_up(l,i,2*yhi-j,k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                  END SELECT
-               END DO
-            END IF
+               ENDDO
+            ENDIF
             IF (topo%subs_bc(5,idoml).EQ.1) THEN
                DO l=1,lda
                   xlo = 1
@@ -1154,21 +1154,21 @@
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) + &
      &                              field_up(l,i,j,zlo-k+1,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                   CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) - &
      &                              field_up(l,i,j,zlo-k+1,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                   END SELECT
-               END DO
-            END IF
+               ENDDO
+            ENDIF
             IF (topo%subs_bc(6,idoml).EQ.1) THEN
                DO l=1,lda
                   xlo = 1
@@ -1184,25 +1184,25 @@
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) + &
      &                              field_up(l,i,j,2*zhi-k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                   CASE(ppm_param_bcdef_antisymmetry)
                   DO k= zlo,zhi
                      DO j=ylo,yhi
                         DO i=xlo,xhi
                            field_up(l,i,j,k,idom) = field_up(l,i,j,k,idom) - &
      &                      field_up(l,i,j,2*zhi-k,idom)
-                        END DO
-                     END DO
-                  END DO
+                        ENDDO
+                     ENDDO
+                  ENDDO
                   END SELECT
-               END DO
-            END IF
-         END DO
+               ENDDO
+            ENDIF
+         ENDDO
 #endif
 #endif
-     END IF
+     ENDIF
 
      IF(np.EQ.0) GOTO 9999
      !-------------------------------------------------------------------------!
@@ -1217,7 +1217,7 @@
      &              caller, &
      &              'pb in ilist1 deallocation',__LINE__,info)
         GOTO 9999
-     END IF
+     ENDIF
      CALL ppm_alloc(ilist2,ldu,iopt,info)
      IF (info.NE.0) THEN
         info = ppm_error_error
@@ -1225,7 +1225,7 @@
      &              caller,  &
      &              'pb in ilist2 deallocation',__LINE__,info)
         GOTO 9999
-     END IF
+     ENDIF
      CALL ppm_alloc(store_info,ldu,iopt,info)
      IF (info.NE.0) THEN
         info = ppm_error_error
@@ -1233,7 +1233,7 @@
      &              caller,  &
      &              'pb in ilist2 deallocation',__LINE__,info)
         GOTO 9999
-     END IF
+     ENDIF
      CALL ppm_alloc(list_sub,ldu,iopt,info)
      IF (info.NE.0) THEN
         info = ppm_error_error
@@ -1241,7 +1241,7 @@
      &              caller,  &
      &              'pb in ilist2 deallocation',__LINE__,info)
         GOTO 9999
-     END IF
+     ENDIF
 
      !-------------------------------------------------------------------------!
      !  Return
@@ -1277,15 +1277,15 @@
             CALL ppm_error(ppm_err_argument,caller,  &
      &                     'particles must be specified',__LINE__,info)
             GOTO 8888
-           END IF
+           ENDIF
            GOTO 8888
-        END IF
+        ENDIF
         IF ((kernel.LT.1).OR.(kernel.GT.4)) THEN
            info = ppm_error_error
            CALL ppm_error(ppm_err_argument,caller,  &
      &                     'wrong kernel definition',__LINE__,info)
            GOTO 8888
-        END IF
+        ENDIF
         kernel_support = ppm_rmsh_kernelsize(kernel)*2
         IF(.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
      &               .OR.(kernel_support.EQ.6))) THEN
@@ -1293,7 +1293,7 @@
            CALL ppm_error(ppm_err_argument,caller,  &
      &                     'wrong kernel support',__LINE__,info)
            GOTO 8888
-        END IF
+        ENDIF
         CALL ppm_check_topoid(topoid,lok,info)
         IF (.NOT.lok) THEN
            info = ppm_error_error

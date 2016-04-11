@@ -55,8 +55,8 @@
                   xt_off_fac(1,k) = xt_off_fac(1,i)
                   xt_off_fac(2,k) = xt_off_fac(2,i)
                   xt_off_fac(3,k) = -1.0_MK
-               END IF
-            END DO
+               ENDIF
+            ENDDO
 
             !----------------------------------------------------------
             ! update the ghost counter.

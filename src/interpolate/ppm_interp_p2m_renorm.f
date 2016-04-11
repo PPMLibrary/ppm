@@ -261,7 +261,7 @@
       IF (ppm_debug .GT. 0) THEN
          CALL check
          IF (info .NE. 0) GOTO 9999
-      END IF
+      ENDIF
 
       topo => ppm_topo(topoid)%t
       !-------------------------------------------------------------------------
@@ -397,7 +397,7 @@
                ELSE
                   nlist2         = nlist2 + 1
                   ilist2(nlist2) = ipart
-               END IF
+               ENDIF
             ELSEIF (ppm_dim.EQ.2) THEN
 
                IF( ( xp(1,ipart).GE.min_sub(1,idoml) .AND. &
@@ -421,9 +421,9 @@
                ELSE
                   nlist2         = nlist2 + 1
                   ilist2(nlist2) = ipart
-               END IF
-            END IF
-         END DO
+               ENDIF
+            ENDIF
+         ENDDO
          !-----------------------------------------------------------------------
          !  Copy the lists (well, only if nlist2 changed - decreased)
          !-----------------------------------------------------------------------
@@ -438,7 +438,7 @@
          !  Exit if the list is empty
          !-----------------------------------------------------------------------
          IF (nlist1.EQ.0) EXIT
-      END DO
+      ENDDO
       !--------------------------------------------------------------------------
       !  Check that we sold all the particles
       !--------------------------------------------------------------------------
@@ -454,8 +454,8 @@
       DO idom=1,topo%nsublist
          IF(store_info(idom).GE.max_partnumber) THEN
             max_partnumber = store_info(idom)
-         END IF
-      END DO
+         ENDIF
+      ENDDO
       iopt   = ppm_param_alloc_fit
       ldu(1) = topo%nsublist
       ldu(2) = max_partnumber
@@ -520,7 +520,7 @@
                ELSE
                   nlist2         = nlist2 + 1
                   ilist2(nlist2) = ipart
-               END IF
+               ENDIF
             ELSEIF (ppm_dim.EQ.2) THEN
 
                IF( ( xp(1,ipart).GE.min_sub(1,idoml) .AND. &
@@ -544,10 +544,10 @@
                ELSE
                   nlist2         = nlist2 + 1
                   ilist2(nlist2) = ipart
-               END IF
-            END IF
+               ENDIF
+            ENDIF
 
-         END DO
+         ENDDO
          !-----------------------------------------------------------------------
          !  Copy the lists (well, only if nlist2 changed - decreased)
          !-----------------------------------------------------------------------
@@ -562,7 +562,7 @@
          !  Exit if the list is empty
          !-----------------------------------------------------------------------
          IF (nlist1.EQ.0) EXIT
-      END DO
+      ENDDO
 
       !--------------------------------------------------------------------------
       !  Check that we sold all the particles
@@ -578,8 +578,8 @@
       DO idom = 1,topo%nsublist
          IF(store_info(idom).GE.max_partnumber) THEN
             max_partnumber = store_info(idom)
-         END IF
-      END DO
+         ENDIF
+      ENDDO
 
       9998 CONTINUE
 #if __DIME == __3D
@@ -604,15 +604,15 @@
 #if __MODE == __VEC
                   DO ldn=1,lda
                      field_up(ldn,i,j,k,isub) = 0.0_MK
-                  END DO
+                  ENDDO
 #else
                   field_up(i,j,k,isub) = 0.0_MK
 #endif
                   field_reno(i,j,k,isub) = 0.0_MK
-               END DO
-            END DO
-         END DO
-      END DO
+               ENDDO
+            ENDDO
+         ENDDO
+      ENDDO
       IF(np.EQ.0) GOTO 9997
 
       SELECT CASE(kernel)
@@ -1475,7 +1475,7 @@ field_up(1:3,ip13,ip23,ip33,isub)=field_up(1:3,ip13,ip23,ip33,isub)+&
 &a13a23a33*up(1:3,iq)
 
 #endif
-            END DO
+            ENDDO
         !------------------------------------------------------------------------
         !  Unrolled versions for 2-vectors
         !------------------------------------------------------------------------
@@ -2549,7 +2549,7 @@ field_up(ldn,ip13,ip23,ip33,isub)=field_up(ldn,ip13,ip23,ip33,isub)+&
 
                ENDDO    ! lda
            ENDDO        ! iq
-        END IF          ! unrolled lda cases
+        ENDIF          ! unrolled lda cases
 #elif __MODE == __SCA
             DO ip = 1,store_info(isub)
 
@@ -2814,7 +2814,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
 &a13a23a33*up(iq)
            ENDDO        ! iq
 #endif
-         END DO              ! loop over subs
+         ENDDO              ! loop over subs
       CASE(ppm_param_rmsh_kernel_bsp2)
         !-----------------------------------------------------------------------
          !  B-spline 2 (Witch hat)
@@ -2940,7 +2940,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 field_up(4,ip11,ip21,ip31,isub) = field_up(4,ip11,ip21,ip31,isub) + &
                     & a11*a21*a31*up(4,iq)
 
-            END DO
+            ENDDO
         !------------------------------------------------------------------------
         !  Unrolled versions for 3-vectors
         !------------------------------------------------------------------------
@@ -3068,7 +3068,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 field_up(1:3,ip11,ip21,ip31,isub)=field_up(1:3,ip11,ip21,ip31,isub)+&
                     &a11a21a31*up(1:3,iq)
 #endif
-            END DO
+            ENDDO
         !------------------------------------------------------------------------
         !  Unrolled versions for 2-vectors
         !------------------------------------------------------------------------
@@ -3338,7 +3338,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                         &a11a21a31*up(ldn,iq)
                 ENDDO    ! lda
             ENDDO        ! iq
-        END IF          ! unrolled lda cases
+        ENDIF          ! unrolled lda cases
 #elif __MODE == __SCA
             DO ip = 1,store_info(isub)
 
@@ -3414,7 +3414,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                     &a11a21a31*up(iq)
             ENDDO        ! iq
 #endif
-         END DO              ! loop over subs
+         ENDDO              ! loop over subs
       CASE DEFAULT
          info = ppm_error_error
          CALL ppm_error(ppm_err_argument,caller,    &
@@ -3437,13 +3437,13 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
 #if __MODE == __VEC
                DO ldn=1,lda
                   field_up(ldn,i,j,isub) = 0.0_MK
-               END DO
+               ENDDO
 #else
                field_up(i,j,isub) = 0.0_MK
 #endif
-            END DO
-         END DO
-      END DO
+            ENDDO
+         ENDDO
+      ENDDO
       IF(np.EQ.0) GOTO 9997
       SELECT CASE(kernel)
       CASE(ppm_param_rmsh_kernel_mp4)
@@ -3476,7 +3476,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                   ELSE
                      wx2 = 2.0_MK + (-4.0_MK + &
                           &(2.5_MK - 0.5_MK * x2)*x2)*x2
-                  END IF
+                  ENDIF
 
                   DO ii    = - 1,2
 
@@ -3488,7 +3488,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                      ELSE
                         wx1 =  2.0_MK + (-4.0_MK + &
                              & (2.5_MK - 0.5_MK*x1)*x1)*x1
-                     END IF
+                     ENDIF
 #if __MODE == __SCA
                      field_up(ii+ip1,jj+ip2,isub) &
                           &= field_up(ii+ip1,jj+ip2,isub) &
@@ -3500,10 +3500,10 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                              &                 + wx1*wx2*up(ldn,iq)
                      ENDDO
 #endif
-                  END DO
-               END DO
-            END DO
-         END DO          ! loop over subs
+                  ENDDO
+               ENDDO
+            ENDDO
+         ENDDO          ! loop over subs
 
       CASE DEFAULT
          fail('Only Mp4 is available. Use ppm_rmsh_remesh for other kernels.',&
@@ -3525,20 +3525,20 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                  DO j=1,ndata(2,isubl)
                      DO i=1,ndata(1,isubl)
                          field_reno(i,j,k,isub) = 0.0_MK
-                     END DO
-                 END DO
-             END DO
-         END IF
+                     ENDDO
+                 ENDDO
+             ENDDO
+         ENDIF
          IF (max_sub(3,isubl).GT.(max_phys(3)-0.5*dx(3))) THEN
              DO k=ndata(3,isubl)+1,ndata(3,isubl)+ghostsize(3)
                  DO j=1,ndata(2,isubl)
                      DO i=1,ndata(1,isubl)
                          field_reno(i,j,k,isub) = 0.0_MK
-                     END DO
-                 END DO
-             END DO
-         END IF
-      END DO
+                     ENDDO
+                 ENDDO
+             ENDDO
+         ENDIF
+      ENDDO
 #endif
       !--------------------------------------------------------------------------
       !  Now map the ghosts in order to get consistent values at the border of
@@ -3590,12 +3590,12 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                           & field_reno(i,j,k,isub)
                          field_up(3,i,j,k,isub) = field_up(3,i,j,k,isub) / &
                           & field_reno(i,j,k,isub)
-                     END IF
-                     END DO
-                 END DO
-             END DO
-         END IF
-      END DO
+                     ENDIF
+                     ENDDO
+                 ENDDO
+             ENDDO
+         ENDIF
+      ENDDO
       DO isub=1,nsubs
          isubl = topo%isublist(isub)
          IF (max_sub(3,isubl).GT.(max_phys(3)-0.5*dx(3))) THEN
@@ -3615,12 +3615,12 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                         &                        field_reno(i,j,k,isub)
                         field_up(3,i,j,k,isub) = field_up(3,i,j,k,isub) / &
                         &                        field_reno(i,j,k,isub)
-                     END IF
-                     END DO
-                 END DO
-             END DO
-         END IF
-      END DO
+                     ENDIF
+                     ENDDO
+                 ENDDO
+             ENDDO
+         ENDIF
+      ENDDO
 #endif
       DEALLOCATE(field_reno)
       NULLIFY(field_reno)
@@ -3666,18 +3666,18 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
         IF (Np .LE. 0) THEN
            IF (Np .LT. 0) THEN
               fail('particles must be specified',exit_point=8888)
-           END IF
+           ENDIF
            GOTO 8888
-        END IF
+        ENDIF
         IF ((kernel.LT.1).OR.(kernel.GT.4)) THEN
            fail('wrong kernel definition',exit_point=8888)
-        END IF
+        ENDIF
         kernel_support = ppm_rmsh_kernelsize(kernel)*2
         IF (.NOT.((kernel_support.EQ.2) &
         &   .OR.(kernel_support.EQ.4)   &
         &   .OR.(kernel_support.EQ.6))) THEN
            fail('wrong kernel support',exit_point=8888)
-        END IF
+        ENDIF
         CALL ppm_check_topoid(topoid,lok,info)
         IF (.NOT.lok) THEN
            fail('topo_id is invalid!',exit_point=8888)

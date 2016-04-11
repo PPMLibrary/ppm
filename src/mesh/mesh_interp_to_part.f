@@ -158,8 +158,8 @@
          DO ipart=1,Np
             nlist1         = nlist1 + 1
             ilist1(nlist1) = ipart
-         END DO
-      END IF
+         ENDDO
+      ENDIF
       nlist2=0
 
       !-------------------------------------------------------------------------
@@ -250,7 +250,7 @@
                 nlist1 = nlist2
                 DO i=1,nlist1
                    ilist1(i) = ilist2(i)
-                END DO
+                ENDDO
              ENDIF
 
              !-------------------------------------------------------------------
@@ -278,8 +278,8 @@
          DO ipatch=1,nsubpatch
             IF (store_info(ipatch).GE.max_partnumber) THEN
                max_partnumber = store_info(ipatch)
-            END IF
-         END DO
+            ENDIF
+         ENDDO
 
          !----------------------------------------------------------------------
          !  Allocate particle list
@@ -408,8 +408,8 @@
          DO ipatch = 1,nsubpatch
             IF(store_info(ipatch).GE.max_partnumber) THEN
                max_partnumber = store_info(ipatch)
-            END IF
-         END DO
+            ENDIF
+         ENDDO
       ELSE ! now the case of ZERO subpatch on this processor
           !nothing to do
           IF (ppm_debug.GT.1) THEN
@@ -435,7 +435,7 @@
          or_fail("Part%get_field")
          DO ip=1,np
             up_1d(ip) = 0.0_MK
-         END DO
+         ENDDO
       ELSE
          NULLIFY(up_2d)
          CALL Part%get(Field,up_2d,info)
@@ -445,20 +445,20 @@
          CASE (1)
             DO ip=1,np
                up_2d(1,ip) = 0.0_MK
-            END DO
+            ENDDO
 
          CASE (2)
             DO ip=1,np
                up_2d(1,ip) = 0.0_MK
                up_2d(2,ip) = 0.0_MK
-            END DO
+            ENDDO
 
          CASE (3)
             DO ip=1,np
                up_2d(1,ip) = 0.0_MK
                up_2d(2,ip) = 0.0_MK
                up_2d(3,ip) = 0.0_MK
-            END DO
+            ENDDO
 
          CASE (4)
             DO ip=1,np
@@ -466,7 +466,7 @@
                up_2d(2,ip) = 0.0_MK
                up_2d(3,ip) = 0.0_MK
                up_2d(4,ip) = 0.0_MK
-            END DO
+            ENDDO
 
          CASE (5)
             DO ip=1,np
@@ -475,7 +475,7 @@
                up_2d(3,ip) = 0.0_MK
                up_2d(4,ip) = 0.0_MK
                up_2d(5,ip) = 0.0_MK
-            END DO
+            ENDDO
 
          CASE DEFAULT
             up_2d = 0.0_MK
@@ -570,7 +570,7 @@
         IF (.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
         &   .OR.(kernel_support.EQ.6))) THEN
            fail("Wrong kernel support",ppm_err_argument,exit_point=8888)
-        END IF
+        ENDIF
       8888 CONTINUE
       END SUBROUTINE check
       END SUBROUTINE equi_mesh_m2p

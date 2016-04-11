@@ -43,21 +43,21 @@
               WRITE(fname,'(A,A,I0)') filename(1:LEN_TRIM(filename)), '.', step
            ELSE
               fname = filename
-           END IF
+           ENDIF
 
            ! print ghosts?
            IF (PRESENT(with_ghosts)) THEN
               ghosts = with_ghosts
            ELSE
               ghosts = .FALSE.
-           END IF
+           ENDIF
 
            ! print nvlists?
            IF (PRESENT(with_nvlist)) THEN
               nvlist = with_nvlist
            ELSE
               nvlist = .FALSE.
-           END IF
+           ENDIF
 
 
            IF (nvlist .AND. ghosts) THEN
@@ -184,14 +184,14 @@
                  & scratch(1:LEN_TRIM(scratch))
                  CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
                  GOTO 9999
-              END IF
+              ENDIF
 #define VTK_FILE_TYPE "PPolyData"
 #define VTK_PARALLEL
 #include "vtk/print_header.f"
               WRITE(iUnit,'(A)') "    <PPointData>"
               IF (nvlist) THEN
               WRITE(iUnit,'(3A)') "      <PDataArray Name='nvlist' type='Float64' />"
-              END IF
+              ENDIF
 
               prop => props_i%begin()
               DO WHILE (ASSOCIATED(prop))
@@ -213,7 +213,7 @@
                       WRITE(scratch,'(A,A,I0)') TRIM(prop%name), '_', l
                       WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
                       &   scratch(1:LEN_TRIM(scratch)), "' type='Float64' />"
-                  END DO
+                  ENDDO
                   prop => props_v%next()
               ENDDO
 
@@ -232,11 +232,11 @@
                  WRITE(iUnit,'(A,A,A,I0,A)') "    <Piece Source='",    &
                  & fname(INDEX(fname, '/', .TRUE.)+1:LEN_TRIM(fname)), &
                  & ".", i, ".vtp' />"
-              END DO
+              ENDDO
               ! close
 #include "vtk/print_end_header.f"
               CLOSE(iUnit)
-           END IF
+           ENDIF
            ! append rank to name
            WRITE(scratch,'(A,A,I0,A)') fname(1:LEN_TRIM(fname)), &
            & '.', ppm_rank, '.vtp'
@@ -251,14 +251,14 @@
               & scratch(1:LEN_TRIM(scratch))
               CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
               GOTO 9999
-           END IF
+           ENDIF
 
            ! write data
            IF (ghosts) THEN
               N = Pc%Mpart
            ELSE
               N = Pc%Npart
-           END IF
+           ENDIF
 
            ! write header
 #define VTK_FILE_TYPE "PolyData"
@@ -277,7 +277,7 @@
               IF (nvlist) THEN
                  WRITE(iUnit,'(A)',ADVANCE='NO') "nvlist"
                  IF (nb_wpi .GT. 0) WRITE(iUnit,'(A)',ADVANCE='NO') " "
-              END IF
+              ENDIF
               IF (nb_wpi .GT. 0) THEN
                  prop => props_i%begin()
                  DO WHILE (ASSOCIATED(prop))
@@ -287,7 +287,7 @@
                      WRITE(iUnit,'(A)',ADVANCE='NO') " "
                      prop => props_i%next()
                  ENDDO
-              END IF
+              ENDIF
               IF (nb_wps .GT. 0) THEN
                  IF (nvlist .OR. nb_wpi .GT. 0) &
                       WRITE(iUnit,'(A)',ADVANCE='NO') "'"
@@ -300,7 +300,7 @@
                      WRITE(iUnit,'(A)',ADVANCE='NO') " "
                      prop => props_s%next()
                  ENDDO
-              END IF
+              ENDIF
               IF (nb_wpv .GT. 0) THEN
                  IF (nvlist .OR. nb_wpi .GT. 0 .OR. nb_wps .GT. 0) &
                       WRITE(iUnit,'(A)',ADVANCE='NO') "'"
@@ -324,7 +324,7 @@
                      WRITE(iUnit,'(A)',ADVANCE='NO') " "
                      prop => props_vf%next()
                  ENDDO
-              END IF
+              ENDIF
               WRITE(iUnit,'(A)') "'>"
 
               ! property values

@@ -74,7 +74,7 @@
                             & WRAP(DTYPE)_args(j)%default(l)        &
                             & (1:LEN_TRIM(WRAP(DTYPE)_args(j)%default(l)))
                             WRITE (cbuf,'(2A)') TRIM(scratch),','
-                         END DO
+                         ENDDO
                          WRITE (scratch,'(A)')cbuf(1:LEN_TRIM(cbuf)-1)
                          WRITE (cbuf,'(2A)') TRIM(scratch),''
                          stdout(cbuf)
@@ -98,7 +98,7 @@
                          stdout(cbuf)
                          cbuf=''
 #endif
-                      END IF
+                      ENDIF
 #if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
                       IF (WRAP(DTYPE)_args(j)%min_set) THEN
                          WRITE(scratch, *) WRAP(DTYPE)_args(j)%min
@@ -109,7 +109,7 @@
                          WRITE (cbuf,'(2A)') TRIM(cbuf1),''
                          stdout(cbuf)
                          cbuf=''
-                      END IF
+                      ENDIF
                       IF (WRAP(DTYPE)_args(j)%max_set) THEN
                          WRITE(scratch, *) WRAP(DTYPE)_args(j)%max
                          scratch = ADJUSTL(scratch)
@@ -119,15 +119,15 @@
                          WRITE (cbuf,'(2A)') TRIM(cbuf1),''
                          stdout(cbuf)
                          cbuf=''
-                      END IF
+                      ENDIF
 #endif
                       WRITE(cbuf1,'(2A)') TRIM(cbuf),""
                       WRITE (cbuf,'(A)') TRIM(cbuf1)
                       stdout(cbuf)
                       cbuf=''
                       CYCLE group_loop
-                   END IF
-                END DO
+                   ENDIF
+                ENDDO
 #undef DTYPE
 #undef __INTEGER
 #undef __LONGINT

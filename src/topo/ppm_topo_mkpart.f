@@ -732,7 +732,7 @@
                 larea = (user_maxsub(1,i)-user_minsub(1,i))*(user_maxsub(2,i)-user_minsub(2,i))
                 IF (ppm_dim.EQ.3) THEN
                    larea = larea*(user_maxsub(3,i)-user_minsub(3,i))
-                END IF
+                ENDIF
                 sarea = sarea + larea
              ENDDO
              IF (ABS(sarea-parea)/parea.GE.lmyeps) THEN

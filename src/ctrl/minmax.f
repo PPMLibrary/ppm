@@ -19,8 +19,8 @@
                    & ' fails min check!'
 
                    fail(cvar,ppm_error=ppm_error_fatal)
-                END IF
-             END IF
+                ENDIF
+             ENDIF
              IF (WRAP(DTYPE)_args(i)%max_set) THEN
 #ifdef ARRAY
 #ifdef __STRING
@@ -40,8 +40,8 @@
                    & ' fails max check!'
 
                    fail(cvar,ppm_error=ppm_error_fatal)
-                END IF
-             END IF
-          END DO
+                ENDIF
+             ENDIF
+          ENDDO
 #undef DTYPE
 #undef __STRING

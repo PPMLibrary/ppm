@@ -11,10 +11,10 @@
 #else
                             READ(cvalue, *, IOSTAT=ios, ERR=300) WRAP(DTYPE)_args(i)%variable
 #endif
-                         END IF
+                         ENDIF
                          CYCLE var_loop
-                      END IF
-                   END IF
-                END DO
+                      ENDIF
+                   ENDIF
+                ENDDO
 #undef DTYPE
 #undef __STRING

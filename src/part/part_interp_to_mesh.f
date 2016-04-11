@@ -262,7 +262,7 @@
       DO ipatch=1,nsubpatch
          IF(store_info(ipatch).GE.max_partnumber) THEN
             max_partnumber = store_info(ipatch)
-         END IF
+         ENDIF
       ENDDO
 
       !----------------------------------------------------------------------
@@ -507,7 +507,7 @@
             ENDIF
          ENDIF
          or_fail("p2m_interp_bc failed")
-      END IF
+      ENDIF
 
       IF (this%Npart.EQ.0) GOTO 9999
       !-------------------------------------------------------------------------!
@@ -540,12 +540,12 @@
         IF ((kernel.LT.1).OR.(kernel.GT.4)) THEN
             fail("Wrong kernel definition",&
                 ppm_err_ppm_noinit,exit_point=8888)
-        END IF
+        ENDIF
         kernel_support = ppm_rmsh_kernelsize(kernel)*2
         IF (.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
         &   .OR.(kernel_support.EQ.6))) THEN
             fail("Wrong kernel support",ppm_err_argument,exit_point=8888)
-        END IF
+        ENDIF
         IF (this%Npart .GT. 0) THEN
            IF (SIZE(this%xp,2) .LT. this%Npart) THEN
             fail("not enough particles contained in xp",exit_point=8888)

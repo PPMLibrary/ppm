@@ -162,13 +162,13 @@ test_suite ppm_module_ctrl
   test multiplied({idefault: 1, iflag: 2},{idefault: [2,3,4], iflag: [1,3,5]})
     IF (idefault .EQ. 1) THEN
        Assert_Equal(iflag,2)
-    END IF
+    ENDIF
     IF (idefault .EQ. 2) THEN
        Assert_True(iflag .EQ. 1 .OR. iflag .EQ. 3 .OR. iflag .EQ. 5)
-    END IF
+    ENDIF
     IF (idefault .EQ. 3) THEN
        Assert_True(iflag .EQ. 1 .OR. iflag .EQ. 3 .OR. iflag .EQ. 5)
-    END IF
+    ENDIF
   end test
 
   test arg_manipulation
@@ -577,7 +577,7 @@ test_suite ppm_module_ctrl
        WRITE(scf,'(A)') 'parray   = (1,0), (0,1), (-1,0)'
        WRITE(scf,'(A)') 'xarray   = (1,0), (0,1), (-1,0)'
        CLOSE(scf)
-    END IF
+    ENDIF
     ! supply arg
     CALL add_cmd('src/ctrl/test/__test_ctrl')
     CALL add_cmd('-f', '1337')
@@ -604,7 +604,7 @@ test_suite ppm_module_ctrl
     ! cleanup
     IF (rank .EQ. 0) THEN
        CALL SYSTEM('/bin/rm src/ctrl/test/__test_ctrl')
-    END IF
+    ENDIF
   end test
 
   test default_funcs

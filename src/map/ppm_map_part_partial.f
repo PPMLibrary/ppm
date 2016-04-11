@@ -142,12 +142,12 @@
         IF (ppm_debug .GT. 1) THEN
            DO i=1,topo%nneighproc
               stdout_f('(A,I4)',"have neighbor: ",'topo%ineighproc(i)')
-           END DO
+           ENDDO
            DO i=1,topo%ncommseq
               stdout_f('(A,I4)',"communicate: ",'topo%icommseq(i)')
-           END DO
+           ENDDO
         ENDIF
-      END IF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Save the map type for the subsequent calls

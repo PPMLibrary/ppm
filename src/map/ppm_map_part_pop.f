@@ -62,7 +62,7 @@
       !!!
       !!! [NOTE]
       !!! The first part of the buffer contains the on processor
-      !!! data. The packing could be performed more efficiently.
+      !!! data.
       !!!
       !!! [NOTE]
       !!! Maybe remove the `lda` from the argument list (since

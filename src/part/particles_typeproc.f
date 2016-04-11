@@ -258,6 +258,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
              CALL DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
              &    distrib,topoid,minphys,maxphys,cutoff,name=name)
           END SELECT
+          or_fail("particles_initialize")
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_initialize)
@@ -299,6 +300,8 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           INTEGER                        :: ip
           INTEGER                        :: Npart,lda
           INTEGER                        :: nb_del_parts
+          ! Corrected number of particles to be deleted after sorting
+          ! and removing repeated particles
 
           start_subroutine("part_del_parts")
 
@@ -457,7 +460,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-----------------------------------------------------------------
           ! copying particle from the end of xp to the index that has to be removed
           Npart=Pc%Npart
-          IF (del_part.LE.Npart) THEN
+          IF (del_part.LT.Npart) THEN
              Pc%xp(1:ppm_dim,del_part) = Pc%xp(1:ppm_dim,Npart)
 
              prop => Pc%props%begin()
@@ -495,6 +498,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
                 prop => Pc%props%next()
              ENDDO !WHILE (ASSOCIATED(prop))
 
+             !New number of particles, after deleting one
+             Pc%Npart = Npart - 1
+          ELSE IF (del_part.EQ.Npart) THEN
              !New number of particles, after deleting one
              Pc%Npart = Npart - 1
           ENDIF !(del_part.LE.Npart)
@@ -1259,7 +1265,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              CALL Pc%create_prop(info,part_prop=Pc%gi, &
              &    dtype=ppm_type_int,name="GlobalIndex")
              Pc%flags(ppm_part_global_index)=.TRUE.
-          END IF
+          ENDIF
 
           NULLIFY(wp)
           CALL Pc%get(Pc%gi,wp,info)

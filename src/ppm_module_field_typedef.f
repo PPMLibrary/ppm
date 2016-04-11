@@ -459,7 +459,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           ELSE
              check_true(<#this%data_type.NE.0#>,"field data type has not been initialized. Fix constructor.")
              dtype = this%data_type
-          END IF
+          ENDIF
 
           !Check whether this field has already been initialized
           check_true(<#this%ID.GT.0.AND.this%lda.GT.0#>,&

@@ -253,7 +253,7 @@
                  & 'topo_id is invalid!',__LINE__,info)
             GOTO 9999
          ENDIF
-      END IF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Check meshid
@@ -266,7 +266,7 @@
                  & 'mesh_id is invalid!',__LINE__,info)
             GOTO 9999
          ENDIF
-      END IF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Get meshid
@@ -321,11 +321,11 @@
                           & '0 <= cutoff_weights <= 1 is violated.'&
                           &,__LINE__,info)
                      GOTO 9999
-                  END IF
-               END DO
-            END IF
-         END IF
-      END IF
+                  ENDIF
+               ENDDO
+            ENDIF
+         ENDIF
+      ENDIF
 #endif
 
       !-------------------------------------------------------------------------
@@ -335,7 +335,7 @@
          reset = resetpos
       ELSE
          reset = .FALSE.
-      END IF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  check whether to reset the positions
@@ -366,41 +366,41 @@
          IF(topo%subs_bc(1,isubl).EQ.1&
               &.AND.topo%bcdef(1).EQ.ppm_param_bcdef_freespace) THEN
             startx = 2
-         END IF
+         ENDIF
          IF(topo%subs_bc(2,isub).EQ.1&
               &.AND.topo%bcdef(2).NE.ppm_param_bcdef_periodic &
               &.AND.topo%bcdef(2).NE.ppm_param_bcdef_freespace) THEN
             nnx = ndata(1,isubl)
          ELSE
             nnx = ndata(1,isubl)-1
-         END IF
+         ENDIF
 
          starty = 1
          IF(topo%subs_bc(3,isubl).EQ.1&
               &.AND.topo%bcdef(3).EQ.ppm_param_bcdef_freespace) THEN
             starty = 2
-         END IF
+         ENDIF
          IF(topo%subs_bc(4,isubl).EQ.1&
               &.AND.topo%bcdef(4).NE.ppm_param_bcdef_periodic &
               &.AND.topo%bcdef(4).NE.ppm_param_bcdef_freespace) THEN
             nny = ndata(2,isubl)
          ELSE
             nny = ndata(2,isubl)-1
-         END IF
+         ENDIF
 
 #if   __DIME == __3D
          startz = 1
          IF(topo%subs_bc(5,isubl).EQ.1&
               &.AND.topo%bcdef(5).EQ.ppm_param_bcdef_freespace) THEN
             startz = 2
-         END IF
+         ENDIF
          IF(topo%subs_bc(6,isubl).EQ.1&
               &.AND.topo%bcdef(6).NE.ppm_param_bcdef_periodic &
               &.AND.topo%bcdef(6).NE.ppm_param_bcdef_freespace) THEN
             nnz = ndata(3,isubl)
          ELSE
             nnz = ndata(3,isubl)-1
-         END IF
+         ENDIF
 #elif __DIME == __2D
          startz = 1
          nnz = 1
@@ -422,14 +422,14 @@
                      &  ))
                   ELSE
                      strength = SQRT(SUM(field_up(1:lda,i,j,k,isub)**2))
-                  END IF
+                  ENDIF
 #endif
                   IF((strength.GT.cutoff(1)).AND.(strength.LT.cutoff(2))) THEN
                      inp = inp + 1
-                  END IF
-               END DO
-            END DO
-         END DO
+                  ENDIF
+               ENDDO
+            ENDDO
+         ENDDO
 #elif __DIME == __2D
 
       DO j=starty,nny
@@ -446,15 +446,15 @@
                        &  ))
                ELSE
                   strength = SQRT(SUM(field_up(1:lda,i,j,isub)**2))
-               END IF
+               ENDIF
 #endif
                IF((strength.GT.cutoff(1)).AND.(strength.LT.cutoff(2))) THEN
                   inp = inp + 1
-               END IF
-            END DO
-         END DO
+               ENDIF
+            ENDDO
+         ENDDO
 #endif
-      END DO
+      ENDDO
       np = inp
 
       !-------------------------------------------------------------------------
@@ -476,7 +476,7 @@
          CALL ppm_error(ppm_err_alloc,'ppm_rmsh_create_part', &
               & 'could not allocate new particles (up)',__LINE__,info)
          GOTO 9999
-      END IF
+      ENDIF
 
       IF (lslave) THEN
 #if   __MODE2 == __SCA
@@ -495,8 +495,8 @@
              CALL ppm_error(ppm_err_alloc,'ppm_rmsh_create_part', &
                   & 'could not allocate new particles (wp)',__LINE__,info)
              GOTO 9999
-          END IF
-      END IF
+          ENDIF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  grow the xp array if necessary
@@ -512,8 +512,8 @@
             CALL ppm_error(ppm_err_alloc,'ppm_rmsh_create_part', &
                  & 'could not allocate new particles (xp)',__LINE__,info)
             GOTO 9999
-         END IF
-      END IF
+         ENDIF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  grow the vp array if necessary
@@ -528,8 +528,8 @@
             CALL ppm_error(ppm_err_alloc,'ppm_rmsh_create_part', &
                  & 'could not allocate new volumes (vp)',__LINE__,info)
             GOTO 9999
-         END IF
-      END IF
+         ENDIF
+      ENDIF
 
       inp = 0
       !-------------------------------------------------------------------------
@@ -544,41 +544,41 @@
          IF(topo%subs_bc(1,isubl).EQ.1&
               &.AND.topo%bcdef(1).EQ.ppm_param_bcdef_freespace) THEN
             startx = 2
-         END IF
+         ENDIF
          IF(topo%subs_bc(2,isubl).EQ.1&
               &.AND.topo%bcdef(2).NE.ppm_param_bcdef_periodic &
               &.AND.topo%bcdef(2).NE.ppm_param_bcdef_freespace) THEN
             nnx = ndata(1,isubl)
          ELSE
             nnx = ndata(1,isubl)-1
-         END IF
+         ENDIF
 
          starty = 1
          IF(topo%subs_bc(3,isubl).EQ.1&
               &.AND.topo%bcdef(3).EQ.ppm_param_bcdef_freespace) THEN
             starty = 2
-         END IF
+         ENDIF
          IF(topo%subs_bc(4,isubl).EQ.1&
               &.AND.topo%bcdef(4).NE.ppm_param_bcdef_periodic &
               &.AND.topo%bcdef(4).NE.ppm_param_bcdef_freespace) THEN
             nny = ndata(2,isubl)
          ELSE
             nny = ndata(2,isubl)-1
-         END IF
+         ENDIF
 #if   __DIME == __3D
 
          startz = 1
          IF(topo%subs_bc(5,isubl).EQ.1&
               &.AND.topo%bcdef(5).EQ.ppm_param_bcdef_freespace) THEN
             startz = 2
-         END IF
+         ENDIF
          IF(topo%subs_bc(6,isubl).EQ.1&
               &.AND.topo%bcdef(6).NE.ppm_param_bcdef_periodic &
               &.AND.topo%bcdef(6).NE.ppm_param_bcdef_freespace) THEN
             nnz = ndata(3,isubl)
          ELSE
             nnz = ndata(3,isubl)-1
-         END IF
+         ENDIF
 #elif __DIME == __2D
          startz = 1
          nnz = 1
@@ -590,56 +590,56 @@
               &.AND.((topo%bcdef(1).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(1).NE.ppm_param_bcdef_freespace))) THEN
             ilowbc = 1
-         END IF
+         ENDIF
          ihighbc = ndata(1,isubl)+1
          IF(topo%subs_bc(2,isubl).EQ.1&
               &.AND.((topo%bcdef(2).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(2).NE.ppm_param_bcdef_freespace))) THEN
             ihighbc = ndata(1,isubl)
-         END IF
+         ENDIF
          jlowbc = 0
          IF(topo%subs_bc(3,isubl).EQ.1&
               &.AND.((topo%bcdef(3).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(3).NE.ppm_param_bcdef_freespace))) THEN
             jlowbc = 1
-         END IF
+         ENDIF
          jhighbc = ndata(2,isubl)+1
          IF(topo%subs_bc(4,isubl).EQ.1&
               &.AND.((topo%bcdef(4).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(4).NE.ppm_param_bcdef_freespace))) THEN
             jhighbc = ndata(2,isubl)
-         END IF
+         ENDIF
          klowbc = 0
          IF(topo%subs_bc(5,isubl).EQ.1&
               &.AND.((topo%bcdef(5).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(5).NE.ppm_param_bcdef_freespace))) THEN
             klowbc = 1
-         END IF
+         ENDIF
          khighbc = ndata(3,isubl)+1
          IF(topo%subs_bc(6,isubl).EQ.1&
               &.AND.((topo%bcdef(6).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(6).NE.ppm_param_bcdef_freespace))) THEN
             khighbc = ndata(3,isubl)
-         END IF
+         ENDIF
 
          DO k=startz,nnz
             IF (k.EQ.klowbc .OR. k.EQ.khighbc) THEN
                zbc_factor = 0.5_MK
             ELSE
                zbc_factor = 1.0_MK
-            END IF
+            ENDIF
             DO j=starty,nny
                IF (j.EQ.jlowbc .OR. j.EQ.jhighbc) THEN
                   ybc_factor = 0.5_MK
                ELSE
                   ybc_factor = 1.0_MK
-               END IF
+               ENDIF
                DO i=startx,nnx
                   IF (i.EQ.ilowbc .OR. i.EQ.ihighbc) THEN
                      xbc_factor = 0.5_MK
                   ELSE
                      xbc_factor = 1.0_MK
-                  END IF
+                  ENDIF
                   !-------------------------------------------------------------
                   !  compute strength
                   !-------------------------------------------------------------
@@ -652,7 +652,7 @@
                      &  ))
                   ELSE
                      strength = SQRT(SUM(field_up(1:lda,i,j,k,isub)**2))
-                  END IF
+                  ENDIF
 #endif
                   IF((strength.GT.cutoff(1)).AND.(strength.LT.cutoff(2))) THEN
                      inp = inp + 1
@@ -676,48 +676,48 @@
                         xp(1,inp) = REAL(i-1,mk)*dx + min_sub(1,isubl)
                         xp(2,inp) = REAL(j-1,mk)*dy + min_sub(2,isubl)
                         xp(3,inp) = REAL(k-1,mk)*dz + min_sub(3,isubl)
-                     END IF
-                  END IF
-               END DO
-            END DO
-         END DO
+                     ENDIF
+                  ENDIF
+               ENDDO
+            ENDDO
+         ENDDO
 #elif __DIME == __2D
          ilowbc = 0
          IF(topo%subs_bc(1,isubl).EQ.1&
               &.AND.((topo%bcdef(1).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(1).NE.ppm_param_bcdef_freespace))) THEN
             ilowbc = 1
-         END IF
+         ENDIF
          ihighbc = ndata(1,isubl)+1
          IF(topo%subs_bc(2,isubl).EQ.1&
               &.AND.((topo%bcdef(2).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(2).NE.ppm_param_bcdef_freespace))) THEN
             ihighbc = ndata(1,isubl)
-         END IF
+         ENDIF
          jlowbc = 0
          IF(topo%subs_bc(3,isubl).EQ.1&
               &.AND.((topo%bcdef(3).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(3).NE.ppm_param_bcdef_freespace))) THEN
             jlowbc = 1
-         END IF
+         ENDIF
          jhighbc = ndata(2,isubl)+1
          IF(topo%subs_bc(4,isubl).EQ.1&
               &.AND.((topo%bcdef(4).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(4).NE.ppm_param_bcdef_freespace))) THEN
             jhighbc = ndata(2,isubl)
-         END IF
+         ENDIF
          DO j=starty,nny
             IF (j.EQ.jlowbc .OR. j.EQ.jhighbc) THEN
                ybc_factor = 0.5_MK
             ELSE
                ybc_factor = 1.0_MK
-            END IF
+            ENDIF
             DO i=startx,nnx
                IF (i.EQ.ilowbc .OR. i.EQ.ihighbc) THEN
                   xbc_factor = 0.5_MK
                ELSE
                   xbc_factor = 1.0_MK
-               END IF
+               ENDIF
                !----------------------------------------------------------------
                !  compute strength
                !----------------------------------------------------------------
@@ -729,7 +729,7 @@
      &                       cutoff_Weights(1:lda))**2))
                ELSE
                   strength = SQRT(SUM(field_up(1:lda,i,j,isub)**2))
-               END IF
+               ENDIF
 #endif
                IF((strength.GT.cutoff(1)).AND.(strength.LT.cutoff(2))) THEN
                   inp = inp + 1
@@ -750,7 +750,7 @@
                   IF(reset) THEN
                      xp(1,inp) = REAL(i-1,mk)*dx + min_sub(1,isubl)
                      xp(2,inp) = REAL(j-1,mk)*dy + min_sub(2,isubl)
-                  END IF
+                  ENDIF
                   IF(with_vol) THEN
                      vp(inp) = xbc_factor*ybc_factor
                   ENDIF
@@ -758,7 +758,7 @@
             ENDDO
          ENDDO
 #endif
-      END DO
+      ENDDO
 
       !-------------------------------------------------------------------------
       !  done

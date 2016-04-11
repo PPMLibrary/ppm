@@ -159,7 +159,7 @@
            CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                 &  ' wx1_user or wx2_user weights lacking',__LINE__,info)
            GOTO 9999
-        END IF
+        ENDIF
       ELSEIF (ppm_dim.EQ.2) THEN
         IF(PRESENT(wx1_user).AND.(.NOT.PRESENT(wx2_user)).OR.&
              &PRESENT(wx2_user).AND.(.NOT.PRESENT(wx1_user))) THEN
@@ -167,8 +167,8 @@
            CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights', &
                 &  'a wx_user array is missing',__LINE__,info)
            GOTO 9999
-        END IF
-      END IF
+        ENDIF
+      ENDIF
 
      !--------------------------------------------------------------------------
      !  Check arguments
@@ -334,7 +334,7 @@
               ELSE
                  nlist2         = nlist2 + 1
                  ilist2(nlist2) = ipart
-              END IF
+              ENDIF
            ELSEIF (ppm_dim.EQ.2) THEN
 
               IF( ( xp(1,ipart).GE.min_sub(1,idoml) .AND. &
@@ -358,9 +358,9 @@
               ELSE
                  nlist2         = nlist2 + 1
                  ilist2(nlist2) = ipart
-              END IF
-           END IF
-        END DO
+              ENDIF
+           ENDIF
+        ENDDO
         !-----------------------------------------------------------------------
         !  Copy the lists (well, only if nlist2 changed - decreased)
         !-----------------------------------------------------------------------
@@ -375,7 +375,7 @@
         !  Exit if the list is empty
         !-----------------------------------------------------------------------
         IF (nlist1.EQ.0) EXIT
-     END DO
+     ENDDO
      !--------------------------------------------------------------------------
      !  Check that we sold all the particles
      !--------------------------------------------------------------------------
@@ -394,8 +394,8 @@
      DO idom=1,topo%nsublist
         IF(store_info(idom).GE.max_partnumber) THEN
            max_partnumber = store_info(idom)
-        END IF
-     END DO
+        ENDIF
+     ENDDO
      iopt   = ppm_param_alloc_fit
      ldu(1) = topo%nsublist
      ldu(2) = max_partnumber
@@ -406,7 +406,7 @@
         CALL ppm_error(ppm_err_alloc,'ppm_rmsh_comp_weights',     &
      &        'problem in internal allocation',__LINE__,info)
         GOTO 9999
-     END IF
+     ENDIF
 
      list_sub=0
 
@@ -466,7 +466,7 @@
               ELSE
                  nlist2         = nlist2 + 1
                  ilist2(nlist2) = ipart
-              END IF
+              ENDIF
            ELSEIF (ppm_dim.EQ.2) THEN
 
               IF( ( xp(1,ipart).GE.min_sub(1,idoml) .AND. &
@@ -490,10 +490,10 @@
               ELSE
                  nlist2         = nlist2 + 1
                  ilist2(nlist2) = ipart
-              END IF
-           END IF
+              ENDIF
+           ENDIF
 
-        END DO
+        ENDDO
         !-----------------------------------------------------------------------
         !  Copy the lists (well, only if nlist2 changed - decreased)
         !-----------------------------------------------------------------------
@@ -508,7 +508,7 @@
         !  Exit if the list is empty
         !-----------------------------------------------------------------------
         IF (nlist1.EQ.0) EXIT
-     END DO
+     ENDDO
 
      !--------------------------------------------------------------------------
      !  Check that we sold all the particles
@@ -527,8 +527,8 @@
      DO idom = 1,topo%nsublist
         IF(store_info(idom).GE.max_partnumber) THEN
            max_partnumber = store_info(idom)
-        END IF
-     END DO
+        ENDIF
+     ENDDO
 
      iopt = ppm_param_alloc_fit
      ldl(1) = 1
@@ -553,7 +553,7 @@
               CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                    &            'pb in weights allocation',__LINE__,info)
               GOTO 9999
-           END IF
+           ENDIF
            wx1_user => wx1_s
 #elif __KIND == __DOUBLE_PRECISION
            CALL ppm_alloc(wx1_d,ldl,ldu,iopt,info)
@@ -562,7 +562,7 @@
               CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                    &            'pb in weights allocation',__LINE__,info)
               GOTO 9999
-           END IF
+           ENDIF
            wx1_user => wx1_d
 #endif
 #if   __KIND == __SINGLE_PRECISION
@@ -572,7 +572,7 @@
               CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                    &            'pb in weights allocation',__LINE__,info)
               GOTO 9999
-           END IF
+           ENDIF
            wx2_user => wx2_s
 #elif __KIND == __DOUBLE_PRECISION
            CALL ppm_alloc(wx2_d,ldl,ldu,iopt,info)
@@ -581,10 +581,10 @@
               CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                    &            'pb in weights allocation',__LINE__,info)
               GOTO 9999
-           END IF
+           ENDIF
            wx2_user => wx2_d
 #endif
-        END IF
+        ENDIF
         IF(PRESENT(wx3_user)) THEN
            IF(ppm_dim.EQ.3.AND.&
                 &.NOT.ASSOCIATED(wx3_user)) THEN
@@ -595,7 +595,7 @@
                  CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                       &            'pb in weights allocation',__LINE__,info)
                  GOTO 9999
-              END IF
+              ENDIF
 
               wx3_user => wx3_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -605,11 +605,11 @@
                  CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                   &            'pb in weights allocation',__LINE__,info)
                  GOTO 9999
-              END IF
+              ENDIF
               wx3_user => wx3_d
 #endif
-           END IF
-        END IF
+           ENDIF
+        ENDIF
         wx1 => wx1_user
         wx2 => wx2_user
         IF(ppm_dim.EQ.3) wx3 => wx3_user
@@ -621,7 +621,7 @@
            CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
             &            'pb in weights allocation',__LINE__,info)
            GOTO 9999
-        END IF
+        ENDIF
         wx1 => wx1_s
 #elif __KIND == __DOUBLE_PRECISION
         CALL ppm_alloc(wx1_d,ldl,ldu,iopt,info)
@@ -630,7 +630,7 @@
            CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                 &            'pb in weights allocation',__LINE__,info)
            GOTO 9999
-        END IF
+        ENDIF
         wx1 => wx1_d
 #endif
 #if   __KIND == __SINGLE_PRECISION
@@ -640,7 +640,7 @@
            CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                 &            'pb in weights allocation',__LINE__,info)
            GOTO 9999
-        END IF
+        ENDIF
         wx2 => wx2_s
 #elif __KIND == __DOUBLE_PRECISION
         CALL ppm_alloc(wx2_d,ldl,ldu,iopt,info)
@@ -649,7 +649,7 @@
            CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                 &            'pb in weights allocation',__LINE__,info)
            GOTO 9999
-        END IF
+        ENDIF
         wx2 => wx2_d
 #endif
         IF(ppm_dim.EQ.3) THEN
@@ -660,7 +660,7 @@
               CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                    &            'pb in weights allocation',__LINE__,info)
               GOTO 9999
-           END IF
+           ENDIF
            wx3 => wx3_s
 #elif __KIND == __DOUBLE_PRECISION
            CALL ppm_alloc(wx3_d,ldl,ldu,iopt,info)
@@ -669,11 +669,11 @@
               CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                    &            'pb in weights allocation',__LINE__,info)
               GOTO 9999
-           END IF
+           ENDIF
            wx3 => wx3_d
 #endif
-        END IF
-     END IF
+        ENDIF
+     ENDIF
      !--------------------------------------------------------------------------
      !  Initialize Weights
      !--------------------------------------------------------------------------
@@ -702,7 +702,7 @@
               IF(ppm_dim.EQ.3) THEN
                  ip3 = INT((xp(3,list_sub(isub,ip))-min_phys(3) &
      &             )*dxi(3))+2-istart(3,isubl)
-              END IF
+              ENDIF
 
               iidec = 0
               jjdec = 0
@@ -719,8 +719,8 @@
 
                  IF(x1.LE.1.0_MK) THEN
                     wx1(iidec,isub,ip) =  1.0_MK - x1
-                 END IF
-              END DO
+                 ENDIF
+              ENDDO
 
               ! Loop over y direction
               DO jj    = ip2,ip2+1
@@ -730,8 +730,8 @@
 
                  IF(x2.LE.1.0_MK) THEN
                     wx2(jjdec,isub,ip) =  1.0_MK - x2
-                 END IF
-              END DO
+                 ENDIF
+              ENDDO
               IF(ppm_dim.EQ.3) THEN
                  ! Loop over z direction
                  DO kk    = ip3,ip3+1
@@ -741,13 +741,13 @@
 
                     IF(x3.LE.1.0_MK) THEN
                        wx3(kkdec,isub,ip) =  1.0_MK - x3
-                    END IF
-                 END DO
-              END IF
+                    ENDIF
+                 ENDDO
+              ENDIF
 
-           END DO
+           ENDDO
 
-        END DO
+        ENDDO
 
      CASE(ppm_param_rmsh_kernel_mp4)
 
@@ -767,7 +767,7 @@
               IF(ppm_dim.EQ.3) THEN
                  ip3 = INT((xp(3,list_sub(isub,ip))-min_phys(3) &
                    &         )*dxi(3))+2-istart(3,isubl)
-              END IF
+              ENDIF
 
               iidec = 0
               jjdec = 0
@@ -783,9 +783,9 @@
                     ELSE
                        wx1(iidec,isub,ip) = 2.0_MK + (-4.0_MK + &
      &                     (2.5_MK - 0.5_MK * x1)*x1)*x1
-                    END IF
-                 END IF
-              END DO
+                    ENDIF
+                 ENDIF
+              ENDDO
 
               DO jj = ip2-1,ip2+2
                  jjdec = jjdec + 1
@@ -798,10 +798,10 @@
                     ELSE
                        wx2(jjdec,isub,ip) = 2.0_MK + (-4.0_MK + &
      &                     (2.5_MK - 0.5_MK * x2)*x2)*x2
-                    END IF
-                 END IF
+                    ENDIF
+                 ENDIF
 
-              END DO
+              ENDDO
 
               IF(ppm_dim.EQ.3) THEN
 
@@ -817,12 +817,12 @@
                        ELSE
                           wx3(kkdec,isub,ip) =  2.0_MK + (-4.0_MK + &
                                & (2.5_MK - 0.5_MK*x3)*x3)*x3
-                       END IF
-                    END IF
-                 END DO
-              END IF
-           END DO
-        END DO
+                       ENDIF
+                    ENDIF
+                 ENDDO
+              ENDIF
+           ENDDO
+        ENDDO
      END SELECT
 
      CALL ppm_util_time(tim1e)
@@ -830,7 +830,7 @@
      IF (ppm_debug.GT.0) THEN
         WRITE(msg,*) 'naked calc of weights took [ms]: ',1000.0*(tim1e-tim1s)
         CALL ppm_write(ppm_rank,'ppm_rmsh_comp_weights',msg,info)
-     END IF
+     ENDIF
 
       !-------------------------------------------------------------------------
       ! Deallocation of the arrays....
@@ -866,7 +866,7 @@
      &           'ppm_rmsh_comp_weights',   &
      &           'pb in weight deallocation',__LINE__,info)
             GOTO 9999
-         END IF
+         ENDIF
          CALL ppm_alloc(wx2,lda,iopt,info)
          IF (info.NE.0) THEN
             info = ppm_error_error
@@ -874,7 +874,7 @@
      &           'ppm_rmsh_comp_weights',   &
      &           'pb in weight deallocation',__LINE__,info)
             GOTO 9999
-         END IF
+         ENDIF
          IF(ppm_dim.EQ.3) THEN
             CALL ppm_alloc(wx3,lda,iopt,info)
             IF (info.NE.0) THEN
@@ -891,7 +891,7 @@
          NULLIFY(wx1_s,wx1_d)
          NULLIFY(wx2_s,wx2_d)
          NULLIFY(wx3_s,wx3_d)
-      END IF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
@@ -921,15 +921,15 @@
               CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                    &  'particles must be specified',__LINE__,info)
               GOTO 8888
-           END IF
+           ENDIF
            GOTO 8888
-        END IF
+        ENDIF
         IF ((kernel.LT.1).OR.(kernel.GT.4)) THEN
            info = ppm_error_error
            CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &
                 &     'wrong kernel definition',__LINE__,info)
            GOTO 8888
-        END IF
+        ENDIF
         kernel_support = ppm_rmsh_kernelsize(kernel)*2
         IF(.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
              &  .OR.(kernel_support.EQ.6))) THEN

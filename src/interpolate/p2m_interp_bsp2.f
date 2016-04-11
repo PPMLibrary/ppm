@@ -370,7 +370,7 @@
                 field_up(1:3,ip11,ip21,ip31,isub)=field_up(1:3,ip11,ip21,ip31,isub)+&
                     &a11a21a31*up(1:3,iq)
 #endif
-              END DO
+              ENDDO
               !----------------------------------------------------------------!
               !  Unrolled versions for 2-vectors
               !----------------------------------------------------------------!
@@ -613,7 +613,7 @@
      &               a11a21a31*up(ldn,iq)
                  ENDDO    ! lda
               ENDDO        ! iq
-           END IF          ! unrolled lda cases
+           ENDIF          ! unrolled lda cases
 #elif __MODE == __SCA
            isubl = topo%isublist(isub)
            DO ip = 1,store_info(isub)
@@ -681,7 +681,7 @@
      &                   a11a21a31*up(iq)
            ENDDO        ! iq
 #endif
-        END DO              ! loop over subs
+        ENDDO              ! loop over subs
 #elif __DIME == __2D
         info = ppm_error_error
         CALL ppm_error(ppm_err_argument,'p2m_interp_bsp2',    &

@@ -233,8 +233,8 @@
                   CALL ppm_error(ppm_err_argument,'ppm_rmsh_remesh', &
      &                'cannot remesh with empty weights',__LINE__,info)
                   GOTO 9999
-               END IF
-            END IF
+               ENDIF
+            ENDIF
 
          CASE(3)
             IF(PRESENT(wx1_user)) THEN
@@ -245,8 +245,8 @@
                   CALL ppm_error(ppm_err_argument,'ppm_rmsh_remesh', &
      &                'cannot remesh with empty weights',__LINE__,info)
                   GOTO 9999
-               END IF
-            END IF
+               ENDIF
+            ENDIF
 
          END SELECT
 
@@ -257,17 +257,17 @@
                CALL ppm_error(ppm_err_argument,'ppm_rmsh_remesh', &
      &             'compute weights before remeshing',__LINE__,info)
                GOTO 9999
-            END IF
+            ENDIF
 #elif __KIND == __DOUBLE_PRECISION
             IF(.NOT.ASSOCIATED(wx1_d)) THEN
                info = ppm_error_error
                CALL ppm_error(ppm_err_argument,'ppm_rmsh_remesh', &
      &             'compute weights before remeshing',__LINE__,info)
                GOTO 9999
-            END IF
+            ENDIF
 #endif
-         END IF
-      END IF
+         ENDIF
+      ENDIF
 
       IF(np.EQ.0) GOTO 5555
       !-------------------------------------------------------------------------
@@ -287,7 +287,7 @@
          wx2 => wx2_d
          IF(ppm_dim.EQ.3) wx3 => wx3_d
 #endif
-      END IF
+      ENDIF
 
  5555 CONTINUE
       !-------------------------------------------------------------------------
@@ -311,7 +311,7 @@
          iopt    = ppm_param_alloc_grow
       ELSE
          iopt    = ppm_param_alloc_fit
-      END IF
+      ENDIF
 #if   __DIME == __3D
 #if   __MODE == __VEC
       !-------------------------------------------------------------------------
@@ -371,7 +371,7 @@
          CALL ppm_error(ppm_err_alloc,'ppm_rmsh_remesh', &
      &       'field_up',__LINE__,info)
          GOTO 9999
-      END IF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Initialize the field
@@ -397,7 +397,7 @@
          Nc(i)       = Nm(i)-1
          len_phys(i) = max_phys(i) - min_phys(i)
          dx(i)       = len_phys(i)/REAL(Nc(i),MK)
-      END DO
+      ENDDO
 
       dxi = 1.0_MK/dx
       dv1 = dx(1)
@@ -480,10 +480,10 @@
      &                      *tup
 #endif
 #endif
-                     END DO
-                  END DO
+                     ENDDO
+                  ENDDO
 #if  __DIME == __3D
-               END DO
+               ENDDO
 #endif
             ELSEIF (lda.EQ.4.AND.ppm_dim.EQ.3) THEN
 #if     __DIME == __3D
@@ -538,10 +538,10 @@
                              &*tup
 #endif
 #endif
-                     END DO
-                  END DO
+                     ENDDO
+                  ENDDO
 #if  __DIME == __3D
-               END DO
+               ENDDO
 #endif
             ELSE
 #if     __DIME == __3D
@@ -564,7 +564,7 @@
                                &=field_up(l,ii,jj,kk,isub)&
                                &+wx1(iidec,isub,ip)*wx2(jjdec,isub,ip)&
                                &*wx3(kkdec,isub,ip)*tup(l)
-                       END DO
+                       ENDDO
 
 #elif __MODE == __SCA
                        field_up(ii,jj,kk,isub)=field_up(ii,jj,kk,isub)&
@@ -582,14 +582,14 @@
                             &*tup
 #endif
 #endif
-                    END DO
-                 END DO
+                    ENDDO
+                 ENDDO
 #if  __DIME == __3D
-              END DO
+              ENDDO
 #endif
-           END IF
-           END DO
-        END DO
+           ENDIF
+           ENDDO
+        ENDDO
         !-----------------------------------------------------------------------
         ! BS2
         !-----------------------------------------------------------------------
@@ -642,14 +642,14 @@
                             &*up(list_sub(isub,ip))
 #endif
 #endif
-                    END DO
-                 END DO
+                    ENDDO
+                 ENDDO
 
 #if  __DIME == __3D
-              END DO
+              ENDDO
 #endif
-           END DO
-        END DO
+           ENDDO
+        ENDDO
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -749,7 +749,7 @@
                CALL ppm_error(ppm_err_argument,'ppm_rmsh_remesh',  &
      &             'particles must be specified',__LINE__,info)
                GOTO 8888
-            END IF
+            ENDIF
             GOTO 8888
          ENDIF
 
@@ -774,7 +774,7 @@
         !   CALL ppm_error(ppm_err_argument,'ppm_rmsh_remesh',  &
         !        &     'wrong kernel support',__LINE__,info)
         !   GOTO 8888
-        !END IF
+        !ENDIF
 
          IF (SIZE(up).LT.Np) THEN
             info = ppm_error_error
@@ -791,8 +791,8 @@
          !      CALL ppm_error(ppm_err_argument,'ppm_rmsh_remesh',  &
          !           &     'wrong size of ghostsize',__LINE__,info)
          !      GOTO 8888
-         !   END IF
-         !END DO
+         !   ENDIF
+         !ENDDO
          DO idim=1,dim
             IF (ghostsize(idim).LT.(ppm_rmsh_kernelsize(kernel)-1)) THEN
                info = ppm_error_error

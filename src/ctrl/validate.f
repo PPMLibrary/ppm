@@ -6,7 +6,7 @@
                    &  ' fails validator check!'
 
                    fail(cvar,ppm_error=ppm_error_fatal)
-                END IF
-             END IF
-          END DO
+                ENDIF
+             ENDIF
+          ENDDO
 #undef DTYPE

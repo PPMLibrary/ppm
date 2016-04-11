@@ -7,7 +7,7 @@
             scratch = ADJUSTL(scratch)
             WRITE(iUnit, '(A)', ADVANCE='NO') scratch(1:LEN_TRIM(scratch))
             IF (i .LT. UBOUND(VTK_EXTENT,1)) WRITE(iUnit, '(A)', ADVANCE='NO') " "
-         END DO
+         ENDDO
          WRITE(iUnit, '(A)', ADVANCE='NO') "'"
 #else
 #ifdef VTK_NPOINTS

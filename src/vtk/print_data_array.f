@@ -33,7 +33,7 @@
            DO i=VTK_RANGE_START,VTK_RANGE
               WRITE(iUnit,'(I0)',ADVANCE='NO') i
               IF (i .LT. VTK_RANGE) WRITE(iUnit,'(A)',ADVANCE='NO') " "
-           END DO
+           ENDDO
 #else
 #ifdef VTK_MESH
 #ifndef VTK_MESH_ILBOUND
@@ -81,10 +81,10 @@
                        IF (i*j*k.LT.(VTK_MESH_IUBOUND)*(VTK_MESH_JUBOUND)*(VTK_MESH_KUBOUND)) &
 #endif
                        & WRITE(iUnit, '(A)', ADVANCE='NO') " "
-                   END DO
-               END DO
+                   ENDDO
+               ENDDO
 #if __DIM == __3D
-           END DO
+           ENDDO
 #endif
 #elif defined VTK_SCALAR
            DO i=LBOUND(VTK_SCALAR,1),UBOUND(VTK_SCALAR,1)
@@ -92,14 +92,14 @@
               scratch = ADJUSTL(scratch)
               WRITE(iUnit, '(A)', ADVANCE='NO') scratch(1:LEN_TRIM(scratch))
               IF (i .LT. UBOUND(VTK_SCALAR,1)) WRITE(iUnit, '(A)', ADVANCE='NO') " "
-           END DO
+           ENDDO
 #elif defined VTK_INTEGER
            DO i=LBOUND(VTK_INTEGER,1),UBOUND(VTK_INTEGER,1)
               WRITE(scratch, *) REAL(VTK_INTEGER(i),8)
               scratch = ADJUSTL(scratch)
               WRITE(iUnit, '(A)', ADVANCE='NO') scratch(1:LEN_TRIM(scratch))
               IF (i .LT. UBOUND(VTK_INTEGER,1)) WRITE(iUnit, '(A)', ADVANCE='NO') " "
-           END DO
+           ENDDO
 #else
            DO j=LBOUND(VTK_VECTOR,2),UBOUND(VTK_VECTOR,2)
               DO i=LBOUND(VTK_VECTOR,1),UBOUND(VTK_VECTOR,1)
@@ -109,17 +109,17 @@
                  IF (i .LT. UBOUND(VTK_VECTOR,1) .OR. &
                  &   j .LT. UBOUND(VTK_VECTOR,2))     &
                  &  WRITE(iUnit, '(A)', ADVANCE='NO') " "
-              END DO
+              ENDDO
 #ifdef APPEND_ZEROS
               IF (nd .EQ. 2) THEN
                  IF (j .LT. UBOUND(VTK_VECTOR,2)) THEN
                     WRITE(iUnit,'(A)',ADVANCE='NO') "0 "
                  ELSE
                     WRITE(iUnit,'(A)',ADVANCE='NO') " 0"
-                 END IF
-              END IF
+                 ENDIF
+              ENDIF
 #endif
-           END DO
+           ENDDO
 
 #endif
 #endif

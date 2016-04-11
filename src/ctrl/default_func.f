@@ -6,8 +6,8 @@
                       WRAP(DTYPE)_args(i)%variable = WRAP(DTYPE)_args(i)%default
                    ELSE
                       fail('Error applying default functions!',ppm_error=ppm_error_fatal)
-                   END IF
-                END IF
-             END IF
-          END DO
+                   ENDIF
+                ENDIF
+             ENDIF
+          ENDDO
 #undef DTYPE

@@ -16,7 +16,7 @@
             scratch = ADJUSTL(scratch)
             WRITE(iUnit, '(A)', ADVANCE='NO') scratch(1:LEN_TRIM(scratch))
             IF (i .LT. UBOUND(VTK_WHOLE_EXTENT,1)) WRITE(iUnit, '(A)', ADVANCE='NO') " "
-         END DO
+         ENDDO
          WRITE(iUnit, '(A)', ADVANCE='NO') "'"
 #endif
 #ifdef VTK_GHOSTLEVEL
@@ -32,7 +32,7 @@
             scratch = ADJUSTL(scratch)
             WRITE(iUnit, '(A)', ADVANCE='NO') scratch(1:LEN_TRIM(scratch))
             IF (i .LT. UBOUND(VTK_ORIGIN,1)) WRITE(iUnit, '(A)', ADVANCE='NO') " "
-         END DO
+         ENDDO
          WRITE(iUnit, '(A)', ADVANCE='NO') "'"
 #endif
 #ifdef VTK_SPACING
@@ -42,7 +42,7 @@
             scratch = ADJUSTL(scratch)
             WRITE(iUnit, '(A)', ADVANCE='NO') scratch(1:LEN_TRIM(scratch))
             IF (i .LT. UBOUND(VTK_SPACING,1)) WRITE(iUnit, '(A)', ADVANCE='NO') " "
-         END DO
+         ENDDO
          WRITE(iUnit, '(A)', ADVANCE='NO') "'"
 #endif
          WRITE(iUnit,'(A)') ">"
@@ -55,7 +55,7 @@
             scratch = ADJUSTL(scratch)
             WRITE(iUnit, '(A)', ADVANCE='NO') scratch(1:LEN_TRIM(scratch))
             IF (i .LT. UBOUND(VTK_EXTENT,1)) WRITE(iUnit, '(A)', ADVANCE='NO') " "
-         END DO
+         ENDDO
          WRITE(iUnit, '(A)', ADVANCE='NO') "'"
 #else
 #ifdef VTK_NPOINTS

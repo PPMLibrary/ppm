@@ -111,7 +111,7 @@
          WRITE(fname,'(A,A,I0)') filename(1:LEN_TRIM(filename)), '.', step
       ELSE
          fname = filename
-      END IF
+      ENDIF
 
       h        = 0.0_MK
       min_phys = 0.0_MK
@@ -144,7 +144,7 @@
             WRITE(errtxt,'(2A)') 'Failed to open file: ', &
             & scratch(1:LEN_TRIM(scratch))
             fail(errtxt,ppm_error=ppm_error_fatal)
-         END IF
+         ENDIF
 #define VTK_FILE_TYPE "PImageData"
 #define VTK_WHOLE_EXTENT whole_ext
 #define VTK_GHOSTLEVEL 0
@@ -224,7 +224,7 @@
                      ENDIF
                      WRITE(iUnit, '(A)', ADVANCE='NO') TRIM(ADJUSTL(scratch))
                      IF (i .LT. 3) WRITE(iUnit, '(A)', ADVANCE='NO') " "
-                  END DO
+                  ENDDO
                   IF (ppm_dim.NE.3) THEN
                      WRITE(iUnit, '(A)', ADVANCE='NO') '0 0'
                   ENDIF
@@ -241,7 +241,7 @@
          ! close
 #include "vtk/print_end_header.f"
          CLOSE(iUnit)
-      END IF
+      ENDIF
 
       DO l=1,topo%nsublist
          isub=topo%isublist(l)
@@ -255,7 +255,7 @@
                WRITE(errtxt,'(2A)') 'Failed to open file: ', &
                & scratch(1:LEN_TRIM(scratch))
                fail(errtxt,ppm_error=ppm_error_fatal)
-            END IF
+            ENDIF
 #define VTK_FILE_TYPE "ImageData"
 #define VTK_WHOLE_EXTENT whole_ext
 #define VTK_ORIGIN min_phys

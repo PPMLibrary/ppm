@@ -94,7 +94,7 @@
          chop=MERGE(1,0,lsymm)
       ELSE
          chop=0
-      END IF
+      ENDIF
 
       IF (PRESENT(ghostsize)) THEN
          ghostsize_=MIN(ghostsize,to_mesh%ghostsize)
@@ -160,12 +160,12 @@
                               'to_mesh%istart(2,jsub)-this%ghostsize(1)')
                IF (ppm_dim.GT.2) THEN
                   stdout("     ",'to_mesh%istart(3,jsub)-this%ghostsize(3)')
-               END IF
+               ENDIF
                stdout("     ",'to_mesh%iend(1,jsub)+this%ghostsize(2)',&
                               'to_mesh%iend(2,jsub)+this%ghostsize(2)')
                IF (ppm_dim.GT.2) THEN
                   stdout("     ",'to_mesh%iend(3,jsub)+this%ghostsize(3)')
-               END IF
+               ENDIF
             ENDIF
 
             !No intersection if the patch is not on the target subdomain

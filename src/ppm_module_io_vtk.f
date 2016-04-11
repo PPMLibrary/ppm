@@ -136,12 +136,12 @@
               iversion = "0.1"
            ELSE
               iversion = version
-           END IF
+           ENDIF
            IF (.NOT. PRESENT(byte_order)) THEN
               ibyte_order = "LittleEndian"
            ELSE
               ibyte_order = byte_order
-           END IF
+           ENDIF
            ! save type for ppm_vtk_close and reset current_section
            vtk_type = vtype
            current_section = 0
@@ -153,7 +153,7 @@
               & filename(1:LEN_TRIM(filename))
               CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
               GOTO 9999
-           END IF
+           ENDIF
            WRITE(iUnit,'(A)')  "<?xml version='1.0' ?>"
            WRITE(iUnit,'(7A)') "<VTKFile type='", vtype, &
            &                   "' version='",     iversion(1:LEN_TRIM(iversion)),  &
@@ -167,9 +167,9 @@
                  WRITE(iUnit, '(A)', ADVANCE='NO') &
                       scratch(1:LEN_TRIM(scratch))
                  IF (i .LT. UBOUND(whole_extent,1)) WRITE(iUnit, '(A)', ADVANCE='NO') " "
-              END DO
+              ENDDO
               WRITE(iUnit, '(A)', ADVANCE='NO') "'"
-           END IF
+           ENDIF
            IF (PRESENT(origin)) THEN
               WRITE(iUnit, '(A)', ADVANCE='NO') " Origin='"
               DO i=LBOUND(origin,1),UBOUND(origin,1)
@@ -179,9 +179,9 @@
                       scratch(1:LEN_TRIM(scratch))
                  IF (i .LT. UBOUND(origin,1)) &
                       WRITE(iUnit, '(A)', ADVANCE='NO') " "
-              END DO
+              ENDDO
               WRITE(iUnit, '(A)', ADVANCE='NO') "'"
-           END IF
+           ENDIF
            IF (PRESENT(spacing)) THEN
               WRITE(iUnit, '(A)', ADVANCE='NO') " Spacing='"
               DO i=LBOUND(spacing,1),UBOUND(spacing,1)
@@ -191,9 +191,9 @@
                       scratch(1:LEN_TRIM(scratch))
                  IF (i .LT. UBOUND(spacing,1)) &
                       WRITE(iUnit, '(A)', ADVANCE='NO') " "
-              END DO
+              ENDDO
               WRITE(iUnit, '(A)', ADVANCE='NO') "'"
-           END IF
+           ENDIF
            WRITE(iUnit,'(A)') ">"
            WRITE(iUnit,'(A)', ADVANCE='NO')     "    <Piece"
            IF (PRESENT(extent)) THEN
@@ -205,7 +205,7 @@
                       scratch(1:LEN_TRIM(scratch))
                  IF (i .LT. UBOUND(extent,1)) &
                       WRITE(iUnit, '(A)', ADVANCE='NO') " "
-              END DO
+              ENDDO
               WRITE(iUnit, '(A)', ADVANCE='NO') "'"
            ELSE
               IF (PRESENT(npoints)) THEN
@@ -213,7 +213,7 @@
                  scratch = ADJUSTL(scratch)
                  WRITE(iUnit, '(3A)', ADVANCE='NO') " NumberOfPoints='", &
                       scratch(1:LEN_TRIM(scratch)), "'"
-              END IF
+              ENDIF
               IF (PRESENT(nverts)) THEN
                  WRITE(scratch, *) nverts
                  scratch = ADJUSTL(scratch)
@@ -225,20 +225,20 @@
                  scratch = ADJUSTL(scratch)
                  WRITE(iUnit, '(3A)', ADVANCE='NO') " NumberOfLines='", &
                       scratch(1:LEN_TRIM(scratch)), "'"
-              END IF
+              ENDIF
               IF (PRESENT(nstrips)) THEN
                  WRITE(scratch, *) nstrips
                  scratch = ADJUSTL(scratch)
                  WRITE(iUnit, '(3A)', ADVANCE='NO') " NumberOfStrips='", &
                       scratch(1:LEN_TRIM(scratch)), "'"
-              END IF
+              ENDIF
               IF (PRESENT(npolys)) THEN
                  WRITE(scratch, *) npolys
                  scratch = ADJUSTL(scratch)
                  WRITE(iUnit, '(3A)', ADVANCE='NO') " NumberOfPolys='", &
                       scratch(1:LEN_TRIM(scratch)), "'"
-              END IF
-           END IF
+              ENDIF
+           ENDIF
            WRITE(iUnit, '(A)') ">"
 9999       CONTINUE
          END SUBROUTINE ppm_vtk_init
@@ -249,14 +249,14 @@
            IF (current_section .GT. 0) THEN
               ! close previous section
               WRITE(iUnit,'(3A)') "      </", vtk_section(1:LEN_TRIM(vtk_section)), ">"
-           END IF
+           ENDIF
            vtk_section = ADJUSTL(name)
            current_section = current_section + 1
            WRITE(iUnit,'(2A)', ADVANCE='NO') "      <", &
                 vtk_section(1:LEN_TRIM(vtk_section))
            IF (PRESENT(attr)) THEN
               WRITE(iUnit,'(2A)', ADVANCE='NO') " ", attr(1:LEN_TRIM(attr))
-           END IF
+           ENDIF
            WRITE (iUnit, '(A)') '>'
          END SUBROUTINE ppm_vtk_section
 
@@ -279,31 +279,31 @@
               iformat = ADJUSTL('ascii')
            ELSE
               iformat = ADJUSTL(format)
-           END IF
+           ENDIF
            IF (current_section .EQ. 0) THEN
               info = ppm_error_fatal
               WRITE(errtxt,'(A)') 'All vtk data must be inside a section!'
               CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
               GOTO 9999
-           END IF
+           ENDIF
            WRITE(iUnit,'(A)',ADVANCE='NO') "        <DataArray"
            IF (PRESENT(vtype)) THEN
               WRITE(iUnit,'(3A)',ADVANCE='NO') " type='", vtype(1:LEN_TRIM(vtype)), "'"
-           END IF
+           ENDIF
            WRITE(iUnit,'(3A)',ADVANCE='NO') " Name='", name(1:LEN_TRIM(name)), "'"
            IF (PRESENT(ncomponents)) THEN
               WRITE(scratch, *) ncomponents
               scratch = ADJUSTL(scratch)
               WRITE(iUnit,'(3A)',ADVANCE='NO') " NumberOfComponents='", &
                    scratch(1:LEN_TRIM(scratch)), "'"
-           END IF
+           ENDIF
            WRITE(iUnit,'(3A)',ADVANCE='NO') " format='", iformat(1:LEN_TRIM(iformat)), "'"
            IF (PRESENT(offset)) THEN
               WRITE(scratch, *) offset
               scratch = ADJUSTL(scratch)
               WRITE(iUnit,'(3A)',ADVANCE='NO') " offset='", &
                    scratch(1:LEN_TRIM(scratch)), "'"
-           END IF
+           ENDIF
            WRITE(iUnit,'(A)') ">"
            DO i=LBOUND(data,1),UBOUND(data,1)
               WRITE(scratch, *) data(i)
@@ -312,7 +312,7 @@
                    scratch(1:LEN_TRIM(scratch))
               IF (i .LT. UBOUND(data,1)) &
                    WRITE(iUnit, '(A)', ADVANCE='NO') " "
-           END DO
+           ENDDO
            WRITE(iUnit,'(/A)') "        </DataArray>"
 9999       CONTINUE
          END SUBROUTINE ppm_vtk_data
@@ -321,7 +321,7 @@
            IF (current_section .GT. 0) THEN
               ! close open section
               WRITE(iUnit,'(3A)') "      </", vtk_section(1:LEN_TRIM(vtk_section)), ">"
-           END IF
+           ENDIF
 #define VTK_FILE_TYPE vtk_type
 #include "vtk/print_end_header.f"
 #undef VTK_FILE_TYPE
