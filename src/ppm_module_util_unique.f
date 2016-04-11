@@ -35,21 +35,21 @@
       MODULE ppm_module_util_unique
       !!! This module provides the utility unique routines.
 
-         IMPLICIT NONE
-         PRIVATE
+      IMPLICIT NONE
+      PRIVATE
 
-         !----------------------------------------------------------------------
-         !  Define interface to the list sorting routine
-         !----------------------------------------------------------------------
-         INTERFACE ppm_util_unique
-            MODULE PROCEDURE ppm_util_unique_s
-            MODULE PROCEDURE ppm_util_unique_d
-            MODULE PROCEDURE ppm_util_unique_i
-            MODULE PROCEDURE ppm_util_unique_li
-            ! From a list of values generates a sorted unique list of values
-         END INTERFACE
+      !----------------------------------------------------------------------
+      !  Define interface to the list sorting routine
+      !----------------------------------------------------------------------
+      INTERFACE ppm_util_unique
+        MODULE PROCEDURE ppm_util_unique_s
+        MODULE PROCEDURE ppm_util_unique_d
+        MODULE PROCEDURE ppm_util_unique_i
+        MODULE PROCEDURE ppm_util_unique_li
+        ! From a list of values generates a sorted unique list of values
+      END INTERFACE
 
-         PUBLIC :: ppm_util_unique
+      PUBLIC :: ppm_util_unique
 
       !----------------------------------------------------------------------
       !  include the source

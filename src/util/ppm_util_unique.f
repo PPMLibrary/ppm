@@ -86,22 +86,26 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double) :: t0
+      REAL(ppm_kind_double)             :: t0
 #if   __KIND == __SINGLE_PRECISION || __KIND == __DOUBLE_PRECISION
-      REAL(MK)              :: ppm_myeps
+      REAL(MK)                          :: ppm_myeps
+      REAL(MK), DIMENSION(SIZE(inlist)) :: MASKlist
+
+#elif __KIND == __LONGINT
+
+      INTEGER(ppm_kind_int64), DIMENSION(SIZE(inlist)) :: MASKlist
+#elif __KIND == __INTEGER
+
+      INTEGER, DIMENSION(SIZE(inlist)) :: MASKlist
 #endif
+      INTEGER                          :: inSize
+      INTEGER                          :: outSize
+      INTEGER, DIMENSION(:), POINTER   :: indxlist
+      INTEGER, DIMENSION(1)            :: ldu
+      INTEGER                          :: iopt
+      INTEGER                          :: i
 
-      INTEGER                         :: inSize
-      INTEGER                         :: outSize
-      INTEGER,  DIMENSION(:), POINTER :: indxlist
-      INTEGER, DIMENSION(1)           :: ldu
-      INTEGER                         :: iopt
-      INTEGER                         :: i
-      INTEGER                         :: j
-
-      CHARACTER(LEN=ppm_char) :: caller='ppm_util_unique'
-
-      LOGICAL, DIMENSION(SIZE(inlist)) :: MASK
+      CHARACTER(LEN=ppm_char) :: caller="ppm_util_unique"
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -129,39 +133,41 @@
       or_fail("ppm_util_qsort")
 
       outSize=1
+      MASKlist(1)=inlist(indxlist(1))
       DO i=2,inSize
 #if   __KIND == __SINGLE_PRECISION || __KIND == __DOUBLE_PRECISION
          ! If the difference between two elements is less than Floating point tolerance
          ! then I would consider them as equal
-         IF ((inlist(indxlist(i))-inlist(indxlist(i-1))).LE.ppm_myeps) THEN
+         IF ((inlist(indxlist(i))-inlist(indxlist(i-1))).GT.ppm_myeps) THEN
 #elif __KIND == __INTEGER || __KIND == __LONGINT
-         IF (inlist(indxlist(i)).EQ.inlist(indxlist(i-1))) THEN
+         IF (inlist(indxlist(i)).NE.inlist(indxlist(i-1))) THEN
 #endif
-            MASK(indxlist(i))=.FALSE.
-         ELSE
-            MASK(indxlist(i))=.TRUE.
             outSize=outSize+1
+            MASKlist(outSize)=inlist(indxlist(i))
          ENDIF
       ENDDO
 
+      !-------------------------------------------------------------------------
+      !  Free memory
+      !-------------------------------------------------------------------------
+      iopt=ppm_param_dealloc
+      CALL ppm_alloc(indxlist,ldu,iopt,info)
+      or_fail_dealloc("indxlist")
+
+      !-------------------------------------------------------------------------
+      !  Allocate the outlist array
+      !-------------------------------------------------------------------------
       iopt=ppm_param_alloc_fit
       ldu=outSize
       CALL ppm_alloc(outlist,ldu,iopt,info)
       or_fail_alloc("outlist")
 
-      outlist(1)=inlist(indxlist(1))
-      j=1
-      DO i=2,inSize
-         IF (MASK(i)) THEN
-            j=j+1
-            outlist(j)=inlist(indxlist(i))
-         ENDIF
+      !-------------------------------------------------------------------------
+      !  Fill the outlist
+      !-------------------------------------------------------------------------
+      DO i=1,outSize
+         outlist(i)=MASKlist(i)
       ENDDO
-
-      ! Free memory
-      iopt=ppm_param_dealloc
-      CALL ppm_alloc(indxlist,ldu,iopt,info)
-      or_fail_dealloc("indxlist")
 
       IF (PRESENT(outlistSize)) outlistSize=outSize
 
