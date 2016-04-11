@@ -35,7 +35,7 @@
          SELECT CASE (ppm_dim)
          CASE (2)
             DO i = 1, nghostplus
-              IF ( xt(1,i).GT.xminf.AND.xt(1,i).LE.xmini) THEN
+              IF (xt(1,i).GT.xminf.AND.xt(1,i).LE.xmini) THEN
                  k         = k + 1
                  ighost(k) = ighost(i)
                  xt(1,k)   = 2.0_MK*xminf - xt(1,i)
@@ -48,7 +48,7 @@
             ENDDO
          CASE (3)
             DO i = 1, nghostplus
-               IF ( xt(1,i).GT.xminf.AND.xt(1,i).LE.xmini) THEN
+               IF (xt(1,i).GT.xminf.AND.xt(1,i).LE.xmini) THEN
                   k         = k + 1
                   ighost(k) = ighost(i)
                   xt(1,k)   = 2.0_MK*xminf - xt(1,i)

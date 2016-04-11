@@ -41,6 +41,7 @@
                  ighost(k) = ighost(i)
                  xt(1,k)   = 2.0_MK*xmaxf - xt(1,i)
                  xt(2,k)   = xt(2,i)
+
                  xt_offset(1,k) = 2.0_MK*xmaxf !2.0_MK*(xmaxf-xt(1,i))
                  xt_offset(2,k) = xt_offset(2,i)
                  xt_off_fac(1,k) = -1.0_MK
@@ -55,6 +56,7 @@
                  xt(1,k)   = 2.0_MK*xmaxf - xt(1,i)
                  xt(2,k)   = xt(2,i)
                  xt(3,k)   = xt(3,i)
+
                  xt_offset(1,k) = 2.0_MK*xmaxf !2.0_MK*(xmaxf-xt(1,i))
                  xt_offset(2,k) = xt_offset(2,i)
                  xt_offset(3,k) = xt_offset(3,i)

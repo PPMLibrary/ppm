@@ -6,18 +6,18 @@
             ldu(1) = ppm_dim
             ldu(2) = 2*nghostplus
 
-                   CALL ppm_alloc(xt,ldu,iopt,info)
-                   or_fail_alloc('xt',ppm_error=ppm_error_fatal)
+            CALL ppm_alloc(xt,ldu,iopt,info)
+            or_fail_alloc('xt',ppm_error=ppm_error_fatal)
 
-                   CALL ppm_alloc(xt_offset,ldu,iopt,info)
-                   or_fail_alloc('xt_offset',ppm_error=ppm_error_fatal)
+            CALL ppm_alloc(xt_offset,ldu,iopt,info)
+            or_fail_alloc('xt_offset',ppm_error=ppm_error_fatal)
 
-                   CALL ppm_alloc(xt_off_fac,ldu,iopt,info)
-                   or_fail_alloc('xt_off_fac',ppm_error=ppm_error_fatal)
+            CALL ppm_alloc(xt_off_fac,ldu,iopt,info)
+            or_fail_alloc('xt_off_fac',ppm_error=ppm_error_fatal)
 
-                   ldu(1) = ldu(2)
-                   CALL ppm_alloc(ighost,ldu,iopt,info)
-                   or_fail_alloc('ighost',ppm_error=ppm_error_fatal)
+            ldu(1) = ldu(2)
+            CALL ppm_alloc(ighost,ldu,iopt,info)
+            or_fail_alloc('ighost',ppm_error=ppm_error_fatal)
 
             !-------------------------------------------------------------------
             !  clear out the new segment of xt_offset to be able to copy the

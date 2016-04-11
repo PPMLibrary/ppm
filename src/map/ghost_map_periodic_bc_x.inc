@@ -25,26 +25,44 @@
          xmini = min_phys(1) + ghostsize
 
          k     = nghostplus
-         DO i=1,nghostplus
-            !----------------------------------------------------------------
-            !  first those at the west boundary
-            !----------------------------------------------------------------
-            IF (xt(1,i).GE.xminf.AND.xt(1,i).LT.xmini) THEN
-               k         = k + 1
-               ighost(k) = ighost(i)
-               xt(1,k)   = xt(1,i) + len_phys(1)
-               xt(2,k)   = xt(2,i)
-               xt_offset(1,k) = len_phys(1)
-               xt_offset(2,k) = xt_offset(2,i)
-               xt_off_fac(1,k) = xt_off_fac(1,i)
-               xt_off_fac(2,k) = xt_off_fac(2,i)
-               IF (ppm_dim.EQ.3) THEN
+         SELECT CASE (ppm_dim)
+         CASE (2)
+            DO i=1,nghostplus
+               !----------------------------------------------------------------
+               !  first those at the west boundary
+               !----------------------------------------------------------------
+               IF (xt(1,i).GE.xminf.AND.xt(1,i).LT.xmini) THEN
+                  k         = k + 1
+                  ighost(k) = ighost(i)
+                  xt(1,k)   = xt(1,i) + len_phys(1)
+                  xt(2,k)   = xt(2,i)
+                  xt_offset(1,k) = len_phys(1)
+                  xt_offset(2,k) = xt_offset(2,i)
+                  xt_off_fac(1,k) = xt_off_fac(1,i)
+                  xt_off_fac(2,k) = xt_off_fac(2,i)
+               ENDIF
+            ENDDO
+         CASE (3)
+            DO i=1,nghostplus
+               !----------------------------------------------------------------
+               !  first those at the west boundary
+               !----------------------------------------------------------------
+               IF (xt(1,i).GE.xminf.AND.xt(1,i).LT.xmini) THEN
+                  k         = k + 1
+                  ighost(k) = ighost(i)
+                  xt(1,k)   = xt(1,i) + len_phys(1)
+                  xt(2,k)   = xt(2,i)
                   xt(3,k)   = xt(3,i)
+                  xt_offset(1,k) = len_phys(1)
+                  xt_offset(2,k) = xt_offset(2,i)
+                  xt_off_fac(1,k) = xt_off_fac(1,i)
+                  xt_off_fac(2,k) = xt_off_fac(2,i)
                   xt_offset(3,k) = xt_offset(3,i)
                   xt_off_fac(3,k) = xt_off_fac(3,i)
                ENDIF
-            ENDIF
-         ENDDO
+            ENDDO
+         END SELECT
+
          IF (isymm.EQ.0) THEN
             !----------------------------------------------------------------
             !  then the east bc, but only if we are not using symmetry
@@ -52,23 +70,37 @@
             xmaxf = max_phys(1)
             xmaxi = max_phys(1) - ghostsize
 
-            DO i=1,nghostplus
-               IF  (xt(1,i).GT.xmaxi.AND.xt(1,i).LT.xmaxf) THEN
-                  k         = k + 1
-                  ighost(k) = ighost(i)
-                  xt(1,k)   = xt(1,i) - len_phys(1)
-                  xt(2,k)   = xt(2,i)
-                  xt_offset(1,k) = -len_phys(1)
-                  xt_offset(2,k) = xt_offset(2,i)
-                  xt_off_fac(1,k) = xt_off_fac(1,i)
-                  xt_off_fac(2,k) = xt_off_fac(2,i)
-                  IF (ppm_dim.EQ.3) THEN
+            SELECT CASE (ppm_dim)
+            CASE (2)
+               DO i=1,nghostplus
+                  IF (xt(1,i).GT.xmaxi.AND.xt(1,i).LT.xmaxf) THEN
+                     k         = k + 1
+                     ighost(k) = ighost(i)
+                     xt(1,k)   = xt(1,i) - len_phys(1)
+                     xt(2,k)   = xt(2,i)
+                     xt_offset(1,k) = -len_phys(1)
+                     xt_offset(2,k) = xt_offset(2,i)
+                     xt_off_fac(1,k) = xt_off_fac(1,i)
+                     xt_off_fac(2,k) = xt_off_fac(2,i)
+                  ENDIF
+               ENDDO
+            CASE (3)
+               DO i=1,nghostplus
+                  IF (xt(1,i).GT.xmaxi.AND.xt(1,i).LT.xmaxf) THEN
+                     k         = k + 1
+                     ighost(k) = ighost(i)
+                     xt(1,k)   = xt(1,i) - len_phys(1)
+                     xt(2,k)   = xt(2,i)
                      xt(3,k)   = xt(3,i)
+                     xt_offset(1,k) = -len_phys(1)
+                     xt_offset(2,k) = xt_offset(2,i)
+                     xt_off_fac(1,k) = xt_off_fac(1,i)
+                     xt_off_fac(2,k) = xt_off_fac(2,i)
                      xt_offset(3,k) = xt_offset(3,i)
                      xt_off_fac(3,k) = xt_off_fac(3,i)
                   ENDIF
-               ENDIF
-            ENDDO
+               ENDDO
+            END SELECT
          ENDIF
 
          !-------------------------------------------------------------------

@@ -365,42 +365,42 @@
             isub=ilist4(j)
             SELECT CASE (ppm_dim)
             CASE (2)
-               !----------------------------------------------------------------
-               !  Loop over the particles in 2D
-               !----------------------------------------------------------------
-               DO k=1,Npart
-                  !-------------------------------------------------------------
-                  !  and check if they are inside the sub
-                  !-------------------------------------------------------------
-                  IF (xp(1,k).GE.min_sub(1,isub).AND. &
-                  &   xp(1,k).LE.max_sub(1,isub).AND. &
-                  &   xp(2,k).GE.min_sub(2,isub).AND. &
-                  &   xp(2,k).LE.max_sub(2,isub)) THEN
-                      !---------------------------------------------------------
-                      !  In the non-periodic case, allow particles that are
-                      !  exactly ON an upper EXTERNAL boundary.
-                      !---------------------------------------------------------
-                      IF ((xp(1,k).LT.max_sub(1,isub)      .OR.  &
-                      &  (topo%subs_bc(2,isub).EQ.1           .AND.  &
-                      &  bcdef(2).NE. ppm_param_bcdef_periodic))    .AND.  &
-                      &  (xp(2,k).LT.max_sub(2,isub)      .OR.  &
-                      &  (topo%subs_bc(4,isub).EQ.1           .AND.  &
-                      &  bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
-                         !------------------------------------------------------
-                         !  If yes, then store them
-                         !------------------------------------------------------
-                         iset                 =iset + 1
+               SELECT CASE (ppm_kind)
+               CASE (ppm_kind_double)
+                  !----------------------------------------------------------------
+                  !  Loop over the particles in 2D
+                  !----------------------------------------------------------------
+                  DO k=1,Npart
+                     !-------------------------------------------------------------
+                     !  and check if they are inside the sub
+                     !-------------------------------------------------------------
+                     IF (xp(1,k).GE.min_sub(1,isub).AND. &
+                     &   xp(1,k).LE.max_sub(1,isub).AND. &
+                     &   xp(2,k).GE.min_sub(2,isub).AND. &
+                     &   xp(2,k).LE.max_sub(2,isub)) THEN
+                         !---------------------------------------------------------
+                         !  In the non-periodic case, allow particles that are
+                         !  exactly ON an upper EXTERNAL boundary.
+                         !---------------------------------------------------------
+                         IF ((xp(1,k).LT.max_sub(1,isub)           .OR.  &
+                         &  (topo%subs_bc(2,isub).EQ.1             .AND. &
+                         &  bcdef(2).NE. ppm_param_bcdef_periodic)).AND. &
+                         &  (xp(2,k).LT.max_sub(2,isub)            .OR.  &
+                         &  (topo%subs_bc(4,isub).EQ.1             .AND. &
+                         &  bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
+                            !------------------------------------------------------
+                            !  If yes, then store them
+                            !------------------------------------------------------
+                            iset                 =iset + 1
 
-                         !------------------------------------------------------
-                         !  store the ID of the particles
-                         !------------------------------------------------------
-                         ppm_buffer2part(iset)=k
+                            !------------------------------------------------------
+                            !  store the ID of the particles
+                            !------------------------------------------------------
+                            ppm_buffer2part(iset)=k
 
-                         !------------------------------------------------------
-                         !  store the particle
-                         !------------------------------------------------------
-                         SELECT CASE (ppm_kind)
-                         CASE (ppm_kind_double)
+                            !------------------------------------------------------
+                            !  store the particle
+                            !------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
                             ibuffer=ibuffer + 1
                             ppm_sendbufferd(ibuffer)=REAL(xp(1,k),ppm_kind_double)
@@ -412,7 +412,44 @@
                             ibuffer=ibuffer + 1
                             ppm_sendbufferd(ibuffer)=xp(2,k)
 #endif
-                         CASE DEFAULT
+                         ENDIF ! for inside/outside
+                     ENDIF ! for inside/outside
+                  ENDDO ! end loop over 2D particles
+               CASE (ppm_kind_single)
+                  !----------------------------------------------------------------
+                  !  Loop over the particles in 2D
+                  !----------------------------------------------------------------
+                  DO k=1,Npart
+                     !-------------------------------------------------------------
+                     !  and check if they are inside the sub
+                     !-------------------------------------------------------------
+                     IF (xp(1,k).GE.min_sub(1,isub).AND. &
+                     &   xp(1,k).LE.max_sub(1,isub).AND. &
+                     &   xp(2,k).GE.min_sub(2,isub).AND. &
+                     &   xp(2,k).LE.max_sub(2,isub)) THEN
+                         !---------------------------------------------------------
+                         !  In the non-periodic case, allow particles that are
+                         !  exactly ON an upper EXTERNAL boundary.
+                         !---------------------------------------------------------
+                         IF ((xp(1,k).LT.max_sub(1,isub)            .OR.  &
+                         &  (topo%subs_bc(2,isub).EQ.1              .AND. &
+                         &  bcdef(2).NE. ppm_param_bcdef_periodic)) .AND. &
+                         &  (xp(2,k).LT.max_sub(2,isub)             .OR.  &
+                         &  (topo%subs_bc(4,isub).EQ.1              .AND. &
+                         &  bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
+                            !------------------------------------------------------
+                            !  If yes, then store them
+                            !------------------------------------------------------
+                            iset=iset + 1
+
+                            !------------------------------------------------------
+                            !  store the ID of the particles
+                            !------------------------------------------------------
+                            ppm_buffer2part(iset)=k
+
+                            !------------------------------------------------------
+                            !  store the particle
+                            !------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
                             ibuffer=ibuffer + 1
                             ppm_sendbufferd(ibuffer)=xp(1,k)
@@ -424,89 +461,129 @@
                             ibuffer=ibuffer + 1
                             ppm_sendbufferd(ibuffer)=REAL(xp(2,k),ppm_kind_single)
 #endif
-                         END SELECT
-
-                      ENDIF ! for inside/outside
-                  ENDIF ! for inside/outside
-               ENDDO ! end loop over 2D particles
+                         ENDIF ! for inside/outside
+                     ENDIF ! for inside/outside
+                  ENDDO ! end loop over 2D particles
+               END SELECT !ppm_kind
             CASE (3) ! else of 2d versus 3d
-               !----------------------------------------------------------------
-               !  Loop over the particles in 3D
-               !----------------------------------------------------------------
-               DO k=1,Npart
-                  !-------------------------------------------------------------
-                  !  and check if they are inside the sub
-                  !-------------------------------------------------------------
-                  IF (xp(1,k).GE.min_sub(1,isub).AND. &
-                  &   xp(1,k).LE.max_sub(1,isub).AND. &
-                  &   xp(2,k).GE.min_sub(2,isub).AND. &
-                  &   xp(2,k).LE.max_sub(2,isub).AND. &
-                  &   xp(3,k).GE.min_sub(3,isub).AND. &
-                  &   xp(3,k).LE.max_sub(3,isub)) THEN
-                   !------------------------------------------------------------
-                   !  In the non-periodic case, allow particles that are
-                   !  exactly ON an upper EXTERNAL boundary.
-                   !------------------------------------------------------------
-                   IF ((xp(1,k).LT.max_sub(1,isub)      .OR. &
-                   &  (topo%subs_bc(2,isub).EQ.1           .AND. &
-                   &  bcdef(2).NE. ppm_param_bcdef_periodic))    .AND. &
-                   &  (xp(2,k).LT.max_sub(2,isub)      .OR. &
-                   &  (topo%subs_bc(4,isub).EQ.1           .AND. &
-                   &  bcdef(4).NE. ppm_param_bcdef_periodic))    .AND. &
-                   &  (xp(3,k).LT.max_sub(3,isub)      .OR. &
-                   &  (topo%subs_bc(6,isub).EQ.1           .AND. &
-                   &  bcdef(6).NE. ppm_param_bcdef_periodic))   ) THEN
-                     !----------------------------------------------------------
-                     !  If yes, then store them
-                     !----------------------------------------------------------
-                     iset                 =iset + 1
+               SELECT CASE (ppm_kind)
+               CASE (ppm_kind_double)
+                  !----------------------------------------------------------------
+                  !  Loop over the particles in 3D
+                  !----------------------------------------------------------------
+                  DO k=1,Npart
+                     !-------------------------------------------------------------
+                     !  and check if they are inside the sub
+                     !-------------------------------------------------------------
+                     IF (xp(1,k).GE.min_sub(1,isub).AND. &
+                     &   xp(1,k).LE.max_sub(1,isub).AND. &
+                     &   xp(2,k).GE.min_sub(2,isub).AND. &
+                     &   xp(2,k).LE.max_sub(2,isub).AND. &
+                     &   xp(3,k).GE.min_sub(3,isub).AND. &
+                     &   xp(3,k).LE.max_sub(3,isub)) THEN
+                        !------------------------------------------------------------
+                        !  In the non-periodic case, allow particles that are
+                        !  exactly ON an upper EXTERNAL boundary.
+                        !------------------------------------------------------------
+                        IF ((xp(1,k).LT.max_sub(1,isub)           .OR.  &
+                        &  (topo%subs_bc(2,isub).EQ.1             .AND. &
+                        &  bcdef(2).NE. ppm_param_bcdef_periodic)).AND. &
+                        &  (xp(2,k).LT.max_sub(2,isub)            .OR.  &
+                        &  (topo%subs_bc(4,isub).EQ.1             .AND. &
+                        &  bcdef(4).NE. ppm_param_bcdef_periodic)).AND. &
+                        &  (xp(3,k).LT.max_sub(3,isub)            .OR.  &
+                        &  (topo%subs_bc(6,isub).EQ.1             .AND. &
+                        &  bcdef(6).NE. ppm_param_bcdef_periodic))   ) THEN
+                           !----------------------------------------------------------
+                           !  If yes, then store them
+                           !----------------------------------------------------------
+                           iset=iset + 1
 
-                     !----------------------------------------------------------
-                     !  store the ID of the particles
-                     !----------------------------------------------------------
-                     ppm_buffer2part(iset)=k
+                           !----------------------------------------------------------
+                           !  store the ID of the particles
+                           !----------------------------------------------------------
+                           ppm_buffer2part(iset)=k
 
-                     !----------------------------------------------------------
-                     !  store the particle
-                     !----------------------------------------------------------
-                     SELECT CASE (ppm_kind)
-                     CASE (ppm_kind_double)
+                           !----------------------------------------------------------
+                           !  store the particle
+                           !----------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=REAL(xp(1,k),ppm_kind_double)
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=REAL(xp(2,k),ppm_kind_double)
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=REAL(xp(3,k),ppm_kind_double)
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=REAL(xp(1,k),ppm_kind_double)
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=REAL(xp(2,k),ppm_kind_double)
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=REAL(xp(3,k),ppm_kind_double)
 #else
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=xp(1,k)
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=xp(2,k)
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=xp(3,k)
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=xp(1,k)
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=xp(2,k)
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=xp(3,k)
 #endif
-                     CASE DEFAULT
-#if    __KIND == __SINGLE_PRECISION
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=xp(1,k)
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=xp(2,k)
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=xp(3,k)
-#else
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=REAL(xp(1,k),ppm_kind_single)
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=REAL(xp(2,k),ppm_kind_single)
-                        ibuffer=ibuffer + 1
-                        ppm_sendbufferd(ibuffer)=REAL(xp(3,k),ppm_kind_single)
-#endif
-                     END SELECT
+                        ENDIF
+                     ENDIF
+                  ENDDO ! end loop over particles
+               CASE (ppm_kind_single)
+                  !----------------------------------------------------------------
+                  !  Loop over the particles in 3D
+                  !----------------------------------------------------------------
+                  DO k=1,Npart
+                     !-------------------------------------------------------------
+                     !  and check if they are inside the sub
+                     !-------------------------------------------------------------
+                     IF (xp(1,k).GE.min_sub(1,isub).AND. &
+                     &   xp(1,k).LE.max_sub(1,isub).AND. &
+                     &   xp(2,k).GE.min_sub(2,isub).AND. &
+                     &   xp(2,k).LE.max_sub(2,isub).AND. &
+                     &   xp(3,k).GE.min_sub(3,isub).AND. &
+                     &   xp(3,k).LE.max_sub(3,isub)) THEN
+                        !------------------------------------------------------------
+                        !  In the non-periodic case, allow particles that are
+                        !  exactly ON an upper EXTERNAL boundary.
+                        !------------------------------------------------------------
+                        IF ((xp(1,k).LT.max_sub(1,isub)           .OR.  &
+                        &  (topo%subs_bc(2,isub).EQ.1             .AND. &
+                        &  bcdef(2).NE. ppm_param_bcdef_periodic)).AND. &
+                        &  (xp(2,k).LT.max_sub(2,isub)            .OR.  &
+                        &  (topo%subs_bc(4,isub).EQ.1             .AND. &
+                        &  bcdef(4).NE. ppm_param_bcdef_periodic)).AND. &
+                        &  (xp(3,k).LT.max_sub(3,isub)            .OR.  &
+                        &  (topo%subs_bc(6,isub).EQ.1             .AND. &
+                        &  bcdef(6).NE. ppm_param_bcdef_periodic))) THEN
+                           !----------------------------------------------------------
+                           !  If yes, then store them
+                           !----------------------------------------------------------
+                           iset=iset + 1
 
-                  ENDIF
-                  ENDIF
-               ENDDO ! end loop over particles
+                           !----------------------------------------------------------
+                           !  store the ID of the particles
+                           !----------------------------------------------------------
+                           ppm_buffer2part(iset)=k
+
+                           !----------------------------------------------------------
+                           !  store the particle
+                           !----------------------------------------------------------
+#if    __KIND == __SINGLE_PRECISION
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=xp(1,k)
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=xp(2,k)
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=xp(3,k)
+#else
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=REAL(xp(1,k),ppm_kind_single)
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=REAL(xp(2,k),ppm_kind_single)
+                           ibuffer=ibuffer + 1
+                           ppm_sendbufferd(ibuffer)=REAL(xp(3,k),ppm_kind_single)
+#endif
+                        ENDIF
+                     ENDIF
+                  ENDDO ! end loop over particles
+               END SELECT !ppm_kind
             END SELECT ! endif of 2d/3d
          ENDDO ! end loop over ilist4: the list of subs to send
          !----------------------------------------------------------------------
@@ -541,7 +618,6 @@
       !  Moreover, if we are not using MPI we can skip the rest of the source
       !-------------------------------------------------------------------------
 #endif
-
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------

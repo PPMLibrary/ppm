@@ -728,9 +728,60 @@
             !-------------------------------------------------------------------
             isub = topo%isublist(j)
 
-            !-------------------------------------------------------------------
-            !  Define the extended resize of this sub
-            !-------------------------------------------------------------------
+            SELECT CASE (ppm_dim)
+            CASE (2)
+               !-------------------------------------------------------------------
+               !  Define the extended resize of this sub
+               !-------------------------------------------------------------------
+#if __KIND == __SINGLE_PRECISION
+               xminf = topo%min_subs(1,isub)
+               xmaxf = topo%max_subs(1,isub)
+
+               yminf = topo%min_subs(2,isub)
+               ymaxf = topo%max_subs(2,isub)
+#else
+               xminf = topo%min_subd(1,isub)
+               xmaxf = topo%max_subd(1,isub)
+
+               yminf = topo%min_subd(2,isub)
+               ymaxf = topo%max_subd(2,isub)
+#endif
+
+               IF (isymm.GT.0) THEN
+                  !----------------------------------------------------------------
+                  !  if we use symmetry ghosts will only be present at the
+                  !  upper/right part of the sub
+                  !----------------------------------------------------------------
+                  xmini = xminf
+                  xmaxi = xmaxf + ghostsize
+
+                  ymini = yminf
+                  ymaxi = ymaxf + ghostsize
+
+                  !----------------------------------------------------------------
+                  ! If this subdomain is at the physical boundary, then we need an
+                  ! extra ghostlayer for handling the boundary conditions
+                  !----------------------------------------------------------------
+                  IF (ABS(xmini - min_phys(1)).LT. eps .AND. lextra(1)) THEN
+                     xmini = xmini - ghostsize
+                  ENDIF
+                  IF (ABS(ymini - min_phys(2)).LT. eps .AND. lextra(3)) THEN
+                     ymini = ymini - ghostsize
+                  ENDIF
+               ELSE
+                  !----------------------------------------------------------------
+                  !  if we do not use symmetry, we have ghost all around
+                  !----------------------------------------------------------------
+                  xmini = xminf - ghostsize
+                  xmaxi = xmaxf + ghostsize
+
+                  ymini = yminf - ghostsize
+                  ymaxi = ymaxf + ghostsize
+               ENDIF
+            CASE (3)
+               !-------------------------------------------------------------------
+               !  Define the extended resize of this sub
+               !-------------------------------------------------------------------
 #if __KIND == __SINGLE_PRECISION
                xminf = topo%min_subs(1,isub)
                xmaxf = topo%max_subs(1,isub)
@@ -738,10 +789,8 @@
                yminf = topo%min_subs(2,isub)
                ymaxf = topo%max_subs(2,isub)
 
-               IF (ppm_dim.EQ.3) THEN
-                  zminf = topo%min_subs(3,isub)
-                  zmaxf = topo%max_subs(3,isub)
-               ENDIF
+               zminf = topo%min_subs(3,isub)
+               zmaxf = topo%max_subs(3,isub)
 #else
                xminf = topo%min_subd(1,isub)
                xmaxf = topo%max_subd(1,isub)
@@ -749,57 +798,50 @@
                yminf = topo%min_subd(2,isub)
                ymaxf = topo%max_subd(2,isub)
 
-               IF (ppm_dim.EQ.3) THEN
-                  zminf = topo%min_subd(3,isub)
-                  zmaxf = topo%max_subd(3,isub)
-               ENDIF
+               zminf = topo%min_subd(3,isub)
+               zmaxf = topo%max_subd(3,isub)
 #endif
-            IF (isymm.GT.0) THEN
-               !----------------------------------------------------------------
-               !  if we use symmetry ghosts will only be present at the
-               !  upper/right part of the sub
-               !----------------------------------------------------------------
-               xmini = xminf
-               xmaxi = xmaxf + ghostsize
 
-               ymini = yminf
-               ymaxi = ymaxf + ghostsize
+               IF (isymm.GT.0) THEN
+                  !----------------------------------------------------------------
+                  !  if we use symmetry ghosts will only be present at the
+                  !  upper/right part of the sub
+                  !----------------------------------------------------------------
+                  xmini = xminf
+                  xmaxi = xmaxf + ghostsize
 
-               IF (ppm_dim.EQ.3) THEN
+                  ymini = yminf
+                  ymaxi = ymaxf + ghostsize
+
                   zmini = zminf
                   zmaxi = zmaxf + ghostsize
-               ENDIF
-
-               !----------------------------------------------------------------
-               ! If this subdomain is at the physical boundary, then we need an
-               ! extra ghostlayer for handling the boundary conditions
-               !----------------------------------------------------------------
-               IF (ABS(xmini - min_phys(1)).LT. eps .AND. lextra(1)) THEN
-                  xmini = xmini - ghostsize
-               ENDIF
-               IF (ABS(ymini - min_phys(2)).LT. eps .AND. lextra(3)) THEN
-                  ymini = ymini - ghostsize
-               ENDIF
-               IF (ppm_dim.EQ.3) THEN
+                  !----------------------------------------------------------------
+                  ! If this subdomain is at the physical boundary, then we need an
+                  ! extra ghostlayer for handling the boundary conditions
+                  !----------------------------------------------------------------
+                  IF (ABS(xmini - min_phys(1)).LT. eps .AND. lextra(1)) THEN
+                     xmini = xmini - ghostsize
+                  ENDIF
+                  IF (ABS(ymini - min_phys(2)).LT. eps .AND. lextra(3)) THEN
+                     ymini = ymini - ghostsize
+                  ENDIF
                   IF (ABS(zmini - min_phys(3)).LT. eps .AND. lextra(5)) THEN
                      zmini = zmini - ghostsize
                   ENDIF
-               ENDIF
-            ELSE
-               !----------------------------------------------------------------
-               !  if we do not use symmetry, we have ghost all around
-               !----------------------------------------------------------------
-               xmini = xminf - ghostsize
-               xmaxi = xmaxf + ghostsize
+               ELSE
+                  !----------------------------------------------------------------
+                  !  if we do not use symmetry, we have ghost all around
+                  !----------------------------------------------------------------
+                  xmini = xminf - ghostsize
+                  xmaxi = xmaxf + ghostsize
 
-               ymini = yminf - ghostsize
-               ymaxi = ymaxf + ghostsize
+                  ymini = yminf - ghostsize
+                  ymaxi = ymaxf + ghostsize
 
-               IF (ppm_dim.EQ.3) THEN
                   zmini = zminf - ghostsize
                   zmaxi = zmaxf + ghostsize
                ENDIF
-            ENDIF
+            END SELECT
 
             !-------------------------------------------------------------------
             !  Reallocate the arrays: ppm_sendbuffers/d and ppm_buffer2part.
@@ -852,7 +894,8 @@
             !-------------------------------------------------------------------
             !  loop over the potential ghost particles due to periodicity
             !-------------------------------------------------------------------
-            IF (ppm_dim.EQ.2) THEN
+            SELECT CASE (ppm_dim)
+            CASE (2)
                !----------------------------------------------------------------
                !  Two dimensions
                !----------------------------------------------------------------
@@ -883,52 +926,52 @@
                      SELECT CASE (ppm_kind)
                      CASE (ppm_kind_double)
 #if    __KIND == __SINGLE_PRECISION
-                         ibuffer = ibuffer + 1
-                         ppm_sendbufferd(ibuffer)      =REAL(xt(1,i),ppm_kind_double)
-                         ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_double)
-                         ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_double)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbufferd(ibuffer)      =REAL(xt(1,i),ppm_kind_double)
+                        ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_double)
+                        ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_double)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbufferd(ibuffer)      =REAL(xt(2,i),ppm_kind_double)
-                         ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_double)
-                         ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_double)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbufferd(ibuffer)      =REAL(xt(2,i),ppm_kind_double)
+                        ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_double)
+                        ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_double)
 #else
-                         ibuffer = ibuffer + 1
-                         ppm_sendbufferd(ibuffer)      =xt(1,i)
-                         ppm_ghost_offsetd(ibuffer)    =xt_offset(1,i)
-                         ppm_ghost_offset_facd(ibuffer)=xt_off_fac(1,i)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbufferd(ibuffer)      =xt(1,i)
+                        ppm_ghost_offsetd(ibuffer)    =xt_offset(1,i)
+                        ppm_ghost_offset_facd(ibuffer)=xt_off_fac(1,i)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbufferd(ibuffer)      =xt(2,i)
-                         ppm_ghost_offsetd(ibuffer)    =xt_offset(2,i)
-                         ppm_ghost_offset_facd(ibuffer)=xt_off_fac(2,i)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbufferd(ibuffer)      =xt(2,i)
+                        ppm_ghost_offsetd(ibuffer)    =xt_offset(2,i)
+                        ppm_ghost_offset_facd(ibuffer)=xt_off_fac(2,i)
 #endif
                      CASE (ppm_kind_single)
 #if    __KIND == __SINGLE_PRECISION
-                         ibuffer = ibuffer + 1
-                         ppm_sendbuffers(ibuffer)      =xt(1,i)
-                         ppm_ghost_offsets(ibuffer)    =xt_offset(1,i)
-                         ppm_ghost_offset_facs(ibuffer)=xt_off_fac(1,i)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbuffers(ibuffer)      =xt(1,i)
+                        ppm_ghost_offsets(ibuffer)    =xt_offset(1,i)
+                        ppm_ghost_offset_facs(ibuffer)=xt_off_fac(1,i)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbuffers(ibuffer)      =xt(2,i)
-                         ppm_ghost_offsets(ibuffer)    =xt_offset(2,i)
-                         ppm_ghost_offset_facs(ibuffer)=xt_off_fac(2,i)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbuffers(ibuffer)      =xt(2,i)
+                        ppm_ghost_offsets(ibuffer)    =xt_offset(2,i)
+                        ppm_ghost_offset_facs(ibuffer)=xt_off_fac(2,i)
 #else
-                         ibuffer = ibuffer + 1
-                         ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
-                         ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
-                         ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
+                        ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
+                        ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
-                         ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
-                         ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
+                        ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
+                        ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
 #endif
                      END SELECT
                   ENDIF
                ENDDO
-            ELSE
+            CASE (3)
                !----------------------------------------------------------------
                !  Three dimensions
                !----------------------------------------------------------------
@@ -960,72 +1003,72 @@
                      SELECT CASE (ppm_kind)
                      CASE (ppm_kind_double)
 #if    __KIND == __SINGLE_PRECISION
-                         ibuffer = ibuffer + 1
-                         ppm_sendbufferd(ibuffer)      =REAL(xt(1,i),ppm_kind_double)
-                         ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_double)
-                         ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_double)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbufferd(ibuffer)      =REAL(xt(1,i),ppm_kind_double)
+                        ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_double)
+                        ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_double)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbufferd(ibuffer)      =REAL(xt(2,i),ppm_kind_double)
-                         ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_double)
-                         ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_double)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbufferd(ibuffer)      =REAL(xt(2,i),ppm_kind_double)
+                        ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_double)
+                        ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_double)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbufferd(ibuffer)      =REAL(xt(3,i),ppm_kind_double)
-                         ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(3,i),ppm_kind_double)
-                         ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(3,i),ppm_kind_double)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbufferd(ibuffer)      =REAL(xt(3,i),ppm_kind_double)
+                        ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(3,i),ppm_kind_double)
+                        ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(3,i),ppm_kind_double)
 #else
-                         ibuffer = ibuffer + 1
-                         ppm_sendbufferd(ibuffer)      =xt(1,i)
-                         ppm_ghost_offsetd(ibuffer)    =xt_offset(1,i)
-                         ppm_ghost_offset_facd(ibuffer)=xt_off_fac(1,i)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbufferd(ibuffer)      =xt(1,i)
+                        ppm_ghost_offsetd(ibuffer)    =xt_offset(1,i)
+                        ppm_ghost_offset_facd(ibuffer)=xt_off_fac(1,i)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbufferd(ibuffer)      =xt(2,i)
-                         ppm_ghost_offsetd(ibuffer)    =xt_offset(2,i)
-                         ppm_ghost_offset_facd(ibuffer)=xt_off_fac(2,i)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbufferd(ibuffer)      =xt(2,i)
+                        ppm_ghost_offsetd(ibuffer)    =xt_offset(2,i)
+                        ppm_ghost_offset_facd(ibuffer)=xt_off_fac(2,i)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbufferd(ibuffer)      =xt(3,i)
-                         ppm_ghost_offsetd(ibuffer)    =xt_offset(3,i)
-                         ppm_ghost_offset_facd(ibuffer)=xt_off_fac(3,i)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbufferd(ibuffer)      =xt(3,i)
+                        ppm_ghost_offsetd(ibuffer)    =xt_offset(3,i)
+                        ppm_ghost_offset_facd(ibuffer)=xt_off_fac(3,i)
 #endif
                      CASE (ppm_kind_single)
 #if    __KIND == __SINGLE_PRECISION
-                         ibuffer = ibuffer + 1
-                         ppm_sendbuffers(ibuffer)      =xt(1,i)
-                         ppm_ghost_offsets(ibuffer)    =xt_offset(1,i)
-                         ppm_ghost_offset_facs(ibuffer)=xt_off_fac(1,i)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbuffers(ibuffer)      =xt(1,i)
+                        ppm_ghost_offsets(ibuffer)    =xt_offset(1,i)
+                        ppm_ghost_offset_facs(ibuffer)=xt_off_fac(1,i)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbuffers(ibuffer)      =xt(2,i)
-                         ppm_ghost_offsets(ibuffer)    =xt_offset(2,i)
-                         ppm_ghost_offset_facs(ibuffer)=xt_off_fac(2,i)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbuffers(ibuffer)      =xt(2,i)
+                        ppm_ghost_offsets(ibuffer)    =xt_offset(2,i)
+                        ppm_ghost_offset_facs(ibuffer)=xt_off_fac(2,i)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbuffers(ibuffer)      =xt(3,i)
-                         ppm_ghost_offsets(ibuffer)    =xt_offset(3,i)
-                         ppm_ghost_offset_facs(ibuffer)=xt_off_fac(3,i)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbuffers(ibuffer)      =xt(3,i)
+                        ppm_ghost_offsets(ibuffer)    =xt_offset(3,i)
+                        ppm_ghost_offset_facs(ibuffer)=xt_off_fac(3,i)
 #else
-                         ibuffer = ibuffer + 1
-                         ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
-                         ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
-                         ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
+                        ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
+                        ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
-                         ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
-                         ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
+                        ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
+                        ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
 
-                         ibuffer = ibuffer + 1
-                         ppm_sendbuffers(ibuffer)      =REAL(xt(3,i),ppm_kind_single)
-                         ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(3,i),ppm_kind_single)
-                         ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(3,i),ppm_kind_single)
+                        ibuffer = ibuffer + 1
+                        ppm_sendbuffers(ibuffer)      =REAL(xt(3,i),ppm_kind_single)
+                        ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(3,i),ppm_kind_single)
+                        ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(3,i),ppm_kind_single)
 #endif
                      END SELECT
                   ENDIF
                ENDDO
-            ENDIF ! 2/3 dimension
+            END SELECT ! 2/3 dimension
 
          ENDDO ! end of loop over subs on local processor
       ENDIF ! of BC ghosts
@@ -1134,79 +1177,120 @@
                !  consider only those beloging to rank
                !----------------------------------------------------------------
                IF (topo%sub2proc(j).EQ.sendrank) THEN
-                  !-------------------------------------------------------------
-                  !  Define the extended resize of this sub
-                  !-------------------------------------------------------------
+                  SELECT CASE (ppm_dim)
+                  CASE (2)
+                     !-------------------------------------------------------------
+                     !  Define the extended resize of this sub
+                     !-------------------------------------------------------------
 #if __KIND == __SINGLE_PRECISION
-                  xminf = topo%min_subs(1,j)
-                  xmaxf = topo%max_subs(1,j)
+                     xminf = topo%min_subs(1,j)
+                     xmaxf = topo%max_subs(1,j)
 
-                  yminf = topo%min_subs(2,j)
-                  ymaxf = topo%max_subs(2,j)
-
-                  IF (ppm_dim.EQ.3) THEN
-                     zminf = topo%min_subs(3,j)
-                     zmaxf = topo%max_subs(3,j)
-                  ENDIF
+                     yminf = topo%min_subs(2,j)
+                     ymaxf = topo%max_subs(2,j)
 #else
-                  xminf = topo%min_subd(1,j)
-                  xmaxf = topo%max_subd(1,j)
+                     xminf = topo%min_subd(1,j)
+                     xmaxf = topo%max_subd(1,j)
 
-                  yminf = topo%min_subd(2,j)
-                  ymaxf = topo%max_subd(2,j)
-
-                  IF (ppm_dim.EQ.3) THEN
-                     zminf = topo%min_subd(3,j)
-                     zmaxf = topo%max_subd(3,j)
-                  ENDIF
+                     yminf = topo%min_subd(2,j)
+                     ymaxf = topo%max_subd(2,j)
 #endif
 
-                  IF (isymm.GT.0) THEN
-                     !----------------------------------------------------------
-                     !  if we use symmetry ghosts will only be present at the
-                     !  upper/right part of the sub
-                     !----------------------------------------------------------
-                     xmini = xminf
-                     xmaxi = xmaxf + ghostsize
+                     IF (isymm.GT.0) THEN
+                        !----------------------------------------------------------
+                        !  if we use symmetry ghosts will only be present at the
+                        !  upper/right part of the sub
+                        !----------------------------------------------------------
+                        xmini = xminf
+                        xmaxi = xmaxf + ghostsize
 
-                     ymini = yminf
-                     ymaxi = ymaxf + ghostsize
+                        ymini = yminf
+                        ymaxi = ymaxf + ghostsize
 
-                     IF (ppm_dim.EQ.3) THEN
+                        !----------------------------------------------------------
+                        ! If we are at the border of the physical domain we have
+                        ! to have ghostlayers either way
+                        !----------------------------------------------------------
+                        IF (ABS(xmini - min_phys(1)).LT.eps.AND.lextra(1)) THEN
+                            xmini = xmini - ghostsize
+                        ENDIF
+                        IF (ABS(ymini - min_phys(2)).LT.eps.AND.lextra(3)) THEN
+                            ymini = ymini - ghostsize
+                        ENDIF
+                     ELSE
+                        !----------------------------------------------------------
+                        !  if we do not use symmetry, we have ghost all around
+                        !----------------------------------------------------------
+                        xmini = xminf - ghostsize
+                        xmaxi = xmaxf + ghostsize
+
+                        ymini = yminf - ghostsize
+                        ymaxi = ymaxf + ghostsize
+                     ENDIF
+                  CASE (3)
+                     !-------------------------------------------------------------
+                     !  Define the extended resize of this sub
+                     !-------------------------------------------------------------
+#if __KIND == __SINGLE_PRECISION
+                     xminf = topo%min_subs(1,j)
+                     xmaxf = topo%max_subs(1,j)
+
+                     yminf = topo%min_subs(2,j)
+                     ymaxf = topo%max_subs(2,j)
+
+                     zminf = topo%min_subs(3,j)
+                     zmaxf = topo%max_subs(3,j)
+#else
+                     xminf = topo%min_subd(1,j)
+                     xmaxf = topo%max_subd(1,j)
+
+                     yminf = topo%min_subd(2,j)
+                     ymaxf = topo%max_subd(2,j)
+
+                     zminf = topo%min_subd(3,j)
+                     zmaxf = topo%max_subd(3,j)
+#endif
+
+                     IF (isymm.GT.0) THEN
+                        !----------------------------------------------------------
+                        !  if we use symmetry ghosts will only be present at the
+                        !  upper/right part of the sub
+                        !----------------------------------------------------------
+                        xmini = xminf
+                        xmaxi = xmaxf + ghostsize
+
+                        ymini = yminf
+                        ymaxi = ymaxf + ghostsize
+
                         zmini = zminf
                         zmaxi = zmaxf + ghostsize
-                     ENDIF
-                     !----------------------------------------------------------
-                     ! If we are at the border of the physical domain we have
-                     ! to have ghostlayers either way
-                     !----------------------------------------------------------
-                     IF (ABS(xmini - min_phys(1)).LT.eps.AND.lextra(1)) THEN
-                         xmini = xmini - ghostsize
-                     ENDIF
-                     IF (ABS(ymini - min_phys(2)).LT.eps.AND.lextra(3)) THEN
-                         ymini = ymini - ghostsize
-                     ENDIF
-                     IF (ppm_dim.EQ.3) THEN
-                       IF (ABS(zmini - min_phys(3)).LT.eps.AND.lextra(5)) THEN
-                          zmini = zmini - ghostsize
-                       ENDIF
-                     ENDIF
+                        !----------------------------------------------------------
+                        ! If we are at the border of the physical domain we have
+                        ! to have ghostlayers either way
+                        !----------------------------------------------------------
+                        IF (ABS(xmini - min_phys(1)).LT.eps.AND.lextra(1)) THEN
+                            xmini = xmini - ghostsize
+                        ENDIF
+                        IF (ABS(ymini - min_phys(2)).LT.eps.AND.lextra(3)) THEN
+                            ymini = ymini - ghostsize
+                        ENDIF
+                        IF (ABS(zmini - min_phys(3)).LT.eps.AND.lextra(5)) THEN
+                           zmini = zmini - ghostsize
+                        ENDIF
+                     ELSE
+                        !----------------------------------------------------------
+                        !  if we do not use symmetry, we have ghost all around
+                        !----------------------------------------------------------
+                        xmini = xminf - ghostsize
+                        xmaxi = xmaxf + ghostsize
 
-                  ELSE
-                     !----------------------------------------------------------
-                     !  if we do not use symmetry, we have ghost all around
-                     !----------------------------------------------------------
-                     xmini = xminf - ghostsize
-                     xmaxi = xmaxf + ghostsize
+                        ymini = yminf - ghostsize
+                        ymaxi = ymaxf + ghostsize
 
-                     ymini = yminf - ghostsize
-                     ymaxi = ymaxf + ghostsize
-
-                     IF (ppm_dim.EQ.3) THEN
                         zmini = zminf - ghostsize
                         zmaxi = zmaxf + ghostsize
                      ENDIF
-                  ENDIF
+                  END SELECT
 
                   !-------------------------------------------------------------
                   !  Reallocate to make sure we have enough memory in the
@@ -1252,115 +1336,143 @@
                   !-------------------------------------------------------------
                   !  loop over the potential ghost particles
                   !-------------------------------------------------------------
-                  IF (ppm_dim.EQ.2) THEN
-                     !----------------------------------------------------------
-                     !  Two dimensions
-                     !----------------------------------------------------------
-                     DO i=1,nghostplus
-                        !-------------------------------------------------------
-                        !  and check if it is inside the ghost region
-                        !-------------------------------------------------------
-                        IF (xt(1,i).GT.xmini.AND.xt(1,i).LT.xmaxi.AND. &
-                        &   xt(2,i).GT.ymini.AND.xt(2,i).LT.ymaxi.AND.lghost(i)) THEN
-                           !----------------------------------------------------
-                           !  Mark the ghost as taken for this sendrank
-                           !----------------------------------------------------
-                           lghost(i) = .FALSE.
+                  SELECT CASE (ppm_dim)
+                  CASE (2)
+                     !----------------------------------------------------
+                     !  store the particle
+                     !----------------------------------------------------
+                     SELECT CASE (ppm_kind)
+                     CASE (ppm_kind_double)
+                        !----------------------------------------------------------
+                        !  Two dimensions
+                        !----------------------------------------------------------
+                        DO i=1,nghostplus
+                           !-------------------------------------------------------
+                           !  and check if it is inside the ghost region
+                           !-------------------------------------------------------
+                           IF (xt(1,i).GT.xmini.AND.xt(1,i).LT.xmaxi.AND. &
+                           &   xt(2,i).GT.ymini.AND.xt(2,i).LT.ymaxi.AND.lghost(i)) THEN
+                              !----------------------------------------------------
+                              !  Mark the ghost as taken for this sendrank
+                              !----------------------------------------------------
+                              lghost(i) = .FALSE.
 
-                           !----------------------------------------------------
-                           !  found one - increment the buffer counter
-                           !----------------------------------------------------
-                           iset = iset + 1
+                              !----------------------------------------------------
+                              !  found one - increment the buffer counter
+                              !----------------------------------------------------
+                              iset = iset + 1
 
-                           !----------------------------------------------------
-                           !  store the ID of the particles
-                           !----------------------------------------------------
-                           ppm_buffer2part(iset) = ighost(i)
+                              !----------------------------------------------------
+                              !  store the ID of the particles
+                              !----------------------------------------------------
+                              ppm_buffer2part(iset) = ighost(i)
 
-                           !----------------------------------------------------
-                           !  store the particle
-                           !----------------------------------------------------
-                           SELECT CASE (ppm_kind)
-                           CASE (ppm_kind_double)
 #if    __KIND == __SINGLE_PRECISION
-                               ibuffer = ibuffer + 1
-                               ppm_sendbufferd(ibuffer)      =REAL(xt(1,i),ppm_kind_double)
-                               ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_double)
-                               ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_double)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbufferd(ibuffer)      =REAL(xt(1,i),ppm_kind_double)
+                              ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_double)
+                              ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_double)
 
-                               ibuffer = ibuffer + 1
-                               ppm_sendbufferd(ibuffer)      =REAL(xt(2,i),ppm_kind_double)
-                               ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_double)
-                               ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_double)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbufferd(ibuffer)      =REAL(xt(2,i),ppm_kind_double)
+                              ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_double)
+                              ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_double)
 #else
 
-                               ibuffer = ibuffer + 1
-                               ppm_sendbufferd(ibuffer)      =xt(1,i)
-                               ppm_ghost_offsetd(ibuffer)    =xt_offset(1,i)
-                               ppm_ghost_offset_facd(ibuffer)=xt_off_fac(1,i)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbufferd(ibuffer)      =xt(1,i)
+                              ppm_ghost_offsetd(ibuffer)    =xt_offset(1,i)
+                              ppm_ghost_offset_facd(ibuffer)=xt_off_fac(1,i)
 
-                               ibuffer = ibuffer + 1
-                               ppm_sendbufferd(ibuffer)      =xt(2,i)
-                               ppm_ghost_offsetd(ibuffer)    =xt_offset(2,i)
-                               ppm_ghost_offset_facd(ibuffer)=xt_off_fac(2,i)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbufferd(ibuffer)      =xt(2,i)
+                              ppm_ghost_offsetd(ibuffer)    =xt_offset(2,i)
+                              ppm_ghost_offset_facd(ibuffer)=xt_off_fac(2,i)
 #endif
-                           CASE (ppm_kind_single)
+                           ENDIF
+                        ENDDO
+                     CASE (ppm_kind_single)
+                        !----------------------------------------------------------
+                        !  Two dimensions
+                        !----------------------------------------------------------
+                        DO i=1,nghostplus
+                           !-------------------------------------------------------
+                           !  and check if it is inside the ghost region
+                           !-------------------------------------------------------
+                           IF (xt(1,i).GT.xmini.AND.xt(1,i).LT.xmaxi.AND. &
+                           &   xt(2,i).GT.ymini.AND.xt(2,i).LT.ymaxi.AND.lghost(i)) THEN
+                              !----------------------------------------------------
+                              !  Mark the ghost as taken for this sendrank
+                              !----------------------------------------------------
+                              lghost(i) = .FALSE.
+
+                              !----------------------------------------------------
+                              !  found one - increment the buffer counter
+                              !----------------------------------------------------
+                              iset = iset + 1
+
+                              !----------------------------------------------------
+                              !  store the ID of the particles
+                              !----------------------------------------------------
+                              ppm_buffer2part(iset) = ighost(i)
+
 #if    __KIND == __SINGLE_PRECISION
-                               ibuffer = ibuffer + 1
-                               ppm_sendbuffers(ibuffer)      =xt(1,i)
-                               ppm_ghost_offsets(ibuffer)    =xt_offset(1,i)
-                               ppm_ghost_offset_facs(ibuffer)=xt_off_fac(1,i)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbuffers(ibuffer)      =xt(1,i)
+                              ppm_ghost_offsets(ibuffer)    =xt_offset(1,i)
+                              ppm_ghost_offset_facs(ibuffer)=xt_off_fac(1,i)
 
-                               ibuffer = ibuffer + 1
-                               ppm_sendbuffers(ibuffer)      =xt(2,i)
-                               ppm_ghost_offsets(ibuffer)    =xt_offset(2,i)
-                               ppm_ghost_offset_facs(ibuffer)=xt_off_fac(2,i)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbuffers(ibuffer)      =xt(2,i)
+                              ppm_ghost_offsets(ibuffer)    =xt_offset(2,i)
+                              ppm_ghost_offset_facs(ibuffer)=xt_off_fac(2,i)
 #else
-                               ibuffer = ibuffer + 1
-                               ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
-                               ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
-                               ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
+                              ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
+                              ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
 
-                               ibuffer = ibuffer + 1
-                               ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
-                               ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
-                               ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
+                              ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
+                              ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
 #endif
-                           END SELECT
-                        ENDIF
-                     ENDDO
-                  ELSE
-                     !----------------------------------------------------------
-                     !  Three dimensions
-                     !----------------------------------------------------------
-                     DO i=1,nghostplus
-                        !-------------------------------------------------------
-                        !  and check if it is inside the ghost region
-                        !-------------------------------------------------------
-                        IF (xt(1,i).GT.xmini.AND.xt(1,i).LT.xmaxi.AND. &
-                        &   xt(2,i).GT.ymini.AND.xt(2,i).LT.ymaxi.AND. &
-                        &   xt(3,i).GT.zmini.AND.xt(3,i).LT.zmaxi.AND. &
-                        &   lghost(i)) THEN
+                           ENDIF
+                        ENDDO
+                     END SELECT
+                  CASE (3)
+                     SELECT CASE (ppm_kind)
+                     CASE (ppm_kind_double)
+                        !----------------------------------------------------------
+                        !  Three dimensions
+                        !----------------------------------------------------------
+                        DO i=1,nghostplus
+                           !-------------------------------------------------------
+                           !  and check if it is inside the ghost region
+                           !-------------------------------------------------------
+                           IF (xt(1,i).GT.xmini.AND.xt(1,i).LT.xmaxi.AND. &
+                           &   xt(2,i).GT.ymini.AND.xt(2,i).LT.ymaxi.AND. &
+                           &   xt(3,i).GT.zmini.AND.xt(3,i).LT.zmaxi.AND. &
+                           &   lghost(i)) THEN
 
-                           !----------------------------------------------------
-                           !  Mark the ghost as taken for this sendrank
-                           !----------------------------------------------------
-                           lghost(i) = .FALSE.
+                              !----------------------------------------------------
+                              !  Mark the ghost as taken for this sendrank
+                              !----------------------------------------------------
+                              lghost(i) = .FALSE.
 
-                           !----------------------------------------------------
-                           !  found one - increment the buffer counter
-                           !----------------------------------------------------
-                           iset                  = iset + 1
+                              !----------------------------------------------------
+                              !  found one - increment the buffer counter
+                              !----------------------------------------------------
+                              iset                  = iset + 1
 
-                           !----------------------------------------------------
-                           !  store the ID of the particles
-                           !----------------------------------------------------
-                           ppm_buffer2part(iset) = ighost(i)
+                              !----------------------------------------------------
+                              !  store the ID of the particles
+                              !----------------------------------------------------
+                              ppm_buffer2part(iset) = ighost(i)
 
-                           !----------------------------------------------------
-                           !  store the particle
-                           !----------------------------------------------------
-                           IF (ppm_kind.EQ.ppm_kind_double) THEN
+                              !----------------------------------------------------
+                              !  store the particle
+                              !----------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
                                ibuffer = ibuffer + 1
                                ppm_sendbufferd(ibuffer)      =REAL(xt(1,i),ppm_kind_double)
@@ -1390,40 +1502,72 @@
                                ppm_ghost_offsetd(ibuffer) = xt_offset(3,i)
                                ppm_ghost_offset_facd(ibuffer) = xt_off_fac(3,i)
 #endif
-                           ELSE
+                           ENDIF
+                        ENDDO
+                     CASE (ppm_kind_single)
+                        !----------------------------------------------------------
+                        !  Three dimensions
+                        !----------------------------------------------------------
+                        DO i=1,nghostplus
+                           !-------------------------------------------------------
+                           !  and check if it is inside the ghost region
+                           !-------------------------------------------------------
+                           IF (xt(1,i).GT.xmini.AND.xt(1,i).LT.xmaxi.AND. &
+                           &   xt(2,i).GT.ymini.AND.xt(2,i).LT.ymaxi.AND. &
+                           &   xt(3,i).GT.zmini.AND.xt(3,i).LT.zmaxi.AND. &
+                           &   lghost(i)) THEN
+
+                              !----------------------------------------------------
+                              !  Mark the ghost as taken for this sendrank
+                              !----------------------------------------------------
+                              lghost(i) = .FALSE.
+
+                              !----------------------------------------------------
+                              !  found one - increment the buffer counter
+                              !----------------------------------------------------
+                              iset                  = iset + 1
+
+                              !----------------------------------------------------
+                              !  store the ID of the particles
+                              !----------------------------------------------------
+                              ppm_buffer2part(iset) = ighost(i)
+
+                              !----------------------------------------------------
+                              !  store the particle
+                              !----------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
-                               ibuffer = ibuffer + 1
-                               ppm_sendbuffers(ibuffer)   = xt(1,i)
-                               ppm_ghost_offsets(ibuffer) = xt_offset(1,i)
-                               ppm_ghost_offset_facs(ibuffer) = xt_off_fac(1,i)
-                               ibuffer = ibuffer + 1
-                               ppm_sendbuffers(ibuffer)   = xt(2,i)
-                               ppm_ghost_offsets(ibuffer) = xt_offset(2,i)
-                               ppm_ghost_offset_facs(ibuffer) = xt_off_fac(2,i)
-                               ibuffer = ibuffer + 1
-                               ppm_sendbuffers(ibuffer)   = xt(3,i)
-                               ppm_ghost_offsets(ibuffer) = xt_offset(3,i)
-                               ppm_ghost_offset_facs(ibuffer) = xt_off_fac(3,i)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbuffers(ibuffer)   = xt(1,i)
+                              ppm_ghost_offsets(ibuffer) = xt_offset(1,i)
+                              ppm_ghost_offset_facs(ibuffer) = xt_off_fac(1,i)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbuffers(ibuffer)   = xt(2,i)
+                              ppm_ghost_offsets(ibuffer) = xt_offset(2,i)
+                              ppm_ghost_offset_facs(ibuffer) = xt_off_fac(2,i)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbuffers(ibuffer)   = xt(3,i)
+                              ppm_ghost_offsets(ibuffer) = xt_offset(3,i)
+                              ppm_ghost_offset_facs(ibuffer) = xt_off_fac(3,i)
 #else
-                               ibuffer = ibuffer + 1
-                               ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
-                               ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
-                               ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
+                              ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
+                              ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
 
-                               ibuffer = ibuffer + 1
-                               ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
-                               ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
-                               ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
+                              ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
+                              ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
 
-                               ibuffer = ibuffer + 1
-                               ppm_sendbuffers(ibuffer)      =REAL(xt(3,i),ppm_kind_single)
-                               ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(3,i),ppm_kind_single)
-                               ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(3,i),ppm_kind_single)
+                              ibuffer = ibuffer + 1
+                              ppm_sendbuffers(ibuffer)      =REAL(xt(3,i),ppm_kind_single)
+                              ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(3,i),ppm_kind_single)
+                              ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(3,i),ppm_kind_single)
 #endif
                            ENDIF
-                        ENDIF
-                     ENDDO
-                  ENDIF ! 2/3 dimension
+                        ENDDO
+                     END SELECT ! ppm_kind
+                  END SELECT ! 2/3 dimension
                ENDIF ! only consider subs belonging to rank
             ENDDO ! loop over all subs in topo
          ENDIF ! skipped negative ranks

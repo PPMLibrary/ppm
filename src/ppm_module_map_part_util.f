@@ -76,7 +76,7 @@
          END INTERFACE
 
          !----------------------------------------------------------------------
-         !  Define interfaces to ppm_map_part_send
+         !  Define interfaces to ppm_map_part_cancel
          !----------------------------------------------------------------------
          INTERFACE ppm_map_part_cancel
             MODULE PROCEDURE ppm_map_part_cancel
