@@ -367,9 +367,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           ENDIF
           exists = .TRUE.
 
-      9999 CONTINUE
           RETURN
-
       END FUNCTION <%= collection_type %>_exists
 
       !HAS
@@ -405,7 +403,6 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
 
           has = .FALSE.
           RETURN
-
       END FUNCTION <%= collection_type %>_has
 
       !GET_ID
@@ -443,7 +440,6 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
 
           id = -1
           RETURN
-
       END FUNCTION <%= collection_type %>_get_id
 
       !PUSH
@@ -575,9 +571,9 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
 
           start_subroutine("<%= "#{collection_type}" %>_grow_size")
 
-          IF (this%vec_size.LE.0 .OR. .NOT.ASSOCIATED(this%vec)) THEN
+          IF (this%vec_size.LE.0.OR..NOT.ASSOCIATED(this%vec)) THEN
              !if the array is empty, allocate with a reasonable size
-             this%vec_size = 16
+             this%vec_size = 8
              ALLOCATE(<%= element_ptr_type %>::this%vec(this%vec_size),STAT=info)
              or_fail_alloc("could not allocate collection array")
           ELSE
