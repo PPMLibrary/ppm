@@ -64,12 +64,12 @@ test_suite ppm_module_io_vtk
 
   setup
 
-    CALL RANDOM_SEED(size=seedsize)
+    CALL RANDOM_SEED(SIZE=seedsize)
     ALLOCATE(seed(seedsize))
     DO i=1,seedsize
       seed(i)=10+i*i*(rank+1)
     ENDDO
-    CALL RANDOM_SEED(put=seed)
+    CALL RANDOM_SEED(PUT=seed)
 
   end setup
 

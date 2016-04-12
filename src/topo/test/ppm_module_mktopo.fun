@@ -83,12 +83,12 @@ REAL(MK)                         :: t0,t1,t2,t3
 
     setup
 
-        CALL RANDOM_SEED(size=seedsize)
+        CALL RANDOM_SEED(SIZE=seedsize)
         ALLOCATE(seed(seedsize))
         DO i=1,seedsize
             seed(i)=10+i*i*(rank+1)
         ENDDO
-        CALL RANDOM_SEED(put=seed)
+        CALL RANDOM_SEED(PUT=seed)
         ALLOCATE(randnb((1+ndim)*np),STAT=info)
         CALL RANDOM_NUMBER(randnb)
         ALLOCATE(xp(ndim,np),rcp(np),wp(pdim,np),STAT=info)

@@ -79,7 +79,7 @@ test_suite ppm_module_neighlist
 
 
   setup
-    CALL RANDOM_SEED(size=seedsize)
+    CALL RANDOM_SEED(SIZE=seedsize)
     ALLOCATE(seed(seedsize))
     ALLOCATE(randnb((1+ndim)*np),STAT=info)
     DO i=1,seedsize

@@ -96,12 +96,12 @@ test_suite ppm_module_field_typedef
     np = 400*nproc
     mp = 0
 
-    CALL RANDOM_SEED(size=seedsize)
+    CALL RANDOM_SEED(SIZE=seedsize)
     ALLOCATE(seed(seedsize))
     DO i=1,seedsize
         seed(i)=10+i*i*(rank+1)
     ENDDO
-    CALL RANDOM_SEED(put=seed)
+    CALL RANDOM_SEED(PUT=seed)
 
     bcdef(1:2*ndim) = ppm_param_bcdef_freespace
     kernel = ppm_param_rmsh_kernel_mp4

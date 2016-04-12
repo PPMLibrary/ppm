@@ -70,12 +70,12 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
         tolexp = INT(LOG10(EPSILON(1.0_MK)))+10
         CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-        CALL RANDOM_SEED(size=seedsize)
+        CALL RANDOM_SEED(SIZE=seedsize)
         ALLOCATE(seed(seedsize))
         DO i=1,seedsize
             seed(i)=10+i*i !*(rank+1)
         ENDDO
-        CALL RANDOM_SEED(put=seed)
+        CALL RANDOM_SEED(PUT=seed)
         ALLOCATE(randn(ndim,np_global))
         CALL RANDOM_NUMBER(randn)
 

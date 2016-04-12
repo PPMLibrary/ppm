@@ -77,7 +77,7 @@ test_suite ppm_module_particles
     DO i=1,seedsize
        seed(i)=10+i*i*(rank+1)
     ENDDO
-    CALL RANDOM_SEED(put=seed)
+    CALL RANDOM_SEED(PUT=seed)
 
     !----------------
     ! make topology

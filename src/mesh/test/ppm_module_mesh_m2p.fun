@@ -68,7 +68,7 @@ REAL(MK), DIMENSION(:,:), POINTER              :: wp_2r => NULL()
 #endif
         CALL ppm_init(ndim,MK,tolexp,0,debug,info,99)
 
-        CALL RANDOM_SEED(size=seedsize)
+        CALL RANDOM_SEED(SIZE=seedsize)
         ALLOCATE(seed(seedsize))
         DO i=1,seedsize
            seed(i)=9+i*(rank+1)

@@ -391,13 +391,13 @@ rank = 0
 #endif
 call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-CALL RANDOM_SEED(size=seedsize)
+CALL RANDOM_SEED(SIZE=seedsize)
 ALLOCATE(seed(seedsize))
 ALLOCATE(randnb((ndim+1)*np),STAT=info)
 DO i=1,seedsize
     seed(i)=10+i*i*(rank+1)
 ENDDO
-CALL RANDOM_SEED(put=seed)
+CALL RANDOM_SEED(PUT=seed)
 CALL RANDOM_NUMBER(randnb)
 
 !----------------

@@ -106,7 +106,7 @@ program ppm_test_interp_p2m
     mp = 0
 
     ALLOCATE(xp(ndim,np),wp(nspec,np),STAT=info)
-    !CALL RANDOM_SEED(put=(/17,42/))
+    !CALL RANDOM_SEED(PUT=(/17,42/))
     CALL RANDOM_NUMBER(xp)
     wp = 0.0_MK
 

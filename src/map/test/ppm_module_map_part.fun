@@ -90,7 +90,7 @@ test_suite ppm_module_map_part
         DO i=1,seedsize
            seed(i)=10+i*i*(rank+1)
         ENDDO
-        CALL RANDOM_SEED(put=seed)
+        CALL RANDOM_SEED(PUT=seed)
         CALL RANDOM_NUMBER(randnb)
 
         ALLOCATE(xp(ndim,np),rcp(np),wp(pdim,np),STAT=info)

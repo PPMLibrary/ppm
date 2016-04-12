@@ -76,12 +76,12 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
 #endif
         CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-        CALL RANDOM_SEED(size=seedsize)
+        CALL RANDOM_SEED(SIZE=seedsize)
         ALLOCATE(seed(seedsize))
         DO i=1,seedsize
             seed(i)=10+i*i*(rank+1)
         ENDDO
-        CALL RANDOM_SEED(put=seed)
+        CALL RANDOM_SEED(PUT=seed)
 
     end init
 
