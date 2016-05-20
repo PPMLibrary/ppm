@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :               ppm_map_part_get_sub
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -84,15 +84,15 @@
       INTEGER                             :: ipart,sendrank,recvrank
       INTEGER                             :: iopt,iset,ibuffer
       INTEGER                             :: tag1,tag2
-      INTEGER, DIMENSION(:), POINTER      :: bcdef   => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER   :: min_sub => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER   :: max_sub => NULL()
+      INTEGER, DIMENSION(:), POINTER      :: bcdef
+      REAL(MK), DIMENSION(:,:), POINTER   :: min_sub
+      REAL(MK), DIMENSION(:,:), POINTER   :: max_sub
       REAL(MK)                            :: t0
       LOGICAL                             :: valid
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
 #endif
-      TYPE(ppm_t_topo)      , POINTER     :: topo => NULL()
+      TYPE(ppm_t_topo)      , POINTER     :: topo
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

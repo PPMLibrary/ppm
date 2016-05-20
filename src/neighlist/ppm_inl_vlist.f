@@ -35,7 +35,7 @@
       SUBROUTINE inl_vlist_d(topoid, xp, Np, Mp, cutoff, skin, lsymm,    &
      & ghostlayer, info, vlist, nvlist, lstore)
 #endif
-      
+
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
@@ -83,17 +83,17 @@
       !  Local variables, arrays and counters
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(2*ppm_dim)             :: actual_subdomain
-      REAL(MK), DIMENSION(:,:), POINTER          :: xp_sub     => NULL()
-      REAL(MK), DIMENSION(:)  , POINTER          :: cutoff_sub => NULL()
-      INTEGER , DIMENSION(:,:), POINTER          :: vlist_sub  => NULL()
-      INTEGER , DIMENSION(:)  , POINTER          :: nvlist_sub => NULL()
-      INTEGER , DIMENSION(:)  , POINTER          :: p_id       => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER          :: xp_sub
+      REAL(MK), DIMENSION(:)  , POINTER          :: cutoff_sub
+      INTEGER , DIMENSION(:,:), POINTER          :: vlist_sub
+      INTEGER , DIMENSION(:)  , POINTER          :: nvlist_sub
+      INTEGER , DIMENSION(:)  , POINTER          :: p_id
       INTEGER                                    :: Np_sub
       INTEGER                                    :: Mp_sub
       INTEGER                                    :: rank_sub
       INTEGER                                    :: neigh_max
       INTEGER                                    :: n_part
-      TYPE(ppm_t_topo)        , POINTER          :: topo      => NULL()
+      TYPE(ppm_t_topo)        , POINTER          :: topo
       LOGICAL                                    :: lst
       INTEGER                                    :: isub
       INTEGER                                    :: i
@@ -107,7 +107,7 @@
       INTEGER, DIMENSION(2)                 :: lda
 
       CALL substart('ppm_inl_vlist',t0,info)
-      
+
       !-------------------------------------------------------------------------
       !  Check Arguments
       !-------------------------------------------------------------------------
@@ -133,9 +133,10 @@
       CALL ppm_alloc(nvlist, lda, iopt, info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist',     &
-    &                       'nvlist',__LINE__,info)
+          CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist','nvlist',__LINE__,info)
       END IF
+
+      NULLIFY(xp_sub,cutoff_sub,vlist_sub,nvlist_sub,p_id)
 
       !---------------------------------------------------------------------
       ! As no neighbors have been found yet, maximum number of neighbors
@@ -227,6 +228,34 @@
               ENDDO
           END IF
       ENDDO
+
+      ! Deallocate temporary arrays
+      iopt=ppm_param_dealloc
+      CALL ppm_alloc(xp_sub, lda, iopt, info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_inl_vlist','xp_sub',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(cutoff_sub, lda, iopt, info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_inl_vlist','cutoff_sub',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(vlist_sub, lda, iopt, info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_inl_vlist','vlist_sub',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(nvlist_sub, lda, iopt, info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_inl_vlist','nvlist_sub',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(p_id, lda, iopt, info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_inl_vlist','p_id',__LINE__,info)
+      ENDIF
 9999  CONTINUE
       CALL substop('ppm_inl_vlist',t0,info)
       RETURN

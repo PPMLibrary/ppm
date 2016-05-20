@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_color_edge
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -550,10 +550,10 @@
           !---------------------------------------------------------------------
           FUNCTION next_node_to_color() RESULT(idx)
           IMPLICIT NONE
-          INTEGER :: i
-          INTEGER :: j
           INTEGER :: idx
 
+          INTEGER :: i
+          INTEGER :: j
           ! Look from top to bottom, and return the first node of the greatest
           ! dsat-value row in binary heap lists
           DO i = max_degree, 0, -1

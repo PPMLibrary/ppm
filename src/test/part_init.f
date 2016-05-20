@@ -43,13 +43,13 @@ SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
     !!! * ppm_param_part_init_random
     REAL(MK),OPTIONAL,                   INTENT(IN   )     :: grid_shift
     !!! shifts positions of the particles. Set to 0.5 to place
-    !!! particles in the middle of each cell, set to 0 to place 
+    !!! particles in the middle of each cell, set to 0 to place
     !!! them in the lower left corner
 
 
     !-------------------------------------------------------------------------
     !  Local variables
-    !------------------------------------------------------------------------- 
+    !-------------------------------------------------------------------------
     INTEGER                               :: ip,i,j,k,Npart,iopt
     INTEGER, DIMENSION(3)                 :: nijk
     INTEGER, DIMENSION(3)                 :: nijk_global
@@ -101,7 +101,7 @@ SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
     !number of particles along x and z
     nijk = 1
     nijk(1:ppm_dim) = nijk_global(1:ppm_dim)
-    !number of particles along y 
+    !number of particles along y
     nijk(2) = nijk_global(ppm_dim)/ppm_nproc
 
     !number of particles on this processor
@@ -260,8 +260,8 @@ SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
                     ip = ip + 1
                     ! uniformly random in cells
                     xp(1:ppm_dim,ip) = pos(1:ppm_dim)
-                       
-                        
+
+
                     ! impose periodic boundaries:
                     IF (xp(1,ip) .GE. maxphys(1)) xp(1,ip) = xp(1,ip) - lenphys(1)
                     IF (xp(2,ip) .GE. maxphys(2)) xp(2,ip) = xp(2,ip) - lenphys(2)

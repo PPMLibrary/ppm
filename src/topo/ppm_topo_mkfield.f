@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_mkfield
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -96,7 +96,7 @@
       !!! is returned here, else the indicated toplogy is replaced.
       !!!
       !!! [CAUTION]
-      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the 
+      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the
       !!! ring topology (null decomposition). "Ring topologies" are non
       !!! geometric and need no setup. The user can perform ppm ring shift
       !!! operations without having to first define a topology.
@@ -179,7 +179,7 @@
       !!! 1st index: x,y,(z)                                                   +
       !!! 2nd: subID
       REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER :: user_maxsub
-      !!! Maximum of extension of subs. 
+      !!! Maximum of extension of subs.
       !!! Used if decomp is user defined.
       !!!
       !!! 1st index: x,y,(z)                                                   +
@@ -213,10 +213,10 @@
       CHARACTER(LEN=ppm_char)           :: mesg
       INTEGER                           :: nsublist
       INTEGER , DIMENSION(  :), POINTER :: isublist => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: min_sub
+      REAL(MK), DIMENSION(:,:), POINTER :: max_sub
       INTEGER                           :: nsubs
-      INTEGER, DIMENSION(:  ), POINTER  :: sub2proc => NULL()
+      INTEGER, DIMENSION(:  ), POINTER  :: sub2proc
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -250,12 +250,18 @@
       ENDIF
       IF (PRESENT(user_minsub)) THEN
           min_sub => user_minsub
+      ELSE
+          NULLIFY(min_sub)
       ENDIF
       IF (PRESENT(user_maxsub)) THEN
           max_sub => user_maxsub
+      ELSE
+          NULLIFY(max_sub)
       ENDIF
       IF (PRESENT(user_sub2proc)) THEN
           sub2proc => user_sub2proc
+      ELSE
+          NULLIFY(sub2proc)
       ENDIF
       !-------------------------------------------------------------------------
       !  Compute grid spacing
@@ -669,8 +675,7 @@
       !  processor (the routine will allocate the requried memory)
       !-------------------------------------------------------------------------
       NULLIFY(subs_bc)
-      CALL ppm_define_subs_bc(min_phys,max_phys,bcdef,min_sub,max_sub, &
-     &                        nsubs,subs_bc,info)
+      CALL ppm_define_subs_bc(min_phys,max_phys,bcdef,min_sub,max_sub,nsubs,subs_bc,info)
       IF (info.NE.0) THEN
          info = ppm_error_error
          CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkfield',  &
@@ -683,16 +688,13 @@
       !  Store the topology
       !-------------------------------------------------------------------------
       CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
-     &                    sub2proc,nsubs,bcdef,0._MK,isublist,nsublist,    &
-     &                    nneigh,ineigh,info)
+      &     sub2proc,nsubs,bcdef,0._MK,isublist,nsublist,nneigh,ineigh,info)
       IF (info.NE.0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkfield',      &
      &        'Storing topology failed',__LINE__,info)
           GOTO 9999
       ENDIF
-
-
 
       !-------------------------------------------------------------------------
       !  Store new mesh internally
@@ -706,54 +708,79 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Dump out disgnostic files
-      !-------------------------------------------------------------------------
-!      IF (ppm_debug .GT. 0) THEN
-!          WRITE(mesg,'(A,I4.4)') 'part',ppm_rank
-!          OPEN(10,FILE=mesg)
-!          DO ul=1,nsublist
-!             i = isublist(ul)
-!
-!    ! x-y plan
-!            WRITE(10,'(2e12.4)') min_sub(1,i),min_sub(2,i)
-!            WRITE(10,'(2e12.4)') max_sub(1,i),min_sub(2,i)
-!            WRITE(10,'(2e12.4)') max_sub(1,i),max_sub(2,i)
-!            WRITE(10,'(2e12.4)') min_sub(1,i),max_sub(2,i)
-!            WRITE(10,'(2e12.4)') min_sub(1,i),min_sub(2,i)
-!            WRITE(10,'(   a  )')
-!
-!    ! y-z plan
-!            IF (ppm_dim .GT. 2) THEN
-!              WRITE(10,'(2e12.4)') min_sub(2,i),min_sub(3,i)
-!              WRITE(10,'(2e12.4)') max_sub(2,i),min_sub(3,i)
-!              WRITE(10,'(2e12.4)') max_sub(2,i),max_sub(3,i)
-!              WRITE(10,'(2e12.4)') min_sub(2,i),max_sub(3,i)
-!              WRITE(10,'(2e12.4)') min_sub(2,i),min_sub(3,i)
-!              WRITE(10,'(   a  )')
-!            ENDIF
-!          ENDDO
-!          CLOSE(10)
-!      ENDIF
-
-      !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(ineigh,ldc,iopt,info)
-      CALL ppm_alloc(nneigh,ldc,iopt,info)
-      IF(decomp.NE.ppm_param_decomp_cartesian .AND.              &
-     &   decomp.NE.ppm_param_decomp_user_defined) THEN
-         CALL ppm_alloc(min_box,ldc,iopt,info)
-         CALL ppm_alloc(max_box,ldc,iopt,info)
-         CALL ppm_alloc(nchld,ldc,iopt,info)
-      END IF
       IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield',     &
-     &        'deallocation failed',__LINE__,info)
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','ineigh',__LINE__,info)
       ENDIF
-
- 9999 CONTINUE
+      CALL ppm_alloc(nneigh,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','nneigh',__LINE__,info)
+      ENDIF
+      IF (decomp.NE.ppm_param_decomp_cartesian.AND. &
+      &   decomp.NE.ppm_param_decomp_user_defined) THEN
+         CALL ppm_alloc(min_box,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','min_box',__LINE__,info)
+         ENDIF
+         CALL ppm_alloc(max_box,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','max_box',__LINE__,info)
+         ENDIF
+         CALL ppm_alloc(nchld,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','nchld',__LINE__,info)
+         ENDIF
+      ENDIF
+      CALL ppm_alloc(subs_bc,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','subs_bc',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(istart,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','istart',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(ndata,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','ndata',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(isublist,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','isublist',__LINE__,info)
+      ENDIF
+      IF (.NOT.PRESENT(user_minsub)) THEN
+         CALL ppm_alloc(min_sub,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','min_sub',__LINE__,info)
+         ENDIF
+      ENDIF
+      IF (.NOT.PRESENT(user_maxsub)) THEN
+         CALL ppm_alloc(max_sub,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','max_sub',__LINE__,info)
+         ENDIF
+      ENDIF
+      IF (.NOT.PRESENT(user_sub2proc)) THEN
+         CALL ppm_alloc(sub2proc,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield','sub2proc',__LINE__,info)
+         ENDIF
+      ENDIF
+      9999 CONTINUE
       CALL substop('ppm_topo_mkfield',t0,info)
       RETURN
       CONTAINS

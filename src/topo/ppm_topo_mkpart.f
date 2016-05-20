@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                    ppm_topo_mkpart
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -139,7 +139,7 @@
       !!! *  ppm_param_assign_dual_comm
       !!! *  ppm_param_assign_user_defined
       !!!
-      !!! *nodal* and *dual* assignments  use the external library METIS 
+      !!! *nodal* and *dual* assignments  use the external library METIS
       !!! and are only available if ppm was compiled with METIS support.
       INTEGER                 , INTENT(INOUT) :: topoid
       !!! ID number identifying the topology.
@@ -147,7 +147,7 @@
       !!! is returned here, else the indicated toplogy is replaced.
       !!!
       !!! [CAUTION]
-      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the 
+      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the
       !!! ring topology (null decomposition). "Ring topologies" are non
       !!! geometric and need no setup. The user can perform ppm ring shift
       !!! operations without having to first define a topology.
@@ -188,7 +188,7 @@
       REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER :: user_minsub
       !!! Mimimum of extension of subs.
       !!! Used when decomp is user defined
-      !!! 
+      !!!
       !!! 1st index: x,y,(z)                                                   +
       !!! 2nd: subID
       REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER :: user_maxsub
@@ -225,9 +225,9 @@
       INTEGER                           :: nsublist
       INTEGER , DIMENSION(  :), POINTER :: isublist => NULL()
       INTEGER                           :: nsubs
-      REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
-      INTEGER, DIMENSION(:  ), POINTER  :: sub2proc => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: min_sub
+      REAL(MK), DIMENSION(:,:), POINTER :: max_sub
+      INTEGER, DIMENSION(:  ), POINTER  :: sub2proc
 
       !-------------------------------------------------------------------------
       !  Externals
@@ -286,13 +286,19 @@
           nsubs = 0
       ENDIF
       IF (PRESENT(user_minsub)) THEN
-          min_sub => user_minsub
+         min_sub => user_minsub
+      ELSE
+         NULLIFY(min_sub)
       ENDIF
       IF (PRESENT(user_maxsub)) THEN
-          max_sub => user_maxsub
+         max_sub => user_maxsub
+      ELSE
+         NULLIFY(max_sub)
       ENDIF
       IF (PRESENT(user_sub2proc)) THEN
-          sub2proc => user_sub2proc
+         sub2proc => user_sub2proc
+      ELSE
+         NULLIFY(sub2proc)
       ENDIF
       !----------------------------------------------------------------------
       !  Dummy argument for non-existing mesh
@@ -669,7 +675,67 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      iopt = ppm_param_dealloc
+      CALL ppm_alloc(ineigh,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkpart','ineigh',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(nneigh,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkpart','nneigh',__LINE__,info)
+      ENDIF
+      IF (decomp.NE.ppm_param_decomp_cartesian.AND. &
+      &   decomp.NE.ppm_param_decomp_user_defined) THEN
+         CALL ppm_alloc(min_box,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkpart','min_box',__LINE__,info)
+         ENDIF
+         CALL ppm_alloc(max_box,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkpart','max_box',__LINE__,info)
+         ENDIF
+         CALL ppm_alloc(nchld,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkpart','nchld',__LINE__,info)
+         ENDIF
+      ENDIF
+      CALL ppm_alloc(subs_bc,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkpart','subs_bc',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(isublist,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkpart','isublist',__LINE__,info)
+      ENDIF
+      IF (.NOT.PRESENT(user_minsub)) THEN
+         CALL ppm_alloc(min_sub,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkpart','min_sub',__LINE__,info)
+         ENDIF
+      ENDIF
+      IF (.NOT.PRESENT(user_maxsub)) THEN
+         CALL ppm_alloc(max_sub,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkpart','max_sub',__LINE__,info)
+         ENDIF
+      ENDIF
+      IF (.NOT.PRESENT(user_sub2proc)) THEN
+         CALL ppm_alloc(sub2proc,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkpart','sub2proc',__LINE__,info)
+         ENDIF
+      ENDIF
+      9999 CONTINUE
       CALL substop('ppm_topo_mkpart',t0,info)
       RETURN
       CONTAINS

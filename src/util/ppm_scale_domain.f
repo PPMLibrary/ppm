@@ -56,7 +56,7 @@
       INTEGER                           :: i,j,k,dim
       CHARACTER(LEN=ppm_char)           :: mesg
       LOGICAL                           :: valid
-      TYPE(ppm_t_topo)        , POINTER :: topo => NULL()
+      TYPE(ppm_t_topo)        , POINTER :: topo
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

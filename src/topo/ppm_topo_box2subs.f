@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_topo_box2subs
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -46,7 +46,7 @@
 #endif
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -63,7 +63,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: min_box
       !!! Lower coordinates of the boxes.
@@ -103,7 +103,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                                :: t0
       INTEGER                                 :: iopt,i,j,istack
@@ -111,11 +111,11 @@
       INTEGER, DIMENSION(:), POINTER          :: subbox   => NULL()
       INTEGER, DIMENSION(:), POINTER          :: boxstack => NULL()
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_topo_box2subs',t0,info)
 
@@ -138,7 +138,7 @@
           CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
      &        'list of box IDs SUBBOX',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       subbox   = ppm_param_undefined
 
       !-------------------------------------------------------------------------
@@ -168,14 +168,14 @@
                   CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
      &                'stack of boxes to traverse BOXSTACK',__LINE__,info)
                   GOTO 9999
-              ENDIF 
+              ENDIF
 
               ! push root box
               istack = 1
               boxstack(istack) = 1
 
               ! traverse the tree to find boxes
-              DO WHILE (istack .GT. 0) 
+              DO WHILE (istack .GT. 0)
                   i = boxstack(istack)
                   istack = istack - 1
                   ! add box if it is on desired level or above and has
@@ -195,8 +195,8 @@
      &                            'stack of boxes to traverse BOXSTACK',   &
      &                            __LINE__,info)
                               GOTO 9999
-                          ENDIF 
-                      ENDIF 
+                          ENDIF
+                      ENDIF
                       ! push all its children to the stack
                       DO j=1,nchld(i)
                           istack = istack + 1
@@ -204,7 +204,7 @@
                       ENDDO
                   ENDIF
               ENDDO
-              
+
               ! deallocate stack
               iopt     = ppm_param_dealloc
               CALL ppm_alloc(boxstack,ldc,iopt,info)
@@ -212,7 +212,7 @@
                   info = ppm_error_error
                   CALL ppm_error(ppm_err_dealloc,'ppm_topo_box2subs',        &
      &                'stack of boxes to traverse BOXSTACK',__LINE__,info)
-              ENDIF 
+              ENDIF
           ENDIF
       ELSE
           !---------------------------------------------------------------------
@@ -246,7 +246,7 @@
           CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
      &        'maximum extent of subs MAX_SUB',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       IF (PRESENT(boxid)) THEN
           ldc(1) = nsubs
           CALL ppm_alloc(boxid,ldc,iopt,info)
@@ -255,8 +255,8 @@
               CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
      &            'box ID of subs BOXID',__LINE__,info)
               GOTO 9999
-          ENDIF 
-      ENDIF 
+          ENDIF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Store subs
@@ -298,10 +298,10 @@
           info = ppm_error_error
           CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
      &        'list of box IDs SUBBOX',__LINE__,info)
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_topo_box2subs',t0,info)

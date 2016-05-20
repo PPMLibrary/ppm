@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_topo_cost
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -45,7 +45,7 @@
       !!! is computed and added to the particle cost. If  neither particles
       !!! nor mesh are given, cost of a subdomain is equal to its volume.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -66,7 +66,7 @@
       INCLUDE 'mpif.h'
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! Particle positions
@@ -91,7 +91,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                          :: t0
 #ifdef __MPI
@@ -103,14 +103,14 @@
       INTEGER                           :: iopt,nlist1,nlist2,idom
       INTEGER, DIMENSION(:), POINTER    :: ilist1 => NULL()
       INTEGER, DIMENSION(:), POINTER    :: ilist2 => NULL()
-      INTEGER, DIMENSION(:), POINTER    :: ilist3 => NULL()
+      INTEGER, DIMENSION(:), POINTER    :: ilist3
       CHARACTER(LEN=ppm_char)           :: mesg
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_topo_cost',t0,info)
 
@@ -190,9 +190,9 @@
                   IF (ppm_dim .GT. 2) THEN
                       IF (xp(1,ipart).GE.min_sub(1,idom).AND.   &
      &                    xp(1,ipart).LT.max_sub(1,idom).AND.   &
-     &                    xp(2,ipart).GE.min_sub(2,idom).AND.   & 
+     &                    xp(2,ipart).GE.min_sub(2,idom).AND.   &
      &                    xp(2,ipart).LT.max_sub(2,idom).AND.   &
-     &                    xp(3,ipart).GE.min_sub(3,idom).AND.   & 
+     &                    xp(3,ipart).GE.min_sub(3,idom).AND.   &
      &                    xp(3,ipart).LT.max_sub(3,idom)) THEN
                           !-----------------------------------------------------
                           !  Cost based on particles
@@ -212,7 +212,7 @@
                   ELSE
                       IF (xp(1,ipart).GE.min_sub(1,idom).AND.   &
      &                    xp(1,ipart).LT.max_sub(1,idom).AND.   &
-     &                    xp(2,ipart).GE.min_sub(2,idom).AND.   & 
+     &                    xp(2,ipart).GE.min_sub(2,idom).AND.   &
      &                    xp(2,ipart).LT.max_sub(2,idom)) THEN
                           !-----------------------------------------------------
                           !  Cost based on particles
@@ -240,14 +240,14 @@
                  ilist3 => ilist1
                  ilist1 => ilist2
                  ilist2 => ilist3
-              ENDIF 
+              ENDIF
 
               !-----------------------------------------------------------------
               !  Exit if the list is empty
               !-----------------------------------------------------------------
               IF (nlist1.EQ.0) EXIT
           ENDDO    ! loop over subdomains
-              
+
           !---------------------------------------------------------------------
           !  Check that we did not miss a particle
           !---------------------------------------------------------------------
@@ -386,7 +386,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_topo_cost',t0,info)

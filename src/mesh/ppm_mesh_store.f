@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_mesh_store
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -53,7 +53,7 @@
       !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
-      !!! Topology ID for which mesh has been created 
+      !!! Topology ID for which mesh has been created
       INTEGER , DIMENSION(:,:), INTENT(IN   ) :: ndata
       !!! Number of mesh points in each direction on each sub
       INTEGER , DIMENSION(:,:), INTENT(IN   ) :: istart
@@ -72,7 +72,7 @@
       INTEGER                   :: iopt,ld,ud,kk,i,j,isub
       REAL(ppm_kind_double)     :: t0
       LOGICAL                   :: valid
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

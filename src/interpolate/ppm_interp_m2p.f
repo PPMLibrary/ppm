@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Subroutine   :                   ppm_interp_m2p
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -66,7 +66,7 @@
 #endif
 #endif
       !!! This subroutine carries out mesh to particle interpolation.
-      !!! 
+      !!!
       !!! Currently 2 interpolation schemes are supported:
       !!!
       !!! * ppm_param_rmsh_kernel_bsp2
@@ -143,11 +143,11 @@
       !-------------------------------------------------------------------------
       ! Local variables
       !-------------------------------------------------------------------------
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
+      INTEGER,  DIMENSION(:,:)     , POINTER :: istart
       INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
       INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: min_phys => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: max_phys => NULL()
+      REAL(mk), DIMENSION(:)       , POINTER :: min_phys
+      REAL(mk), DIMENSION(:)       , POINTER :: max_phys
       REAL(MK),  DIMENSION(ppm_dim)          :: dxi,dx
       REAL(MK),  DIMENSION(ppm_dim)          :: len_phys
       REAL(MK)                               :: x1,x2,x3,epsilon
@@ -166,12 +166,12 @@
       INTEGER                                :: iq
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
+      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub
+      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub
       REAL(mk)                               :: myeps
       REAL(mk)                               :: tim1s, tim1e
-      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh => NULL()
-      TYPE(ppm_t_topo)     , POINTER         :: topo   => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
+      TYPE(ppm_t_topo)     , POINTER         :: topo
 
 
 

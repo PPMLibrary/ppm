@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_map_field_init
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -41,7 +41,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_mesh
@@ -55,10 +55,10 @@
       USE ppm_module_mesh_block_intersect
       IMPLICIT NONE
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
-      !!! Topology ID of source 
+      !!! Topology ID of source
       !!!
       !!! CAUTION: used to be target
       INTEGER                 , INTENT(IN   ) :: target_topoid
@@ -70,7 +70,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3)            :: ldu
       INTEGER, DIMENSION(ppm_dim)      :: op
@@ -86,10 +86,10 @@
       LOGICAL                          :: lsouth,lnorth,least,lwest,ltop,lbottom
       LOGICAL, DIMENSION(3)            :: lsymm
       LOGICAL                          :: valid
-      TYPE(ppm_t_topo),      POINTER   :: topo        => NULL()
-      TYPE(ppm_t_topo),      POINTER   :: target_topo => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER   :: mesh        => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh => NULL()
+      TYPE(ppm_t_topo),      POINTER   :: topo
+      TYPE(ppm_t_topo),      POINTER   :: target_topo
+      TYPE(ppm_t_equi_mesh), POINTER   :: mesh
+      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -137,8 +137,8 @@
               GOTO 9999
           ENDIF
       ENDDO
-      
-            
+
+
       !-------------------------------------------------------------------------
       !  Pre-calculate shift offsets for periodic ghost images of subs
       !-------------------------------------------------------------------------
@@ -215,7 +215,7 @@
      &        (topo%subs_bc(4,idom) .NE. 0)) lsymm(2) = .FALSE.
           IF ((topo%bcdef(6) .NE. ppm_param_bcdef_periodic) .AND. &
      &        (topo%subs_bc(6,idom) .NE. 0)) lsymm(3) = .FALSE.
-          
+
           lwest  = .FALSE.
           least  = .FALSE.
           IF ((topo%bcdef(1) .EQ. ppm_param_bcdef_periodic) .AND. &
@@ -230,7 +230,7 @@
               IF ((topo%bcdef(5) .EQ. ppm_param_bcdef_periodic) .AND. &
      &            (topo%subs_bc(5,idom) .NE. 0)) lbottom = .TRUE.
           ENDIF
-          
+
           !---------------------------------------------------------------------
           !  Determine number of shifts and actual shift indices needed
           !---------------------------------------------------------------------
@@ -369,7 +369,7 @@
                   ENDIF
               ENDIF
           ENDIF
-          
+
           !---------------------------------------------------------------------
           !  Do the shifting and compute mesh blocks
           !---------------------------------------------------------------------
@@ -445,7 +445,7 @@
      &        (topo%subs_bc(4,j) .NE. 0)) lsymm(2) = .FALSE.
           IF ((topo%bcdef(6) .NE. ppm_param_bcdef_periodic) .AND. &
      &        (topo%subs_bc(6,j) .NE. 0)) lsymm(3) = .FALSE.
-          
+
           lwest  = .FALSE.
           least  = .FALSE.
           IF ((topo%bcdef(1) .EQ. ppm_param_bcdef_periodic) .AND. &
@@ -460,7 +460,7 @@
               IF ((topo%bcdef(5) .EQ. ppm_param_bcdef_periodic) .AND. &
      &            (topo%subs_bc(5,j) .NE. 0)) lbottom = .TRUE.
           ENDIF
-          
+
           !---------------------------------------------------------------------
           !  Determine number of shifts and actual shift indices needed
           !---------------------------------------------------------------------
@@ -599,7 +599,7 @@
                   ENDIF
               ENDIF
           ENDIF
-          
+
           !---------------------------------------------------------------------
           !  Do the shifting and compute mesh blocks
           !---------------------------------------------------------------------
@@ -612,7 +612,7 @@
      &                ioffset,info,lsymm)
                  IF (info .NE. 0) GOTO 9999
               ENDDO
-          ENDDO          
+          ENDDO
       ENDDO
 
 
@@ -628,7 +628,7 @@
      &        'source send sub list PPM_MESH_ISENDFROMSUB',__LINE__,info)
           GOTO 9999
       ENDIF
-      
+
       ldu(1) = pdim
       ldu(2) = nsendlist
       CALL ppm_alloc(mesh%mapping%isendblkstart,ldu,iopt,info)
@@ -658,7 +658,7 @@
      &        'destination recv sub list PPM_MESH_IRECVTOSUB',__LINE__,info)
           GOTO 9999
       ENDIF
-      
+
       ldu(1) = pdim
       ldu(2) = nrecvlist
       CALL ppm_alloc(mesh%mapping%irecvblkstart,ldu,iopt,info)
@@ -732,14 +732,14 @@
          !  compute the next processor
          !----------------------------------------------------------------------
          sendrank = sendrank + 1
-         IF (sendrank.GE.ppm_nproc) sendrank = sendrank - ppm_nproc 
+         IF (sendrank.GE.ppm_nproc) sendrank = sendrank - ppm_nproc
          recvrank = recvrank - 1
-         IF (recvrank.LT.        0) recvrank = recvrank + ppm_nproc 
+         IF (recvrank.LT.        0) recvrank = recvrank + ppm_nproc
 
          !----------------------------------------------------------------------
          !  Store the processor to which we will send to
          !----------------------------------------------------------------------
-         mesh%mapping%nsendlist = mesh%mapping%nsendlist + 1 
+         mesh%mapping%nsendlist = mesh%mapping%nsendlist + 1
          mesh%mapping%isendlist(mesh%mapping%nsendlist) = sendrank
 
          !----------------------------------------------------------------------
@@ -747,7 +747,7 @@
          !----------------------------------------------------------------------
          mesh%mapping%nrecvlist = mesh%mapping%nrecvlist + 1
          mesh%mapping%irecvlist(mesh%mapping%nrecvlist) = recvrank
-  
+
          !----------------------------------------------------------------------
          !  Find all mesh blocks that are sent and store them.
          !  To get all mesh blocks that are sent in round
@@ -886,7 +886,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_map_field_init',t0,info)

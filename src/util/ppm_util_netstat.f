@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Subroutine   :                 ppm_netstat
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -29,9 +29,9 @@
 SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       !!! This routine provides a simple means to measure the total latency and
       !!! mean bandwidth using the current communication schedule
-      
+
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
 
       USE ppm_module_data
@@ -42,7 +42,7 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       USE ppm_module_error
       USE ppm_module_substart
       USE ppm_module_substop
-      
+
       implicit none
       !-------------------------------------------------------------------------
       !  Includes
@@ -52,7 +52,7 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
 #endif
 
       INTEGER, PARAMETER :: MK = ppm_kind_double
-    
+
       ! arguments
       INTEGER,            INTENT(IN)    :: topoid
       !!! topology ID to which we are currently mapped
@@ -61,9 +61,9 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       REAL(MK),           INTENT(OUT)   :: bandwidth
       !!! Network bandwidth in Bytes per second
       INTEGER,            INTENT(OUT)   :: info
-      
+
       ! local vars
-      TYPE(ppm_t_topo), POINTER         :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER         :: topo
       INTEGER                           :: i,irank,icomm,tag
       REAL(MK)                          :: t0
       REAL(MK)                          :: tstart,tend
@@ -77,18 +77,18 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       INTEGER                           :: src,dest
       INTEGER, PARAMETER                :: lncomm = 1000 !N latency comms
       INTEGER, PARAMETER                :: bncomm = 100  !N bandwidth comms
-      INTEGEr, DIMENSION(1)             :: lda 
-      INTEGER, DIMENSION(:), POINTER    :: buf => NULL()
+      INTEGEr, DIMENSION(1)             :: lda
+      INTEGER, DIMENSION(:), POINTER    :: buf
 !      INTEGER, DIMENSION(:), POINTER    :: rbuf => NULL()
       INTEGER, PARAMETER                :: small = 1
       INTEGER, PARAMETER                :: big   = 8*(1024**2)
       CHARACTER(LEN=32), PARAMETER      :: caller = 'ppm_netstat'
       CHARACTER(LEN=32)                 :: mesg
-       
+
       CALL substart(caller,t0,info)
-      
+
       topo => ppm_topo(topoid)%t
-      
+
       !----------------------------------------------------------------------
       !  first check if the optimal communication protocol is known
       !----------------------------------------------------------------------
@@ -129,7 +129,7 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       ENDIF
       latencies(:) = 0.0_MK
       bandwidths(:) = 0.0_MK
-      
+
       IF (ppm_nproc.EQ.1) THEN
           info = ppm_error_warning
           CALL ppm_error(ppm_err_test_fail,caller,     &
@@ -148,13 +148,13 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
           GOTO 9999
       ENDIF
       buf(:) = 42
-    
+
       DO icomm=1,topo%ncommseq
           irank = topo%icommseq(icomm)
           tag = 100
           dest = MAX(ppm_rank,irank)
           src = MIN(ppm_rank,irank)
-          
+
           CALL MPI_Barrier(ppm_comm,info)
           tstart = MPI_Wtime()
           DO i=1,lncomm
@@ -170,7 +170,7 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
 !     &                         ppm_comm,stat,info)
 
           ENDDO
-          
+
           tend = MPI_Wtime()
 
           latencies(icomm) = (tend-tstart)/(2*lncomm)
@@ -196,11 +196,11 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       ENDIF
 
       buf(:) = 42
-    
+
       DO icomm=1,topo%ncommseq
           irank = topo%icommseq(icomm)
           tag = 200
-          
+
           CALL MPI_Barrier(ppm_comm,info)
           tstart = MPI_Wtime()
 
@@ -212,23 +212,22 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
                   CALL MPI_Recv(buf,big,MPI_INTEGER,src,i,&
                   &             ppm_comm,stat,info)
               ENDIF
-              
+
 !             CALL MPI_SendRecv(sbuf,big,MPI_INTEGER,irank,tag, &
 !             &                 rbuf,big,MPI_INTEGER,irank,tag, &
 !             &                 ppm_comm,stat,info)
 
           ENDDO
-          
+
           tend = MPI_Wtime()
           bandwidths(icomm) = big/( ((tend-tstart)-latencies(icomm))/bncomm)
       ENDDO
 
 
-      DEALLOCATE(buf,stat=info)
+      DEALLOCATE(buf,STAT=info)
       IF (info.NE.0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'dealloc bandwidth buffer',__LINE__,info)
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_dealloc,caller,'dealloc bandwidth buffer',__LINE__,info)
           GOTO 9999
       ENDIF
 #else
@@ -250,11 +249,26 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
           !&                      latencies(i),bandwidths(i)
       ENDDO
       bandwidth = 4*bandwidth / topo%ncommseq
-      
-      
+
+
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
+      iopt=ppm_param_dealloc
+      CALL ppm_alloc(latencies,lda,iopt,info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_dealloc,caller,'latencies',__LINE__,info)
+          GOTO 9999
+      ENDIF
+      CALL ppm_alloc(bandwidths,lda,iopt,info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_dealloc,caller,'bandwidths',__LINE__,info)
+          GOTO 9999
+      ENDIF
+
+
 9999  CONTINUE
       CALL substop(caller,t0,info)
 

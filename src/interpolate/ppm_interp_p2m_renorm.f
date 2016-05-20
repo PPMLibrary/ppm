@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Subroutine   :                 ppm_interp_p2m_renorm
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -64,7 +64,7 @@
            & ghostsize,field_up,info)
 #endif
 #endif
-#endif       
+#endif
       !!! This routine does particle to mesh interpolation. Vector cases for
       !!! lda < 5 are explicitly unrolled for the 3D version. All 3D
       !!! versions are explicitly unrolled over the kernel, the 2D versions
@@ -87,14 +87,14 @@
       USE ppm_module_map
       USE ppm_module_check_id
       IMPLICIT NONE
-             
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !--------------------------------------------------------------------------
-      ! Arguments     
+      ! Arguments
       !--------------------------------------------------------------------------
 #if   __MODE == __SCA
       REAL(MK) , DIMENSION(:)         , INTENT(IN)   :: up
@@ -134,12 +134,12 @@
       !--------------------------------------------------------------------------
       ! Local variables
       !--------------------------------------------------------------------------
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
-      INTEGER,  DIMENSION(:,:)     , POINTER :: ndata    => NULL()
+      INTEGER,  DIMENSION(:,:)     , POINTER :: istart
+      INTEGER,  DIMENSION(:,:)     , POINTER :: ndata
       INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
       INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: min_phys => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: max_phys => NULL()
+      REAL(mk), DIMENSION(:)       , POINTER :: min_phys
+      REAL(mk), DIMENSION(:)       , POINTER :: max_phys
       REAL(MK),  DIMENSION(ppm_dim)           :: dxi,dx
       REAL(MK),  DIMENSION(ppm_dim)           :: len_phys
       REAL(MK)                               :: x1,x2,x3,epsilon
@@ -158,26 +158,26 @@
       INTEGER                                :: iq
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
+      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub
+      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub
       REAL(MK)                               :: myeps
       REAL(MK)                               :: tim1s, tim1e
       REAL(MK)                               :: xp1,xp2,xp3
       REAL(MK)                               :: wx1,wx2,wx3
       REAL(MK), DIMENSION(ppm_dim)           :: x0
       CHARACTER(len=256)                     :: msg
-      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh => NULL()
-      TYPE(ppm_t_topo)     , POINTER         :: topo   => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
+      TYPE(ppm_t_topo)     , POINTER         :: topo
       !-----------------------------------------------------
       !                          Renormalization
       !-----------------------------------------------------
 #if __DIME == __2D
 #error two dimensional renormalization is not yet implemented
-      REAL(MK), DIMENSION(:,:,:),   POINTER  :: field_reno => NULL()
+      REAL(MK), DIMENSION(:,:,:),   POINTER  :: field_reno
 #elif __DIME == __3D
-      REAL(MK), DIMENSION(:,:,:,:), POINTER  :: field_reno => NULL()
+      REAL(MK), DIMENSION(:,:,:,:), POINTER  :: field_reno
 #endif
-      
+
       !-------------------------------------------------------------------------
       !  Variables for unrolled versions
       !-------------------------------------------------------------------------
@@ -249,9 +249,9 @@
       REAL(mk) :: a13a23a32
       REAL(mk) :: a13a23a33
 
-      
+
       !--------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !--------------------------------------------------------------------------
 
       !--------------------------------------------------------------------------
@@ -259,7 +259,7 @@
       !  ppm_module_data_rmsh module
       !--------------------------------------------------------------------------
       ppm_rmsh_kernelsize = (/1,2,2,4/)
-      
+
       CALL substart('ppm_interp_p2m_renorm',t0,info)
 
       dim = ppm_dim
@@ -268,11 +268,11 @@
       !--------------------------------------------------------------------------
       !  Check arguments
       !--------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN 
+      IF (ppm_debug .GT. 0) THEN
         CALL check
         IF (info .NE. 0) GOTO 9999
       END IF
-      
+
 
 
 
@@ -292,12 +292,12 @@
       Nm(1:dim) = p_mesh%Nm
       bcdef(1:(2*dim)) = topo%bcdef(1:(2*dim))
       nsubs = topo%nsublist
-     
+
       !--------------------------------------------------------------------------
       !  If there is nothing to do, do nearly nothing
       !--------------------------------------------------------------------------
       IF(Np.EQ.0) GOTO 9998
-      
+
       !--------------------------------------------------------------------------
       !  Alloc memory for particle lists
       !  The awesome ppm_alloc will (re)allocate them, so we dont need an init
@@ -340,7 +340,7 @@
       min_phys => topo%min_physd
       max_phys => topo%max_physd
 #endif
-      
+
       DO i = 1,dim
          Nc(i)       = Nm(i) - 1
          len_phys(i) = max_phys(i) - min_phys(i)
@@ -348,7 +348,7 @@
       ENDDO
       dxi     = 1.0_mk/dx
       epsilon = 0.000001_mk
-      
+
       !--------------------------------------------------------------------------
       !  Initialize the particle list
       !--------------------------------------------------------------------------
@@ -377,13 +377,13 @@
       DO idom = topo%nsublist,1,-1
          idoml = topo%isublist(idom)
          !-----------------------------------------------------------------------
-         !  Loop over the remaining particles 
+         !  Loop over the remaining particles
          !-----------------------------------------------------------------------
          nlist2 = 0
          npart = 0
          DO i=1,nlist1
             ipart = ilist1(i)
-            
+
             !--------------------------------------------------------------------
             !  If the particle is inside the current subdomain, assign it
             !--------------------------------------------------------------------
@@ -419,19 +419,19 @@
                   ilist2(nlist2) = ipart
                END IF
             ELSEIF (ppm_dim.EQ.2) THEN
-               
+
                IF( ( xp(1,ipart).GE.min_sub(1,idoml) .AND. &
                     &xp(2,ipart).GE.min_sub(2,idoml) .AND. &
                     &xp(1,ipart).LE.max_sub(1,idoml) .AND. &
                     &xp(2,ipart).LE.max_sub(2,idoml) ) ) THEN
-                  
+
                   IF(   (xp(1,ipart).LT.max_sub(1,idoml) .OR.  &
                        & (topo%subs_bc(2,idoml).EQ.1   .AND.    &
                        & bcdef(2).NE. ppm_param_bcdef_periodic)).AND.&
                        &(xp(2,ipart).LT.max_sub(2,idoml) .OR.  &
                        & (topo%subs_bc(4,idoml).EQ.1   .AND.    &
                        & bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
-                     
+
                      npart = npart + 1
                      store_info(idom) = npart
                   ELSE
@@ -453,14 +453,14 @@
                ilist1(i) = ilist2(i)
             ENDDO
          ENDIF
-         
+
          !-----------------------------------------------------------------------
          !  Exit if the list is empty
          !-----------------------------------------------------------------------
          IF (nlist1.EQ.0) EXIT
       END DO
       !--------------------------------------------------------------------------
-      !  Check that we sold all the particles 
+      !  Check that we sold all the particles
       !--------------------------------------------------------------------------
       IF (nlist2.GT.0) THEN
          info = ppm_error_fatal
@@ -468,11 +468,11 @@
               &       'MAJOR PROBLEM',__LINE__,info)
          GOTO 9999
       ENDIF
-      
+
       !--------------------------------------------------------------------------
       ! select the particle for with several domain computation (french)
       !--------------------------------------------------------------------------
-      
+
       max_partnumber = 0
       DO idom=1,topo%nsublist
          IF(store_info(idom).GE.max_partnumber) THEN
@@ -482,7 +482,7 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = topo%nsublist
       ldu(2) = max_partnumber
-      
+
       CALL ppm_alloc(list_sub,ldu,iopt,info)
       IF(info.NE.0) THEN
          info = ppm_error_fatal
@@ -490,9 +490,9 @@
               &        'problem in internal allocation',__LINE__,info)
          GOTO 9999
       END IF
-      
+
       list_sub=0
-      
+
       !--------------------------------------------------------------------------
       !  Initialize the particle list
       !--------------------------------------------------------------------------
@@ -501,7 +501,7 @@
          nlist1         = nlist1 + 1
          ilist1(nlist1) = ipart
       ENDDO
-      
+
       !--------------------------------------------------------------------------
       !  Loop over the subdomains (since the first domains are most likely
       !  to be empty, we look backwards to reduce the number of elements in
@@ -510,7 +510,7 @@
       DO idom = topo%nsublist,1,-1
          idoml = topo%isublist(idom)
          !-----------------------------------------------------------------------
-         !  loop over the remaining particles 
+         !  loop over the remaining particles
          !-----------------------------------------------------------------------
          nlist2 = 0
          npart = 0
@@ -527,7 +527,7 @@
                     &xp(1,ipart).LE.max_sub(1,idoml) .AND. &
                     &xp(2,ipart).LE.max_sub(2,idoml) .AND. &
                     &xp(3,ipart).LE.max_sub(3,idoml) ) ) THEN
-                  
+
                   IF(   (xp(1,ipart).LT.max_sub(1,idoml) .OR.  &
                        & (topo%subs_bc(2,idoml).EQ.1   .AND.    &
                        & bcdef(2).NE. ppm_param_bcdef_periodic)).AND.&
@@ -537,8 +537,8 @@
                        &(xp(3,ipart).LT.max_sub(3,idoml) .OR.  &
                        & (topo%subs_bc(6,idoml).EQ.1   .AND.    &
                        & bcdef(6).NE. ppm_param_bcdef_periodic))   ) THEN
-                     
-                     
+
+
                      npart = npart + 1
                      list_sub(idom,npart) = ipart
                   ELSE
@@ -555,14 +555,14 @@
                     &xp(2,ipart).GE.min_sub(2,idoml) .AND. &
                     &xp(1,ipart).LE.max_sub(1,idoml) .AND. &
                     &xp(2,ipart).LE.max_sub(2,idoml) ) ) THEN
-                                     
+
                   IF(   (xp(1,ipart).LT.max_sub(1,idom) .OR.  &
                        & (topo%subs_bc(2,idoml).EQ.1   .AND.    &
                        & bcdef(2).NE. ppm_param_bcdef_periodic)).AND.&
                        &(xp(2,ipart).LT.max_sub(2,idoml) .OR.  &
                        & (topo%subs_bc(4,idoml).EQ.1   .AND.    &
                        & bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
-                     
+
                      npart = npart + 1
                      list_sub(idom,npart) = ipart
                   ELSE
@@ -574,7 +574,7 @@
                   ilist2(nlist2) = ipart
                END IF
             END IF
-            
+
          END DO
          !-----------------------------------------------------------------------
          !  Copy the lists (well, only if nlist2 changed - decreased)
@@ -585,7 +585,7 @@
                ilist1(i) = ilist2(i)
             ENDDO
          ENDIF
-         
+
          !-----------------------------------------------------------------------
          !  Exit if the list is empty
          !-----------------------------------------------------------------------
@@ -593,7 +593,7 @@
       END DO
 
       !--------------------------------------------------------------------------
-      !  Check that we sold all the particles 
+      !  Check that we sold all the particles
       !--------------------------------------------------------------------------
       IF (nlist2.GT.0) THEN
          info = ppm_error_fatal
@@ -601,14 +601,14 @@
               &       'MAJOR PROBLEM',__LINE__,info)
          GOTO 9999
       ENDIF
-      
+
       !--------------------------------------------------------------------------
       !  Allocate and alias the weights if we need them.
       !--------------------------------------------------------------------------
       max_partnumber = 0
       DO idom = 1,topo%nsublist
          IF(store_info(idom).GE.max_partnumber) THEN
-            max_partnumber = store_info(idom)  
+            max_partnumber = store_info(idom)
          END IF
       END DO
 
@@ -623,10 +623,10 @@
      &                    (1-ghostsize(2)):(ndata(2,1)+ghostsize(2)),&
      &                    (1-ghostsize(3)):(ndata(3,1)+ghostsize(3)),&
      &                    topo%nsublist))
-      
+
       DO isub = 1,topo%nsublist
          isubl = topo%isublist(isub)
-         
+
          DO k=1-ghostsize(3),ndata(3,isubl)+ghostsize(3)
 
             DO j=1-ghostsize(2),ndata(2,isubl)+ghostsize(2)
@@ -636,7 +636,7 @@
                   DO ldn=1,lda
                      field_up(ldn,i,j,k,isub) = 0.0_mk
                   END DO
-#else      
+#else
                   field_up(i,j,k,isub) = 0.0_mk
 #endif
                   field_reno(i,j,k,isub) = 0.0_mk
@@ -645,11 +645,11 @@
          END DO
       END DO
       IF(np.EQ.0) GOTO 9997
-      
+
       SELECT CASE(kernel)
-         
+
       CASE(ppm_param_rmsh_kernel_mp4)
-         
+
          !-----------------------------------------------------------------
          ! M Prime Four
          !-----------------------------------------------------------------
@@ -662,7 +662,7 @@
         !------------------------------------------------------------------------
          IF (lda .EQ. 3) THEN
             DO ip = 1,store_info(isub)
-               
+
                isubl = topo%isublist(isub)
                iq    = list_sub(isub,ip)
 
@@ -674,7 +674,7 @@
                x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
                x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
                x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
-               
+
                !ip11 = INT(x0(1))+2-istart(1,isubl)
                !ip21 = INT(x0(2))+2-istart(2,isubl)
                !ip31 = INT(x0(3))+2-istart(3,isubl)
@@ -682,7 +682,7 @@
                ip10 = INT(x0(1))
                ip20 = INT(x0(2))
                ip30 = INT(x0(3))
-                
+
                ip11 = ip10 + 1
                ip21 = ip20 + 1
                ip31 = ip30 + 1
@@ -989,7 +989,7 @@
                     &   field_reno(ip13,ip23,ip33,isub) + &
                     &   a13a23a33
 
-               
+
 #ifdef __NOMICROINSTRUCTIONS
 field_up(1,ip10,ip20,ip30,isub)=field_up(1,ip10,ip20,ip30,isub)+&
 &a10a20a30*up(1,iq)
@@ -2594,7 +2594,7 @@ field_up(ldn,ip13,ip23,ip33,isub)=field_up(ldn,ip13,ip23,ip33,isub)+&
                x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
                x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
                x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
-               
+
                !ip11 = INT(x0(1))+2-istart(1,isubl)
                !ip21 = INT(x0(2))+2-istart(2,isubl)
                !ip31 = INT(x0(3))+2-istart(3,isubl)
@@ -2844,7 +2844,7 @@ field_up(ip12,ip23,ip33,isub)=field_up(ip12,ip23,ip33,isub)+&
 field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
 &a13a23a33*up(iq)
            ENDDO        ! iq
-#endif     
+#endif
          END DO              ! loop over subs
       CASE(ppm_param_rmsh_kernel_bsp2)
         !-----------------------------------------------------------------------
@@ -2858,7 +2858,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
          !------------------------------------------------------------------------
          IF(lda.EQ.4) THEN
              DO ip = 1,store_info(isub)
-               
+
                 isubl = topo%isublist(isub)
                 iq    = list_sub(isub,ip)
 
@@ -2869,7 +2869,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
                 x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
                 x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
-               
+
                 !ip11 = INT(x0(1))+2-istart(1,isubl)
                 !ip21 = INT(x0(2))+2-istart(2,isubl)
                 !ip31 = INT(x0(3))+2-istart(3,isubl)
@@ -2881,20 +2881,20 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 ip11 = ip10 + 1
                 ip21 = ip20 + 1
                 ip31 = ip30 + 1
-         
+
                 xp1 = x0(1)-REAL(ip10-1,mk)
                 xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+                xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
                 x11 = x10 - 1.0_mk
 
                 x20 = xp2
                 x21 = x20 - 1.0_mk
-                
+
                 x30 = xp3
                 x31 = x30 - 1.0_mk
-                
+
                 a10 = 1.0_mk - x10
                 a20 = 1.0_mk - x20
                 a30 = 1.0_mk - x30
@@ -2919,7 +2919,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                     & a11*a21*a30*up(1,iq)
                 field_up(1,ip11,ip21,ip31,isub) = field_up(1,ip11,ip21,ip31,isub) + &
                     & a11*a21*a31*up(1,iq)
-                
+
                 field_up(2,ip10,ip20,ip30,isub) = field_up(2,ip10,ip20,ip30,isub) + &
                     & a10*a20*a30*up(2,iq)
                 field_up(2,ip10,ip20,ip31,isub) = field_up(2,ip10,ip20,ip31,isub) + &
@@ -2936,7 +2936,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                     & a11*a21*a30*up(2,iq)
                 field_up(2,ip11,ip21,ip31,isub) = field_up(2,ip11,ip21,ip31,isub) + &
                     & a11*a21*a31*up(2,iq)
-                    
+
                 field_up(3,ip10,ip20,ip30,isub) = field_up(3,ip10,ip20,ip30,isub) + &
                     & a10*a20*a30*up(3,iq)
                 field_up(3,ip10,ip20,ip31,isub) = field_up(3,ip10,ip20,ip31,isub) + &
@@ -2953,7 +2953,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                     & a11*a21*a30*up(3,iq)
                 field_up(3,ip11,ip21,ip31,isub) = field_up(3,ip11,ip21,ip31,isub) + &
                     & a11*a21*a31*up(3,iq)
-                
+
                 field_up(4,ip10,ip20,ip30,isub) = field_up(4,ip10,ip20,ip30,isub) + &
                     & a10*a20*a30*up(4,iq)
                 field_up(4,ip10,ip20,ip31,isub) = field_up(4,ip10,ip20,ip31,isub) + &
@@ -2970,14 +2970,14 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                     & a11*a21*a30*up(4,iq)
                 field_up(4,ip11,ip21,ip31,isub) = field_up(4,ip11,ip21,ip31,isub) + &
                     & a11*a21*a31*up(4,iq)
-                    
+
             END DO
         !------------------------------------------------------------------------
         !  Unrolled versions for 3-vectors
         !------------------------------------------------------------------------
          ELSEIF (lda .EQ. 3) THEN
             DO ip = 1,store_info(isub)
-               
+
                 isubl = topo%isublist(isub)
                 iq    = list_sub(isub,ip)
 
@@ -2988,7 +2988,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
                 x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
                 x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
-               
+
                 !ip11 = INT(x0(1))+2-istart(1,isubl)
                 !ip21 = INT(x0(2))+2-istart(2,isubl)
                 !ip31 = INT(x0(3))+2-istart(3,isubl)
@@ -3000,10 +3000,10 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 ip11 = ip10 + 1
                 ip21 = ip20 + 1
                 ip31 = ip30 + 1
-         
+
                 xp1 = x0(1)-REAL(ip10-1,mk)
                 xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+                xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
                 x11 = x10 - 1.0_mk
@@ -3031,7 +3031,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 a11a20a31 = a11*a20*a31
                 a11a21a30 = a11*a21*a30
                 a11a21a31 = a11*a21*a31
-                
+
 #ifdef __NOMICROINSTRUCTIONS
                 field_up(1,ip10,ip20,ip30,isub)=field_up(1,ip10,ip20,ip30,isub)+&
                     &a10a20a30*up(1,iq)
@@ -3105,7 +3105,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
         !------------------------------------------------------------------------
         ELSEIF (lda .EQ. 2) THEN
             DO ip = 1,store_info(isub)
-               
+
                 isubl = topo%isublist(isub)
                 iq    = list_sub(isub,ip)
 
@@ -3117,7 +3117,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
                 x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
                 x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
-               
+
                 !ip11 = INT(x0(1))+2-istart(1,isubl)
                 !ip21 = INT(x0(2))+2-istart(2,isubl)
                 !ip31 = INT(x0(3))+2-istart(3,isubl)
@@ -3129,20 +3129,20 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 ip11 = ip10 + 1
                 ip21 = ip20 + 1
                 ip31 = ip30 + 1
-         
+
                 xp1 = x0(1)-REAL(ip10-1,mk)
                 xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+                xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
                 x11 = x10 - 1.0_mk
 
                 x20 = xp2
                 x21 = x20 - 1.0_mk
-                
+
                 x30 = xp3
                 x31 = x30 - 1.0_mk
-                
+
                 a10 = 1.0_mk - x10
                 a20 = 1.0_mk - x20
                 a30 = 1.0_mk - x30
@@ -3160,7 +3160,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 a11a20a31 = a11*a20*a31
                 a11a21a30 = a11*a21*a30
                 a11a21a31 = a11*a21*a31
-                
+
 #ifdef __NOMICROINSTRUCTIONS
                 field_up(1,ip10,ip20,ip30,isub)=field_up(1,ip10,ip20,ip30,isub)+&
                     &a10a20a30*up(1,iq)
@@ -3218,7 +3218,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
         !------------------------------------------------------------------------
         ELSEIF (lda .EQ. 1) THEN
             DO ip = 1,store_info(isub)
-               
+
                 isubl = topo%isublist(isub)
                 iq    = list_sub(isub,ip)
 
@@ -3229,11 +3229,11 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
                 x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
                 x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
-               
+
                 !ip11 = INT(x0(1))+2-istart(1,isubl)
                 !ip21 = INT(x0(2))+2-istart(2,isubl)
                 !ip31 = INT(x0(3))+2-istart(3,isubl)
-                
+
                 ip10 = INT(x0(1)) + 1
                 ip20 = INT(x0(2)) + 1
                 ip30 = INT(x0(3)) + 1
@@ -3241,20 +3241,20 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 ip11 = ip10 + 1
                 ip21 = ip20 + 1
                 ip31 = ip30 + 1
-         
+
                 xp1 = x0(1)-REAL(ip10-1,mk)
                 xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+                xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
                 x11 = x10 - 1.0_mk
 
                 x20 = xp2
                 x21 = x20 - 1.0_mk
-                
+
                 x30 = xp3
                 x31 = x30 - 1.0_mk
-                
+
                 a10 = 1.0_mk - x10
                 a20 = 1.0_mk - x20
                 a30 = 1.0_mk - x30
@@ -3262,7 +3262,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 a11 = 1.0_mk + x11
                 a21 = 1.0_mk + x21
                 a31 = 1.0_mk + x31
-                
+
 
                 a10a20a30 = a10*a20*a30
                 a10a20a31 = a10*a20*a31
@@ -3295,7 +3295,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
         !------------------------------------------------------------------------
         ELSE
             DO ip = 1,store_info(isub)
-               
+
                 isubl = topo%isublist(isub)
                 iq    = list_sub(isub,ip)
 
@@ -3306,11 +3306,11 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
                 x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
                 x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
-               
+
                 !ip11 = INT(x0(1))+2-istart(1,isubl)
                 !ip21 = INT(x0(2))+2-istart(2,isubl)
                 !ip31 = INT(x0(3))+2-istart(3,isubl)
-                
+
                 ip10 = INT(x0(1)) + 1
                 ip20 = INT(x0(2)) + 1
                 ip30 = INT(x0(3)) + 1
@@ -3318,20 +3318,20 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 ip11 = ip10 + 1
                 ip21 = ip20 + 1
                 ip31 = ip30 + 1
-         
+
                 xp1 = x0(1)-REAL(ip10-1,mk)
                 xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+                xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
                 x11 = x10 - 1.0_mk
 
                 x20 = xp2
                 x21 = x20 - 1.0_mk
-                
+
                 x30 = xp3
                 x31 = x30 - 1.0_mk
-                
+
                 a10 = 1.0_mk - x10
                 a20 = 1.0_mk - x20
                 a30 = 1.0_mk - x30
@@ -3339,7 +3339,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 a11 = 1.0_mk + x11
                 a21 = 1.0_mk + x21
                 a31 = 1.0_mk + x31
-                
+
                 a10a20a30 = a10*a20*a30
                 a10a20a31 = a10*a20*a31
                 a10a21a30 = a10*a21*a30
@@ -3372,7 +3372,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
         END IF          ! unrolled lda cases
 #elif __MODE == __SCA
             DO ip = 1,store_info(isub)
-               
+
                 isubl = topo%isublist(isub)
                 iq    = list_sub(isub,ip)
 
@@ -3383,11 +3383,11 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
                 x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
                 x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
-               
+
                 !ip11 = INT(x0(1))+2-istart(1,isubl)
                 !ip21 = INT(x0(2))+2-istart(2,isubl)
                 !ip31 = INT(x0(3))+2-istart(3,isubl)
-            
+
                 ip10 = INT(x0(1)) + 1
                 ip20 = INT(x0(2)) + 1
                 ip30 = INT(x0(3)) + 1
@@ -3395,20 +3395,20 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 ip11 = ip10 + 1
                 ip21 = ip20 + 1
                 ip31 = ip30 + 1
-         
+
                 xp1 = x0(1)-REAL(ip10-1,mk)
                 xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+                xp3 = x0(3)-REAL(ip30-1,mk)
 
                 x10 = xp1
                 x11 = x10 - 1.0_mk
 
                 x20 = xp2
                 x21 = x20 - 1.0_mk
-                
+
                 x30 = xp3
                 x31 = x30 - 1.0_mk
-                
+
                 a10 = 1.0_mk - x10
                 a20 = 1.0_mk - x20
                 a30 = 1.0_mk - x30
@@ -3416,7 +3416,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                 a11 = 1.0_mk + x11
                 a21 = 1.0_mk + x21
                 a31 = 1.0_mk + x31
-                
+
                 a10a20a30 = a10*a20*a30
                 a10a20a31 = a10*a20*a31
                 a10a21a30 = a10*a21*a30
@@ -3454,22 +3454,22 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
       END SELECT         ! kernel type
 #else
       !--------------------------------------------------------------------------
-      !  --- 2D --- 
+      !  --- 2D ---
       !--------------------------------------------------------------------------
       !  loop over subs
       ndata => p_mesh%nnodes
 
       DO isub = 1,topo%nsublist
          isubl = topo%isublist(isub)
-         
+
          DO j=1-ghostsize(2),ndata(2,isubl)+ghostsize(2)
-            
+
             DO i=1-ghostsize(1),ndata(1,isubl)+ghostsize(1)
 #if __MODE == __VEC
                DO ldn=1,lda
                   field_up(ldn,i,j,isub) = 0.0_mk
                END DO
-#else      
+#else
                field_up(i,j,isub) = 0.0_mk
 #endif
             END DO
@@ -3478,20 +3478,20 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
       IF(np.EQ.0) GOTO 9997
       SELECT CASE(kernel)
       CASE(ppm_param_rmsh_kernel_mp4)
-         
+
          !-----------------------------------------------------------------
          ! M Prime Four
          !-----------------------------------------------------------------
          DO isub = 1,topo%nsublist
-            
+
             DO ip = 1,store_info(isub)
-               
+
                isubl = topo%isublist(isub)
                iq    = list_sub(isub,ip)
 
                x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
                x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-               
+
                ip1 = INT(x0(1))+1
                ip2 = INT(x0(2))+1
 
@@ -3499,20 +3499,20 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                xp2 = x0(2)-AINT(x0(2))
 
                DO jj = -1,2
-                  
+
                   x2 = ABS(xp2 - REAL(jj,mk))
-                  
+
                   IF(x2.LT.1.0_mk) THEN
                      wx2 = 1.0_mk - x2**2*(2.5_mk-1.5_mk*x2)
                   ELSE
                      wx2 = 2.0_mk + (-4.0_mk + &
                           &(2.5_mk - 0.5_mk * x2)*x2)*x2
                   END IF
-                  
+
                   DO ii    = - 1,2
-                     
+
                      x1 = ABS(xp1 - REAL(ii,mk))
-                     
+
                      IF(x1.LT.1.0_MK) THEN
                         wx1 =  1.0_mk - x1**2*(2.5_mk - &
                              & 1.5_mk*x1)
@@ -3520,7 +3520,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                         wx1 =  2.0_mk + (-4.0_mk + &
                              & (2.5_mk - 0.5_mk*x1)*x1)*x1
                      END IF
-#if __MODE == __SCA                    
+#if __MODE == __SCA
                      field_up(ii+ip1,jj+ip2,isub) &
                           &= field_up(ii+ip1,jj+ip2,isub) &
                           &                 + wx1*wx2*up(iq)
@@ -3530,7 +3530,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                              &= field_up(ldn,ii+ip1,jj+ip2,isub) &
                              &                 + wx1*wx2*up(ldn,iq)
                      ENDDO
-#endif                    
+#endif
                   END DO
                END DO
             END DO
@@ -3545,7 +3545,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
 
 9997 CONTINUE
       !--------------------------------------------------------------------------
-      !  Before we map the ghosts of field_reno we reset the corresponding 
+      !  Before we map the ghosts of field_reno we reset the corresponding
       !  ghost cells, otherwise, we dont do one-sided interpolation
       !--------------------------------------------------------------------------
 #if  __MODE == __VEC
@@ -3580,18 +3580,18 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
       CALL ppm_map_field_ghost_put(topoid,meshid,ghostsize,info)
       IF (info .NE. 0) GOTO 9999
 
-#if   __MODE == __SCA     
+#if   __MODE == __SCA
       CALL ppm_map_field_push(topoid,meshid,field_up,info)
-#elif __MODE == __VEC     
+#elif __MODE == __VEC
       CALL ppm_map_field_push(topoid,meshid,field_up,lda,info)
       CALL ppm_map_field_push(topoid,meshid,field_reno,info)
-#endif     
+#endif
       IF (info .NE. 0) GOTO 9999
 
       CALL ppm_map_field_send(info)
       IF (info .NE. 0) GOTO 9999
 
-#if   __MODE == __SCA     
+#if   __MODE == __SCA
       CALL ppm_map_field_pop(topoid,meshid,field_up,ghostsize,info)
 #elif __MODE == __VEC
       CALL ppm_map_field_pop(topoid,meshid,field_reno,ghostsize,info)
@@ -3683,7 +3683,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
          info = ppm_error_error
          CALL ppm_error(ppm_err_dealloc, &
               & 'ppm_interp_p2m_renorm',  &
-              & 'pb in ilist2 deallocation',__LINE__,info)
+              & 'pb in store_info deallocation',__LINE__,info)
          GOTO 9999
       END IF
       CALL ppm_alloc(list_sub,ldu,iopt,info)
@@ -3691,17 +3691,17 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
          info = ppm_error_error
          CALL ppm_error(ppm_err_dealloc, &
               & 'ppm_interp_p2m_renorm',  &
-              & 'pb in ilist2 deallocation',__LINE__,info)
+              & 'pb in list_sub deallocation',__LINE__,info)
          GOTO 9999
       END IF
 
       !--------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !--------------------------------------------------------------------------
 9999 CONTINUE
       CALL substop('ppm_interp_p2m_renorm',t0,info)
       RETURN
-      
+
       CONTAINS
       SUBROUTINE check
         IF (.NOT. ppm_initialized) THEN
@@ -3792,5 +3792,5 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
       END SUBROUTINE p2m_renorm_dv_3d
 #endif
 #endif
-#endif       
+#endif
 

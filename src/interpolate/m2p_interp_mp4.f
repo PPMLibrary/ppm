@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Subroutine   :                   m2p_interp_mp4
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -61,11 +61,11 @@
      !!! The interpolation scheme is only implemented for 2D and 3D spaces. To
      !!! increase performance the inner loops over the number of properties to
      !!! be interpolated are unrolled for 2,3,4 and 5-vectors.
-     !!! 
+     !!!
      !!! [NOTE]
      !!! This routine only performs the actual interpolation. It should not be
      !!! called directly by the user but instead the `ppm_interp_m2p`
-     !!! routine should be used with the kernel argument set to 
+     !!! routine should be used with the kernel argument set to
      !!! `ppm_param_rmsh_kernel_mp4`.
 
 
@@ -122,11 +122,9 @@
       !-------------------------------------------------------------------------
       ! Local variables
       !-------------------------------------------------------------------------
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: min_phys => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: max_phys => NULL()
+      INTEGER,  DIMENSION(:,:)     , POINTER :: istart
+      REAL(mk), DIMENSION(:)       , POINTER :: min_phys
+      REAL(mk), DIMENSION(:)       , POINTER :: max_phys
       REAL(MK),  DIMENSION(ppm_dim)          :: dxi,dx
       REAL(MK),  DIMENSION(ppm_dim)          :: len_phys
       REAL(MK)                               :: x1,x2,x3,epsilon
@@ -145,16 +143,16 @@
       INTEGER                                :: iq
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
+      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub
+      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub
       REAL(mk)                               :: myeps
       REAL(mk)                               :: tim1s, tim1e
       REAL(mk)                               :: xp1,xp2,xp3
       REAL(mk)                               :: wx1,wx2,wx3
       INTEGER                                :: ldn
       REAL(mk), DIMENSION(ppm_dim)           :: x0
-      TYPE(ppm_t_equi_mesh), POINTER         :: mesh => NULL()
-      TYPE(ppm_t_topo)     , POINTER         :: topo => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER         :: mesh
+      TYPE(ppm_t_topo)     , POINTER         :: topo
       !-------------------------------------------------------------------------
       !  Variables for unrolled versions
       !-------------------------------------------------------------------------

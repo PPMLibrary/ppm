@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Subroutine   :                 ppm_vtk_particles
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -57,7 +57,7 @@
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
-    
+
       !--------------------------------------------------------------------
       !  Arguments
       !--------------------------------------------------------------------
@@ -82,19 +82,18 @@
       INTEGER                              :: nb_wps, nb_wpv, nb_wpv_field
       INTEGER                              :: nb_wpi
       LOGICAL                              :: ghosts
-      TYPE(ppm_t_topo), POINTER            :: topo => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER     :: xp  => NULL()
-      REAL(MK), DIMENSION(:),   POINTER     :: wp  => NULL()
-      INTEGER, DIMENSION(:),   POINTER      :: wpi  => NULL()
+      TYPE(ppm_t_topo), POINTER            :: topo
+      REAL(MK), DIMENSION(:,:), POINTER     :: xp
+      REAL(MK), DIMENSION(:),   POINTER     :: wp
+      INTEGER, DIMENSION(:),   POINTER      :: wpi
       !--------------------------------------------------------------------
       !  Code
       !--------------------------------------------------------------------
       CALL substart(caller,t0,info)
-      
+
       topo => ppm_topo(topoid)%t
       IF (PRESENT(step)) THEN
-         WRITE(fname,'(A,A,I0)') &
-              filename(1:LEN_TRIM(filename)), '.', step
+         WRITE(fname,'(A,A,I0)') filename(1:LEN_TRIM(filename)), '.', step
       ELSE
          fname = filename
       END IF
@@ -107,20 +106,16 @@
          ghosts = .FALSE.
       END IF
 
-
+      NULLIFY(xp,wp,wpi)
 
       nb_wpi = particles%niprop
       nb_wps = particles%nprop
-
-
-
 
 #ifdef __MPI
       ! write parallel file
       IF (ppm_rank .EQ. 0) THEN
          WRITE(scratch,'(A,A)') fname(1:LEN_TRIM(fname)), '.pvtp'
-         OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
-              IOSTAT=info, ACTION='WRITE')
+         OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)),IOSTAT=info, ACTION='WRITE')
          IF (info .NE. 0) THEN
             info = ppm_error_fatal
             WRITE(errtxt,'(2A)') 'Failed to open file: ', &
@@ -144,7 +139,7 @@
               (1:LEN_TRIM(particles%prop(i)%name)), &
               "' type='Float64' />"
          END DO
-         WRITE(iUnit,'(A)') "    </PPointData>"              
+         WRITE(iUnit,'(A)') "    </PPointData>"
          WRITE(iUnit,'(A)') "    <PPoints>"
          WRITE(iUnit,'(A)') "      <PDataArray NumberOfComponents='3' type='Float64' />"
          WRITE(iUnit,'(A)') "    </PPoints>"
@@ -166,8 +161,7 @@
 #endif
 
       ! open output file
-      OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
-           IOSTAT=info, ACTION='WRITE')
+      OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)),IOSTAT=info, ACTION='WRITE')
       IF (info .NE. 0) THEN
          info = ppm_error_fatal
          WRITE(errtxt,'(2A)') 'Failed to open file: ', &
@@ -192,7 +186,7 @@
       IF (nb_wpi .GT. 0 .OR. nb_wps .GT. 0) THEN
 
          ! print names
-         WRITE(iUnit,'(A)',advance='no') "      <PointData" 
+         WRITE(iUnit,'(A)',advance='no') "      <PointData"
          IF (nb_wpi .GT. 0) THEN
             WRITE(iUnit,'(A)',advance='no') " Integers='"
             DO i=1,nb_wpi

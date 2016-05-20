@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_map_field_send_alltoall
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -44,7 +44,7 @@
       !!! could possibly speed-up this routine on very large architectures.
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_mesh
@@ -61,14 +61,14 @@
       INCLUDE 'mpif.h'
 #endif
 
-      integer, parameter :: MK = ppm_kind_double 
+      integer, parameter :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER              , INTENT(  OUT) :: info
       !!! Return status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3) :: ldl,ldu
       INTEGER               :: i,j,k,ibuffer,jbuffer,bdim,offs
@@ -91,15 +91,15 @@
       REAL(ppm_kind_double), DIMENSION(:), POINTER :: irecvd => NULL()
       REAL(ppm_kind_single), DIMENSION(:), POINTER :: isends => NULL()
       REAL(ppm_kind_single), DIMENSION(:), POINTER :: irecvs => NULL()
-	  LOGICAL               :: rflag
-	  REAL(ppm_kind_double) :: nonblock_time0, nonblock_timer, nonblock_timeout
-      
+      LOGICAL               :: rflag
+      REAL(ppm_kind_double) :: nonblock_time0, nonblock_timer, nonblock_timeout
+
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_map_field_send_alltoall',t0,info)
 
@@ -114,7 +114,7 @@
       !-------------------------------------------------------------------------
       !  Allocate
       !-------------------------------------------------------------------------
-      iopt = ppm_param_alloc_fit 
+      iopt = ppm_param_alloc_fit
       ldu(1) = ppm_nsendlist
       CALL ppm_alloc(nsend,ldu,iopt,info)
       IF (info .NE. 0) THEN
@@ -145,8 +145,8 @@
      &        'particle receive counter PRECV',__LINE__,info)
           GOTO 9999
       ENDIF
-      ldu(1) = ppm_nrecvlist 
-      ldu(2) = ppm_buffer_set 
+      ldu(1) = ppm_nrecvlist
+      ldu(2) = ppm_buffer_set
       CALL ppm_alloc(pp,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
@@ -154,8 +154,8 @@
      &        'work buffer PP',__LINE__,info)
           GOTO 9999
       ENDIF
-      ldu(1) = ppm_nsendlist 
-      ldu(2) = ppm_buffer_set 
+      ldu(1) = ppm_nsendlist
+      ldu(2) = ppm_buffer_set
       CALL ppm_alloc(qq,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
@@ -195,7 +195,7 @@
       DO j=1,ppm_buffer_set
          bdim     = ppm_buffer_dim(j)
          ibuffer  = ibuffer  + bdim*Ndata
-      ENDDO 
+      ENDDO
 
       !-------------------------------------------------------------------------
       !  Initialize the buffer counters
@@ -316,12 +316,12 @@
       !  Allocate the memory for the copy of the particle buffer
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_grow
-      ldu(1) = ppm_nrecvbuffer 
+      ldu(1) = ppm_nrecvbuffer
       IF (ppm_kind.EQ.ppm_kind_double) THEN
          CALL ppm_alloc(ppm_recvbufferd,ldu,iopt,info)
       ELSE
          CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
-      ENDIF 
+      ENDIF
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_map_field_send_alltoall',     &
@@ -343,7 +343,7 @@
              CALL ppm_alloc(recvd,ldu,iopt,info)
           ELSE
              CALL ppm_alloc(recvs,ldu,iopt,info)
-          ENDIF 
+          ENDIF
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_map_field_send_alltoall',     &
@@ -358,7 +358,7 @@
              CALL ppm_alloc(sendd,ldu,iopt,info)
           ELSE
              CALL ppm_alloc(sends,ldu,iopt,info)
-          ENDIF 
+          ENDIF
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_map_field_send_alltoall',     &
@@ -374,8 +374,8 @@
       allrecv = SUM(precv(1:ppm_nrecvlist))
 
       !-------------------------------------------------------------------------
-      !  Compute the pointer to the position of the data in the main send 
-      !  buffer 
+      !  Compute the pointer to the position of the data in the main send
+      !  buffer
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(A,I9)') 'ppm_buffer_set=',ppm_buffer_set
@@ -397,8 +397,8 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Compute the pointer to the position of the data in the main receive 
-      !  buffer 
+      !  Compute the pointer to the position of the data in the main receive
+      !  buffer
       !-------------------------------------------------------------------------
       bdim = 0
       offs = 0
@@ -428,8 +428,8 @@
                ibuffer                  = ibuffer + 1
                jbuffer                  = jbuffer + 1
                ppm_recvbufferd(ibuffer) = ppm_sendbufferd(jbuffer)
-            ENDDO 
-         ENDDO 
+            ENDDO
+         ENDDO
       ELSE
          DO k=1,ppm_buffer_set
             ibuffer = pp(1,k) - 1
@@ -438,9 +438,9 @@
                ibuffer                  = ibuffer + 1
                jbuffer                  = jbuffer + 1
                ppm_recvbuffers(ibuffer) = ppm_sendbuffers(jbuffer)
-            ENDDO 
-         ENDDO 
-      ENDIF 
+            ENDDO
+         ENDDO
+      ENDIF
 
       !-----------------------------------------------------
       !  Allocate buffers for all-to-all communication
@@ -454,7 +454,7 @@
               &            'irecvoff array',__LINE__,info)
          GOTO 9999
       ENDIF
-      
+
       iopt   = ppm_param_alloc_fit
       ldl(1) = 0
       ldu(1) = ppm_nproc-1
@@ -495,8 +495,8 @@
               &            'nrecvglobal array',__LINE__,info)
          GOTO 9999
       ENDIF
-      
-      
+
+
 
       IF(ppm_kind.EQ.ppm_kind_double) THEN
          iopt   = ppm_param_alloc_fit
@@ -537,8 +537,8 @@
             GOTO 9999
          ENDIF
       END IF
-      
-   
+
+
       !-----------------------------------------------------
       !  loop over cpus in isendlist, skip the first guy which is the local
       !  processor, put the stuff in one (bigish) send buffer and store the
@@ -549,7 +549,7 @@
          irecvoffglobal = 0
          nsendglobal = 0
          nrecvglobal = 0
-         
+
          kbuffer = 0
          DO k=2,ppm_nsendlist
             IF(psend(k).GT.0) THEN
@@ -587,7 +587,7 @@
                irecvoff(k) = -1
             END IF
          END DO
-         
+
 #ifdef __MPI
          !---------------------------------------------------------------------
          !  Perform the All To all Send/Recv
@@ -600,7 +600,7 @@
 #else
 #error not implemented for usage without MPI. take ppm_map_field_send.f instead
 #endif
-         
+
       ELSE
          !-----------------------------------------------------
          !  single precision case
@@ -609,7 +609,7 @@
          irecvoffglobal = 0
          nsendglobal = 0
          nrecvglobal = 0
-         
+
          kbuffer = 0
          DO k=2,ppm_nsendlist
             IF(psend(k).GT.0) THEN
@@ -647,7 +647,7 @@
                irecvoff(k) = -1
             END IF
          END DO
-         
+
 #ifdef __MPI
          !---------------------------------------------------------------------
          !  Perform the All To all Send/Recv
@@ -690,12 +690,12 @@
          CALL ppm_alloc(irecvoff,ldu,iopt,info)
          CALL ppm_alloc(isendd,ldu,iopt,info)
          CALL ppm_alloc(irecvd,ldu,iopt,info)
-         
+
          CALL ppm_alloc(isendoffglobal,ldu,iopt,info)
          CALL ppm_alloc(irecvoffglobal,ldu,iopt,info)
          CALL ppm_alloc(nsendglobal,ldu,iopt,info)
          CALL ppm_alloc(nrecvglobal,ldu,iopt,info)
-      ELSE	  
+      ELSE
          !-----------------------------------------------------
          !  now copy the data back into the real receive buffer
          !-----------------------------------------------------
@@ -714,17 +714,17 @@
          !-----------------------------------------------------
          !  deallocate non-blocking things
          !-----------------------------------------------------
-         iopt = ppm_param_dealloc         
+         iopt = ppm_param_dealloc
          CALL ppm_alloc(irecvoff,ldu,iopt,info)
          CALL ppm_alloc(isends,ldu,iopt,info)
          CALL ppm_alloc(irecvs,ldu,iopt,info)
-         
+
          CALL ppm_alloc(isendoffglobal,ldu,iopt,info)
          CALL ppm_alloc(irecvoffglobal,ldu,iopt,info)
          CALL ppm_alloc(nsendglobal,ldu,iopt,info)
          CALL ppm_alloc(nrecvglobal,ldu,iopt,info)
       END IF
-         
+
       !-------------------------------------------------------------------------
       !  Deallocate the send buffer to save memory
       !-------------------------------------------------------------------------
@@ -806,7 +806,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_map_field_send_alltoall',t0,info)

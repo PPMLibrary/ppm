@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_store
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -50,7 +50,7 @@
       !!! ppm_topo_mkfield - why not do it in one place - here.
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -72,7 +72,7 @@
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: min_phys
       !!! Min. extent of the comput. domain
@@ -110,19 +110,19 @@
       !!! 2nd index: 1..nsubs (sub of which one wants to get the neighbors)
 
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER , DIMENSION(3)    :: ldc, ldl
       INTEGER                   :: i,j,k,kk,iopt,isize,iproc,isin
       INTEGER                   :: maxneigh,minbound,nsubmax,nsublistmax
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
       REAL(MK)                  :: t0
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_topo_store',t0,info)
 
@@ -235,7 +235,7 @@
             topo%max_subd(3,i) = max_sub(3,i)
 #endif
          ENDDO
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Store the external boundary conditions for this topology
@@ -243,7 +243,7 @@
       DO i=1,2*ppm_dim
          topo%bcdef(i) = bcdef(i)
       ENDDO
-      
+
       !-------------------------------------------------------------------------
       !  The MAX of nsublist and 1 is needed to avoid allocation failures
       !  if a processor has 0 subs. Same for nsubs if there are no subs at
@@ -270,7 +270,7 @@
 
       !-------------------------------------------------------------------------
       !  store neighboring subs by looping over the subs handled by the current
-      !  processor: isublist(1:nsublist) - the neighbours are the accessed 
+      !  processor: isublist(1:nsublist) - the neighbours are the accessed
       !  through the ineigh(1:nsublist,)
       !-------------------------------------------------------------------------
       DO i=1,nsublist
@@ -306,22 +306,9 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  And now deallocate the local array: subs_bc WHY?
-      !-------------------------------------------------------------------------
-!      iopt = ppm_param_dealloc
-!      CALL ppm_alloc(subs_bc,ldc,iopt,info)
-!      IF (info .NE. 0) THEN
-!          info = ppm_error_fatal
-!          CALL ppm_error(ppm_err_dealloc,'ppm_topo_store',     &
-!     &        'BCs for subs on local processor failed',__LINE__,info)
-!          GOTO 9999
-!      ENDIF
-
-      !-------------------------------------------------------------------------
       !  store number of subdomains handled by
       !  the current processor
       !-------------------------------------------------------------------------
-
       topo%nsublist = nsublist
 
       IF (nsublist .LT. 1) THEN
@@ -331,16 +318,13 @@
          topo%isublist(i) = isublist(i)
       ENDDO
 
-
-
-
       !-------------------------------------------------------------------------
       !  Determine and store the neighbors of this processor
       !-------------------------------------------------------------------------
       topo%nneighproc = 0
 
       isize = size(topo%ineighproc,1)
-      
+
       DO k=1,topo%nsublist
           i = topo%isublist(k)
           DO j=1,nneigh(i)
@@ -378,7 +362,7 @@
       topo%isdefined = .TRUE.
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_topo_store',t0,info)

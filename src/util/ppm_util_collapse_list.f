@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_util_collapse_list
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -41,7 +41,7 @@
       USE ppm_module_util_qsort
       IMPLICIT NONE
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(:,:) , POINTER       :: inlist
       !!! Original list of n-plets.
@@ -60,7 +60,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double)                 :: t0
       INTEGER, DIMENSION(2)                 :: ldl,ldu
@@ -72,14 +72,14 @@
       INTEGER, DIMENSION(:), POINTER        :: spans => NULL()
       INTEGER, DIMENSION(:), POINTER        :: mins  => NULL()
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
       !  Initialization
       !-------------------------------------------------------------------------
       CALL substart('ppm_util_collapse_list',t0,info)
-      
+
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
@@ -87,7 +87,7 @@
         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       !  Determine geometry of inlist
       !-------------------------------------------------------------------------
@@ -95,7 +95,7 @@
       inmax = inmin + nin - 1
       l1    = LBOUND(inlist,1)
       u1    = UBOUND(inlist,1)
-      
+
       !-------------------------------------------------------------------------
       !  If inlist contains only one element, we are done
       !-------------------------------------------------------------------------
@@ -127,7 +127,7 @@
               ENDIF
               idx(inmin) = inmin
           ENDIF
-          GOTO 9999 
+          GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -159,7 +159,7 @@
      &        'mins list MINS',__LINE__,info)
           GOTO 9999
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       !  Determine the min and max values in inlist
       !  and compute the spans of the values, needed to generate unique keys
@@ -170,7 +170,7 @@
           mins(j) = tmpmin
           spans(j) = tmpmax-tmpmin+1
       ENDDO
-      
+
       !-------------------------------------------------------------------------
       !  Set up the list to carry out the sorting
       !-------------------------------------------------------------------------
@@ -180,7 +180,7 @@
            ids(:) = ids(:) + tmpfact * (inlist(j,:)-mins(j))
            tmpfact = tmpfact * spans(j)
       ENDDO
-      
+
       !-------------------------------------------------------------------------
       !  Quicksort the IDs
       !-------------------------------------------------------------------------
@@ -191,7 +191,7 @@
      &        'qsort of IDS failed',__LINE__,info)
           GOTO 9999
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       !  Compute new size
       !-------------------------------------------------------------------------
@@ -203,9 +203,9 @@
               prevdist = ids(sort(i))
           ENDIF
       ENDDO
-      
+
       !-------------------------------------------------------------------------
-      !  Allocate new collapsed list 
+      !  Allocate new collapsed list
       !-------------------------------------------------------------------------
       iopt = ppm_param_alloc_fit
       ldl(1) = l1
@@ -219,7 +219,7 @@
      &        'collapsed list OUTLIST',__LINE__,info)
           GOTO 9999
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       !  Allocate index list if needed
       !-------------------------------------------------------------------------
@@ -243,7 +243,7 @@
       j = LBOUND(sort,1)
       outlist(:,i) = inlist(:,sort(j))
       prevdist = ids(sort(j))
-      DO 
+      DO
          IF ((i-inmin+1).EQ.nout) EXIT
          j = j+1
          IF (ids(sort(j)).NE.prevdist) THEN
@@ -255,7 +255,7 @@
              prevdist     = ids(sort(j))
          ENDIF
       ENDDO
-      
+
       !-------------------------------------------------------------------------
       !  Deallocate stuff
       !-------------------------------------------------------------------------
@@ -271,6 +271,12 @@
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_util_collapse_list',        &
      &        'spans list SPANS',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(sort,ldl,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_error
+          CALL ppm_error(ppm_err_dealloc,'ppm_util_collapse_list',        &
+     &        'sort',__LINE__,info)
       ENDIF
       CALL ppm_alloc(mins,ldl,ldu,iopt,info)
       IF (info .NE. 0) THEN

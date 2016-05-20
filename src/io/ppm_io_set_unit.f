@@ -108,7 +108,8 @@
       ENDIF
 
       IF (PRESENT(logfile)) THEN
-         ! -1 is an internal unit and will cause compiler fail on GNU compilers
+         ! logfile = -1, on GNU compiler
+         ! Fortran runtime error: Inquire statement identifies an internal file
          IF (logfile.NE.-1) THEN
             INQUIRE(logfile,OPENED=isopen)
             IF (.NOT.isopen) THEN
@@ -116,8 +117,8 @@
                WRITE(filename,cformat) 'ppm_log_',ppm_rank,'.out'
                OPEN(logfile,FILE=filename,POSITION='APPEND',ACTION='WRITE',IOSTAT=info2)
             ENDIF
+            ppm_logfile=logfile
          ENDIF
-         ppm_logfile=logfile
       ENDIF
 
       !-------------------------------------------------------------------------

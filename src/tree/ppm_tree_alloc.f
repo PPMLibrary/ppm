@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_tree_alloc
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -46,7 +46,7 @@
 #endif
       !!! This routine (re)allocates the tree data structures.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_tree
@@ -64,7 +64,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), POINTER       :: min_box
       !!! Lower coordinates of the box.
@@ -102,16 +102,16 @@
       !!! Indices of all children of a box. 1st index: child ID, 2nd: box ID.
 #endif
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                                :: t0
       INTEGER, DIMENSION(2)                   :: ldc
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_tree_alloc',t0,info)
 
@@ -135,8 +135,8 @@
               CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &            'pointer to headers TREE_LHBX',__LINE__,info)
               GOTO 9999
-          ENDIF 
-      ENDIF 
+          ENDIF
+      ENDIF
       ldc(1)   = ppm_dim
       ldc(2)   = nbox
       CALL ppm_alloc(min_box,ldc,iopt,info)
@@ -145,14 +145,14 @@
           CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &        'lower box boundaries MIN_BOX',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       CALL ppm_alloc(max_box,ldc,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &        'upper box boundaries MAX_BOX',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       IF (have_mesh) THEN
           CALL ppm_alloc(Nm_box,ldc,iopt,info)
           IF (info.NE.0) THEN
@@ -160,8 +160,8 @@
               CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &            'box grid size NM_BOX',__LINE__,info)
               GOTO 9999
-          ENDIF 
-      ENDIF 
+          ENDIF
+      ENDIF
       ldc(1) = nbox
       CALL ppm_alloc(ndiv,ldc,iopt,info)
       IF (info.NE.0) THEN
@@ -169,28 +169,28 @@
           CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &        'number of divisible directions NDIV',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       CALL ppm_alloc(blevel,ldc,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &        'tree levels of boxes BLEVEL',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       CALL ppm_alloc(boxcost,ldc,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &        'box costs BOXCOST',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       CALL ppm_alloc(nchld,ldc,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &        'number of children NCHLD',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
 #if   __TYPE == __TREE
       ldc(1) = nbpd
       ldc(2) = nbox
@@ -200,7 +200,7 @@
           CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &        'list of children CHILD',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       ldc(1) = nbox
       CALL ppm_alloc(parent,ldc,iopt,info)
       IF (info.NE.0) THEN
@@ -208,7 +208,7 @@
           CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &        'parent pointer PARENT',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       ldc(1) = nlevel
       CALL ppm_alloc(nbpl,ldc,iopt,info)
       IF (info.NE.0) THEN
@@ -216,11 +216,11 @@
           CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &        'number of boxes per level NBPL',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
 #endif
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_tree_alloc',t0,info)

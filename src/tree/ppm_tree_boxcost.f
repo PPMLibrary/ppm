@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_tree_boxcost
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -43,7 +43,7 @@
       !!! box is given by its volume. Use weights(3) to
       !!! adjust this if needed.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_tree
@@ -64,7 +64,7 @@
       INCLUDE 'mpif.h'
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: min_box
       !!! The minimum coordinate of the boxes.
@@ -97,23 +97,23 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim)            :: len_box
       INTEGER , DIMENSION(2)                  :: ldc
       REAL(MK)                                :: t0,meshtotal,geomtotal,dm
       INTEGER                                 :: i,ip,iopt,j
-      REAL(MK), DIMENSION(:), POINTER         :: pcst => NULL()
+      REAL(MK), DIMENSION(:), POINTER         :: pcst
 #ifdef __MPI
-      REAL(MK), DIMENSION(:), POINTER         :: pcsum => NULL()
+      REAL(MK), DIMENSION(:), POINTER         :: pcsum
       INTEGER                                 :: MPTYPE
 #endif
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_tree_boxcost',t0,info)
 
@@ -130,13 +130,12 @@
       !-------------------------------------------------------------------------
 #if   __KIND == __SINGLE_PRECISION
       pcst => pcst_s
+#ifdef   __MPI
+      pcsum => pcsum_s
+#endif
 #else
       pcst => pcst_d
-#endif
 #ifdef   __MPI
-#if   __KIND == __SINGLE_PRECISION
-      pcsum => pcsum_s
-#else
       pcsum => pcsum_d
 #endif
 #endif
@@ -158,7 +157,7 @@
       !-------------------------------------------------------------------------
 #if   __KIND == __SINGLE_PRECISION
       MPTYPE = MPI_REAL
-#elif __KIND == __DOUBLE_PRECISION 
+#elif __KIND == __DOUBLE_PRECISION
       MPTYPE = MPI_DOUBLE_PRECISION
 #endif
 #endif
@@ -190,7 +189,7 @@
               CALL ppm_error(ppm_err_mpi_fail,'ppm_tree_boxcost',   &
      &            'MPI_Allreduce of particle costs',__LINE__,info)
               GOTO 9999
-          ENDIF 
+          ENDIF
           DO i=1,nbox
               pcst(i) = pcsum(i)
           ENDDO
@@ -256,7 +255,7 @@
       NULLIFY(pcsum)
 #endif
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
       CALL substop('ppm_tree_boxcost',t0,info)
       RETURN

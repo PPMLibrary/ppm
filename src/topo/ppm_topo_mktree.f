@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_mktree
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -84,7 +84,7 @@
       !!! is returned here, else the indicated toplogy is replaced.
       !!!
       !!! [CAUTION]
-      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the 
+      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the
       !!! ring topology (null decomposition). "Ring topologies" are non
       !!! geometric and need no setup. The user can perform ppm ring shift
       !!! operations without having to first define a topology.
@@ -140,7 +140,7 @@
       !!! 1st index: x,y,(z)                                                   +
       !!! 2nd: subID
       REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER :: user_maxsub
-      !!! maximum of extension of subs. 
+      !!! maximum of extension of subs.
       !!! Used if decomp is user defined.
       !!!
       !!! 1st index: x,y,(z)                                                   +
@@ -149,7 +149,7 @@
       !!! Total number of subs on all processors.
       !!! Used when decomp is user defined
       INTEGER, DIMENSION(:  ),  OPTIONAL, POINTER :: user_sub2proc
-      !!! Subdomain to processor assignment. 
+      !!! Subdomain to processor assignment.
       !!! Used if assignment is user defined.
       !!!
       !!! index: subID (global)
@@ -201,7 +201,7 @@
       INTEGER                           :: i,nbox,iopt,isub
       INTEGER, DIMENSION(2  )           :: ldc
       INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
-      INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
+      INTEGER, DIMENSION(:,:), POINTER  :: subs_bc
       INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
       REAL(MK)                          :: t0,lmyeps
@@ -212,9 +212,9 @@
       LOGICAL                           :: have_particles,have_mesh
       INTEGER                           :: nsublist, nsubs
       INTEGER , DIMENSION(  :), POINTER :: isublist => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
-      INTEGER,  DIMENSION(:  ), POINTER :: sub2proc => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: min_sub
+      REAL(MK), DIMENSION(:,:), POINTER :: max_sub
+      INTEGER,  DIMENSION(:  ), POINTER :: sub2proc
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -251,12 +251,18 @@
       ENDIF
       IF (PRESENT(user_minsub)) THEN
           min_sub => user_minsub
+      ELSE
+          NULLIFY(min_sub)
       ENDIF
       IF (PRESENT(user_maxsub)) THEN
           max_sub => user_maxsub
+      ELSE
+          NULLIFY(max_sub)
       ENDIF
       IF (PRESENT(user_sub2proc)) THEN
           sub2proc => user_sub2proc
+      ELSE
+          NULLIFY(sub2proc)
       ENDIF
       !-------------------------------------------------------------------------
       !  Check if we have particles and mesh
@@ -467,40 +473,65 @@
       ENDIF           ! storemesh
 
       !-------------------------------------------------------------------------
-      !  Dump out disgnostic files
-      !-------------------------------------------------------------------------
-      !IF (ppm_debug .GT. 0) THEN
-      !    WRITE(mesg,'(A,I4.4)') 'part',ppm_rank
-      !    OPEN(10,FILE=mesg)
-      !
-      !    DO j=1,nsublist
-      !        i = isublist(j)
-      !
-      !        ! x-y plan
-      !        WRITE(10,'(2e12.4)') min_sub(1,i),min_sub(2,i)
-      !        WRITE(10,'(2e12.4)') max_sub(1,i),min_sub(2,i)
-      !        WRITE(10,'(2e12.4)') max_sub(1,i),max_sub(2,i)
-      !        WRITE(10,'(2e12.4)') min_sub(1,i),max_sub(2,i)
-      !        WRITE(10,'(2e12.4)') min_sub(1,i),min_sub(2,i)
-      !        WRITE(10,'(   a  )')
-      !
-      !        ! y-z plan
-      !        IF (ppm_dim .GT. 2) THEN
-      !            WRITE(10,'(2e12.4)') min_sub(2,i),min_sub(3,i)
-      !            WRITE(10,'(2e12.4)') max_sub(2,i),min_sub(3,i)
-      !            WRITE(10,'(2e12.4)') max_sub(2,i),max_sub(3,i)
-      !            WRITE(10,'(2e12.4)') min_sub(2,i),max_sub(3,i)
-      !            WRITE(10,'(2e12.4)') min_sub(2,i),min_sub(3,i)
-      !            WRITE(10,'(   a  )')
-      !        ENDIF
-      !    ENDDO
-      !
-      !    CLOSE(10)
-      !ENDIF
-
-      !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
+      iopt = ppm_param_dealloc
+      CALL ppm_alloc(ineigh,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mktree','ineigh',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(nneigh,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mktree','nneigh',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(min_box,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mktree','min_box',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(max_box,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mktree','max_box',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(nchld,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mktree','nchld',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(subs_bc,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mktree','subs_bc',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(isublist,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mktree','isublist',__LINE__,info)
+      ENDIF
+      IF (.NOT.PRESENT(user_minsub)) THEN
+         CALL ppm_alloc(min_sub,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mktree','min_sub',__LINE__,info)
+         ENDIF
+      ENDIF
+      IF (.NOT.PRESENT(user_maxsub)) THEN
+         CALL ppm_alloc(max_sub,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mktree','max_sub',__LINE__,info)
+         ENDIF
+      ENDIF
+      IF (.NOT.PRESENT(user_sub2proc)) THEN
+         CALL ppm_alloc(sub2proc,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mktree','sub2proc',__LINE__,info)
+         ENDIF
+      ENDIF
  9999 CONTINUE
       CALL substop('ppm_topo_mktree',t0,info)
       RETURN

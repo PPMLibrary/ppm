@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Subroutine   :                 ppm_vtk_fields
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -68,7 +68,7 @@
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
-    
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -98,8 +98,8 @@
       CHARACTER(LEN=*), PARAMETER     :: caller = 'ppm_vtk_fields'
       INTEGER                         :: i,j,k,l,isub,ifield
       REAL(MK)                        :: t0
-      TYPE(ppm_t_topo), POINTER       :: topo => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER  :: mesh => NULL()
+      TYPE(ppm_t_topo), POINTER       :: topo
+      TYPE(ppm_t_equi_mesh), POINTER  :: mesh
       REAL(MK), DIMENSION(3)          :: min_phys,max_phys
       REAL(MK), DIMENSION(3)          :: h
       INTEGER, DIMENSION(6)           :: whole_ext,extent
@@ -111,7 +111,7 @@
       !  Code
       !--------------------------------------------------------------------
       CALL substart(caller,t0,info)
-     
+
       ! TODO check parameters
 
       topo => ppm_topo(topoid)%t
@@ -135,7 +135,7 @@
       max_phys(1:ppm_dim) = topo%max_physd(1:ppm_dim)
 #endif
       h(1:ppm_dim) = (max_phys(1:ppm_dim) - min_phys(1:ppm_dim)) / mesh%Nm(1:ppm_dim)
-      DO i=1,2*ppm_dim,2 
+      DO i=1,2*ppm_dim,2
         whole_ext(i) = 0
         whole_ext(i+1) = mesh%Nm((i+1)/2)-1
       ENDDO
@@ -158,14 +158,14 @@
 #define VTK_SPACING h
 #define VTK_PARALLEL
 #include "vtk/print_header.f"
-          WRITE(iUnit,'(A)') "    <PPointData Scalars='scalars'>"              
+          WRITE(iUnit,'(A)') "    <PPointData Scalars='scalars'>"
           DO l=1,nfields
               WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
               fields(l)%fname &
               (1:LEN_TRIM(fields(l)%fname)), &
               "' type='Float64' />"
           END DO
-          WRITE(iUnit,'(A)') "    </PPointData>"              
+          WRITE(iUnit,'(A)') "    </PPointData>"
           ! find the basename of the file
           DO l=1,topo%nsubs
               WRITE(iUnit,'(A)', advance='no')     "    <Piece"
@@ -218,7 +218,7 @@
 #define VTK_EXTENT extent
 #include "vtk/print_header.f"
 
-          WRITE(iUnit,'(A)',advance='no') "      <PointData" 
+          WRITE(iUnit,'(A)',advance='no') "      <PointData"
           WRITE(iUnit,'(A)',advance='no') " Scalars='"
           DO ifield=1,nfields
               WRITE(iUnit,'(A)',advance='no') &

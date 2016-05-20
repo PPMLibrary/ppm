@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_neighlist_clist
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -86,7 +86,7 @@
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:),          POINTER :: xp
       !!! Particle co-ordinates
@@ -109,7 +109,7 @@
       !!! particle indices in cell list are relative to `xp(:,pidx(:))` and not
       !!! `xp(:,:)`
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       ! timer
       REAL(MK)                                :: t0
@@ -131,13 +131,13 @@
       INTEGER                                 :: iopt
       INTEGER, DIMENSION(2)                   :: ldc
       LOGICAL                                 :: valid
-      TYPE(ppm_t_topo)          , POINTER     :: topo => NULL()
+      TYPE(ppm_t_topo)          , POINTER     :: topo
       REAL(MK)                                :: eps
       LOGICAL                                 :: lpidx
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
@@ -222,7 +222,7 @@
       ! Determine if there are any (non-)symmetric boundary conditions
       !-------------------------------------------------------------------------
       nsbc = 0
-      isbc(:) = .FALSE. 
+      isbc(:) = .FALSE.
       DO i=1,2*ppm_dim
           SELECT CASE (topo%bcdef(i))
           CASE (ppm_param_bcdef_symmetry)
@@ -243,7 +243,7 @@
       !-------------------------------------------------------------------------
       !  Loop over all subs of this processor and create cell lists for all
       !  of them. The extent of the cell list mesh is larger than the sub
-      !  (but not on all sides if we are using symmetry). 
+      !  (but not on all sides if we are using symmetry).
       !-------------------------------------------------------------------------
       DO idom=1,topo%nsublist
           jdom = topo%isublist(idom)
@@ -300,7 +300,7 @@
           !  Determine number of cell boxes and effective cell size.
           !---------------------------------------------------------------------
           DO i=1,ppm_dim
-              ! number of cells based on a cellsize = cutoff 
+              ! number of cells based on a cellsize = cutoff
               clist(idom)%nm(i) = INT((xmax(i) - xmin(i))/cutoff(i))
               ! make at least one box
               IF (clist(idom)%nm(i) .LT. 1) clist(idom)%nm(i) = 1
@@ -324,7 +324,7 @@
               DO i=ppm_dim+1,2*ppm_dim  ! layers on upper-right side ngl(i) = 1
                   ngl(i) = 1
               ENDDO
-          ELSE                       ! DO NOT EXPLOIT SYMMETRY => ghost layers 
+          ELSE                       ! DO NOT EXPLOIT SYMMETRY => ghost layers
               DO i=1,2*ppm_dim             ! all around
                  ngl(i) = 1
               ENDDO

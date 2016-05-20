@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :              ppm_map_part_ghost_put
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -32,24 +32,24 @@
       !!! corresponding real particles. This is very useful in the case of
       !!! symmetric interactions as there the ghost particles are also updated.
       !!!
-      !!! [IMPORTANT] 
+      !!! [IMPORTANT]
       !!! This routine can only be called after ghost particles have been
       !!! created using the `ppm_map_part_ghost_get` (+push/send/pop sequence)
       !!! routine.
       !!!
       !!! [WARNING]
       !!! It is an error to call `ppm_map_part_pop` in the
-      !!! push-send-pop sequence of a `map_part_ghost_put` call. Instead, you 
+      !!! push-send-pop sequence of a `map_part_ghost_put` call. Instead, you
       !!! *must* call `ppm_map_part_ghost_pop` for popping the
       !!! properties pushed onto the put buffers.
       !!!
-      !!! [TIP] 
+      !!! [TIP]
       !!! If you need to do alternating ghost-get and ghost-put sequences
       !!! you may want to use `ppm_map_part_store` and `ppm_map_part_load` to
       !!! store and load the internal buffers for ghost_get and spare yourself
       !!! the (costly) call to `ppm_map_part_ghost_get`. Positions can be pushed
       !!! using the `ppm_map_part_ghost_push` routine.
-      !!! 
+      !!!
       !!! [NOTE]
       !!! .Implementation Notes
       !!! ======================================================================
@@ -57,7 +57,7 @@
       !!! mapping routine to allow sending back the value/data
       !!! computed on the ghost particles. The routine must be
       !!! called after `ppm_map_part_send` and should be followed
-      !!! by a `ppm_map_part_push`, `ppm_map_part_send` and `ppm_map_part_pop` 
+      !!! by a `ppm_map_part_push`, `ppm_map_part_send` and `ppm_map_part_pop`
       !!! to get.
       !!!
       !!! This implementation only allows *one* ghost put at a
@@ -67,7 +67,7 @@
       !!! used (and *not* passed) by the ghost_pop()
       !!! ======================================================================
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_typedef
       USE ppm_module_data
@@ -81,28 +81,28 @@
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  This routine is ALL integer, except the timing variable t0
-      !  We pick double as the precision - no real reason for that 
+      !  We pick double as the precision - no real reason for that
       !-------------------------------------------------------------------------
       INTEGER, PARAMETER      :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER, INTENT(IN   )  :: topoid
       !!! Topology ID
       INTEGER, INTENT(  OUT)  :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(2)     :: ldu
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
       INTEGER                   :: i,j,k
       INTEGER                   :: iopt
       CHARACTER(ppm_char)       :: mesg
       LOGICAL                   :: valid
       REAL(MK)                  :: t0
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
@@ -150,12 +150,12 @@
 
 
       !-------------------------------------------------------------------------
-      !  Save the map type for the subsequent calls 
+      !  Save the map type for the subsequent calls
       !-------------------------------------------------------------------------
       ppm_map_type = ppm_param_map_ghost_put
 
       !-------------------------------------------------------------------------
-      !  Find the required size of the ppm_ghosthack array: the total number of 
+      !  Find the required size of the ppm_ghosthack array: the total number of
       !  particles send times the ppm_ncommseq
       !-------------------------------------------------------------------------
       j = 0
@@ -188,7 +188,7 @@
          !----------------------------------------------------------------------
          !  Store the number of particles send to the k-th proc
          !----------------------------------------------------------------------
-         ppm_ghosthack(1,k) = ppm_psendbuffer(k+1) - ppm_psendbuffer(k) 
+         ppm_ghosthack(1,k) = ppm_psendbuffer(k+1) - ppm_psendbuffer(k)
          DO j=1,ppm_ghosthack(1,k)
             !-------------------------------------------------------------------
             !  Increment the counter
@@ -198,7 +198,7 @@
             !-------------------------------------------------------------------
             !  store the id of the particles send to the k-th proc
             !-------------------------------------------------------------------
-            ppm_ghosthack(j+2,k) = ppm_buffer2part(i) 
+            ppm_ghosthack(j+2,k) = ppm_buffer2part(i)
          ENDDO
       ENDDO
 
@@ -207,10 +207,10 @@
       !-------------------------------------------------------------------------
       DO k=1,ppm_nsendlist + 1
          !----------------------------------------------------------------------
-         !  ppm_ghosthack(2,k) stores the pointer to the first particle received 
+         !  ppm_ghosthack(2,k) stores the pointer to the first particle received
          !  from the k-th proc
          !----------------------------------------------------------------------
-         ppm_ghosthack(2,k) = ppm_precvbuffer(k)  
+         ppm_ghosthack(2,k) = ppm_precvbuffer(k)
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -228,14 +228,14 @@
       CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
       DO k=1,ppm_nsendlist
          !----------------------------------------------------------------------
-         !  ppm_psendbuffer(k) stores the pointer to the first particle received 
+         !  ppm_psendbuffer(k) stores the pointer to the first particle received
          !  from the k-th proc
          !----------------------------------------------------------------------
-         ppm_psendbuffer(k) = ppm_ghosthack(2,k) 
+         ppm_psendbuffer(k) = ppm_ghosthack(2,k)
          DO j=ppm_ghosthack(2,k),ppm_ghosthack(2,k+1)-1
             ppm_buffer2part(j) = j
          ENDDO
-      ENDDO 
+      ENDDO
       ppm_psendbuffer(ppm_nsendlist+1) = ppm_ghosthack(2,ppm_nsendlist+1)
 
       !-------------------------------------------------------------------------
@@ -254,7 +254,7 @@
       !        ppm_ghosthack() = userpassed()
       !     ENDDO
       !  For the time being we assume ONE set of ghost and store this array in
-      !  ppm_module_data. This piece of data will be used directly by the 
+      !  ppm_module_data. This piece of data will be used directly by the
       !  ghost_pop routine
       !-------------------------------------------------------------------------
 
@@ -268,7 +268,7 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_map_part_ghost_put',t0,info)

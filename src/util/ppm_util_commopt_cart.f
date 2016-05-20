@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_util_commopt_cart
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -70,7 +70,7 @@
       INCLUDE 'mpif.h'
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! The topology to be optimized
@@ -78,7 +78,7 @@
       !!! return status, 0 on success
 
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3,8)               :: lcoords
       LOGICAL, DIMENSION(:), POINTER        :: ichecked => NULL()
@@ -99,15 +99,15 @@
       ! DISTINCT neighbor pairs, i.e. 1<->2 and 2<->1 is the same and only
       ! listed once. even indices are first points, odd ones second ones of
       ! the same edges.
-      INTEGER, DIMENSION(:  ) , POINTER     :: ilinks      => NULL()
+!       INTEGER, DIMENSION(:  ) , POINTER     :: ilinks      => NULL()
       ! optimal edge coloring determined. sequence of triples (p1,p2,c),...
       ! with p1 and p2 being the 2 vertices of each edge and c its color.
-      INTEGER, DIMENSION(:  ) , POINTER     :: optres      => NULL()
+!       INTEGER, DIMENSION(:  ) , POINTER     :: optres      => NULL()
       ! number of neighbors of all every CPU. index: MPI rank
-      INTEGER, DIMENSION(:  ) , POINTER     :: nneighprocs => NULL()
+!       INTEGER, DIMENSION(:  ) , POINTER     :: nneighprocs => NULL()
       ! all neighbors of all processors. 1st index: neighbor nr., 2nd:
       ! processor rank
-      INTEGER, DIMENSION(:,:) , POINTER     :: ineighprocs => NULL()
+!       INTEGER, DIMENSION(:,:) , POINTER     :: ineighprocs => NULL()
       INTEGER                               :: i,j,maxneigh,isize,ii,isin,k
       ! processor ranks
       INTEGER                               :: p1,p2,isb,jsb,ksb
@@ -120,8 +120,8 @@
       LOGICAL, DIMENSION(3)                 :: periods
       INTEGER, DIMENSION(3)                 :: ndims
 #endif
-      TYPE(ppm_t_topo),      POINTER        :: topo => NULL()
-      
+      TYPE(ppm_t_topo),      POINTER        :: topo
+
       CHARACTER(len=256) :: mesg
       !-------------------------------------------------------------------------
       !  Initialise
@@ -175,7 +175,7 @@
     &           coords, ' (ndims = ', ndims, ')'
          CALL ppm_write(ppm_rank,'ppm_util_commopt_cart',mesg,info)
       ENDIF
-      
+
       !-----------------------------------------------------
       !  Allocate the checked array
       !-----------------------------------------------------
@@ -188,7 +188,7 @@
               &            'ichecked array',__LINE__,info)
          GOTO 9999
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       icpu = 1
       DO k=1,2
@@ -348,8 +348,8 @@
 !       CALL ppm_write(ppm_rank,'commopt',mesg,info)
 !       WRITE(mesg,*) 'ppm_icommseq ',ppm_icommseq(19:27,topoid)
 !       CALL ppm_write(ppm_rank,'commopt',mesg,info)
-      
-          
+
+
       !-------------------------------------------------------------------------
       !  Mark this topology as done
       !-------------------------------------------------------------------------

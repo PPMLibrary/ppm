@@ -121,16 +121,16 @@
       INTEGER                                    :: rank_sub
       INTEGER                                    :: neigh_max
       INTEGER                                    :: n_part
-      TYPE(ppm_t_topo)        , POINTER          :: topo      => NULL()
+      TYPE(ppm_t_topo)        , POINTER          :: topo
       LOGICAL                                    :: lst
       INTEGER                                    :: i
       INTEGER                                    :: isub
       INTEGER                                    :: j
       REAL(MK)                                   :: t0
-      REAL(MK), POINTER   , DIMENSION(:)         :: rcred => NULL()
+      REAL(MK), POINTER   , DIMENSION(:)         :: rcred
       REAL(MK)                                   :: max_sub_size
 #if   __MODE == __HNL
-      REAL(MK), POINTER, DIMENSION(:),SAVE       :: rcblue
+      REAL(MK), POINTER, DIMENSION(:),SAVE       :: rcblue => NULL()
 #endif
 
       !-------------------------------------------------------------------------
@@ -157,7 +157,9 @@
 #endif
       ! TODO: check wheter topology exists
       topo => ppm_topo(topoid)%t
-      
+
+      NULLIFY(rcred)
+
       lda(1) = nred
       iopt = ppm_param_alloc_fit
       CALL ppm_alloc(nvlist, lda, iopt, info)
@@ -198,6 +200,9 @@
       !---------------------------------------------------------------------
       neigh_max = 0
 
+
+      NULLIFY(red_sub,blue_sub,rcred_sub,rcblue_sub,vlist_sub,nvlist_sub,red_p_id,blue_p_id)
+
       !---------------------------------------------------------------------
       ! For each subdomain
       !---------------------------------------------------------------------
@@ -226,7 +231,7 @@
           CALL getSubdomainParticles(red,nred,mred,rcred,.FALSE.,&
  &                 curr_sub,ghostlayer, red_sub, rcred_sub, &
  &                 nred_sub,mred_sub,red_p_id)
-          
+
           CALL getSubdomainParticles(blue,nblue,mblue,rcblue,.FALSE.,&
  &                 curr_sub,ghostlayer, blue_sub, rcblue_sub, &
  &                 nblue_sub,mblue_sub,blue_p_id)
@@ -274,6 +279,58 @@
               ENDDO
           END IF
       ENDDO
+
+      CALL ppm_alloc(rcred, lda, iopt, info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist', 'rcred',__LINE__,info)
+      END IF
+      CALL ppm_alloc(red_sub, lda, iopt, info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist', 'red_sub',__LINE__,info)
+      END IF
+      CALL ppm_alloc(blue_sub, lda, iopt, info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist', 'blue_sub',__LINE__,info)
+      END IF
+      CALL ppm_alloc(rcred_sub, lda, iopt, info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist', 'rcred_sub',__LINE__,info)
+      END IF
+      CALL ppm_alloc(rcblue_sub, lda, iopt, info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist', 'rcblue_sub',__LINE__,info)
+      END IF
+      CALL ppm_alloc(vlist_sub, lda, iopt, info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist', 'vlist_sub',__LINE__,info)
+      END IF
+      CALL ppm_alloc(nvlist_sub, lda, iopt, info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist', 'nvlist_sub',__LINE__,info)
+      END IF
+      CALL ppm_alloc(red_p_id, lda, iopt, info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist', 'red_p_id',__LINE__,info)
+      END IF
+      CALL ppm_alloc(blue_p_id, lda, iopt, info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist', 'blue_p_id',__LINE__,info)
+      END IF
+      CALL ppm_alloc(rcred, lda, iopt, info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist', 'rcred',__LINE__,info)
+      END IF
+
       CALL substop('ppm_inl_vlist',t0,info)
 #if   __KIND == __SINGLE_PRECISION
 #if   __MODE == __INL
@@ -386,7 +443,7 @@
      &                    'ppm_create_inl_clist with red',__LINE__,info)
               GOTO 9999
           END IF
-          
+
           CALL ppm_create_inl_clist(blue, nblue, mblue, rcblue, skin, curr_dom, &
      & ghostlayer, .FALSE., blue_clist, info)
           IF(info .NE. 0) THEN
@@ -595,7 +652,7 @@
       !!! This subroutine allocates nvlist and fills it with number of
       !!! neighbors of each particle. Then, if lstore is TRUE, it also allocates
       !!! vlist array and fills it with neighbor particles IDs for each
-      !!! particle. 
+      !!! particle.
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
           INTEGER, PARAMETER :: mk = ppm_kind_single
@@ -666,7 +723,7 @@
           used = .FALSE.
 
       !-------------------------------------------------------------------------
-      !  Set size of nvlist. 
+      !  Set size of nvlist.
       !-------------------------------------------------------------------------
           lda(1) = red_clist%n_real_p ! Store number of neighbors of real particles only
       !-------------------------------------------------------------------------
@@ -680,7 +737,7 @@
               GOTO 9999
           END IF
           nvlist = 0
-          
+
 
       !-------------------------------------------------------------------------
       !  Fill nvlist array with number of neighbors.
@@ -733,7 +790,7 @@
               !-----------------------------------------------------------------
               DO i = 1, red_clist%n_real_p
                   p_idx = red_clist%rank(i)
-                  CALL get_xset_neigh(p_idx, red_clist, blue_clist, & 
+                  CALL get_xset_neigh(p_idx, red_clist, blue_clist, &
  &                     whole_domain,  &
  &                     red, rcred, blue, rcblue, skin, vlist, nvlist)
               END DO

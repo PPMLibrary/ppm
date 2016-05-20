@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_mkgeom
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -36,7 +36,7 @@
      &              max_phys,bcdef,ghostsize,cost,info,user_minsub,      &
      &              user_maxsub,user_nsubs,user_sub2proc)
 #endif
-      !!! This routine is the topology creation routine for purely 
+      !!! This routine is the topology creation routine for purely
       !!! geometry-based decompositions, i.e. without particles and without
       !!! meshes.
       !!!
@@ -81,7 +81,7 @@
       !!! is returned here, else the indicated toplogy is replaced.
       !!!
       !!! [CAUTION]
-      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the 
+      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the
       !!! ring topology (null decomposition). "Ring topologies" are non
       !!! geometric and need no setup. The user can perform ppm ring shift
       !!! operations without having to first define a topology.
@@ -177,9 +177,9 @@
       CHARACTER(LEN=ppm_char)           :: mesg
       INTEGER                           :: nsublist, nsubs
       INTEGER , DIMENSION(  :), POINTER :: isublist => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
-      INTEGER,  DIMENSION(:  ), POINTER :: sub2proc => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: min_sub
+      REAL(MK), DIMENSION(:,:), POINTER :: max_sub
+      INTEGER,  DIMENSION(:  ), POINTER :: sub2proc
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -215,13 +215,19 @@
           nsubs = 0
       ENDIF
       IF (PRESENT(user_minsub)) THEN
-          min_sub => user_minsub
+         min_sub => user_minsub
+      ELSE
+         NULLIFY(min_sub)
       ENDIF
       IF (PRESENT(user_maxsub)) THEN
           max_sub => user_maxsub
+      ELSE
+         NULLIFY(max_sub)
       ENDIF
       IF (PRESENT(user_sub2proc)) THEN
           sub2proc => user_sub2proc
+      ELSE
+         NULLIFY(sub2proc)
       ENDIF
       !-------------------------------------------------------------------------
       !  Dummy arguments for non-existing particles and meshes
@@ -528,42 +534,70 @@
      &        'Storing topology failed',__LINE__,info)
           GOTO 9999
       ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Dump out disgnostic files
-      !-------------------------------------------------------------------------
-      !IF (ppm_debug .GT. 0) THEN
-      !    WRITE(mesg,'(A,I4.4)') 'part',ppm_rank
-      !    OPEN(10,FILE=mesg)
-      !
-      !    DO j=1,nsublist
-      !        i = isublist(j)
-      !
-      !        ! x-y plan
-      !        WRITE(10,'(2e12.4)') min_sub(1,i),min_sub(2,i)
-      !        WRITE(10,'(2e12.4)') max_sub(1,i),min_sub(2,i)
-      !        WRITE(10,'(2e12.4)') max_sub(1,i),max_sub(2,i)
-      !        WRITE(10,'(2e12.4)') min_sub(1,i),max_sub(2,i)
-      !        WRITE(10,'(2e12.4)') min_sub(1,i),min_sub(2,i)
-      !        WRITE(10,'(   a  )')
-      !
-      !        ! y-z plan
-      !        IF (ppm_dim .GT. 2) THEN
-      !            WRITE(10,'(2e12.4)') min_sub(2,i),min_sub(3,i)
-      !            WRITE(10,'(2e12.4)') max_sub(2,i),min_sub(3,i)
-      !            WRITE(10,'(2e12.4)') max_sub(2,i),max_sub(3,i)
-      !            WRITE(10,'(2e12.4)') min_sub(2,i),max_sub(3,i)
-      !            WRITE(10,'(2e12.4)') min_sub(2,i),min_sub(3,i)
-      !            WRITE(10,'(   a  )')
-      !        ENDIF
-      !    ENDDO
-      !
-      !    CLOSE(10)
-      !ENDIF
-
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
+      iopt = ppm_param_dealloc
+      CALL ppm_alloc(ineigh,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkgeom','ineigh',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(nneigh,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkgeom','nneigh',__LINE__,info)
+      ENDIF
+      IF (decomp.NE.ppm_param_decomp_cartesian.AND. &
+      &   decomp.NE.ppm_param_decomp_user_defined) THEN
+         CALL ppm_alloc(min_box,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkgeom','min_box',__LINE__,info)
+         ENDIF
+         CALL ppm_alloc(max_box,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkgeom','max_box',__LINE__,info)
+         ENDIF
+         CALL ppm_alloc(nchld,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkgeom','nchld',__LINE__,info)
+         ENDIF
+      ENDIF
+      CALL ppm_alloc(subs_bc,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkgeom','subs_bc',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(isublist,ldc,iopt,info)
+      IF (info.NE.0) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkgeom','isublist',__LINE__,info)
+      ENDIF
+      IF (.NOT.PRESENT(user_minsub)) THEN
+         CALL ppm_alloc(min_sub,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkgeom','min_sub',__LINE__,info)
+         ENDIF
+      ENDIF
+      IF (.NOT.PRESENT(user_maxsub)) THEN
+         CALL ppm_alloc(max_sub,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkgeom','max_sub',__LINE__,info)
+         ENDIF
+      ENDIF
+      IF (.NOT.PRESENT(user_sub2proc)) THEN
+         CALL ppm_alloc(sub2proc,ldc,iopt,info)
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkgeom','sub2proc',__LINE__,info)
+         ENDIF
+      ENDIF
+
  9999 CONTINUE
       CALL substop('ppm_topo_mkgeom',t0,info)
       RETURN

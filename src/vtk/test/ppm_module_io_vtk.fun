@@ -32,16 +32,16 @@ real(mk)                         :: eps
 
         use ppm_module_typedef
         use ppm_module_init
-        
+
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
             &         ghostlayer(2*ndim),stat=info)
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         len_phys(1:ndim) = max_phys-min_phys
         ghostlayer(1:2*ndim) = max_rcp
         bcdef(1:ndim) = ppm_param_bcdef_periodic
-        
+
         eps = epsilon(1.0_mk)
         tolexp = int(log10(epsilon(1.0_mk)))
 
@@ -53,7 +53,7 @@ real(mk)                         :: eps
         rank = 0
         nproc = 1
 #endif
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        call ppm_init(ndim,mk,tolexp,comm,debug,info,99)
 
     end init
 
@@ -76,17 +76,17 @@ real(mk)                         :: eps
             seed(i)=10+i*i*(rank+1)
         enddo
         call random_seed(put=seed)
-        
+
 
     end setup
-        
+
 
     teardown
-        
+
         deallocate(seed)
 
     end teardown
-    
+
     test vtkparticles
         use ppm_module_typedef
         use ppm_module_mktopo
@@ -112,16 +112,26 @@ real(mk)                         :: eps
         !CALL part_init(xp,npart,min_phys,max_phys,info,&
         !&    ppm_param_part_init_cartesian,0.5_mk)
         allocate(xp(ndim,npart),randnb(npart*ndim),stat=info)
+        assert_equal(info,0)
         xp = 0.0_mk
         call random_number(randnb)
+        select case (ndim)
+        case (2)
         do i=1,npart
           do j=1,ndim
-            xp(j,i) = min_phys(j)+ len_phys(j)*randnb((ndim+1)*i-(ndim-j))
+            xp(j,i) = min_phys(j)+ len_phys(j)*randnb((i-1)*ndim+j)
           enddo
         enddo
+        case (3)
+        do i=1,npart
+          do j=1,ndim
+            xp(j,i) = min_phys(j)+ len_phys(j)*randnb((i-1)*ndim+j)
+          enddo
+        enddo
+        end select
         h = 2.0_mk*(len_phys(1)/(sqrt(real(npart,mk))))
         bcdef(1:ndim) = ppm_param_bcdef_freespace
-        
+
         !----------------
         ! make topology
         !----------------
@@ -132,20 +142,29 @@ real(mk)                         :: eps
 
         call ppm_mktopo(topoid,xp,npart,decomp,assig,min_phys,max_phys,bcdef, &
         &               gl,cost,info)
+        assert_equal(info,0)
 
         call ppm_map_part_global(topoid,xp,npart,info)
+        assert_equal(info,0)
         call ppm_map_part_send(npart,newnpart,info)
+        assert_equal(info,0)
         call ppm_map_part_pop(xp,ndim,npart,newnpart,info)
+        assert_equal(info,0)
         npart=newnpart
         allocate(wp(npart),ra(npart))
         CALL RANDOM_NUMBER(wp)
         ra(1:npart) = rank
         call ppm_map_part_ghost_get(topoid,xp,ndim,npart,0,gl,info)
+        assert_equal(info,0)
         call ppm_map_part_push(wp,npart,info)
+        assert_equal(info,0)
         call ppm_map_part_send(npart,mpart,info)
+        assert_equal(info,0)
         call ppm_map_part_pop(wp,npart,mpart,info)
+        assert_equal(info,0)
         call ppm_map_part_pop(xp,ndim,npart,mpart,info)
-        
+        assert_equal(info,0)
+
         allocate(particles)
         particles%xp => xp
         particles%np = npart
@@ -161,7 +180,5 @@ real(mk)                         :: eps
         call ppm_vtk_particles(topoid,particles,fname,info)
         assert_equal(info,0)
     end test
-
-    
 
 end test_suite

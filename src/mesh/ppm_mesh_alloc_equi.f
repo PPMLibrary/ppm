@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_mesh_alloc_equi
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -44,7 +44,7 @@
       USE ppm_module_error
       IMPLICIT NONE
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                 , DIMENSION(:  ), INTENT(IN   ) :: lda
       !!! New size of mesh definition array
@@ -61,7 +61,7 @@
       INTEGER                                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success.
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER            :: i
       INTEGER, DIMENSION(2) :: ldc
@@ -69,11 +69,11 @@
       TYPE(ppm_t_equi_mesh)   , DIMENSION(:  ), POINTER :: work_mesh => NULL()
       LOGICAL            :: lcopy,lalloc,lrealloc,ldealloc
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_mesh_alloc_equi',t0,info)
 
@@ -158,7 +158,7 @@
               ldealloc = .TRUE.
           ENDIF
       ENDIF
-              
+
       !-------------------------------------------------------------------------
       !  Perform the actual alloc action
       !-------------------------------------------------------------------------
@@ -263,7 +263,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_mesh_alloc_equi',t0,info)
