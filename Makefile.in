@@ -69,15 +69,20 @@ MODULES := $(SOURCES:%.f=$(MODULES_DIR)/%.mod)
 DEPENDENCIES := $(SOURCES:%.f=$(OBJ_DIR)/%.d)
 
 # This creates the install directories if they don't exist
+ifneq ($(MAKECMDGOALS),clean)
 $(warning Checking for directories...)
 $(shell test -d $(OBJ_DIR) || mkdir $(OBJ_DIR))
 $(shell test -d $(MODULES_DIR) || mkdir -p $(MODULES_DIR))
 $(shell test -d $(builddir)/lib || mkdir $(builddir)/lib)
 $(shell test -d $(libdir) || mkdir -p $(libdir))
-$(shell test -e $(LOG) && rm $(LOG))
 $(warning done.)
+else
+$(warning Removing the '$(LOG)' file)
+$(shell test -e $(LOG) && rm $(LOG))
+$(warning Clean up the files created by make)
+endif
 
-.PHONY: all clean install new test
+.PHONY: all clean install uninstall new test
 
 .DEFAULT: ;
 
@@ -131,6 +136,14 @@ install: all
 	@echo '[ deploying modules to '$(includedir)/ppm']'
 	@mkdir -p $(includedir)/ppm
 	@cp $(MODULES_DIR)/* $(includedir)/ppm
+	@cp -r $(builddir)/utils $(prefix)
+
+uninstall: 
+	@echo '[ removing '$(libdir)/$(LIB_PPM)', '$(includedir)/ppm' & '$(prefix)/utils']'
+	@rm $(libdir)/$(LIB_PPM)
+	@rm -fR $(includedir)/ppm
+	@rm -fR $(prefix)/utils
+
 
 # This compiles, and copies the PPM library
 new: all install
