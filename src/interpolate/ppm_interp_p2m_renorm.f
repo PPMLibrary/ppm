@@ -163,9 +163,9 @@
       !-----------------------------------------------------
 #if __DIME == __2D
 #error two dimensional renormalization is not yet implemented
-      REAL(MK), DIMENSION(:,:,:),   POINTER  :: field_reno => NULL()
+      REAL(MK), DIMENSION(:,:,:),   POINTER  :: field_reno
 #elif __DIME == __3D
-      REAL(MK), DIMENSION(:,:,:,:), POINTER  :: field_reno => NULL()
+      REAL(MK), DIMENSION(:,:,:,:), POINTER  :: field_reno
 #endif
 
       !-------------------------------------------------------------------------

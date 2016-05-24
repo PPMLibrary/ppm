@@ -28,11 +28,9 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_neighlist_clist_s(topoid,xp,np,cutoff,lsymm,clist, &
-     &                                 info,pidx)
+      SUBROUTINE ppm_neighlist_clist_s(topoid,xp,np,cutoff,lsymm,clist,info,pidx)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_neighlist_clist_d(topoid,xp,np,cutoff,lsymm,clist, &
-     &                                 info,pidx)
+      SUBROUTINE ppm_neighlist_clist_d(topoid,xp,np,cutoff,lsymm,clist,info,pidx)
       !!! Create cell lists for all subs of this processor.
       !!!
       !!! [NOTE]

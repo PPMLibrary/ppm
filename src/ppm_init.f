@@ -110,9 +110,9 @@
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL check
-         IF (info .NE. 0) GOTO 9999
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
 #if defined __MPI
@@ -165,12 +165,12 @@
          stdout("*** This is the PPM library starting on ",'mesg(1:ilen)')
          CALL ppm_log(caller,cbuf,info)
       ELSE
-        IF (ppm_rank .EQ. 0) THEN
+        IF (ppm_rank.EQ.0) THEN
            stdout_f('(A)',"**************************************************************")
            CALL ppm_log(caller,cbuf,info)
            stdout_f('(A)',"***       Parallel Particle Mesh Library (PPM)       *********")
            CALL ppm_log(caller,cbuf,info)
-           stdout_f('(A)',"***          version:  1.2.2  /  October 2012        ****___**")
+           stdout_f('(A)',"***          version:  1.2.2  /  May 2016            ****___**")
            CALL ppm_log(caller,cbuf,info)
            stdout_f('(A,i12,A)',"***       Execution on  / ",ppm_nproc,"    node(s)    ***/ _ \*")
            CALL ppm_log(caller,cbuf,info)
@@ -199,7 +199,7 @@
       CALL ppm_log(caller,cbuf,info)
       stdout_f('(A)',"***       Parallel Particle Mesh Library (PPM)       *********")
       CALL ppm_log(caller,cbuf,info)
-      stdout_f('(A)',"***          version:  1.2.2  /  October 2012        ****___**")
+      stdout_f('(A)',"***          version:  1.2.2  /  May 2016            ****___**")
       CALL ppm_log(caller,cbuf,info)
       stdout_f('(A)',"***        Execution in single-processor mode        ***/ _ \*")
       CALL ppm_log(caller,cbuf,info)
@@ -228,7 +228,7 @@
       !-------------------------------------------------------------------------
       WRITE(cbuf,'(A,I2)') 'Debug level set to ',ppm_debug
       CALL ppm_log(caller,cbuf,info)
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL ppm_write(ppm_rank,caller,cbuf,info)
       ENDIF
 
@@ -250,7 +250,7 @@
       ENDIF
       WRITE(cbuf,'(A,I2)') 'Space dimension set to ',ppm_dim
       CALL ppm_log(caller,cbuf,info)
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL ppm_write(ppm_rank,caller,cbuf,info)
       ENDIF
 
@@ -311,7 +311,7 @@
 
       END SELECT
       CALL ppm_log(caller,cbuf,info)
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL ppm_write(ppm_rank,caller,cbuf,info)
       ENDIF
 

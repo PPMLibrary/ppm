@@ -1033,6 +1033,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
 
           IF (lda2.NE.prop%lda.OR.dtype.NE.prop%data_type) THEN
              CALL prop%destroy(info)
+             or_fail("Failed to destroy particle Property!")
           ENDIF
 
           IF (ASSOCIATED(prop%field_ptr)) THEN
@@ -1043,12 +1044,11 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
 
              ! Create the property
              CALL prop%create(dtype,Pc,npart,lda2,name2,flags,info,field)
-             or_fail("reallocating property array failed")
           ELSE
              ! Create the property
              CALL prop%create(dtype,Pc,npart,lda2,name2,flags,info)
-             or_fail("reallocating property array failed")
           ENDIF
+          or_fail("reallocating property array failed")
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_prop_realloc)

@@ -82,7 +82,6 @@
         RETURN
       END FUNCTION DTYPE(pq_insert)
 
-
       SUBROUTINE DTYPE(heapify)(a,i_in)
         !
         ! take a heap rooted at 'i' and force it to be in the
@@ -765,7 +764,6 @@
       9999 CONTINUE
         RETURN
       END SUBROUTINE DTYPE(spread_in_coordinate)
-
 
       FUNCTION DTYPE(select_on_coordinate_value)(this,c,alpha,li,ui) RESULT(res)
         !

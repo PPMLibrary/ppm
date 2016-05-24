@@ -491,7 +491,7 @@
       !!! and ppm_error_fatal otherwise.
 
       LOGICAL, OPTIONAL,       INTENT(IN   ) :: existed
-      !!! User responsibility to sure whether the key exists or not!
+      !!! User responsibility to make sure whether the key exists or not!
       !!! If existed is true, the algorithm does not check its validity
       !---------------------------------------------------------------------
       !  Local variables
@@ -606,6 +606,8 @@
       !!! and ppm_error_fatal otherwise.
 
       LOGICAL, OPTIONAL, INTENT(IN   ) :: existed
+      !!! User responsibility to make sure whether the key exists or not!
+      !!! If existed is true, the algorithm does not check its validity
       !---------------------------------------------------------------------
       !  Local variables
       !---------------------------------------------------------------------
