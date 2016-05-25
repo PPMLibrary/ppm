@@ -1,6 +1,6 @@
 PPM core package README
 =======================
-v1.2.2, May 2012
+v1.2.2, May 2016
 
 
 Introduction
@@ -51,7 +51,7 @@ This versions brings many bug fixes and several new features
 - The user can now mange cell lists himself to save unnecessary computations.
 - Added a tool to help PPM client developers with debugging. This tool
   visualizes domain decompositions and particle positions
-- Renamings: ppm_module_user -> ppm_module_core, 
+- Renamings: ppm_module_user -> ppm_module_core,
   ppm_module_user_util -> ppm_module_core_util
 
 .Fixes
@@ -276,7 +276,7 @@ $ ./configure --enable-mpi=openmpi LDFLAGS=-L../../metis/lib --enable-linux
 
 `./configure` on Mac OS X workstation with the MacPorts gcc compilers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ ./configure FC=gfortran-mp-4.4 LDFLAGS=-L../../metis/gcc/lib 
+$ ./configure FC=gfortran-mp-4.4 LDFLAGS=-L../../metis/gcc/lib
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 `./configure` on a computer with OpenMPI installed in a non-standard location
@@ -330,7 +330,7 @@ Your PPM core distribution is installed.
 
 Compiling PPM client code against PPM core
 ------------------------------------------
-When compiling your PPM client code you need to first include the PPM core modules: 
+When compiling your PPM client code you need to first include the PPM core modules:
 
 - in `include/ppm/` relative to this directory. Check which compiler flag needs to
   be used to include Fortran module directories.
@@ -348,9 +348,9 @@ Contributors
 ------------
 
 The PPM library is being maintained and developed by the CSE-lab (group of
-Professor Petros Koumoutsakos) and the MOSAIC group (Professor Ivo F.
-Sbalzarini) at ETH Zurich, and the Center for Fluid Dynamics at DTU (group of
-Professor Jens Walther).
+Professor Petros Koumoutsakos), the MOSAIC group at MPI-CBG Dresden (group
+of Prfessor Ivo F.Sbalzarini) and the Center for Fluid Dynamics at DTU (group
+of Professor Jens Walther).
 
-PPM core package maintainer: Omar Awile <omar.awile@inf.ethz.ch>
+PPM core package maintainer: Yaser Afshar <afshar@mpi-cbg.de>
 
