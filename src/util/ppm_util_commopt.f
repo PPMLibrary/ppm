@@ -141,10 +141,8 @@
       !-------------------------------------------------------------------------
       !  Allocate memory for number of neighbors
       !-------------------------------------------------------------------------
-      ALLOCATE(nneighprocs(ppm_nproc),STAT=info)
+      ALLOCATE(nneighprocs(ppm_nproc),SOURCE=0,STAT=info)
       or_fail_alloc("Failed to allocate number of neighbors NNEIGHPROCS",ppm_error=ppm_error_fatal)
-
-      nneighprocs=0
 
       ALLOCATE(displ(ppm_nproc),counts(ppm_nproc),STAT=info)
       or_fail_alloc("displ, counts",ppm_error=ppm_error_fatal)

@@ -136,12 +136,6 @@
          ENDIF
       ENDIF
 
-      !-----------------------------------------------------
-      !  Allocate the checked array
-      !-----------------------------------------------------
-      ALLOCATE(ichecked(ppm_nproc),STAT=info)
-      or_fail_alloc("ichecked array",ppm_error=ppm_error_fatal)
-
       !-------------------------------------------------------------------------
       icpu = 1
       DO k=1,2
@@ -252,7 +246,11 @@
       CALL MPI_Cart_coords(ppm_comm,ppm_rank,ppm_dim,coords,info)
       or_fail_MPI("MPI_Cart_coords")
 
-      ichecked = .FALSE.
+      !-----------------------------------------------------
+      !  Allocate the checked array
+      !-----------------------------------------------------
+      ALLOCATE(ichecked(ppm_nproc),SOURCE=.FALSE.,STAT=info)
+      or_fail_alloc("ichecked array",ppm_error=ppm_error_fatal)
 
       topo%ncommseq = MIN(27,ppm_nproc)
       iopt   = ppm_param_alloc_grow_preserve

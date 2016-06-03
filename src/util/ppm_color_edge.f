@@ -35,115 +35,115 @@
       !!! This subroutine was introduced in PPM library to replace coloring
       !!! algorithm of Vizing which was in C++
 
-      USE ppm_module_data
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_error
-      USE ppm_module_alloc
-      IMPLICIT NONE
+        USE ppm_module_data
+        USE ppm_module_substart
+        USE ppm_module_substop
+        USE ppm_module_error
+        USE ppm_module_alloc
+        IMPLICIT NONE
 
-      !---------------------------------------------------------------------
-      !  Arguments
-      !---------------------------------------------------------------------
-      INTEGER,               INTENT(IN   ) :: numV
-      INTEGER, DIMENSION(:), INTENT(INOUT) :: edge_array
-      INTEGER, DIMENSION(:), INTENT(INOUT) :: coloring
-      INTEGER,               INTENT(  OUT) :: info
+        !---------------------------------------------------------------------
+        !  Arguments
+        !---------------------------------------------------------------------
+        INTEGER,               INTENT(IN   ) :: numV
+        INTEGER, DIMENSION(:), INTENT(INOUT) :: edge_array
+        INTEGER, DIMENSION(:), INTENT(INOUT) :: coloring
+        INTEGER,               INTENT(  OUT) :: info
 
-      !---------------------------------------------------------------------
-      !  Local variables
-      !---------------------------------------------------------------------
-      REAL(ppm_kind_double) :: t0
+        !---------------------------------------------------------------------
+        !  Local variables
+        !---------------------------------------------------------------------
+        REAL(ppm_kind_double) :: t0
 
-      INTEGER :: i,iopt
-      INTEGER :: idx
+        INTEGER :: i,iopt
+        INTEGER :: idx
 
-      CHARACTER(LEN=ppm_char) :: caller="ppm_color_edge"
+        CHARACTER(LEN=ppm_char) :: caller="ppm_color_edge"
 
-      !-------------------------------------------------------------------------
-      !  Initialize
-      !-------------------------------------------------------------------------
-      CALL substart(caller,t0,info)
+        !-------------------------------------------------------------------------
+        !  Initialize
+        !-------------------------------------------------------------------------
+        CALL substart(caller,t0,info)
 
-      nvertices = numV
-      !-------------------------------------------------------------------------
-      !  Using the edge array provided, construct adjacency lists and assign
-      !  them to corresponding nodes
-      !-------------------------------------------------------------------------
-      CALL create_adjacency_lists(edge_array,info)
-      or_fail("create_adjacency_lists")
-      !-------------------------------------------------------------------------
-      !  Allocate memory for binary heap lists and initialize them
-      !-------------------------------------------------------------------------
-      CALL initialize_binary_heap(info)
-      or_fail("initialize_binary_heap")
-      !-------------------------------------------------------------------------
-      !  Initialize nodes by setting their variables to prior values
-      !-------------------------------------------------------------------------
-      CALL initialize_nodes(info)
-      or_fail("initialize_nodes")
+        nvertices = numV
+        !-------------------------------------------------------------------------
+        !  Using the edge array provided, construct adjacency lists and assign
+        !  them to corresponding nodes
+        !-------------------------------------------------------------------------
+        CALL create_adjacency_lists(edge_array,info)
+        or_fail("create_adjacency_lists")
+        !-------------------------------------------------------------------------
+        !  Allocate memory for binary heap lists and initialize them
+        !-------------------------------------------------------------------------
+        CALL initialize_binary_heap(info)
+        or_fail("initialize_binary_heap")
+        !-------------------------------------------------------------------------
+        !  Initialize nodes by setting their variables to prior values
+        !-------------------------------------------------------------------------
+        CALL initialize_nodes(info)
+        or_fail("initialize_nodes")
 
-      !-------------------------------------------------------------------------
-      !  Insert all nodes in binary heap lists. They will all go to 0th row of
-      !  binary heap lists as all of them has dsat-value 0 in the beginning
-      !-------------------------------------------------------------------------
-      DO i = 1,nedges
-         CALL insert_node(i,info)
-         or_fail("insert_node")
-      ENDDO
+        !-------------------------------------------------------------------------
+        !  Insert all nodes in binary heap lists. They will all go to 0th row of
+        !  binary heap lists as all of them has dsat-value 0 in the beginning
+        !-------------------------------------------------------------------------
+        DO i = 1, nedges
+           CALL insert_node(i,info)
+           or_fail("insert_node")
+        ENDDO
 
-      !-------------------------------------------------------------------------
-      !  All edges are colored sequentially, by getting the node to color,
-      !  coloring the node and then, updating its neighbors so that they will be
-      !  shifted to correct row of binary heap lists if necessary
-      !-------------------------------------------------------------------------
-      DO i = 1, nedges
-         idx = next_node_to_color()
-         CALL color_edge(idx,info)
-         or_fail("color_edge")
+        !-------------------------------------------------------------------------
+        !  All edges are colored sequentially, by getting the node to color,
+        !  coloring the node and then, updating its neighbors so that they will be
+        !  shifted to correct row of binary heap lists if necessary
+        !-------------------------------------------------------------------------
+        DO i = 1, nedges
+           idx = next_node_to_color()
+           CALL color_edge(idx,info)
+           or_fail("color_edge")
 
-         CALL update_neighbors(idx,info)
-         or_fail("update_neighbors")
-      ENDDO
+           CALL update_neighbors(idx,info)
+           or_fail("update_neighbors")
+        ENDDO
 
-      !-------------------------------------------------------------------------
-      !  coloring array is modified such that it is of the form (p1,p2,c) ...
-      !-------------------------------------------------------------------------
-      DO i = 1, nedges
-         coloring(3*i-2) = edge_array(2*i-1)
-         coloring(3*i-1) = edge_array(2*i)
-         coloring(3*i)   = node(i)%color
-      ENDDO
+        !-------------------------------------------------------------------------
+        !  coloring array is modified such that it is of the form (p1,p2,c) ...
+        !-------------------------------------------------------------------------
+        DO i = 1, nedges
+           coloring(3*i-2) = edge_array(2*i-1)
+           coloring(3*i-1) = edge_array(2*i)
+           coloring(3*i)   = node(i)%color
+        ENDDO
 
-      !-------------------------------------------------------------------------
-      !  Deallocate everything that was used
-      !-------------------------------------------------------------------------
-      DEALLOCATE(used_color,STAT=info)
-      or_fail_dealloc("used_color")
+        !-------------------------------------------------------------------------
+        !  Deallocate everything that was used
+        !-------------------------------------------------------------------------
+        DEALLOCATE(used_color,STAT=info)
+        or_fail_dealloc("used_color")
 
-      iopt=ppm_param_dealloc
-      DO i = 1, nedges
-         CALL ppm_alloc(lists(i)%adj_edge,ldc,iopt,info)
-         or_fail_dealloc("lists(i)%adj_edge")
+        iopt=ppm_param_dealloc
+        DO i = 1, nedges
+           CALL ppm_alloc(lists(i)%adj_edge,ldc,iopt,info)
+           or_fail_dealloc("lists(i)%adj_edge")
 
-         NULLIFY(node(i)%list)
-      ENDDO
+           NULLIFY(node(i)%list)
+        ENDDO
 
-      DEALLOCATE(node,lists,node_sat,size_heap,STAT=info)
-      or_fail_dealloc("node,lists,node_sat & size_heap")
+        DEALLOCATE(node,lists,node_sat,size_heap,STAT=info)
+        or_fail_dealloc("node,lists,node_sat & size_heap")
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
       9999 CONTINUE
-      CALL substop(caller,t0,info)
+        CALL substop(caller,t0,info)
 
       CONTAINS
-          !---------------------------------------------------------------------
-          ! Subroutine that calls everything in order and
-          ! DEALLOCATEs intermediate lists
-          !---------------------------------------------------------------------
-          SUBROUTINE create_adjacency_lists(input_array,info)
+        !---------------------------------------------------------------------
+        ! Subroutine that calls everything in order and
+        ! DEALLOCATEs intermediate lists
+        !---------------------------------------------------------------------
+        SUBROUTINE create_adjacency_lists(input_array,info)
 
           IMPLICIT NONE
 
@@ -190,18 +190,18 @@
 
           DEALLOCATE(edges_per_node,STAT=info)
           or_fail_dealloc("edges_per_node")
-          !-------------------------------------------------------------------------
-          !  Return
-          !-------------------------------------------------------------------------
-          9999 CONTINUE
+        !-------------------------------------------------------------------------
+        !  Return
+        !-------------------------------------------------------------------------
+        9999 CONTINUE
           CALL substop(caller,t0,info)
-          END SUBROUTINE create_adjacency_lists
+        END SUBROUTINE create_adjacency_lists
 
-          !---------------------------------------------------------------------
-          !  Given an array of edges, sorts pairs such that first value is
-          !  smaller than the second, to guarantee e1<e2 at all times
-          !---------------------------------------------------------------------
-          SUBROUTINE order_vertices(input_array,info)
+        !---------------------------------------------------------------------
+        !  Given an array of edges, sorts pairs such that first value is
+        !  smaller than the second, to guarantee e1<e2 at all times
+        !---------------------------------------------------------------------
+        SUBROUTINE order_vertices(input_array,info)
 
           IMPLICIT NONE
 
@@ -223,13 +223,13 @@
           ENDDO
 
           end_subroutine()
-          END SUBROUTINE order_vertices
+        END SUBROUTINE order_vertices
 
-          !---------------------------------------------------------------------
-          !  Allocates adjacency lists for every processor, a list for
-          !  each processor
-          !---------------------------------------------------------------------
-          SUBROUTINE allocate_processor_lists(input_array,info)
+        !---------------------------------------------------------------------
+        !  Allocates adjacency lists for every processor, a list for
+        !  each processor
+        !---------------------------------------------------------------------
+        SUBROUTINE allocate_processor_lists(input_array,info)
 
           IMPLICIT NONE
 
@@ -240,13 +240,12 @@
 
           start_subroutine("allocate_processor_lists")
 
-          ALLOCATE(nelem(1:nvertices),STAT=info)
+          ALLOCATE(nelem(1:nvertices),SOURCE=0,STAT=info)
           or_fail_alloc("Could not allocate nelem")
 
           ALLOCATE(edges_per_node(1:nvertices),STAT=info)
           or_fail_alloc("Could not allocate edges_per_node")
 
-          nelem = 0
           !count number of processors that are connected
           DO i = 1,nedges
              nelem(input_array(2*i-1)) = nelem(input_array(2*i-1)) + 1
@@ -261,14 +260,14 @@
           ENDDO
 
           end_subroutine()
-          END SUBROUTINE allocate_processor_lists
+        END SUBROUTINE allocate_processor_lists
 
-          !---------------------------------------------------------------------
-          !  For each processor, an adjacency list is formed, f.e. IF there
-          !  exists an edge 1-5, adj. list of proc. 1 will contain 5 and
-          !  adj. list of proc. 5 will contain 1.
-          !---------------------------------------------------------------------
-          SUBROUTINE fill_processor_lists(input_array,info)
+        !---------------------------------------------------------------------
+        !  For each processor, an adjacency list is formed, f.e. IF there
+        !  exists an edge 1-5, adj. list of proc. 1 will contain 5 and
+        !  adj. list of proc. 5 will contain 1.
+        !---------------------------------------------------------------------
+        SUBROUTINE fill_processor_lists(input_array,info)
 
           IMPLICIT NONE
 
@@ -280,10 +279,8 @@
 
           start_subroutine("fill_processor_lists")
 
-          ALLOCATE(offset(1:nvertices),STAT=info)
+          ALLOCATE(offset(nvertices),SOURCE=1,STAT=info)
           or_fail_alloc("Could not allocate offset")
-
-          offset = 1
 
           DO i = 1,nedges
              pos = input_array(2*i-1)
@@ -296,12 +293,12 @@
           ENDDO
 
           end_subroutine()
-          END SUBROUTINE fill_processor_lists
+        END SUBROUTINE fill_processor_lists
 
-          !---------------------------------------------------------------------
-          ! Allocates lists for adj. edges of each edge
-          !---------------------------------------------------------------------
-          SUBROUTINE allocate_edge_lists(input_array,info)
+        !---------------------------------------------------------------------
+        ! Allocates lists for adj. edges of each edge
+        !---------------------------------------------------------------------
+        SUBROUTINE allocate_edge_lists(input_array,info)
 
           IMPLICIT NONE
 
@@ -316,7 +313,7 @@
 
           start_subroutine("allocate_edge_lists")
 
-          ALLOCATE(lists(1:nedges),STAT=info)
+          ALLOCATE(lists(nedges),STAT=info)
           or_fail_alloc("Could not allocate lists")
 
           iopt=ppm_param_alloc_fit
@@ -336,12 +333,12 @@
           ENDDO
 
           end_subroutine()
-          END SUBROUTINE allocate_edge_lists
+        END SUBROUTINE allocate_edge_lists
 
-          !---------------------------------------------------------------------
-          ! Adjacent edges of edges are found, so that line graph is formed
-          !---------------------------------------------------------------------
-          SUBROUTINE fill_edge_lists(input_array,info)
+        !---------------------------------------------------------------------
+        ! Adjacent edges of edges are found, so that line graph is formed
+        !---------------------------------------------------------------------
+        SUBROUTINE fill_edge_lists(input_array,info)
 
           IMPLICIT NONE
 
@@ -363,10 +360,9 @@
           DEALLOCATE(offset,STAT=info)
           or_fail_dealloc("Could not deallocate offset")
 
-          ALLOCATE(offset(1:nedges),STAT=info)
+          ALLOCATE(offset(nedges),SOURCE=1,STAT=info)
           or_fail_alloc("Could not allocate offset")
-
-          offset = 1 !Same offset array is used also in this subrout.
+          !Same offset array is used also in this subrout.
 
           DO i = 1, nedges
              node1 = input_array(2*i-1)
@@ -399,12 +395,12 @@
           ENDDO
 
           end_subroutine()
-          END SUBROUTINE fill_edge_lists
+        END SUBROUTINE fill_edge_lists
 
-          !---------------------------------------------------------------------
-          ! Adjacency lists are assigned to vertices of the line graph
-          !---------------------------------------------------------------------
-          SUBROUTINE assign_edge_lists(info)
+        !---------------------------------------------------------------------
+        ! Adjacency lists are assigned to vertices of the line graph
+        !---------------------------------------------------------------------
+        SUBROUTINE assign_edge_lists(info)
 
           IMPLICIT NONE
 
@@ -422,13 +418,13 @@
           ENDDO
 
           end_subroutine()
-          END SUBROUTINE assign_edge_lists
+        END SUBROUTINE assign_edge_lists
 
-          !---------------------------------------------------------------------
-          ! Sets max_degree to delta + 1 as this is the number of colors
-          ! that will be used
-          !---------------------------------------------------------------------
-          SUBROUTINE get_maximum_degree(info)
+        !---------------------------------------------------------------------
+        ! Sets max_degree to delta + 1 as this is the number of colors
+        ! that will be used
+        !---------------------------------------------------------------------
+        SUBROUTINE get_maximum_degree(info)
 
           IMPLICIT NONE
 
@@ -448,12 +444,12 @@
           max_degree = max_degree + 1
 
           end_subroutine()
-          END SUBROUTINE get_maximum_degree
+        END SUBROUTINE get_maximum_degree
 
-          !---------------------------------------------------------------------
-          !  initialization of heap list
-          !---------------------------------------------------------------------
-          SUBROUTINE initialize_binary_heap(info)
+        !---------------------------------------------------------------------
+        !  initialization of heap list
+        !---------------------------------------------------------------------
+        SUBROUTINE initialize_binary_heap(info)
 
           IMPLICIT NONE
 
@@ -461,22 +457,19 @@
 
           start_subroutine("initialize_binary_heap")
 
-          ALLOCATE(node_sat(0:max_degree,1:nedges),STAT=info)
+          ALLOCATE(node_sat(0:max_degree,1:nedges),SOURCE=-1,STAT=info)
           or_fail_alloc("Could not allocate node_sat")
 
-          ALLOCATE(size_heap(0:max_degree),STAT=info)
+          ALLOCATE(size_heap(0:max_degree),SOURCE=0,STAT=info)
           or_fail_alloc("Could not allocate size_heap")
 
-          node_sat  = -1
-          size_heap = 0
-
           end_subroutine()
-          END SUBROUTINE initialize_binary_heap
+        END SUBROUTINE initialize_binary_heap
 
-          !---------------------------------------------------------------------
-          !  initializes nodes
-          !---------------------------------------------------------------------
-          SUBROUTINE initialize_nodes(info)
+        !---------------------------------------------------------------------
+        !  initializes nodes
+        !---------------------------------------------------------------------
+        SUBROUTINE initialize_nodes(info)
 
           IMPLICIT NONE
 
@@ -496,19 +489,17 @@
              node(i)%dsat      = 0                  ! dsat-value is 0 for all
           ENDDO
 
-          ALLOCATE(used_color(0:ncolor),STAT=info)
+          ALLOCATE(used_color(0:ncolor),SOURCE=.FALSE.,STAT=info)
           or_fail_alloc("Could not allocate used_color")
 
-          used_color = .FALSE.
-
           end_subroutine()
-          END SUBROUTINE initialize_nodes
+        END SUBROUTINE initialize_nodes
 
-          !---------------------------------------------------------------------
-          ! Given the index of the node, this subroutine inserts the node in the
-          ! corresponding row of binary heap lists
-          !---------------------------------------------------------------------
-          SUBROUTINE insert_node(idx,info)
+        !---------------------------------------------------------------------
+        ! Given the index of the node, this subroutine inserts the node in the
+        ! corresponding row of binary heap lists
+        !---------------------------------------------------------------------
+        SUBROUTINE insert_node(idx,info)
 
           IMPLICIT NONE
 
@@ -545,12 +536,12 @@
           ENDDO
 
           end_subroutine()
-          END SUBROUTINE insert_node
+        END SUBROUTINE insert_node
 
-          !---------------------------------------------------------------------
-          !  swaps nodes given their IDs
-          !---------------------------------------------------------------------
-          SUBROUTINE swap_nodes(idx1,idx2,info)
+        !---------------------------------------------------------------------
+        !  swaps nodes given their IDs
+        !---------------------------------------------------------------------
+        SUBROUTINE swap_nodes(idx1,idx2,info)
 
           IMPLICIT NONE
 
@@ -574,14 +565,14 @@
           node(idx2)%loc_heap = temp
 
           end_subroutine()
-          END SUBROUTINE swap_nodes
+        END SUBROUTINE swap_nodes
 
-          !---------------------------------------------------------------------
-          !  Gets first element of heap list where dsat is the greatest,
-          !  such that the node to be colored fulfills the max. degree
-          !  among those with max. dsat value condition
-          !---------------------------------------------------------------------
-          FUNCTION next_node_to_color() RESULT(idx)
+        !---------------------------------------------------------------------
+        !  Gets first element of heap list where dsat is the greatest,
+        !  such that the node to be colored fulfills the max. degree
+        !  among those with max. dsat value condition
+        !---------------------------------------------------------------------
+        FUNCTION next_node_to_color() RESULT(idx)
 
           IMPLICIT NONE
 
@@ -601,13 +592,13 @@
           ENDDO
 
           end_function()
-          END FUNCTION next_node_to_color
+        END FUNCTION next_node_to_color
 
-          !---------------------------------------------------------------------
-          !  Given the index number of the node, colors the node with
-          !  minimum available color
-          !---------------------------------------------------------------------
-          SUBROUTINE color_edge(idx,info)
+        !---------------------------------------------------------------------
+        !  Given the index number of the node, colors the node with
+        !  minimum available color
+        !---------------------------------------------------------------------
+        SUBROUTINE color_edge(idx,info)
 
           IMPLICIT NONE
 
@@ -640,15 +631,15 @@
           ENDDO
 
           end_subroutine()
-          END SUBROUTINE color_edge
+        END SUBROUTINE color_edge
 
-          !---------------------------------------------------------------------
-          !  Removes the colored node from binary heap list and updates
-          !  its neighbors, such that if the dsat value of the neighbor
-          !  has changed, it is removed from the heaplist and inserted in
-          !  the new list
-          !---------------------------------------------------------------------
-          SUBROUTINE update_neighbors(idx,info)
+        !---------------------------------------------------------------------
+        !  Removes the colored node from binary heap list and updates
+        !  its neighbors, such that if the dsat value of the neighbor
+        !  has changed, it is removed from the heaplist and inserted in
+        !  the new list
+        !---------------------------------------------------------------------
+        SUBROUTINE update_neighbors(idx,info)
 
           IMPLICIT NONE
 
@@ -671,12 +662,12 @@
           ENDDO
 
           end_subroutine()
-          END SUBROUTINE update_neighbors
+        END SUBROUTINE update_neighbors
 
-          !---------------------------------------------------------------------
-          !  Given the index of the node, removes it from the binary list
-          !---------------------------------------------------------------------
-          SUBROUTINE delete_node(idx,info)
+        !---------------------------------------------------------------------
+        !  Given the index of the node, removes it from the binary list
+        !---------------------------------------------------------------------
+        SUBROUTINE delete_node(idx,info)
 
           IMPLICIT NONE
 
@@ -704,14 +695,14 @@
           ENDIF
 
           end_subroutine()
-          END SUBROUTINE delete_node
+        END SUBROUTINE delete_node
 
-          !---------------------------------------------------------------------
-          !  Computes dsat-value of the node that index is provided as input
-          !  and if dsat-value has changed, removes it from binary heap list
-          !  then, inserts it back in the new row that it is supposed to be
-          !---------------------------------------------------------------------
-          SUBROUTINE compute_dsat(idx,info)
+        !---------------------------------------------------------------------
+        !  Computes dsat-value of the node that index is provided as input
+        !  and if dsat-value has changed, removes it from binary heap list
+        !  then, inserts it back in the new row that it is supposed to be
+        !---------------------------------------------------------------------
+        SUBROUTINE compute_dsat(idx,info)
 
           IMPLICIT NONE
 
@@ -759,12 +750,12 @@
           ENDIF
 
           end_subroutine()
-          END SUBROUTINE compute_dsat
+        END SUBROUTINE compute_dsat
 
-          !---------------------------------------------------------------------
-          ! Recursively heapifies the heap list such that top node is max.
-          !---------------------------------------------------------------------
-          RECURSIVE SUBROUTINE max_heapify(idx,info)
+        !---------------------------------------------------------------------
+        ! Recursively heapifies the heap list such that top node is max.
+        !---------------------------------------------------------------------
+        RECURSIVE SUBROUTINE max_heapify(idx,info)
 
           IMPLICIT NONE
 
@@ -807,6 +798,6 @@
           ENDIF
 
           end_subroutine()
-          END SUBROUTINE max_heapify
+        END SUBROUTINE max_heapify
 
       END SUBROUTINE ppm_color_edge

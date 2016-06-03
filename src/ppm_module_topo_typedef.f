@@ -120,8 +120,8 @@
           !!! number of subs on the current processor.
 
           INTEGER,               DIMENSION(:),   POINTER :: isublist => NULL()
-          !!! list of subs of the current processor. 1st index: local sub
-          !!! number.
+          !!! list of subs (global sub number) of the current processor.
+          !!! 1st index: local sub number.
 
           INTEGER,               DIMENSION(:,:), POINTER :: subs_bc => NULL()
           !!! boundary conditions on a sub:
