@@ -130,7 +130,7 @@ clean:
 
 # This copies the PPM library into libdir
 install: all
-	@echo '[ deploying to '$(libdir)']'
+	@echo '[ deploying '$(LIB_PPM)' to '$(libdir)']'
 	@cp $(TARGET) $(libdir)
 	@ranlib $(libdir)/$(LIB_PPM)
 	@echo '[ deploying modules to '$(includedir)/ppm']'
