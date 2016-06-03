@@ -670,36 +670,42 @@
 
       nsize=INT(table%nrow)
 
-      ALLOCATE(keys_tmp(nsize),SOURCE=table%keys,STAT=info)
-      or_fail_alloc("keys_tmp")
+      SELECT CASE (nsize)
+      CASE (0)
+         CALL table%create(1,info)
+         or_fail("table%create")
+      CASE DEFAULT
+         ALLOCATE(keys_tmp(nsize),SOURCE=table%keys,STAT=info)
+         or_fail_alloc("keys_tmp")
 
-      ALLOCATE(borders_pos_tmp(nsize),SOURCE=table%borders_pos,STAT=info)
-      or_fail_alloc("keys_tmp & borders_pos_tmp")
+         ALLOCATE(borders_pos_tmp(nsize),SOURCE=table%borders_pos,STAT=info)
+         or_fail_alloc("keys_tmp & borders_pos_tmp")
 
-      NULLIFY(ranklist)
-      CALL ppm_util_qsort(keys_tmp,ranklist,info,nsize)
-      or_fail("ppm_util_qsort")
+         NULLIFY(ranklist)
+         CALL ppm_util_qsort(keys_tmp,ranklist,info,nsize)
+         or_fail("ppm_util_qsort")
 
-      CALL table%destroy(info)
-      or_fail("table%destroy")
+         CALL table%destroy(info)
+         or_fail("table%destroy")
 
-      CALL table%create(nsize*2,info)
-      or_fail("table%create")
+         CALL table%create(nsize*2,info)
+         or_fail("table%create")
 
-      DO i=1,nsize
-         j=ranklist(i)
-         IF (keys_tmp(j).EQ.htable_null_li) CYCLE
-         CALL table%insert(keys_tmp(j),borders_pos_tmp(j),info)
-      ENDDO
+         DO i=1,nsize
+            j=ranklist(i)
+            IF (keys_tmp(j).EQ.htable_null_li) CYCLE
+            CALL table%insert(keys_tmp(j),borders_pos_tmp(j),info)
+         ENDDO
 
-      DEALLOCATE(keys_tmp,borders_pos_tmp,STAT=info)
-      or_fail_dealloc("keys_tmp & borders_pos_tmp")
+         DEALLOCATE(keys_tmp,borders_pos_tmp,STAT=info)
+         or_fail_dealloc("keys_tmp & borders_pos_tmp")
 
-      !---------------------------------------------------------------------
-      !  Deallocate ranklist array.
-      !---------------------------------------------------------------------
-      CALL ppm_alloc(ranklist,(/0/),ppm_param_dealloc,info)
-      or_fail_dealloc('htable_keys',ppm_error=ppm_error_fatal)
+         !---------------------------------------------------------------------
+         !  Deallocate ranklist array.
+         !---------------------------------------------------------------------
+         CALL ppm_alloc(ranklist,(/0/),ppm_param_dealloc,info)
+         or_fail_dealloc('htable_keys',ppm_error=ppm_error_fatal)
+      END SELECT
 
       IF (PRESENT(key_)) THEN
          IF (PRESENT(value_)) THEN
