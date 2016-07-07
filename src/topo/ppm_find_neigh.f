@@ -298,180 +298,168 @@
       !  TWO DIMENSIONS
       !-------------------------------------------------------------------------
       IF (ppm_dim.EQ.2) THEN
-          n1  = Nmtot(1)
-          ! loop over all REAL cells (numbering is 0...n-1)
-          imx = Nmtot(1)-2
-          jmx = Nmtot(2)-2
-          DO j=0,jmx
-              !-----------------------------------------------------------------
-              !  Check if we are in a boundary cell of a periodic face.
-              !  This means that there could be periodic images of subs
-              !  that we already have in the list and we need to check
-              !  for duplicates when adding these subs.
-              !-----------------------------------------------------------------
-              IF ((j.EQ.jmx).AND.(bcdef(4).EQ.ppm_param_bcdef_periodic))THEN
-                  pbdry = .TRUE.
-              ELSE
-                  pbdry = .FALSE.
-              ENDIF
-              DO i=0,imx
-                  IF((i.EQ.imx).AND.(bcdef(2).EQ.ppm_param_bcdef_periodic))THEN
-                      pbdrx = .TRUE.
-                  ELSE
-                      pbdrx = .FALSE.
-                  ENDIF
-                  ! index of the center box
-                  cbox = i + 1 + n1*j
-                  ! loop over all box-box interactions
-                  DO iinter=1,nnp
-                      ! determine box indices for this interaction
-                      ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter))
-                      jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter))
-                      !---------------------------------------------------------
-                      !  Read indices and check if box is empty
-                      !---------------------------------------------------------
-                      istart = lhbx(ibox)
-                      iend   = lhbx(ibox+1)-1
-                      IF (iend .LT. istart) CYCLE
-                      !---------------------------------------------------------
-                      !  Within the box itself use symmetry and avoid
-                      !  adding the particle itself to its own list
-                      !---------------------------------------------------------
-                      IF (ibox .EQ. jbox) THEN
-                          DO ipart=istart,iend
-                              ip = lpdx(ipart)
-                              ii = subid(ip)
-#ifdef __SXF90
-!CDIR NODEP
-#endif
-                              DO jpart=(ipart+1),iend
-                                  jp = lpdx(jpart)
-                                  jj = subid(jp)
-#include "topo/ppm_find_neigh_subs_2d.inc"
-                              ENDDO
-                          ENDDO
-                      !---------------------------------------------------------
-                      !  For the other boxes check all particles
-                      !---------------------------------------------------------
-                      ELSE
-                          ! get pointers to first and last particle
-                          jstart = lhbx(jbox)
-                          jend   = lhbx(jbox+1)-1
-                          ! skip this iinter if other box is empty
-                          IF (jend .LT. jstart) CYCLE
-                          ! loop over all particles inside this cell
-                          DO ipart=istart,iend
-                              ip = lpdx(ipart)
-                              ii = subid(ip)
-#ifdef __SXF90
-!CDIR NODEP
-#endif
-                              DO jpart=jstart,jend
-                                  jp = lpdx(jpart)
-                                  jj = subid(jp)
-#include "topo/ppm_find_neigh_subs_2d.inc"
-                              ENDDO
-                          ENDDO
-                      ENDIF       ! ibox .EQ. jbox
-                  ENDDO           ! iinter
-              ENDDO               ! i
-          ENDDO                   ! j
+         n1  = Nmtot(1)
+         ! loop over all REAL cells (numbering is 0...n-1)
+         imx = Nmtot(1)-2
+         jmx = Nmtot(2)-2
+         DO j=0,jmx
+            !-----------------------------------------------------------------
+            !  Check if we are in a boundary cell of a periodic face.
+            !  This means that there could be periodic images of subs
+            !  that we already have in the list and we need to check
+            !  for duplicates when adding these subs.
+            !-----------------------------------------------------------------
+            IF ((j.EQ.jmx).AND.(bcdef(4).EQ.ppm_param_bcdef_periodic))THEN
+               pbdry = .TRUE.
+            ELSE
+               pbdry = .FALSE.
+            ENDIF
+            DO i=0,imx
+               IF ((i.EQ.imx).AND.(bcdef(2).EQ.ppm_param_bcdef_periodic))THEN
+                  pbdrx = .TRUE.
+               ELSE
+                  pbdrx = .FALSE.
+               ENDIF
+               ! index of the center box
+               cbox = i + 1 + n1*j
+               ! loop over all box-box interactions
+               DO iinter=1,nnp
+                  ! determine box indices for this interaction
+                  ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter))
+                  jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter))
+                  !---------------------------------------------------------
+                  !  Read indices and check if box is empty
+                  !---------------------------------------------------------
+                  istart = lhbx(ibox)
+                  iend   = lhbx(ibox+1)-1
+                  IF (iend .LT. istart) CYCLE
+                  !---------------------------------------------------------
+                  !  Within the box itself use symmetry and avoid
+                  !  adding the particle itself to its own list
+                  !---------------------------------------------------------
+                  IF (ibox .EQ. jbox) THEN
+                     DO ipart=istart,iend
+                        ip = lpdx(ipart)
+                        ii = subid(ip)
 
+                        DO jpart=(ipart+1),iend
+                           jp = lpdx(jpart)
+                           jj = subid(jp)
+#include "topo/ppm_find_neigh_subs_2d.inc"
+                        ENDDO
+                     ENDDO
+                  !---------------------------------------------------------
+                  !  For the other boxes check all particles
+                  !---------------------------------------------------------
+                  ELSE
+                     ! get pointers to first and last particle
+                     jstart = lhbx(jbox)
+                     jend   = lhbx(jbox+1)-1
+                     ! skip this iinter if other box is empty
+                     IF (jend .LT. jstart) CYCLE
+                     ! loop over all particles inside this cell
+                     DO ipart=istart,iend
+                        ip = lpdx(ipart)
+                        ii = subid(ip)
+
+                        DO jpart=jstart,jend
+                           jp = lpdx(jpart)
+                           jj = subid(jp)
+#include "topo/ppm_find_neigh_subs_2d.inc"
+                        ENDDO
+                     ENDDO
+                  ENDIF ! ibox .EQ. jbox
+               ENDDO ! iinter
+            ENDDO ! i
+         ENDDO ! j
       !-------------------------------------------------------------------------
       !  THREE DIMENSIONS
       !-------------------------------------------------------------------------
       ELSE
-          n1  = Nmtot(1)
-          n2  = Nmtot(1)*Nmtot(2)
-          ! loop over all REAL cells (numbering is 0....n-1)
-          imx = Nmtot(1)-2
-          jmx = Nmtot(2)-2
-          kmx = Nmtot(3)-2
-          DO k=0,kmx
-              !-----------------------------------------------------------------
-              !  Check if we are in a boundary cell of a periodic face.
-              !  This means that there could be periodic images of subs
-              !  that we already have in the list and we need to check
-              !  for duplicates when adding these subs.
-              !-----------------------------------------------------------------
-              IF((k.EQ.kmx).AND.(bcdef(6).EQ.ppm_param_bcdef_periodic))THEN
-                  pbdrz = .TRUE.
-              ELSE
-                  pbdrz = .FALSE.
-              ENDIF
-              DO j=0,jmx
-                  IF((j.EQ.jmx).AND.(bcdef(4).EQ.ppm_param_bcdef_periodic))THEN
-                      pbdry = .TRUE.
+         n1  = Nmtot(1)
+         n2  = Nmtot(1)*Nmtot(2)
+         ! loop over all REAL cells (numbering is 0....n-1)
+         imx = Nmtot(1)-2
+         jmx = Nmtot(2)-2
+         kmx = Nmtot(3)-2
+         DO k=0,kmx
+            !-----------------------------------------------------------------
+            !  Check if we are in a boundary cell of a periodic face.
+            !  This means that there could be periodic images of subs
+            !  that we already have in the list and we need to check
+            !  for duplicates when adding these subs.
+            !-----------------------------------------------------------------
+            IF ((k.EQ.kmx).AND.(bcdef(6).EQ.ppm_param_bcdef_periodic))THEN
+               pbdrz = .TRUE.
+            ELSE
+               pbdrz = .FALSE.
+            ENDIF
+            DO j=0,jmx
+               IF ((j.EQ.jmx).AND.(bcdef(4).EQ.ppm_param_bcdef_periodic))THEN
+                  pbdry = .TRUE.
+               ELSE
+                  pbdry = .FALSE.
+               ENDIF
+               DO i=0,imx
+                  IF ((i.EQ.imx).AND.(bcdef(2).EQ.ppm_param_bcdef_periodic))THEN
+                     pbdrx = .TRUE.
                   ELSE
-                      pbdry = .FALSE.
+                     pbdrx = .FALSE.
                   ENDIF
-                  DO i=0,imx
-                      IF((i.EQ.imx).AND.(bcdef(2).EQ.    &
-     &                    ppm_param_bcdef_periodic))THEN
-                          pbdrx = .TRUE.
-                      ELSE
-                          pbdrx = .FALSE.
-                      ENDIF
-                      ! index of the center box
-                      cbox = i + 1 + n1*j + n2*k
-                      ! loop over all box-box interactions
-                      DO iinter=1,nnp
-                          ! determine box indices for this interaction
-                          ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+ &
-     &                           n2*inp(3,iinter))
-                          jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+ &
-     &                           n2*jnp(3,iinter))
-                          !-----------------------------------------------------
-                          !  Read indices and check if box is empty
-                          !-----------------------------------------------------
-                          istart = lhbx(ibox)
-                          iend   = lhbx(ibox+1)-1
-                          IF (iend .LT. istart) CYCLE
-                          !-----------------------------------------------------
-                          !  Within the box itself use symmetry and avoid
-                          !  adding the particle itself to its own list
-                          !-----------------------------------------------------
-                          IF (ibox .EQ. jbox) THEN
-                              DO ipart=istart,iend
-                                  ip = lpdx(ipart)
-                                  ii = subid(ip)
-#ifdef __SXF90
-!CDIR NODEP
-#endif
-                                  DO jpart=(ipart+1),iend
-                                      jp = lpdx(jpart)
-                                      jj = subid(jp)
+                  ! index of the center box
+                  cbox = i + 1 + n1*j + n2*k
+                  ! loop over all box-box interactions
+                  DO iinter=1,nnp
+                     ! determine box indices for this interaction
+                     ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+n2*inp(3,iinter))
+                     jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+n2*jnp(3,iinter))
+                     !-----------------------------------------------------
+                     !  Read indices and check if box is empty
+                     !-----------------------------------------------------
+                     istart = lhbx(ibox)
+                     iend   = lhbx(ibox+1)-1
+                     IF (iend .LT. istart) CYCLE
+                     !-----------------------------------------------------
+                     !  Within the box itself use symmetry and avoid
+                     !  adding the particle itself to its own list
+                     !-----------------------------------------------------
+                     IF (ibox .EQ. jbox) THEN
+                        DO ipart=istart,iend
+                           ip = lpdx(ipart)
+                           ii = subid(ip)
+
+                           DO jpart=(ipart+1),iend
+                              jp = lpdx(jpart)
+                              jj = subid(jp)
 #include "topo/ppm_find_neigh_subs_3d.inc"
-                                  ENDDO
-                              ENDDO
-                          !-----------------------------------------------------
-                          !  For the other boxes check all particles
-                          !-----------------------------------------------------
-                          ELSE
-                              ! get pointers to first and last particle
-                              jstart = lhbx(jbox)
-                              jend   = lhbx(jbox+1)-1
-                              ! skip this iinter if other box is empty
-                              IF (jend .LT. jstart) CYCLE
-                              ! loop over all particles inside this cell
-                              DO ipart=istart,iend
-                                  ip = lpdx(ipart)
-                                  ii = subid(ip)
-#ifdef __SXF90
-!CDIR NODEP
-#endif
-                                  DO jpart=jstart,jend
-                                      jp = lpdx(jpart)
-                                      jj = subid(jp)
+                           ENDDO !jpart
+                        ENDDO !ipart
+                     !-----------------------------------------------------
+                     !  For the other boxes check all particles
+                     !-----------------------------------------------------
+                     ELSE
+                        ! get pointers to first and last particle
+                        jstart = lhbx(jbox)
+                        jend   = lhbx(jbox+1)-1
+                        ! skip this iinter if other box is empty
+                        IF (jend .LT. jstart) CYCLE
+                        ! loop over all particles inside this cell
+                        DO ipart=istart,iend
+                           ip = lpdx(ipart)
+                           ii = subid(ip)
+
+                           DO jpart=jstart,jend
+                              jp = lpdx(jpart)
+                              jj = subid(jp)
 #include "topo/ppm_find_neigh_subs_3d.inc"
-                                  ENDDO
-                              ENDDO
-                          ENDIF       ! ibox .EQ. jbox
-                      ENDDO           ! iinter
-                  ENDDO               ! i
-              ENDDO                   ! j
-          ENDDO                       ! k
-      ENDIF                           ! ppm_dim
+                           ENDDO
+                        ENDDO
+                     ENDIF ! ibox .EQ. jbox
+                  ENDDO ! iinter
+               ENDDO ! i
+            ENDDO ! j
+         ENDDO ! k
+      ENDIF ! ppm_dim
 
       !-------------------------------------------------------------------------
       !  Free the memory again
@@ -495,7 +483,6 @@
       8888 iopt = ppm_param_dealloc
       CALL ppm_alloc(subid,ldc,iopt,info)
       or_fail_dealloc('Sub IDs SUBID')
-
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------

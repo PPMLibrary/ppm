@@ -153,7 +153,7 @@
             j = nsubsplus
             DO i=1,nsubsplus
                IF (ABS(min_sub(1,i)-min_phys(1)).LE.ppm_myeps) THEN
-                  j            = j + 1
+                  j=j + 1
                   IF (j.GT.isize) THEN
                      isize  = isize * 2
                      ldc(1) = isize

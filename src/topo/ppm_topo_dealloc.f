@@ -52,17 +52,20 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
+      REAL(ppm_kind_double)  :: t0
+
       INTEGER , DIMENSION(3) :: ldc
       INTEGER                :: iopt
-      REAL(ppm_kind_double)  :: t0
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_topo_dealloc'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
-
       !-------------------------------------------------------------------------
       !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_topo_dealloc',t0,info)
+      CALL substart(caller,t0,info)
+
       ldc  = 1
       iopt = ppm_param_dealloc
 
@@ -86,18 +89,12 @@
       CALL ppm_alloc(topo%ineighsubs,ldc,iopt,info)
       CALL ppm_alloc(topo%subs_bc,ldc,iopt,info)
       CALL ppm_alloc(topo%ineighproc,ldc,iopt,info)
+      CALL ppm_alloc(topo%ineighcolor,ldc,iopt,info)
       CALL ppm_alloc(topo%icommseq,ldc,iopt,info)
       CALL ppm_alloc(topo%min_physs,ldc,iopt,info)
       CALL ppm_alloc(topo%min_physd,ldc,iopt,info)
       CALL ppm_alloc(topo%max_physs,ldc,iopt,info)
       CALL ppm_alloc(topo%max_physd,ldc,iopt,info)
-
-!      !-------------------------------------------------------------------------
-!      !  Deallocate the meshes
-!      !-------------------------------------------------------------------------
-!      CALL ppm_mesh_alloc_equi(topo%mesh,ldc,iopt,info)
-!      NULLIFY(topo%mesh)
-!      topo%max_meshid = 0
 
       !-------------------------------------------------------------------------
       !  Mark this topology as not defined
@@ -112,7 +109,7 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_topo_dealloc',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       END SUBROUTINE ppm_topo_dealloc

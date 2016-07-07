@@ -452,7 +452,13 @@
                      adjwgt(j)=0
                   ENDIF
                ELSE
-                  fail("St is wrong!!!",ppm_error=ppm_error_fatal)
+                  ! TOCHECK
+                  ! There might be a case that a subdomain that overlaps the ghost
+                  ! layer of another subdomain is considered as a neighbor even
+                  ! if it does not touch the subdomain itself (see ppm_find_neigh)
+                  ! Here for simplicity we consider this weight to zero.
+                  ! It should be checked for correctness
+                  adjwgt(j)=0
                ENDIF
 
                vsize(isub)=vsize(isub)+adjwgt(j)
@@ -579,7 +585,13 @@
                      adjwgt(j)=0
                   ENDIF
                ELSE
-                  fail("St is wrong!!!",ppm_error=ppm_error_fatal)
+                  ! TOCHECK
+                  ! There might be a case that a subdomain that overlaps the ghost
+                  ! layer of another subdomain is considered as a neighbor even
+                  ! if it does not touch the subdomain itself (see ppm_find_neigh)
+                  ! Here for simplicity we consider this weight to zero.
+                  ! It should be checked for correctness
+                  adjwgt(j)=0
                ENDIF
 
                vsize(isub)=vsize(isub)+adjwgt(j)

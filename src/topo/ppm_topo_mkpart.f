@@ -199,8 +199,8 @@
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec
       REAL(MK), DIMENSION(:,:), POINTER :: min_box => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_box => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: min_sub => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: max_sub => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: min_sub
+      REAL(MK), DIMENSION(:,:), POINTER :: max_sub
 
       INTEGER                          :: i,Ntot,iopt,treetype
       INTEGER                          :: nbox,isub
@@ -213,7 +213,7 @@
       INTEGER, DIMENSION(:,:), POINTER :: subs_bc  => NULL()
       INTEGER, DIMENSION(  :), POINTER :: nneigh   => NULL()
       INTEGER, DIMENSION(  :), POINTER :: nchld    => NULL()
-      INTEGER, DIMENSION(:  ), POINTER :: sub2proc => NULL()
+      INTEGER, DIMENSION(:  ), POINTER :: sub2proc
       INTEGER, DIMENSION(  :), POINTER :: isublist => NULL()
 
       CHARACTER(ppm_char) :: cbuf
@@ -247,17 +247,16 @@
       !  Check that we have particles
       !-------------------------------------------------------------------------
 #ifdef __MPI
+      ! the MPI_AllReduce is to make sure that there is a particle in domain
       CALL MPI_AllReduce(Npart,Ntot,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
       or_fail_MPI('MPI_AllReduce failed')
 
       IF (Ntot.LT.1) THEN
-         fail('No particles in domain',ppm_error=ppm_error_notice)
-      ENDIF
 #else
       IF (Npart.LT.1) THEN
+#endif
         fail('No particle on this processor',ppm_error=ppm_error_notice)
       ENDIF
-#endif
 
       ! If the user defined nsubs then use those
       IF (PRESENT(user_nsubs)) THEN
@@ -267,18 +266,24 @@
       ENDIF
       IF (PRESENT(user_minsub)) THEN
          min_sub => user_minsub
+      ELSE
+         NULLIFY(min_sub)
       ENDIF
       IF (PRESENT(user_maxsub)) THEN
          max_sub => user_maxsub
+      ELSE
+         NULLIFY(max_sub)
       ENDIF
       IF (PRESENT(user_sub2proc)) THEN
          sub2proc => user_sub2proc
+      ELSE
+         NULLIFY(sub2proc)
       ENDIF
 
       !----------------------------------------------------------------------
       !  Dummy argument for non-existing mesh
       !----------------------------------------------------------------------
-      nnodes(1:3,1) = 0
+      nnodes = 0
 
       !----------------------------------------------------------------------
       !  Perform the decomposition using various techniques
@@ -325,10 +330,10 @@
          weights(3,1) = 0.0_MK
          weights(3,2) = 0.0_MK
          ! all directions can be cut
-         fixed(1:ppm_dim) = .FALSE.
-         gsvec(1:ppm_dim) = ghostsize
+         fixed = .FALSE.
+         gsvec = ghostsize
          ! no mesh
-         Nm(1:ppm_dim) = 0
+         Nm    = 0
          ! build tree
          IF (PRESENT(pcost)) THEN
             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
