@@ -220,7 +220,7 @@
          DO j=lb,ub-1
             ppm_mesh_irecvblkstart(1:ppm_dim,j) = map%ghost_recvblkstart(1:ppm_dim,j)
             ppm_mesh_irecvblksize(1:ppm_dim,j)  = map%ghost_recvblksize(1:ppm_dim,j)
-            ppm_mesh_irecvtosub(j)           = map%ghost_recvtosub(j)
+            ppm_mesh_irecvtosub(j)              = map%ghost_recvtosub(j)
             ppm_mesh_irecvpatchid(1:ppm_dim,j)  = map%ghost_recvpatchid(1:ppm_dim,j)
          ENDDO
       ENDDO
