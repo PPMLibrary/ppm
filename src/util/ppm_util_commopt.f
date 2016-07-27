@@ -50,7 +50,7 @@
       USE ppm_module_alloc
       USE ppm_module_mpi
       USE ppm_module_topo_typedef
-      USE ppm_module_color_edge
+      USE ppm_module_color
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
@@ -68,6 +68,7 @@
 
       REAL(ppm_kind_double) :: t0
 
+      INTEGER, DIMENSION(1)                :: ldl
       INTEGER, DIMENSION(1)                :: ldu
       INTEGER                              :: iopt
       ! number of neighborhood relations in total
@@ -85,10 +86,16 @@
       ! processor rank
       INTEGER, DIMENSION(:,:), ALLOCATABLE :: ineighprocs
 
+
+      INTEGER, DIMENSION(:),   ALLOCATABLE :: coloring
+      ! processor colors
+      INTEGER, DIMENSION(:,:), ALLOCATABLE :: ineighcolors
+
       INTEGER, DIMENSION(:),   ALLOCATABLE :: counts
       INTEGER, DIMENSION(:),   ALLOCATABLE :: displ
       INTEGER                              :: i
       INTEGER                              :: j
+      INTEGER                              :: k
       INTEGER                              :: ii
       INTEGER                              :: maxneigh,isize,isin
       ! processor ranks
@@ -124,7 +131,7 @@
          !---------------------------------------------------------------------
          !  Allocate memory for communication protocols
          !---------------------------------------------------------------------
-         iopt = ppm_param_alloc_fit
+         iopt=ppm_param_alloc_fit
          ldu  = 1
          CALL ppm_alloc(topo%icommseq,ldu,iopt,info)
          or_fail_alloc("communication sequence PPM_ICOMMSEQ",ppm_error=ppm_error_fatal)
@@ -134,6 +141,12 @@
          !---------------------------------------------------------------------
          topo%ncommseq = 1
          topo%icommseq = ppm_rank
+
+         !---------------------------------------------------------------------
+         !  One processor has only one color
+         !---------------------------------------------------------------------
+         topo%ineighcolor = 1
+
          GOTO 9999
       ENDIF
 
@@ -166,6 +179,12 @@
       !-------------------------------------------------------------------------
       ALLOCATE(ineighprocs(maxneigh,ppm_nproc),STAT=info)
       or_fail_alloc("neighbor list INEIGHPROCS",ppm_error=ppm_error_fatal)
+
+      !-------------------------------------------------------------------------
+      !  Allocate memory for neighbor colors
+      !-------------------------------------------------------------------------
+      ALLOCATE(ineighcolors(0:maxneigh+1,ppm_nproc),STAT=info)
+      or_fail_alloc("neighbor colors INEIGHCOLORS",ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Rank 0 receives all neighbor lists
@@ -202,7 +221,7 @@
                      ALLOCATE(ilinkst(isize+10),STAT=info)
                      or_fail_alloc("links ILINKS",ppm_error=ppm_error_fatal)
 
-                     ilinkst(1:isize)=ilinks(1:isize)
+                     FORALL (k=1:isize) ilinkst(k)=ilinks(k)
 
                      CALL MOVE_ALLOC(ilinkst,ilinks)
 
@@ -216,12 +235,6 @@
             ENDDO !j=1,nneighprocs(i)
          ENDDO !i=1,ppm_nproc
 
-         !-------------------------------------------------------------------------
-         !  Deallocate temporary storage
-         !-------------------------------------------------------------------------
-         DEALLOCATE(nneighprocs,STAT=info)
-         or_fail_dealloc("number of neighbors NNEIGHPROCS")
-
          !---------------------------------------------------------------------
          !  Allocate memory for optimal coloring result
          !---------------------------------------------------------------------
@@ -232,10 +245,9 @@
          !  Shrink ilinks to the correct size. C does not like it
          !  otherwise.
          !---------------------------------------------------------------------
-         ALLOCATE(ilinkst(2*nlinks),STAT=info)
+         k=2*nlinks
+         ALLOCATE(ilinkst(k),SOURCE=ilinks(1:k),STAT=info)
          or_fail_alloc("final links ILINKS",ppm_error=ppm_error_fatal)
-
-         ilinkst(1:2*nlinks)=ilinks(1:2*nlinks)
 
          CALL MOVE_ALLOC(ilinkst,ilinks)
 
@@ -259,6 +271,33 @@
          DEALLOCATE(ilinks,STAT=info)
          or_fail_dealloc("links ILINKS")
 
+         !-------------------------------------------------------------------------
+         !  Vertex coloring
+         !-------------------------------------------------------------------------
+         ALLOCATE(coloring(ppm_nproc),STAT=info)
+         or_fail_alloc("coloring",ppm_error=ppm_error_fatal)
+
+         ineighprocs=ineighprocs+1
+
+         CALL ppm_color_vertex(ppm_nproc,nneighprocs,ineighprocs,coloring,info)
+         or_fail("ppm_color_vertex")
+
+         ii=MAXVAL(coloring)
+         DO i=1,ppm_nproc
+            ineighcolors(0,i)=coloring(i)
+            DO j=1,nneighprocs(i)
+               k=ineighprocs(j,i)
+               ineighcolors(j,i)=coloring(k)
+            ENDDO
+            ineighcolors(j,i)=ii
+         ENDDO
+
+         !---------------------------------------------------------------------
+         !  Allocate memory for neighbor communication lists
+         !---------------------------------------------------------------------
+         DEALLOCATE(ineighprocs,coloring,STAT=info)
+         or_fail_dealloc("ineighprocs & coloring",ppm_error=ppm_error_fatal)
+
          !---------------------------------------------------------------------
          !  Determine smallest and largest assigned color
          !---------------------------------------------------------------------
@@ -272,9 +311,6 @@
          !---------------------------------------------------------------------
          !  Allocate memory for neighbor communication lists
          !---------------------------------------------------------------------
-         DEALLOCATE(ineighprocs,STAT=info)
-         or_fail_dealloc("ineighprocs",ppm_error=ppm_error_fatal)
-
          ii = maxcolor-mincolor+1
          ALLOCATE(ineighprocs(ii,ppm_nproc),STAT=info)
          or_fail_alloc('neighbor comm. list INEIGHPROCS',ppm_error=ppm_error_fatal)
@@ -312,12 +348,6 @@
          !-------------------------------------------------------------------------
          DEALLOCATE(optres,STAT=info)
          or_fail_dealloc("optimal result OPTRES")
-      ELSE
-         !-------------------------------------------------------------------------
-         !  Deallocate temporary storage
-         !-------------------------------------------------------------------------
-         DEALLOCATE(nneighprocs,STAT=info)
-         or_fail_dealloc("number of neighbors NNEIGHPROCS")
       ENDIF ! ppm_rank.EQ.0
 
       !-------------------------------------------------------------------------
@@ -357,11 +387,23 @@
       !-------------------------------------------------------------------------
       topo%isoptimized=.TRUE.
 
+
+      maxneigh=maxneigh+2
+      DO i=1,ppm_nproc
+         displ(i)=(i-1)*maxneigh
+      ENDDO
+
+      nneighprocs=nneighprocs+2
+
+      CALL MPI_Scatterv(ineighcolors,nneighprocs,displ,MPI_INTEGER, &
+      &    topo%ineighcolor(0),topo%nneighproc+2,MPI_INTEGER,0,ppm_comm,info)
+      or_fail_MPI("MPI_Scatterv")
+
       !-------------------------------------------------------------------------
       !  Deallocate temporary storage
       !-------------------------------------------------------------------------
-      DEALLOCATE(ineighprocs,STAT=info)
-      or_fail_dealloc("neighbor list INEIGHPROCS")
+      DEALLOCATE(ineighprocs,ineighcolors,nneighprocs,STAT=info)
+      or_fail_dealloc("neighbor list INEIGHPROCS, ineighcolors & number of neighbors NNEIGHPROCS")
 
       DEALLOCATE(displ,counts,STAT=info)
       or_fail_dealloc("displ & counts")

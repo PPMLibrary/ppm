@@ -75,18 +75,18 @@
 
       REAL(ppm_kind_double) :: t0
 
-      INTEGER , DIMENSION(3) :: ldc
+      INTEGER, DIMENSION(3) :: ldc
       !!! Number of elements in all dimensions for allocation
-      INTEGER                :: iopt
+      INTEGER               :: iopt
       !!! allocation mode, see one of ppm_alloc_* subroutines.
-      INTEGER                :: nsubmax
+      INTEGER               :: nsubmax
       !!! contains the MAX of topo%nsubs and 1
-      INTEGER                :: nsublistmax
+      INTEGER               :: nsublistmax
       !!! contains the MAX of topo%nsublist and 1
-      INTEGER                :: topo_idx
+      INTEGER               :: topo_idx
       !!! local variable holding the index in the ppm_topo array with the
       !!! topology that should be (re)allocated
-      INTEGER                :: i
+      INTEGER               :: i
 
       CHARACTER(LEN=ppm_char) :: caller="ppm_topo_alloc"
 
@@ -113,7 +113,7 @@
             or_fail_alloc("Could not allocate ppm_topo",ppm_error=ppm_error_fatal)
 
             ! make sure all pointers are nullified
-            DO i=1,SIZE(ppm_topo)
+            DO i=1,8
                NULLIFY(ppm_topo(i)%t)
             ENDDO
 
@@ -149,29 +149,6 @@
          topoid = ppm_next_avail_topo
 
          ppm_next_avail_topo = ppm_next_avail_topo + 1
-        !----------------------------------------------------------------------
-        ! This was one hell of an ugly hack
-        ! TODO: replace this by something much better later
-        !----------------------------------------------------------------------
-!        ! get a new avail topo ID
-!        ! for now we have to check by going through all topos
-!        ! but this should be not such a big deal because there are not
-!        ! many anyway - it can be done better by using a queue storing all
-!        ! free topos
-!        topo_idx = MOD(topoid+1,SIZE(ppm_topo)+1)+1
-!        DO
-!            IF (topo_idx .EQ. topoid) THEN
-!                EXIT
-!            ENDIF
-!            IF (.NOT. ppm_topo(topo_idx)%t%isdefined) THEN
-!                ppm_next_avail_topo = topo_idx
-!                EXIT
-!            ENDIF
-!            topo_idx = topo_idx + 1
-!        ENDDO
-!        IF (topoid .EQ. ppm_next_avail_topo) THEN
-!            ppm_next_avail_topo = SIZE(ppm_topo) + 1
-!        ENDIF
       ENDIF
 
       CALL ppm_alloc(ppm_topo(topoid)%t,ppm_param_alloc_fit,info)

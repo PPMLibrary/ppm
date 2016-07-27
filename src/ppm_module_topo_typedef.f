@@ -43,20 +43,6 @@
       !----------------------------------------------------------------------
       ! Data types
       !----------------------------------------------------------------------
-      !TYPE ppm_t_patch
-          !!!! The patch type
-
-          !INTEGER                                       :: topoid
-          !!!! id of the topology on which this patch belongs
-          !INTEGER              , DIMENSION(:  ),POINTER :: npatch => NULL()
-          !!!! number of patches for each subdomain
-
-          !INTEGER              , DIMENSION(:,:),POINTER :: istart => NULL()
-          !!!! Starting indices of the mesh of this patch in the mesh for this sub
-          !INTEGER              , DIMENSION(:,:),POINTER :: iend => NULL()
-          !!!! Ending indices of the mesh of this patch in the mesh for this sub
-      !END TYPE ppm_t_patch
-
       TYPE ppm_t_topo
           !!! The topology type
           INTEGER                                        :: ID
@@ -151,6 +137,13 @@
           !!! index 1: sub id (local index, not global ID!)
           INTEGER,               DIMENSION(:),   POINTER :: ineighproc => NULL()
           !!! list of neighboring processors. Index 1: neighbor index
+          !!!
+          INTEGER,               DIMENSION(:),   POINTER :: ineighcolor => NULL()
+          !!! list of neighboring processors color. Index 1: neighbor index
+          !!! ineighcolor(0)            processor color
+          !!! ineighcolor(1:nneighproc) neighboring processors color
+          !!! ineighcolor(nneighproc+1) maximum number of colors
+          !!!
           INTEGER                                        :: nneighproc
           !!! number of neighboring processors.
           LOGICAL                                        :: isoptimized
@@ -159,12 +152,8 @@
           INTEGER                                        :: ncommseq
           !!! number of communication rounds needed for partial mapping
           INTEGER,               DIMENSION(:),   POINTER :: icommseq => NULL()
-          !!! optimal communication sequence for this processor. 1st index:
-          !!! communication round
-!           INTEGER                                      :: max_meshid
-!           !!! Number of meshes defined on this topology
-!           TYPE(ppm_t_patch),     DIMENSION(:),   POINTER :: patches => NULL()
-!           !!! List of patches data structures on this topology.
+          !!! optimal communication sequence for this processor.
+          !!! 1st index: communication round
           REAL(ppm_kind_single)                          :: ghostsizes
           !!! max ghostsize width used when creating this topology (single)
           REAL(ppm_kind_double)                          :: ghostsized

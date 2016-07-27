@@ -79,8 +79,8 @@
       !-------------------------------------------------------------------------
       !  Validity check
       !-------------------------------------------------------------------------
-      IF ((topoid.GE.1).AND.(topoid.LE.SIZE(ppm_topo)).AND.(ppm_topo(topoid)%t%isdefined)) THEN
-         valid = .TRUE.
+      IF ((topoid.GE.1).AND.(topoid.LE.SIZE(ppm_topo))) THEN
+         valid = ppm_topo(topoid)%t%isdefined
       ELSE
          valid = .FALSE.
       ENDIF
@@ -89,13 +89,17 @@
       !  Return
       !-------------------------------------------------------------------------
       9999 CONTINUE
-      CALL substop('ppm_check_topoid',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (.NOT. ppm_initialized) THEN
              valid = .FALSE.
              fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
+          ENDIF
+          IF (.NOT.ASSOCIATED(ppm_topo)) THEN
+             valid = .FALSE.
+             fail('ppm_topo pointer is not associated!',exit_point=8888)
           ENDIF
           IF ((topoid.GT.SIZE(ppm_topo)).OR.(topoid.LT.1)) THEN
              valid = .FALSE.

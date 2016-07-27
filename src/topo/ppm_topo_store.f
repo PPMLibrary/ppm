@@ -116,7 +116,7 @@
 
       REAL(ppm_kind_double) :: t0
 
-      INTEGER, DIMENSION(3) :: ldc, ldl
+      INTEGER, DIMENSION(1) :: ldl,ldu
       INTEGER               :: i,j,k,kk
       INTEGER               :: iopt,isize,iproc,isin
       INTEGER               :: maxneigh,minbound
@@ -335,9 +335,9 @@
                   IF (topo%nneighproc.GT.isize) THEN
                      ! kindly ask for more memory
                      isize = isize + 1
-                     ldc(1) = isize
+                     ldu(1) = isize
                      iopt = ppm_param_alloc_grow_preserve
-                     CALL ppm_alloc(topo%ineighproc,ldc,iopt,info)
+                     CALL ppm_alloc(topo%ineighproc,ldu,iopt,info)
                      or_fail_alloc("sub neighbor list PPM_INEIGHLIST",ppm_error=ppm_error_fatal)
                   ENDIF
                   ! add iproc to the list of neighbors
@@ -350,6 +350,19 @@
       topo%isdefined = .TRUE.
 
       IF (PRESENT(decomp)) topo%decomp=decomp
+
+      !---------------------------------------------------------------------
+      !  Allocate memory for communication protocols
+      !---------------------------------------------------------------------
+      iopt = ppm_param_alloc_fit
+      ldl  = 0
+      ldu  = topo%nneighproc+1
+      CALL ppm_alloc(topo%ineighcolor,ldl,ldu,iopt,info)
+      or_fail_alloc("topo%ineighcolor",ppm_error=ppm_error_fatal)
+
+      DO i=ldl(1),ldu(1)
+         topo%ineighcolor(i)=ppm_param_undefined
+      ENDDO
 
       !-------------------------------------------------------------------------
       !  Return
