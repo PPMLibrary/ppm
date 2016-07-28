@@ -118,6 +118,10 @@
             ENDDO
 
             ppm_next_avail_topo = 1
+
+            topoid = ppm_next_avail_topo
+
+            ppm_next_avail_topo = ppm_next_avail_topo + 1
          ELSE IF (ppm_next_avail_topo.GT.SIZE(ppm_topo)) THEN
             ! We need more space in the ppm_topo array, enlarge
             ALLOCATE(temptopo(SIZE(ppm_topo)),STAT=info)
@@ -144,11 +148,33 @@
             DEALLOCATE(temptopo,STAT=info)
             or_fail_dealloc("Could not deallocate temptopo")
             NULLIFY(temptopo)
+
+            topoid = ppm_next_avail_topo
+
+            ppm_next_avail_topo = ppm_next_avail_topo + 1
+         ELSE
+            topoid = ppm_next_avail_topo
+
+            ppm_next_avail_topo=-1
+
+            DO i=1,SIZE(ppm_topo)
+               IF (i.EQ.topoid) CYCLE
+
+               IF (ASSOCIATED(ppm_topo(i)%t)) THEN
+                  IF (ASSOCIATED(ppm_topo(i)%t%bcdef)) THEN
+                     CYCLE
+                  ELSE
+                     ppm_next_avail_topo = i
+                     EXIT
+                  ENDIF
+               ELSE
+                  ppm_next_avail_topo = i
+                  EXIT
+               ENDIF
+            ENDDO
+
+            ppm_next_avail_topo=MERGE(ppm_next_avail_topo,SIZE(ppm_topo)+1,ppm_next_avail_topo.GT.0)
          ENDIF
-
-         topoid = ppm_next_avail_topo
-
-         ppm_next_avail_topo = ppm_next_avail_topo + 1
       ENDIF
 
       CALL ppm_alloc(ppm_topo(topoid)%t,ppm_param_alloc_fit,info)

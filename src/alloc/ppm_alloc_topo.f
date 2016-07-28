@@ -135,6 +135,32 @@
             IF (ASSOCIATED(topo%ineighcolor)) DEALLOCATE(topo%ineighcolor,STAT=info)
             IF (ASSOCIATED(topo%icommseq))    DEALLOCATE(topo%icommseq,   STAT=info)
 
+            NULLIFY(topo%min_physs)
+            NULLIFY(topo%min_physd)
+            NULLIFY(topo%max_physs)
+            NULLIFY(topo%max_physd)
+            NULLIFY(topo%bcdef)
+            NULLIFY(topo%min_subs)
+            NULLIFY(topo%max_subs)
+            NULLIFY(topo%min_subd)
+            NULLIFY(topo%max_subd)
+            NULLIFY(topo%sub_costs)
+            NULLIFY(topo%sub_costd)
+            NULLIFY(topo%sub2proc)
+            NULLIFY(topo%isublist)
+            NULLIFY(topo%subs_bc)
+            NULLIFY(topo%ineighsubs)
+            NULLIFY(topo%nneighsubs)
+            NULLIFY(topo%ineighproc)
+            NULLIFY(topo%ineighcolor)
+            NULLIFY(topo%icommseq)
+
+            topo%ID         = ppm_param_undefined
+            topo%prec       = ppm_param_undefined
+            topo%nsubs      = ppm_param_undefined
+            topo%nsublist   = ppm_param_undefined
+            topo%nneighproc = ppm_param_undefined
+
             DEALLOCATE(topo,STAT=info)
             or_fail_dealloc('Deallocating topo',exit_point=no)
 
@@ -168,6 +194,7 @@
          NULLIFY(topo%ineighproc)
          NULLIFY(topo%ineighcolor)
          NULLIFY(topo%icommseq)
+
          topo%ID = 0
          topo%prec = ppm_param_undefined
          topo%nsubs = 0
