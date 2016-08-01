@@ -206,8 +206,13 @@
          !  fit memory and preserve the present contents
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
+#if   __LKIND == __LDA64
+            lda = LBOUND(adata,1,KIND=ppm_kind_int64)
+            ldb = UBOUND(adata,1,KIND=ppm_kind_int64)
+#else
             lda = LBOUND(adata,1)
             ldb = UBOUND(adata,1)
+#endif
             IF (lda.NE.ldl(1).OR.ldb.NE.ldu(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
@@ -229,8 +234,13 @@
          !  fit memory but skip the present contents
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
+#if   __LKIND == __LDA64
+            lda = LBOUND(adata,1,KIND=ppm_kind_int64)
+            ldb = UBOUND(adata,1,KIND=ppm_kind_int64)
+#else
             lda = LBOUND(adata,1)
             ldb = UBOUND(adata,1)
+#endif
             IF (lda.NE.ldl(1).OR.ldb.NE.ldu(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
@@ -251,8 +261,13 @@
          !  grow memory and preserve the present contents
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
+#if   __LKIND == __LDA64
+            lda = LBOUND(adata,1,KIND=ppm_kind_int64)
+            ldb = UBOUND(adata,1,KIND=ppm_kind_int64)
+#else
             lda = LBOUND(adata,1)
             ldb = UBOUND(adata,1)
+#endif
             IF (lda.GT.ldl(1).OR.ldb.LT.ldu(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
@@ -274,8 +289,13 @@
          !  grow memory but skip the present contents
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
+#if   __LKIND == __LDA64
+            lda = LBOUND(adata,1,KIND=ppm_kind_int64)
+            ldb = UBOUND(adata,1,KIND=ppm_kind_int64)
+#else
             lda = LBOUND(adata,1)
             ldb = UBOUND(adata,1)
+#endif
             IF (lda.GT.ldl(1).OR.ldb.LT.ldu(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.

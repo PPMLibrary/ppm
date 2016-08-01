@@ -144,6 +144,21 @@
            MODULE PROCEDURE alloc_2dl_li
            MODULE PROCEDURE alloc_2dl_l
 
+           MODULE PROCEDURE alloc_2d_s_
+           MODULE PROCEDURE alloc_2d_d_
+           MODULE PROCEDURE alloc_2d_sc_
+           MODULE PROCEDURE alloc_2d_dc_
+           MODULE PROCEDURE alloc_2d_i_
+           MODULE PROCEDURE alloc_2d_li_
+           MODULE PROCEDURE alloc_2d_l_
+           MODULE PROCEDURE alloc_2dl_s_
+           MODULE PROCEDURE alloc_2dl_d_
+           MODULE PROCEDURE alloc_2dl_sc_
+           MODULE PROCEDURE alloc_2dl_dc_
+           MODULE PROCEDURE alloc_2dl_i_
+           MODULE PROCEDURE alloc_2dl_li_
+           MODULE PROCEDURE alloc_2dl_l_
+
            MODULE PROCEDURE alloc_3d_s
            MODULE PROCEDURE alloc_3d_d
            MODULE PROCEDURE alloc_3d_sc
@@ -208,6 +223,8 @@
 #define __LKIND __LDA64
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_2dl.f"
 #undef __LKIND
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_2d.f"
@@ -225,6 +242,8 @@
 #define __LKIND __LDA64
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_2dl.f"
 #undef __LKIND
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_2d.f"
@@ -242,6 +261,8 @@
 #define __LKIND __LDA64
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_2dl.f"
 #undef __LKIND
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_2d.f"
@@ -259,6 +280,8 @@
 #define __LKIND __LDA64
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_2dl.f"
 #undef __LKIND
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_2d.f"
@@ -276,6 +299,8 @@
 #define __LKIND __LDA64
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_2dl.f"
 #undef __LKIND
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_2d.f"
@@ -293,6 +318,8 @@
 #define __LKIND __LDA64
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_2dl.f"
 #undef __LKIND
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_2d.f"
@@ -310,6 +337,8 @@
 #define __LKIND __LDA64
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_2dl.f"
 #undef __LKIND
 #include "alloc/ppm_alloc_1d.f"
 #include "alloc/ppm_alloc_2d.f"

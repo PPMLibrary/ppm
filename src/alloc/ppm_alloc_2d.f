@@ -26,6 +26,30 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
+#if   __LKIND == __LDA64
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE alloc_2d_s_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 2D real single arrays
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE alloc_2d_d_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 2D real double arrays
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+      SUBROUTINE alloc_2d_sc_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 2D complex single arrays
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+      SUBROUTINE alloc_2d_dc_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 2D complex double arrays
+#elif __KIND == __INTEGER
+      SUBROUTINE alloc_2d_i_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 2D integer arrays
+#elif __KIND == __LONGINT
+      SUBROUTINE alloc_2d_li_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 2D 64bit integer arrays
+#elif __KIND == __LOGICAL
+      SUBROUTINE alloc_2d_l_(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 2D logical arrays
+#endif
+#else
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE alloc_2d_s(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 2D real single arrays
@@ -48,6 +72,7 @@
       SUBROUTINE alloc_2d_l(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 2D logical arrays
 #endif
+#endif
       !!! (pointers) based on the number of elements.
       !-------------------------------------------------------------------------
       !  Includes
@@ -66,24 +91,29 @@
       !  Arguments
       !-------------------------------------------------------------------------
 #if   __KIND == __SINGLE_PRECISION
-      REAL(ppm_kind_single)   , DIMENSION(:,:), POINTER :: adata
+      REAL(ppm_kind_single)   ,  DIMENSION(:,:), POINTER       :: adata
 #elif __KIND == __DOUBLE_PRECISION
-      REAL(ppm_kind_double)   , DIMENSION(:,:), POINTER :: adata
+      REAL(ppm_kind_double)   ,  DIMENSION(:,:), POINTER       :: adata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-      COMPLEX(ppm_kind_single), DIMENSION(:,:), POINTER :: adata
+      COMPLEX(ppm_kind_single),  DIMENSION(:,:), POINTER       :: adata
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(ppm_kind_double), DIMENSION(:,:), POINTER :: adata
+      COMPLEX(ppm_kind_double),  DIMENSION(:,:), POINTER       :: adata
 #elif __KIND == __INTEGER
-      INTEGER                 , DIMENSION(:,:), POINTER :: adata
+      INTEGER                 ,  DIMENSION(:,:), POINTER       :: adata
 #elif __KIND == __LONGINT
-      INTEGER(ppm_kind_int64) , DIMENSION(:,:), POINTER :: adata
+      INTEGER(ppm_kind_int64) ,  DIMENSION(:,:), POINTER       :: adata
 #elif __KIND == __LOGICAL
-      LOGICAL                 , DIMENSION(:,:), POINTER :: adata
+      LOGICAL                 ,  DIMENSION(:,:), POINTER       :: adata
 #endif
       !!! Pointer to array which is to be (re)allocated
-      INTEGER, DIMENSION(:)   , INTENT(IN)    :: lda
+#if   __LKIND == __LDA64
+      INTEGER(ppm_kind_int64),  DIMENSION(:),    INTENT(IN   ) :: lda
+#else
+      INTEGER,                  DIMENSION(:),    INTENT(IN   ) :: lda
+#endif
+
       !!! Number of desired elements in all dimensions of array (>0)
-      INTEGER                 , INTENT(IN)    :: iopt
+      INTEGER,                                   INTENT(IN   ) :: iopt
       !!! Allocation mode. One of:
       !!!
       !!! * ppm_param_alloc_fit
@@ -91,12 +121,16 @@
       !!! * ppm_param_alloc_grow
       !!! * ppm_param_alloc_grow_preserve
       !!! * ppm_param_dealloc
-      INTEGER                 , INTENT(OUT)   :: info
+      INTEGER,                                   INTENT(  OUT) :: info
       !!! Status upon return of subroutine, 0 on success
 
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
+#ifdef __DEBUG
+      REAL(ppm_kind_double) :: t0
+#endif
+
 #if   __KIND == __SINGLE_PRECISION
       REAL(ppm_kind_single)   , DIMENSION(:,:), POINTER :: work
 #elif __KIND == __DOUBLE_PRECISION
@@ -113,14 +147,16 @@
       LOGICAL                 , DIMENSION(:,:), POINTER :: work
 #endif
 
+#if   __LKIND == __LDA64
+      INTEGER(ppm_kind_int64), DIMENSION(2) :: ldb,ldc,lda_new
+      INTEGER(ppm_kind_int64)               :: i,j
+#else
       INTEGER, DIMENSION(2) :: ldb,ldc,lda_new
       INTEGER               :: i,j
-
-      LOGICAL               :: lcopy,lalloc,lrealloc
-
-#ifdef __DEBUG
-      REAL(ppm_kind_double) :: t0
 #endif
+
+      LOGICAL :: lcopy,lalloc,lrealloc
+
       CHARACTER(LEN=*), PARAMETER :: caller='ppm_alloc_2d'
 
       !-------------------------------------------------------------------------
@@ -177,14 +213,22 @@
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
          ! loop peeling
+#if   __LKIND == __LDA64
+            ldb(1) = SIZE(adata,1,KIND=ppm_kind_int64)
+#else
             ldb(1) = SIZE(adata,1)
+#endif
             IF (ldb(1).NE.lda(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
                lcopy    = .TRUE.
             ENDIF
 
+#if   __LKIND == __LDA64
+            ldb(2) = SIZE(adata,2,KIND=ppm_kind_int64)
+#else
             ldb(2) = SIZE(adata,2)
+#endif
             IF (ldb(2).NE.lda(2)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
@@ -202,13 +246,21 @@
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
          ! loop peeling
+#if   __LKIND == __LDA64
+            ldb(1) = SIZE(adata,1,KIND=ppm_kind_int64)
+#else
             ldb(1) = SIZE(adata,1)
+#endif
             IF (ldb(1).NE.lda(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
             ENDIF
 
+#if   __LKIND == __LDA64
+            ldb(2) = SIZE(adata,2,KIND=ppm_kind_int64)
+#else
             ldb(2) = SIZE(adata,2)
+#endif
             IF (ldb(2).NE.lda(2)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
@@ -225,14 +277,22 @@
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
          ! loop peeling
+#if   __LKIND == __LDA64
+            ldb(1) = SIZE(adata,1,KIND=ppm_kind_int64)
+#else
             ldb(1) = SIZE(adata,1)
+#endif
             IF (ldb(1).LT.lda(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
                lcopy    = .TRUE.
             ENDIF
 
+#if   __LKIND == __LDA64
+            ldb(2) = SIZE(adata,2,KIND=ppm_kind_int64)
+#else
             ldb(2) = SIZE(adata,2)
+#endif
             IF (ldb(2).LT.lda(2)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
@@ -259,13 +319,21 @@
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
          ! loop peeling
+#if   __LKIND == __LDA64
+            ldb(1) = SIZE(adata,1,KIND=ppm_kind_int64)
+#else
             ldb(1) = SIZE(adata,1)
+#endif
             IF (ldb(1).LT.lda(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
             ENDIF
 
+#if   __LKIND == __LDA64
+            ldb(2) = SIZE(adata,2,KIND=ppm_kind_int64)
+#else
             ldb(2) = SIZE(adata,2)
+#endif
             IF (ldb(2).LT.lda(2)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
@@ -317,8 +385,13 @@
       IF (lcopy) THEN
          ldc(1) = MIN(lda_new(1),ldb(1))
          ldc(2) = MIN(lda_new(2),ldb(2))
+#if   __LKIND == __LDA64
+         DO j=1_ppm_kind_int64,ldc(2)
+            DO i=1_ppm_kind_int64,ldc(1)
+#else
          DO j=1,ldc(2)
             DO i=1,ldc(1)
+#endif
                work(i,j) = adata(i,j)
             ENDDO
          ENDDO
@@ -347,6 +420,23 @@
       CALL substop(caller,t0,info)
 #endif
       RETURN
+#if   __LKIND == __LDA64
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE alloc_2d_s_
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE alloc_2d_d_
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+      END SUBROUTINE alloc_2d_sc_
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+      END SUBROUTINE alloc_2d_dc_
+#elif __KIND == __INTEGER
+      END SUBROUTINE alloc_2d_i_
+#elif __KIND == __LONGINT
+      END SUBROUTINE alloc_2d_li_
+#elif __KIND == __LOGICAL
+      END SUBROUTINE alloc_2d_l_
+#endif
+#else
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE alloc_2d_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -361,4 +451,5 @@
       END SUBROUTINE alloc_2d_li
 #elif __KIND == __LOGICAL
       END SUBROUTINE alloc_2d_l
+#endif
 #endif

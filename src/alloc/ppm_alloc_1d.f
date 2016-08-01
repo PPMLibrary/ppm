@@ -205,7 +205,11 @@
          !  fit memory and preserve the present contents
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
+#if   __LKIND == __LDA64
+            ldb = SIZE(adata,KIND=ppm_kind_int64)
+#else
             ldb = SIZE(adata)
+#endif
             IF (ldb.NE.lda(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
@@ -220,7 +224,11 @@
          !  fit memory but skip the present contents
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
+#if   __LKIND == __LDA64
+            ldb = SIZE(adata,KIND=ppm_kind_int64)
+#else
             ldb = SIZE(adata)
+#endif
             IF (ldb.NE.lda(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
@@ -234,7 +242,11 @@
          !  grow memory and preserve the present contents
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
+#if   __LKIND == __LDA64
+            ldb = SIZE(adata,KIND=ppm_kind_int64)
+#else
             ldb = SIZE(adata)
+#endif
             IF (ldb.LT.lda(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
@@ -249,7 +261,11 @@
          !  grow memory but skip the present contents
          !----------------------------------------------------------------------
          IF (ASSOCIATED(adata)) THEN
+#if   __LKIND == __LDA64
+            ldb = SIZE(adata,KIND=ppm_kind_int64)
+#else
             ldb = SIZE(adata)
+#endif
             IF (ldb.LT.lda(1)) THEN
                lrealloc = .TRUE.
                lalloc   = .TRUE.
@@ -289,7 +305,11 @@
       !-------------------------------------------------------------------------
       IF (lcopy) THEN
          ldc = MIN(ldb,lda(1))
+#if   __LKIND == __LDA64
+         DO i=1_ppm_kind_int64,ldc
+#else
          DO i=1,ldc
+#endif
             work(i) = adata(i)
          ENDDO
       ENDIF

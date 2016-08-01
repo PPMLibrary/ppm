@@ -60,8 +60,7 @@
       !  Local variables
       !-------------------------------------------------------------------------
 
-      INTEGER, DIMENSION(1) :: ldc
-      LOGICAL               :: lalloc,ldealloc
+      LOGICAL :: lalloc,ldealloc
 
       REAL(ppm_kind_double) :: t0
 
