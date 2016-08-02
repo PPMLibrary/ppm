@@ -211,7 +211,7 @@ minclude ppm_get_field_interface_template(4,l)
       END FUNCTION
 
       !GHOST GET
-      SUBROUTINE equi_mesh_map_ghost_get_(this,info,ghostsize)
+      SUBROUTINE equi_mesh_map_ghost_get_(this,info,ghostsize,sendlist,recvlist)
           IMPORT :: ppm_t_equi_mesh_
           IMPLICIT NONE
           !-------------------------------------------------------------------------
@@ -220,10 +220,12 @@ minclude ppm_get_field_interface_template(4,l)
           CLASS(ppm_t_equi_mesh_)                        :: this
           INTEGER,                         INTENT(  OUT) :: info
           INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: ghostsize
+          INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: sendlist
+          INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: recvlist
       END SUBROUTINE
 
       !GHOST PUT
-      SUBROUTINE equi_mesh_map_ghost_put_(this,info,ghostsize)
+      SUBROUTINE equi_mesh_map_ghost_put_(this,info,ghostsize,sendlist,recvlist)
           IMPORT :: ppm_t_equi_mesh_
           IMPLICIT NONE
           !-------------------------------------------------------------------------
@@ -232,6 +234,8 @@ minclude ppm_get_field_interface_template(4,l)
           CLASS(ppm_t_equi_mesh_)                        :: this
           INTEGER,                         INTENT(  OUT) :: info
           INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: ghostsize
+          INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: sendlist
+          INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: recvlist
       END SUBROUTINE
 
       SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub,jsub,offsetb, &

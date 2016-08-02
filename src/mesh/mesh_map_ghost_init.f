@@ -59,7 +59,8 @@
       INTEGER, DIMENSION(ppm_dim,26) :: ond
       INTEGER                        :: i,j,sendrank,recvrank,isub,jsub,k
       INTEGER                        :: iopt,iset,ibuffer,isize,nnd
-      INTEGER                        :: nsendlist,nsend,tag,lb,ub,nrecv
+      INTEGER                        :: nsendlist,tag,lb,ub
+      INTEGER                        :: nsends,nrecvs
 #ifdef __MPI
       INTEGER                        :: requestr
       INTEGER, DIMENSION(2)          :: requests
@@ -471,7 +472,7 @@
                map%ghost_nrecv = ub - 1
                map%ghost_recvblk(2) = ub
                DO j=1,ub-1
-                  map%ghost_recvtosub(j)           = map%ghost_tosub(j)
+                  map%ghost_recvtosub(j)              = map%ghost_tosub(j)
                   map%ghost_recvpatchid(1:ppm_dim,j)  = map%ghost_patchid(1:ppm_dim,j)
                   map%ghost_recvblkstart(1:ppm_dim,j) = map%ghost_blkstart(1:ppm_dim,j) &
                   &                                + mesh_ghost_offset(1:ppm_dim,j)
@@ -485,7 +486,7 @@
                   tag=recvrank*(recvrank-1)/2+ppm_rank+100
                ENDIF
 
-               CALL MPI_Irecv(nrecv,1,MPI_INTEGER,recvrank,tag,ppm_comm,requestr,info)
+               CALL MPI_Irecv(nrecvs,1,MPI_INTEGER,recvrank,tag,ppm_comm,requestr,info)
                or_fail_MPI("MPI_Irecv")
 
                !--------------------------------------------------------------
@@ -494,7 +495,7 @@
                lb = map%ghost_blk(i)
                ub = map%ghost_blk(ibuffer)
                ! How many blocks am I sending to that guy
-               nsend = ub - lb
+               nsends = ub - lb
 
                IF (ppm_rank.GT.sendrank) THEN
                   tag=ppm_rank*(ppm_rank-1)/2+sendrank+100
@@ -502,14 +503,14 @@
                   tag=sendrank*(sendrank-1)/2+ppm_rank+100
                ENDIF
 
-               CALL MPI_Isend(nsend,1,MPI_INTEGER,sendrank,tag,ppm_comm,requests(1),info)
+               CALL MPI_Isend(nsends,1,MPI_INTEGER,sendrank,tag,ppm_comm,requests(1),info)
                or_fail_MPI("MPI_Isend")
 
                !--------------------------------------------------------------
                !  Allocate memory for block data send buffers
                !--------------------------------------------------------------
                iopt   = ppm_param_alloc_grow
-               ldu(1) = nsend*(3*ppm_dim+1)
+               ldu(1) = nsends*(3*ppm_dim+1)
                CALL ppm_alloc(sendbuf,ldu,iopt,info)
                or_fail_alloc("sendbuf")
 
@@ -540,7 +541,7 @@
                   tag=recvrank*(recvrank-1)/2+ppm_rank+200
                ENDIF
 
-               !Wait to have nrecv
+               !Wait to have nrecvs
                CALL MPI_Wait(requestr,MPI_STATUS_IGNORE,info)
                or_fail_MPI("MPI_Wait")
 
@@ -548,7 +549,7 @@
                !  Allocate memory for block data send and recv buffers
                !--------------------------------------------------------------
                iopt   = ppm_param_alloc_grow
-               ldu(1) = nrecv*(3*ppm_dim+1)
+               ldu(1) = nrecvs*(3*ppm_dim+1)
                CALL ppm_alloc(recvbuf,ldu,iopt,info)
                or_fail_alloc("recvbuf")
 
@@ -566,8 +567,8 @@
                or_fail_MPI("MPI_Isend")
 
                ! How many blocks will I receive from the guy?
-               map%ghost_nrecv            = map%ghost_nrecv      + nrecv
-               map%ghost_recvblk(ibuffer) = map%ghost_recvblk(i) + nrecv
+               map%ghost_nrecv            = map%ghost_nrecv      + nrecvs
+               map%ghost_recvblk(ibuffer) = map%ghost_recvblk(i) + nrecvs
                !--------------------------------------------------------------
                !  Check if receive lists are large enough
                !--------------------------------------------------------------

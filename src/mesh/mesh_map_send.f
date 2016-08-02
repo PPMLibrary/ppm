@@ -41,13 +41,11 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(3) :: ldu
-      INTEGER               :: i,j,k,ibuffer,jbuffer,bdim,offs
-      INTEGER               :: iopt,tag1,Ndata,msend,mrecv,allsend,allrecv
-      CHARACTER(ppm_char)   :: mesg
-      !-------------------------------------------------------------------------
-      !  Externals
-      !-------------------------------------------------------------------------
+      INTEGER(ppm_kind_int64), DIMENSION(1) :: ld
+      INTEGER,                 DIMENSION(3) :: ldu
+      INTEGER                               :: i,j,k,ibuffer,jbuffer,bdim,offs
+      INTEGER                               :: iopt,tag1,Ndata,msend,mrecv,allsend,allrecv
+
       start_subroutine("mesh_map_send")
 
       ! warn if buffer is empty
@@ -107,7 +105,7 @@
       !-------------------------------------------------------------------------
       !  Initialize the buffer counters
       !-------------------------------------------------------------------------
-      ppm_nrecvbuffer = ibuffer
+      ppm_nrecvbuffer = INT(ibuffer,ppm_kind_int64)
       nsend(1)        = ibuffer
       nrecv(1)        = ibuffer
       psend(1)        = Ndata
@@ -123,31 +121,32 @@
           psend(k) = 0
           Ndata    = 0
 
-          !---------------------------------------------------------------------
-          !  Number of mesh points to be sent off to the k-th processor in
-          !  the sendlist
-          !---------------------------------------------------------------------
-          DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
-             Ndata = Ndata + PRODUCT(ppm_mesh_isendblksize(1:ppm_dim,i))
-          ENDDO
+          IF (ppm_lsendlist(k)) THEN
+             !---------------------------------------------------------------------
+             !  Number of mesh points to be sent off to the k-th processor in
+             !  the sendlist
+             !---------------------------------------------------------------------
+             DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
+                Ndata = Ndata + PRODUCT(ppm_mesh_isendblksize(1:ppm_dim,i))
+             ENDDO
 
-          !---------------------------------------------------------------------
-          !  Store the number of mesh points in psend
-          !---------------------------------------------------------------------
-          psend(k) = Ndata
+             !---------------------------------------------------------------------
+             !  Store the number of mesh points in psend
+             !---------------------------------------------------------------------
+             psend(k) = Ndata
 
-          !---------------------------------------------------------------------
-          !  Store the size of the data to be sent
-          !---------------------------------------------------------------------
-          nsend(k) = SUM(ppm_buffer_dim(1:ppm_buffer_set))*Ndata
+             !---------------------------------------------------------------------
+             !  Store the size of the data to be sent
+             !---------------------------------------------------------------------
+             nsend(k) = SUM(ppm_buffer_dim(1:ppm_buffer_set))*Ndata
+          ENDIF
 
           !---------------------------------------------------------------------
           !  Find the maximum buffer length (for the allocate)
           !---------------------------------------------------------------------
           msend = MAX(msend,nsend(k))
           IF (ppm_debug.GT.1) THEN
-             WRITE(mesg,'(A,I9)') 'msend = ',msend
-             CALL ppm_write(ppm_rank,caller,mesg,info)
+             stdout_f('(A,I9)',"msend = ",msend)
           ENDIF
       ENDDO
 
@@ -161,41 +160,41 @@
          precv(k) = 0
          Ndata    = 0
 
-         !---------------------------------------------------------------------
-         !  Number of mesh points to be received from the k-th processor in
-         !  the recvlist
-         !---------------------------------------------------------------------
-         DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
-            Ndata = Ndata + PRODUCT(ppm_mesh_irecvblksize(1:ppm_dim,i))
-         ENDDO
+         IF (ppm_lrecvlist(k)) THEN
+            !---------------------------------------------------------------------
+            !  Number of mesh points to be received from the k-th processor in
+            !  the recvlist
+            !---------------------------------------------------------------------
+            DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
+               Ndata = Ndata + PRODUCT(ppm_mesh_irecvblksize(1:ppm_dim,i))
+            ENDDO
 
-         !---------------------------------------------------------------------
-         !  Store the number of mesh points in precv
-         !---------------------------------------------------------------------
-         precv(k) = Ndata
+            !---------------------------------------------------------------------
+            !  Store the number of mesh points in precv
+            !---------------------------------------------------------------------
+            precv(k) = Ndata
 
-         !---------------------------------------------------------------------
-         !  Store the size of the data to be received
-         !---------------------------------------------------------------------
-         nrecv(k) = SUM(ppm_buffer_dim(1:ppm_buffer_set))*Ndata
+            !---------------------------------------------------------------------
+            !  Store the size of the data to be received
+            !---------------------------------------------------------------------
+            nrecv(k) = SUM(ppm_buffer_dim(1:ppm_buffer_set))*Ndata
+         ENDIF
 
          !---------------------------------------------------------------------
          !  Find the maximum buffer length (for the allocate)
          !---------------------------------------------------------------------
          mrecv = MAX(mrecv,nrecv(k))
          IF (ppm_debug.GT.1) THEN
-            WRITE(mesg,'(A,I9)') 'mrecv = ',mrecv
-            CALL ppm_write(ppm_rank,caller,mesg,info)
+            stdout_f('(A,I9)',"mrecv = ",mrecv)
          ENDIF
 
          !---------------------------------------------------------------------
          !  Increment the total receive buffer count
          !---------------------------------------------------------------------
-         ppm_nrecvbuffer = ppm_nrecvbuffer + nrecv(k)
+         ppm_nrecvbuffer = ppm_nrecvbuffer + INT(nrecv(k),ppm_kind_int64)
 
          IF (ppm_debug.GT.1) THEN
-            WRITE(mesg,'(A,I9)') 'ppm_nrecvbuffer = ',ppm_nrecvbuffer
-            CALL ppm_write(ppm_rank,caller,mesg,info)
+            stdout_f('(A,I9)',"ppm_nrecvbuffer = ",ppm_nrecvbuffer)
          ENDIF
       ENDDO
 
@@ -203,11 +202,11 @@
       !  Allocate the memory for the copy of the particle buffer
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_grow
-      ldu(1) = ppm_nrecvbuffer
+      ld(1) = ppm_nrecvbuffer
       IF (ppm_kind.EQ.ppm_kind_double) THEN
-         CALL ppm_alloc(ppm_recvbufferd,ldu,iopt,info)
+         CALL ppm_alloc(ppm_recvbufferd,ld,iopt,info)
       ELSE
-         CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
+         CALL ppm_alloc(ppm_recvbuffers,ld,iopt,info)
       ENDIF
       or_fail_alloc("global receive buffer PPM_RECVBUFFER")
 
@@ -251,8 +250,7 @@
       !  buffer
       !-------------------------------------------------------------------------
       IF (ppm_debug.GT.1) THEN
-         WRITE(mesg,'(A,I9)') 'ppm_buffer_set=',ppm_buffer_set
-         CALL ppm_write(ppm_rank,caller,mesg,info)
+         stdout_f('(A,I9)',"ppm_buffer_set = ",ppm_buffer_set)
       ENDIF
       bdim = 0
       offs = 0
@@ -263,8 +261,7 @@
          DO j=2,ppm_nsendlist
             qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
             IF (ppm_debug.GT.1) THEN
-                WRITE(mesg,'(A,I9)') 'qq(j,k)=',qq(j,k)
-                CALL ppm_write(ppm_rank,caller,mesg,info)
+               stdout_f('(A,I9)',"qq(j,k) = ",'qq(j,k)')
             ENDIF
          ENDDO
       ENDDO
@@ -282,10 +279,8 @@
          DO j=2,ppm_nrecvlist
             pp(j,k) = pp(j-1,k) + precv(j-1)*bdim
             IF (ppm_debug.GT.1) THEN
-                WRITE(mesg,'(A,I9)') 'pp(j,k)=',pp(j,k)
-                CALL ppm_write(ppm_rank,caller,mesg,info)
-                WRITE(mesg,'(A,I9,A,I4)') 'precv(j-1)=',precv(j-1),', bdim=',bdim
-                CALL ppm_write(ppm_rank,caller,mesg,info)
+               stdout_f('(A,I9)',"pp(j,k) = ",'pp(j,k)')
+               stdout_f('(A,I9,A,I4)',"precv(j-1) = ",'precv(j-1)',", bdim = ",bdim)
             ENDIF
          ENDDO
       ENDDO

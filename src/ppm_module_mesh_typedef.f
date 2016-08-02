@@ -21,13 +21,14 @@
       USE ppm_module_mapping_typedef
       IMPLICIT NONE
 
+      PRIVATE
       !----------------------------------------------------------------------
       ! Internal parameters
       !----------------------------------------------------------------------
       !----------------------------------------------------------------------
       ! Module variables
       !----------------------------------------------------------------------
-      INTEGER, PRIVATE, DIMENSION(4) :: ldc
+      INTEGER, DIMENSION(4) :: ldc
 
       !----------------------------------------------------------------------
       ! Type declaration
@@ -50,7 +51,7 @@ minclude ppm_create_collection(subpatch_data,subpatch_data,generate="extend",vec
           PROCEDURE :: destroy   => mesh_discr_data_destroy
       END TYPE
 minclude ppm_create_collection(mesh_discr_data,mesh_discr_data,generate="extend")
-minclude ppm_create_collection(mesh_discr_data,mesh_discr_data,vec=true,generate="extend")
+minclude ppm_create_collection(mesh_discr_data,mesh_discr_data,generate="extend",vec=true)
 
       TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
       CONTAINS
@@ -143,46 +144,88 @@ minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
          MODULE PROCEDURE ppm_check_meshid
       END INTERFACE
 
+      !----------------------------------------------------------------------
+      ! PUBLIC from ppm_module_interfaces
+      !----------------------------------------------------------------------
+      PUBLIC :: ppm_t_subpatch_data_
+      PUBLIC :: ppm_c_subpatch_data_
+      PUBLIC :: ppm_v_subpatch_data_
+
+      PUBLIC :: ppm_t_mesh_discr_data_
+      PUBLIC :: ppm_c_mesh_discr_data_
+      PUBLIC :: ppm_v_mesh_discr_data_
+
+      PUBLIC :: ppm_t_subpatch_
+      PUBLIC :: ppm_c_subpatch_
+
+      PUBLIC :: ppm_t_A_subpatch_
+      PUBLIC :: ppm_c_A_subpatch_
+
+      PUBLIC :: ppm_t_equi_mesh_
+      PUBLIC :: ppm_c_equi_mesh_
+
+      !----------------------------------------------------------------------
+      ! PUBLIC
+      !----------------------------------------------------------------------
+      PUBLIC :: ppm_t_subpatch_data
+      PUBLIC :: ppm_c_subpatch_data
+      PUBLIC :: ppm_v_subpatch_data
+
+      PUBLIC :: ppm_t_mesh_discr_data
+      PUBLIC :: ppm_c_mesh_discr_data
+      PUBLIC :: ppm_v_mesh_discr_data
+
+      PUBLIC :: ppm_t_subpatch
+      PUBLIC :: ppm_c_subpatch
+
+      PUBLIC :: ppm_t_A_subpatch
+      PUBLIC :: ppm_c_A_subpatch
+
+      PUBLIC :: ppm_t_equi_mesh
+      PUBLIC :: ppm_c_equi_mesh
+
+      PUBLIC :: ppm_mesh
+
       PUBLIC :: ppm_check_meshid
 
       !------------------------------------------------
       ! TODO: stuff that should be moved somewhere else:
       !------------------------------------------------
       !used to be in ppm_module_map_field.f
-      REAL(ppm_kind_single), DIMENSION(:),   PRIVATE, POINTER :: sends => NULL()
-      REAL(ppm_kind_single), DIMENSION(:),   PRIVATE, POINTER :: recvs => NULL()
-      REAL(ppm_kind_double), DIMENSION(:),   PRIVATE, POINTER :: sendd => NULL()
-      REAL(ppm_kind_double), DIMENSION(:),   PRIVATE, POINTER :: recvd => NULL()
+      REAL(ppm_kind_single), DIMENSION(:),   POINTER :: sends => NULL()
+      REAL(ppm_kind_single), DIMENSION(:),   POINTER :: recvs => NULL()
+      REAL(ppm_kind_double), DIMENSION(:),   POINTER :: sendd => NULL()
+      REAL(ppm_kind_double), DIMENSION(:),   POINTER :: recvd => NULL()
 
-      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: nsend => NULL()
-      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: nrecv => NULL()
-      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: psend => NULL()
-      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: precv => NULL()
+      INTEGER,               DIMENSION(:),   POINTER :: nsend => NULL()
+      INTEGER,               DIMENSION(:),   POINTER :: nrecv => NULL()
+      INTEGER,               DIMENSION(:),   POINTER :: psend => NULL()
+      INTEGER,               DIMENSION(:),   POINTER :: precv => NULL()
 
-      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: pp => NULL()
-      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: qq => NULL()
+      INTEGER,               DIMENSION(:,:), POINTER :: pp => NULL()
+      INTEGER,               DIMENSION(:,:), POINTER :: qq => NULL()
 
-      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: irecvfromsub  => NULL()
-      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: irecvtosub    => NULL()
-      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: irecvpatchid  => NULL()
-      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: irecvblkstart => NULL()
-      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: irecvblksize  => NULL()
+      INTEGER,               DIMENSION(:  ), POINTER :: irecvfromsub  => NULL()
+      INTEGER,               DIMENSION(:  ), POINTER :: irecvtosub    => NULL()
+      INTEGER,               DIMENSION(:,:), POINTER :: irecvpatchid  => NULL()
+      INTEGER,               DIMENSION(:,:), POINTER :: irecvblkstart => NULL()
+      INTEGER,               DIMENSION(:,:), POINTER :: irecvblksize  => NULL()
 
       !used to be in ppm_module_map_field_ghost.f
-      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: isendfromsub  => NULL()
-      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: isendtosub    => NULL()
-      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: isendpatchid  => NULL()
-      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: isendblkstart => NULL()
-      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: isendblksize  => NULL()
-      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: ioffset       => NULL()
+      INTEGER,               DIMENSION(:  ), POINTER :: isendfromsub  => NULL()
+      INTEGER,               DIMENSION(:  ), POINTER :: isendtosub    => NULL()
+      INTEGER,               DIMENSION(:,:), POINTER :: isendpatchid  => NULL()
+      INTEGER,               DIMENSION(:,:), POINTER :: isendblkstart => NULL()
+      INTEGER,               DIMENSION(:,:), POINTER :: isendblksize  => NULL()
+      INTEGER,               DIMENSION(:,:), POINTER :: ioffset       => NULL()
 
-      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: sendbuf       => NULL()
-      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: recvbuf       => NULL()
+      INTEGER,               DIMENSION(:  ), POINTER :: sendbuf       => NULL()
+      INTEGER,               DIMENSION(:  ), POINTER :: recvbuf       => NULL()
 
       ! sorted (according to proc-proc interaction order) offset list)
-      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: mesh_ghost_offset => NULL()
+      INTEGER,               DIMENSION(:,:), POINTER :: mesh_ghost_offset => NULL()
 
-      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: invsublist => NULL()
+      INTEGER,               DIMENSION(:),   POINTER :: invsublist => NULL()
 
       !----------------------------------------------------------------------
       !  Type-bound procedures
@@ -686,12 +729,8 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           TYPE(ppm_t_topo), POINTER :: topo
 
-          REAL(ppm_kind_double), DIMENSION(ppm_dim) :: len_phys,rat
-
-          INTEGER                     :: iopt,ld,ud,kk
-          INTEGER                     :: i,j,k,isub,nsubs
-          INTEGER, DIMENSION(ppm_dim) :: Nc
-          INTEGER, DIMENSION(3)       :: ldc
+          INTEGER :: iopt
+          INTEGER :: i,k,isub,nsubs
 
           LOGICAL :: valid
 
@@ -999,18 +1038,17 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_main_abstr),  POINTER :: field
           CLASS(ppm_t_discr_info_), POINTER :: dinfo
 
-          INTEGER , DIMENSION(3)    :: ldc
-          INTEGER                   :: iopt,ld,ud,kk,i,j,isub
+          INTEGER :: iopt,i
 
-          LOGICAL                   :: valid
+          LOGICAL :: valid
 
           start_subroutine("equi_mesh_destroy")
 
           !-------------------------------------------------------------------------
           !  (Re)allocate memory for the internal mesh list and Arrays at meshid
           !-------------------------------------------------------------------------
-          ldc = 1
-          iopt   = ppm_param_dealloc
+          iopt = ppm_param_dealloc
+          ldc  = 1
           CALL ppm_alloc(this%Nm,ldc,iopt,info)
           or_fail_dealloc("Nm")
 

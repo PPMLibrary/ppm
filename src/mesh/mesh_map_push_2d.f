@@ -134,13 +134,16 @@
       !!! For scalar fields, the first index is omitted (the others shift
       !!! accordingly).
 
-      INTEGER, DIMENSION(2)          :: ldu,mofs,patchid
-      INTEGER                        :: i,j,k,ibuffer,isub,imesh,jmesh,jsub
-      INTEGER                        :: ipatch
-      INTEGER                        :: iopt,Ndata,xlo,xhi,ylo,yhi,ldb
-      INTEGER, DIMENSION(:), POINTER :: sublist
+      INTEGER(ppm_kind_int64)                        :: ibuffer
+      INTEGER(ppm_kind_int64), DIMENSION(1)          :: ld
+      INTEGER,                 DIMENSION(1)          :: ldu
+      INTEGER,                 DIMENSION(2)          :: mofs,patchid
+      INTEGER                                        :: i,j,k,isub,imesh,jmesh,jsub
+      INTEGER                                        :: ipatch
+      INTEGER                                        :: iopt,Ndata,xlo,xhi,ylo,yhi,ldb
+      INTEGER,                 DIMENSION(:), POINTER :: sublist
 #if   __DIM == __SFIELD
-      INTEGER, PARAMETER    :: lda = 1
+      INTEGER,                 PARAMETER             :: lda = 1
 #endif
 
       LOGICAL :: ldo,found_patch
@@ -169,17 +172,19 @@
       !-------------------------------------------------------------------------
       Ndata = 0
       DO i=1,ppm_nsendlist
-         !----------------------------------------------------------------------
-         !  access mesh blocks belonging to the i-th processor in the
-         !  sendlist
-         !----------------------------------------------------------------------
-         DO j=ppm_psendbuffer(i),ppm_psendbuffer(i+1)-1
-            !-------------------------------------------------------------------
-            !  Get the number of mesh points in this block
-            !-------------------------------------------------------------------
-            Ndata = Ndata + (ppm_mesh_isendblksize(1,j)* &
-            &                ppm_mesh_isendblksize(2,j))
-         ENDDO
+         IF (ppm_lsendlist(i)) THEN
+            !----------------------------------------------------------------------
+            !  access mesh blocks belonging to the i-th processor in the
+            !  sendlist
+            !----------------------------------------------------------------------
+            DO j=ppm_psendbuffer(i),ppm_psendbuffer(i+1)-1
+               !-------------------------------------------------------------------
+               !  Get the number of mesh points in this block
+               !-------------------------------------------------------------------
+               Ndata = Ndata + (ppm_mesh_isendblksize(1,j)* &
+               &                ppm_mesh_isendblksize(2,j))
+            ENDDO
+         ENDIF
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -259,631 +264,153 @@
          !----------------------------------------------------------------------
          !  (Re)allocate memory for the buffer
          !----------------------------------------------------------------------
-         iopt   = ppm_param_alloc_grow_preserve
-         ldu(1) = ppm_nsendbuffer + ldb*Ndata
-         CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
+         iopt  = ppm_param_alloc_grow_preserve
+         ld(1) = ppm_nsendbuffer + INT(ldb,ppm_kind_int64)*INT(Ndata,ppm_kind_int64)
+         CALL ppm_alloc(ppm_sendbufferd,ld,iopt,info)
          or_fail_alloc("ppm_sendbufferd")
 
          DO i=1,ppm_nsendlist
-            !-------------------------------------------------------------------
-            !  access mesh blocks belonging to the i-th processor in the
-            !  sendlist
-            !-------------------------------------------------------------------
-            DO j=ppm_psendbuffer(i),ppm_psendbuffer(i+1)-1
-               !----------------------------------------------------------------
-               !  Get the sub ID for this mesh block
-               !----------------------------------------------------------------
-               jsub = ppm_mesh_isendfromsub(j)
-               !----------------------------------------------------------------
-               !  Get the patch ID for this mesh block
-               !----------------------------------------------------------------
-               patchid(1:2) = ppm_mesh_isendpatchid(1:2,j)
-               IF (ppm_debug.GT.2) THEN
+            IF (ppm_lsendlist(i)) THEN
+               !-------------------------------------------------------------------
+               !  access mesh blocks belonging to the i-th processor in the
+               !  sendlist
+               !-------------------------------------------------------------------
+               DO j=ppm_psendbuffer(i),ppm_psendbuffer(i+1)-1
                   !----------------------------------------------------------------
-                  !  Translate to local sub ID for storing the data
+                  !  Get the sub ID for this mesh block
                   !----------------------------------------------------------------
-                  isub = invsublist(jsub)
-               ENDIF
-               !----------------------------------------------------------------
-               !  Get pointer to the data for this sub, this field and this block
-               ! TODO: room for improvement!...
-               !----------------------------------------------------------------
-               !something like that may be nice?
-               !CALL this%get_field_on_patch(fdata,isub,info)
-               !or_fail("could not get_field_on_patch for this sub")
-               !(lazy) search for the subpatch that has the right global id
-               found_patch = .FALSE.
-               !stdout("isub = ",isub," jsub = ",jsub," j = ",j)
-               patches: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
-                  SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
-                  TYPE IS (ppm_t_subpatch)
-                     IF (ALL(p%istart_p.EQ.patchid)) THEN
-                        found_patch = .TRUE.
+                  jsub = ppm_mesh_isendfromsub(j)
+                  !----------------------------------------------------------------
+                  !  Get the patch ID for this mesh block
+                  !----------------------------------------------------------------
+                  patchid(1:2) = ppm_mesh_isendpatchid(1:2,j)
+                  IF (ppm_debug.GT.2) THEN
+                     !----------------------------------------------------------------
+                     !  Translate to local sub ID for storing the data
+                     !----------------------------------------------------------------
+                     isub = invsublist(jsub)
+                  ENDIF
+                  !----------------------------------------------------------------
+                  !  Get pointer to the data for this sub, this field and this block
+                  ! TODO: room for improvement!...
+                  !----------------------------------------------------------------
+                  !something like that may be nice?
+                  !CALL this%get_field_on_patch(fdata,isub,info)
+                  !or_fail("could not get_field_on_patch for this sub")
+                  !(lazy) search for the subpatch that has the right global id
+                  found_patch = .FALSE.
+                  !stdout("isub = ",isub," jsub = ",jsub," j = ",j)
+                  patches: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
+                     SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
+                     TYPE IS (ppm_t_subpatch)
+                        IF (ALL(p%istart_p.EQ.patchid)) THEN
+                           found_patch = .TRUE.
 #if   __DIM == __SFIELD
 #if   __KIND == __SINGLE_PRECISION
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_rs
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_2d_rs
 #elif __KIND == __DOUBLE_PRECISION
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_rd
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_2d_rd
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_cs
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_2d_cs
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_cd
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_2d_cd
 #elif __KIND == __INTEGER
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_i
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_2d_i
 #elif __KIND == __LOGICAL
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_2d_l
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_2d_l
 #endif
 #elif __DIM == __VFIELD
 #if   __KIND == __SINGLE_PRECISION
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rs
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rs
 #elif __KIND == __DOUBLE_PRECISION
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_cs
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_3d_cs
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_cd
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_3d_cd
 #elif __KIND == __INTEGER
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_i
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_3d_i
 #elif __KIND == __LOGICAL
-                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_l
+                           fdata => p%subpatch_data%vec(p_idx)%t%data_3d_l
 #endif
 #endif
-                        !-----------------------------------------------------
-                        !  Mesh offset for this sub
-                        !-----------------------------------------------------
-                        !mofs(1) = this%istart(1,jsub)-1
-                        !mofs(2) = this%istart(2,jsub)-1
-                        mofs(1) = p%istart(1)-1
-                        mofs(2) = p%istart(2)-1
-                        !----------------------------------------------------
-                        !  Get boundaries of mesh block to be sent on local sub
-                        !  coordinates
-                        !----------------------------------------------------
-                        xlo = ppm_mesh_isendblkstart(1,j)-mofs(1)
-                        ylo = ppm_mesh_isendblkstart(2,j)-mofs(2)
-                        xhi = xlo+ppm_mesh_isendblksize(1,j)-1
-                        yhi = ylo+ppm_mesh_isendblksize(2,j)-1
+                           !-----------------------------------------------------
+                           !  Mesh offset for this sub
+                           !-----------------------------------------------------
+                           !mofs(1) = this%istart(1,jsub)-1
+                           !mofs(2) = this%istart(2,jsub)-1
+                           mofs(1) = p%istart(1)-1
+                           mofs(2) = p%istart(2)-1
+                           !----------------------------------------------------
+                           !  Get boundaries of mesh block to be sent on local sub
+                           !  coordinates
+                           !----------------------------------------------------
+                           xlo = ppm_mesh_isendblkstart(1,j)-mofs(1)
+                           ylo = ppm_mesh_isendblkstart(2,j)-mofs(2)
+                           xhi = xlo+ppm_mesh_isendblksize(1,j)-1
+                           yhi = ylo+ppm_mesh_isendblksize(2,j)-1
 
-                        IF (ppm_debug.GT.2) THEN
-                           stdout("isub = ",isub," jsub = ",jsub)
-                           stdout_f('(A,2I4)',"start: ",'ppm_mesh_isendblkstart(1:2,j)')
-                           stdout_f('(A,2I4)',"size: ",'ppm_mesh_isendblksize(1:2,j)')
-                           stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
-                           stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
-                           stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
-                           stdout_f('(A,I1)',"buffer dim: ",lda)
-                           stdout("p%lo_a",'p%lo_a')
-                           stdout("p%hi_a",'p%hi_a')
-                           stdout("p%istart",'p%istart')
-                           stdout("p%iend",'p%iend')
-                        ENDIF
+                           IF (ppm_debug.GT.2) THEN
+                              stdout("isub = ",isub," jsub = ",jsub)
+                              stdout_f('(A,2I4)',"start: ",'ppm_mesh_isendblkstart(1:2,j)')
+                              stdout_f('(A,2I4)',"size: ",'ppm_mesh_isendblksize(1:2,j)')
+                              stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
+                              stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                              stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                              stdout_f('(A,I1)',"buffer dim: ",lda)
+                              stdout("p%lo_a",'p%lo_a')
+                              stdout("p%hi_a",'p%hi_a')
+                              stdout("p%istart",'p%istart')
+                              stdout("p%iend",'p%iend')
+                           ENDIF
 
-                        check_true(<#(xlo.GE.p%lo_a(1))#>)
-                        check_true(<#(xhi.LE.p%hi_a(1))#>)
-                        check_true(<#(ylo.GE.p%lo_a(2))#>)
-                        check_true(<#(yhi.LE.p%hi_a(2))#>)
-                        check_associated(fdata)
+                           check_true(<#(xlo.GE.p%lo_a(1))#>)
+                           check_true(<#(xhi.LE.p%hi_a(1))#>)
+                           check_true(<#(ylo.GE.p%lo_a(2))#>)
+                           check_true(<#(yhi.LE.p%hi_a(2))#>)
+                           check_associated(fdata)
 
-                        EXIT patches
-                     ENDIF !ALL(p%istart_p.EQ.patchid)
-                  END SELECT
-               ENDDO patches
-               IF (.NOT. found_patch) THEN
-                  fail("could not find a patch on this sub with the right global id")
-               ENDIF
+                           EXIT patches
+                        ENDIF !ALL(p%istart_p.EQ.patchid)
+                     END SELECT
+                  ENDDO patches
+                  IF (.NOT. found_patch) THEN
+                     fail("could not find a patch on this sub with the right global id")
+                  ENDIF
 
-               !----------------------------------------------------------------
-               !  Loop over all mesh points of this block and append data
-               !  to send buffer.
-               !----------------------------------------------------------------
-               !      ldo = .TRUE.
-               !      IF (PRESENT(mask)) THEN
-               !          IF (.NOT.mask(1,imesh,jmesh,isub)) ldo = .FALSE.
-               !      ENDIF
-               !      IF (ldo) THEN
+                  !----------------------------------------------------------------
+                  !  Loop over all mesh points of this block and append data
+                  !  to send buffer.
+                  !----------------------------------------------------------------
+                  !      ldo = .TRUE.
+                  !      IF (PRESENT(mask)) THEN
+                  !          IF (.NOT.mask(1,imesh,jmesh,isub)) ldo = .FALSE.
+                  !      ENDIF
+                  !      IF (ldo) THEN
 #if    __DIM == __VFIELD
-               !----------------------------------------------------------------
-               !  Unrolled for lda=1
-               !----------------------------------------------------------------
-               IF (lda .EQ. 1) THEN
-                  DO jmesh=ylo,yhi
-                     DO imesh=xlo,xhi
-                        ibuffer = ibuffer + 1
+                  !----------------------------------------------------------------
+                  !  Unrolled for lda=1
+                  !----------------------------------------------------------------
+                  IF (lda .EQ. 1) THEN
+                     DO jmesh=ylo,yhi
+                        DO imesh=xlo,xhi
+                           ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(1,imesh,jmesh)
+                           ppm_sendbufferd(ibuffer) = fdata(1,imesh,jmesh)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(1,imesh,jmesh)),   &
-     &                      ppm_kind_double)
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(1,imesh,jmesh)),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(1,imesh,jmesh))
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(1,imesh,jmesh))
 #elif  __KIND == __INTEGER
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
 #elif  __KIND == __LOGICAL
-                        IF (fdata(1,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-#endif
-                     ENDDO
-                  ENDDO
-               !----------------------------------------------------------------
-               !  Unrolled for lda=2
-               !----------------------------------------------------------------
-               ELSEIF (lda .EQ. 2) THEN
-                  DO jmesh=ylo,yhi
-                     DO imesh=xlo,xhi
-                        ibuffer = ibuffer + 1
-#if    __KIND == __SINGLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-#elif  __KIND == __DOUBLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(1,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(2,imesh,jmesh)
-#elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(1,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(2,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(1,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(2,imesh,jmesh))
-#elif  __KIND == __INTEGER
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-#elif  __KIND == __LOGICAL
-                        IF (fdata(1,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-                        ibuffer = ibuffer + 1
-                        IF (fdata(2,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-#endif
-                     ENDDO
-                  ENDDO
-               !----------------------------------------------------------------
-               !  Unrolled for lda=3
-               !----------------------------------------------------------------
-               ELSEIF (lda .EQ. 3) THEN
-                  DO jmesh=ylo,yhi
-                     DO imesh=xlo,xhi
-                        ibuffer = ibuffer + 1
-#if    __KIND == __SINGLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-#elif  __KIND == __DOUBLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(1,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(2,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(3,imesh,jmesh)
-#elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(1,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(2,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(3,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(1,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(2,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(3,imesh,jmesh))
-#elif  __KIND == __INTEGER
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-#elif  __KIND == __LOGICAL
-                        IF (fdata(1,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-                        ibuffer = ibuffer + 1
-                        IF (fdata(2,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-                        ibuffer = ibuffer + 1
-                        IF (fdata(3,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-#endif
-                     ENDDO
-                  ENDDO
-               !----------------------------------------------------------------
-               !  Unrolled for lda=4
-               !----------------------------------------------------------------
-               ELSEIF (lda .EQ. 4) THEN
-                  DO jmesh=ylo,yhi
-                     DO imesh=xlo,xhi
-                        ibuffer = ibuffer + 1
-#if    __KIND == __SINGLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_double)
-#elif  __KIND == __DOUBLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(1,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(2,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(3,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(4,imesh,jmesh)
-#elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(1,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(2,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(3,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(4,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(1,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(2,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(3,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(4,imesh,jmesh))
-#elif  __KIND == __INTEGER
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_double)
-#elif  __KIND == __LOGICAL
-                        IF (fdata(1,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-                        ibuffer = ibuffer + 1
-                        IF (fdata(2,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-                        ibuffer = ibuffer + 1
-                        IF (fdata(3,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-                        ibuffer = ibuffer + 1
-                        IF (fdata(4,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-#endif
-                     ENDDO
-                  ENDDO
-               !----------------------------------------------------------------
-               !  Unrolled for lda=5
-               !----------------------------------------------------------------
-               ELSEIF (lda .EQ. 5) THEN
-                  DO jmesh=ylo,yhi
-                     DO imesh=xlo,xhi
-                        ibuffer = ibuffer + 1
-#if    __KIND == __SINGLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(5,imesh,jmesh),ppm_kind_double)
-#elif  __KIND == __DOUBLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(1,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(2,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(3,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(4,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(5,imesh,jmesh)
-#elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(1,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(2,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(3,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(4,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(5,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(5,imesh,jmesh)),   &
-     &                      ppm_kind_double)
-#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(1,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(2,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(3,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(4,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(5,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(5,imesh,jmesh))
-#elif  __KIND == __INTEGER
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_double)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(5,imesh,jmesh),ppm_kind_double)
-#elif  __KIND == __LOGICAL
-                        IF (fdata(1,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-                        ibuffer = ibuffer + 1
-                        IF (fdata(2,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-                        ibuffer = ibuffer + 1
-                        IF (fdata(3,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-                        ibuffer = ibuffer + 1
-                        IF (fdata(4,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-                        ibuffer = ibuffer + 1
-                        IF (fdata(5,imesh,jmesh)) THEN
-                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                        ELSE
-                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                        ENDIF
-#endif
-                     ENDDO
-                  ENDDO
-               !----------------------------------------------------------------
-               !  For lda.GT.5 vector length is lda
-               !----------------------------------------------------------------
-               ELSE
-                  DO jmesh=ylo,yhi
-                     DO imesh=xlo,xhi
-                        DO k=1,lda
-                           ibuffer = ibuffer + 1
-#if    __KIND == __SINGLE_PRECISION
-                           ppm_sendbufferd(ibuffer) =    &
-     &                        REAL(fdata(k,imesh,jmesh),ppm_kind_double)
-#elif  __KIND == __DOUBLE_PRECISION
-                           ppm_sendbufferd(ibuffer) =    &
-     &                         fdata(k,imesh,jmesh)
-#elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                           ppm_sendbufferd(ibuffer) =    &
-     &                        REAL(fdata(k,imesh,jmesh),ppm_kind_double)
-                           ibuffer = ibuffer + 1
-                           ppm_sendbufferd(ibuffer) =    &
-     &                         REAL(AIMAG(fdata(k,imesh,jmesh)),   &
-     &                         ppm_kind_double)
-#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ppm_sendbufferd(ibuffer) =    &
-     &                        REAL(fdata(k,imesh,jmesh),ppm_kind_double)
-                           ibuffer = ibuffer + 1
-                           ppm_sendbufferd(ibuffer) =    &
-     &                         AIMAG(fdata(k,imesh,jmesh))
-#elif  __KIND == __INTEGER
-                           ppm_sendbufferd(ibuffer) =    &
-     &                        REAL(fdata(k,imesh,jmesh),ppm_kind_double)
-#elif  __KIND == __LOGICAL
-                           IF (fdata(k,imesh,jmesh)) THEN
+                           IF (fdata(1,imesh,jmesh)) THEN
                               ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
                            ELSE
                               ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
@@ -891,47 +418,393 @@
 #endif
                         ENDDO
                      ENDDO
-                  ENDDO
-               ENDIF
-#elif  __DIM == __SFIELD
-               !----------------------------------------------------------------
-               !  Scalar version
-               !----------------------------------------------------------------
-               DO jmesh=ylo,yhi
-                  DO imesh=xlo,xhi
-                     ibuffer = ibuffer + 1
+                  !----------------------------------------------------------------
+                  !  Unrolled for lda=2
+                  !----------------------------------------------------------------
+                  ELSEIF (lda .EQ. 2) THEN
+                     DO jmesh=ylo,yhi
+                        DO imesh=xlo,xhi
+                           ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
-                     ppm_sendbufferd(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh),ppm_kind_double)
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
-                     ppm_sendbufferd(ibuffer) = fdata(imesh,jmesh)
+                           ppm_sendbufferd(ibuffer) = fdata(1,imesh,jmesh)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = fdata(2,imesh,jmesh)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                     ppm_sendbufferd(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh),ppm_kind_double)
-                     ibuffer = ibuffer + 1
-                     ppm_sendbufferd(ibuffer) =    &
-     &                   REAL(AIMAG(fdata(imesh,jmesh)),   &
-     &                   ppm_kind_double)
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(1,imesh,jmesh)),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(2,imesh,jmesh)),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                     ppm_sendbufferd(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh),ppm_kind_double)
-                     ibuffer = ibuffer + 1
-                     ppm_sendbufferd(ibuffer) = AIMAG(fdata(imesh,jmesh))
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(1,imesh,jmesh))
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(2,imesh,jmesh))
 #elif  __KIND == __INTEGER
-                     ppm_sendbufferd(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh),ppm_kind_double)
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
 #elif  __KIND == __LOGICAL
-                     IF (fdata(imesh,jmesh)) THEN
-                        ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
-                     ELSE
-                        ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
-                     ENDIF
+                           IF (fdata(1,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           IF (fdata(2,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
 #endif
+                        ENDDO
+                     ENDDO
+                  !----------------------------------------------------------------
+                  !  Unrolled for lda=3
+                  !----------------------------------------------------------------
+                  ELSEIF (lda .EQ. 3) THEN
+                     DO jmesh=ylo,yhi
+                        DO imesh=xlo,xhi
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+#if    __KIND == __SINGLE_PRECISION
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION
+                           ppm_sendbufferd(ibuffer) = fdata(1,imesh,jmesh)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = fdata(2,imesh,jmesh)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = fdata(3,imesh,jmesh)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(1,imesh,jmesh)),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(2,imesh,jmesh)),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(3,imesh,jmesh)),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(1,imesh,jmesh))
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(2,imesh,jmesh))
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(3,imesh,jmesh))
+#elif  __KIND == __INTEGER
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+#elif  __KIND == __LOGICAL
+                           IF (fdata(1,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           IF (fdata(2,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           IF (fdata(3,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+#endif
+                        ENDDO
+                     ENDDO
+                  !----------------------------------------------------------------
+                  !  Unrolled for lda=4
+                  !----------------------------------------------------------------
+                  ELSEIF (lda .EQ. 4) THEN
+                     DO jmesh=ylo,yhi
+                        DO imesh=xlo,xhi
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+#if    __KIND == __SINGLE_PRECISION
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION
+                           ppm_sendbufferd(ibuffer) = fdata(1,imesh,jmesh)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = fdata(2,imesh,jmesh)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = fdata(3,imesh,jmesh)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = fdata(4,imesh,jmesh)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(1,imesh,jmesh)),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(2,imesh,jmesh)),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(3,imesh,jmesh)),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(4,imesh,jmesh)),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(1,imesh,jmesh))
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(2,imesh,jmesh))
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(3,imesh,jmesh))
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(4,imesh,jmesh))
+#elif  __KIND == __INTEGER
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_double)
+#elif  __KIND == __LOGICAL
+                           IF (fdata(1,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           IF (fdata(2,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           IF (fdata(3,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           IF (fdata(4,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+#endif
+                        ENDDO
+                     ENDDO
+                  !----------------------------------------------------------------
+                  !  Unrolled for lda=5
+                  !----------------------------------------------------------------
+                  ELSEIF (lda .EQ. 5) THEN
+                     DO jmesh=ylo,yhi
+                        DO imesh=xlo,xhi
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+#if    __KIND == __SINGLE_PRECISION
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(5,imesh,jmesh),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION
+                           ppm_sendbufferd(ibuffer) = fdata(1,imesh,jmesh)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = fdata(2,imesh,jmesh)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = fdata(3,imesh,jmesh)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = fdata(4,imesh,jmesh)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = fdata(5,imesh,jmesh)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(1,imesh,jmesh)),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(2,imesh,jmesh)),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(3,imesh,jmesh)),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(4,imesh,jmesh)),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(5,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(5,imesh,jmesh)),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(1,imesh,jmesh))
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(2,imesh,jmesh))
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(3,imesh,jmesh))
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(4,imesh,jmesh))
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(5,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = AIMAG(fdata(5,imesh,jmesh))
+#elif  __KIND == __INTEGER
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_double)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbufferd(ibuffer) = REAL(fdata(5,imesh,jmesh),ppm_kind_double)
+#elif  __KIND == __LOGICAL
+                           IF (fdata(1,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           IF (fdata(2,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           IF (fdata(3,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           IF (fdata(4,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           IF (fdata(5,imesh,jmesh)) THEN
+                              ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                           ELSE
+                              ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                           ENDIF
+#endif
+                        ENDDO
+                     ENDDO
+                  !----------------------------------------------------------------
+                  !  For lda.GT.5 vector length is lda
+                  !----------------------------------------------------------------
+                  ELSE
+                     DO jmesh=ylo,yhi
+                        DO imesh=xlo,xhi
+                           DO k=1,lda
+                              ibuffer = ibuffer + 1_ppm_kind_int64
+#if    __KIND == __SINGLE_PRECISION
+                              ppm_sendbufferd(ibuffer) = REAL(fdata(k,imesh,jmesh),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION
+                              ppm_sendbufferd(ibuffer) = fdata(k,imesh,jmesh)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+                              ppm_sendbufferd(ibuffer) = REAL(fdata(k,imesh,jmesh),ppm_kind_double)
+                              ibuffer = ibuffer + 1_ppm_kind_int64
+                              ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(k,imesh,jmesh)),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+                              ppm_sendbufferd(ibuffer) = REAL(fdata(k,imesh,jmesh),ppm_kind_double)
+                              ibuffer = ibuffer + 1_ppm_kind_int64
+                              ppm_sendbufferd(ibuffer) = AIMAG(fdata(k,imesh,jmesh))
+#elif  __KIND == __INTEGER
+                              ppm_sendbufferd(ibuffer) = REAL(fdata(k,imesh,jmesh),ppm_kind_double)
+#elif  __KIND == __LOGICAL
+                              IF (fdata(k,imesh,jmesh)) THEN
+                                 ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                              ELSE
+                                 ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                              ENDIF
+#endif
+                           ENDDO
+                        ENDDO
+                     ENDDO
+                  ENDIF
+#elif  __DIM == __SFIELD
+                  !----------------------------------------------------------------
+                  !  Scalar version
+                  !----------------------------------------------------------------
+                  DO jmesh=ylo,yhi
+                     DO imesh=xlo,xhi
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+#if    __KIND == __SINGLE_PRECISION
+                        ppm_sendbufferd(ibuffer) = REAL(fdata(imesh,jmesh),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION
+                        ppm_sendbufferd(ibuffer) = fdata(imesh,jmesh)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+                        ppm_sendbufferd(ibuffer) = REAL(fdata(imesh,jmesh),ppm_kind_double)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbufferd(ibuffer) = REAL(AIMAG(fdata(imesh,jmesh)),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+                        ppm_sendbufferd(ibuffer) = REAL(fdata(imesh,jmesh),ppm_kind_double)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbufferd(ibuffer) = AIMAG(fdata(imesh,jmesh))
+#elif  __KIND == __INTEGER
+                        ppm_sendbufferd(ibuffer) = REAL(fdata(imesh,jmesh),ppm_kind_double)
+#elif  __KIND == __LOGICAL
+                        IF (fdata(imesh,jmesh)) THEN
+                           ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
+                        ELSE
+                           ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
+                        ENDIF
+#endif
+                     ENDDO
                   ENDDO
-               ENDDO
 #endif
-            ENDDO        ! i=1,ppm_nsendlist
-         ENDDO       ! psendbuffer
+               ENDDO  ! psendbuffer
+            ENDIF !(ppm_lsendlist(i))
+         ENDDO ! i=1,ppm_nsendlist
       !-------------------------------------------------------------------------
       !  SINGLE PRECISION BUFFER
       !-------------------------------------------------------------------------
@@ -939,12 +812,13 @@
          !----------------------------------------------------------------------
          !  (Re)allocate memory for the buffer
          !----------------------------------------------------------------------
-         iopt   = ppm_param_alloc_grow_preserve
-         ldu(1) = ppm_nsendbuffer + ldb*Ndata
-         CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
+         iopt  = ppm_param_alloc_grow_preserve
+         ld(1) = ppm_nsendbuffer + INT(ldb,ppm_kind_int64)*INT(Ndata,ppm_kind_int64)
+         CALL ppm_alloc(ppm_sendbuffers,ld,iopt,info)
          or_fail_alloc('global send buffer PPM_SENDBUFFERS',ppm_error=ppm_error_fatal)
 
          DO i=1,ppm_nsendlist
+            IF (ppm_lsendlist(i)) THEN
             !-------------------------------------------------------------------
             !  access mesh blocks belonging to the i-th processor in the
             !  sendlist
@@ -1069,29 +943,21 @@
                IF (lda .EQ. 1) THEN
                   DO jmesh=ylo,yhi
                      DO imesh=xlo,xhi
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(1,imesh,jmesh)
+                        ppm_sendbuffers(ibuffer) = fdata(1,imesh,jmesh)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(1,imesh,jmesh))
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(1,imesh,jmesh))
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(1,imesh,jmesh)),   &
-     &                      ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(1,imesh,jmesh)),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
 #elif  __KIND == __LOGICAL
                         IF (fdata(1,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1107,58 +973,42 @@
                ELSEIF (lda .EQ. 2) THEN
                   DO jmesh=ylo,yhi
                      DO imesh=xlo,xhi
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(1,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(2,imesh,jmesh)
+                        ppm_sendbuffers(ibuffer) = fdata(1,imesh,jmesh)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = fdata(2,imesh,jmesh)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(1,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(2,imesh,jmesh))
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(1,imesh,jmesh))
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(2,imesh,jmesh))
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(1,imesh,jmesh)),   &
-     &                      ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(2,imesh,jmesh)),   &
-     &                      ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(1,imesh,jmesh)),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(2,imesh,jmesh)),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(2,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(2,imesh,jmesh),1.0_ppm_kind_single)
 #elif  __KIND == __LOGICAL
                         IF (fdata(1,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                         ENDIF
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         IF (fdata(2,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
@@ -1173,86 +1023,62 @@
                ELSEIF (lda .EQ. 3) THEN
                   DO jmesh=ylo,yhi
                      DO imesh=xlo,xhi
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(1,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(2,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(3,imesh,jmesh)
+                        ppm_sendbuffers(ibuffer) = fdata(1,imesh,jmesh)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = fdata(2,imesh,jmesh)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = fdata(3,imesh,jmesh)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(1,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(2,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(3,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(3,imesh,jmesh))
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(1,imesh,jmesh))
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(2,imesh,jmesh))
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(3,imesh,jmesh))
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(1,imesh,jmesh)),   &
-     &                      ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(2,imesh,jmesh)),   &
-     &                      ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(3,imesh,jmesh)),   &
-     &                      ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(1,imesh,jmesh)),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(2,imesh,jmesh)),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(3,imesh,jmesh)),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(2,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(3,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(2,imesh,jmesh),1.0_ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(3,imesh,jmesh),1.0_ppm_kind_single)
 #elif  __KIND == __LOGICAL
                         IF (fdata(1,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                         ENDIF
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         IF (fdata(2,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                         ENDIF
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         IF (fdata(3,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
@@ -1267,114 +1093,82 @@
                ELSEIF (lda .EQ. 4) THEN
                   DO jmesh=ylo,yhi
                      DO imesh=xlo,xhi
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(3,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(4,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(1,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(2,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(3,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(4,imesh,jmesh)
+                        ppm_sendbuffers(ibuffer) = fdata(1,imesh,jmesh)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = fdata(2,imesh,jmesh)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = fdata(3,imesh,jmesh)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = fdata(4,imesh,jmesh)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(1,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(2,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(3,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(3,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(4,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(4,imesh,jmesh))
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(1,imesh,jmesh))
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(2,imesh,jmesh))
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(3,imesh,jmesh))
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(4,imesh,jmesh))
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(1,imesh,jmesh)),   &
-     &                      ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(2,imesh,jmesh)),   &
-     &                      ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(3,imesh,jmesh)),   &
-     &                      ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(4,imesh,jmesh)),   &
-     &                      ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(1,imesh,jmesh)),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(2,imesh,jmesh)),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) =REAL(AIMAG(fdata(3,imesh,jmesh)),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(4,imesh,jmesh)),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(2,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(3,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(4,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(4,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(2,imesh,jmesh),1.0_ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(3,imesh,jmesh),1.0_ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = TRANSFER(fdata(4,imesh,jmesh),1.0_ppm_kind_single)
 #elif  __KIND == __LOGICAL
                         IF (fdata(1,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                         ENDIF
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         IF (fdata(2,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                         ENDIF
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         IF (fdata(3,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                         ENDIF
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         IF (fdata(4,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
@@ -1389,142 +1183,102 @@
                ELSEIF (lda .EQ. 5) THEN
                   DO jmesh=ylo,yhi
                      DO imesh=xlo,xhi
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(3,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(4,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(5,imesh,jmesh),ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(5,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(1,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(2,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(3,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(4,imesh,jmesh)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     fdata(5,imesh,jmesh)
+                        ppm_sendbuffers(ibuffer) = fdata(1,imesh,jmesh)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = fdata(2,imesh,jmesh)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = fdata(3,imesh,jmesh)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = fdata(4,imesh,jmesh)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = fdata(5,imesh,jmesh)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(1,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(2,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(3,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(3,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(4,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(4,imesh,jmesh))
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     REAL(fdata(5,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                     AIMAG(fdata(5,imesh,jmesh))
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(1,imesh,jmesh))
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(2,imesh,jmesh))
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(3,imesh,jmesh))
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(4,imesh,jmesh))
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(5,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = AIMAG(fdata(5,imesh,jmesh))
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(1,imesh,jmesh)),   &
-     &                      ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(2,imesh,jmesh)),   &
-     &                      ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(3,imesh,jmesh)),   &
-     &                      ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(4,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(4,imesh,jmesh)),   &
-     &                      ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(fdata(5,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
-                        ppm_sendbuffers(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(5,imesh,jmesh)),   &
-     &                      ppm_kind_single)
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(1,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(1,imesh,jmesh)),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(2,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(2,imesh,jmesh)),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(3,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(3,imesh,jmesh)),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(4,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(4,imesh,jmesh)),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(fdata(5,imesh,jmesh),ppm_kind_single)
+                        ibuffer = ibuffer + 1_ppm_kind_int64
+                        ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(5,imesh,jmesh)),ppm_kind_single)
 #elif  __KIND == __INTEGER
                         ppm_sendbuffers(ibuffer) = TRANSFER(fdata(1,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(1,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer) = TRANSFER(fdata(2,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(2,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer) = TRANSFER(fdata(3,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(3,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer) = TRANSFER(fdata(4,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(4,imesh,jmesh),ppm_kind_single)
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer) = TRANSFER(fdata(5,imesh,jmesh),1.0_ppm_kind_single)
-!      &                      REAL(fdata(5,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                         IF (fdata(1,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                         ENDIF
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         IF (fdata(2,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                         ENDIF
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         IF (fdata(3,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                         ENDIF
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         IF (fdata(4,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                         ENDIF
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         IF (fdata(5,imesh,jmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
@@ -1540,29 +1294,21 @@
                   DO jmesh=ylo,yhi
                      DO imesh=xlo,xhi
                         DO k=1,lda
-                           ibuffer = ibuffer + 1
+                           ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
-                           ppm_sendbuffers(ibuffer) =    &
-     &                         REAL(fdata(k,imesh,jmesh),ppm_kind_single)
+                           ppm_sendbuffers(ibuffer) = REAL(fdata(k,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
-                           ppm_sendbuffers(ibuffer) =    &
-     &                         fdata(k,imesh,jmesh)
+                           ppm_sendbuffers(ibuffer) = fdata(k,imesh,jmesh)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                           ppm_sendbuffers(ibuffer) =    &
-     &                         REAL(fdata(k,imesh,jmesh),ppm_kind_single)
-                           ibuffer = ibuffer + 1
-                           ppm_sendbuffers(ibuffer) =    &
-     &                         AIMAG(fdata(k,imesh,jmesh))
+                           ppm_sendbuffers(ibuffer) = REAL(fdata(k,imesh,jmesh),ppm_kind_single)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbuffers(ibuffer) = AIMAG(fdata(k,imesh,jmesh))
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ppm_sendbuffers(ibuffer) =    &
-     &                         REAL(fdata(k,imesh,jmesh),ppm_kind_single)
-                           ibuffer = ibuffer + 1
-                           ppm_sendbuffers(ibuffer) =    &
-     &                         REAL(AIMAG(fdata(k,imesh,jmesh)),   &
-     &                         ppm_kind_single)
+                           ppm_sendbuffers(ibuffer) = REAL(fdata(k,imesh,jmesh),ppm_kind_single)
+                           ibuffer = ibuffer + 1_ppm_kind_int64
+                           ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(k,imesh,jmesh)), ppm_kind_single)
 #elif  __KIND == __INTEGER
                            ppm_sendbuffers(ibuffer) =  TRANSFER(fdata(k,imesh,jmesh),1.0_ppm_kind_single)
-!      &                         REAL(fdata(k,imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                            IF (fdata(k,imesh,jmesh)) THEN
                               ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1580,26 +1326,21 @@
                !----------------------------------------------------------------
                DO jmesh=ylo,yhi
                   DO imesh=xlo,xhi
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
-                     ppm_sendbuffers(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh),ppm_kind_single)
+                     ppm_sendbuffers(ibuffer) = REAL(fdata(imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
                      ppm_sendbuffers(ibuffer) = fdata(imesh,jmesh)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                     ppm_sendbuffers(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh),ppm_kind_single)
-                     ibuffer = ibuffer + 1
+                     ppm_sendbuffers(ibuffer) = REAL(fdata(imesh,jmesh),ppm_kind_single)
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      ppm_sendbuffers(ibuffer) = AIMAG(fdata(imesh,jmesh))
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                     ppm_sendbuffers(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh),ppm_kind_single)
-                     ibuffer = ibuffer + 1
-                     ppm_sendbuffers(ibuffer) =    &
-     &                   REAL(AIMAG(fdata(imesh,jmesh)),ppm_kind_single)
+                     ppm_sendbuffers(ibuffer) = REAL(fdata(imesh,jmesh),ppm_kind_single)
+                     ibuffer = ibuffer + 1_ppm_kind_int64
+                     ppm_sendbuffers(ibuffer) = REAL(AIMAG(fdata(imesh,jmesh)),ppm_kind_single)
 #elif  __KIND == __INTEGER
                      ppm_sendbuffers(ibuffer) = TRANSFER(fdata(imesh,jmesh),1.0_ppm_kind_single)
-!      &                   REAL(fdata(imesh,jmesh),ppm_kind_single)
 #elif  __KIND == __LOGICAL
                      IF (fdata(imesh,jmesh)) THEN
                         ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
@@ -1611,6 +1352,7 @@
                ENDDO
 #endif
             ENDDO ! ppm_psendbuffer
+            ENDIF !(ppm_lsendlist(i))
          ENDDO ! i=1,ppm_nsendlist
       END SELECT ! ppm_kind
 

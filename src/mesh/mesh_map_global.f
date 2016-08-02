@@ -235,6 +235,12 @@
       CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
       or_fail_alloc('global recv rank list PPM_IRECVLIST')
 
+      CALL ppm_alloc(ppm_lsendlist,ldu,iopt,info)
+      or_fail_alloc("ppm_lsendlist")
+
+      CALL ppm_alloc(ppm_lrecvlist,ldu,iopt,info)
+      or_fail_alloc("ppm_lrecvlist")
+
       ldu(1) = ppm_nproc + 1
       CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
       or_fail_alloc('global send buffer pointer PPM_PSENDBUFFER')
@@ -256,10 +262,13 @@
       ppm_precvbuffer(1) = 1
       ppm_nsendlist      = 0
       ppm_nrecvlist      = 0
-      ppm_nsendbuffer    = 0    ! data length in buffer
-      ppm_nrecvbuffer    = 0    ! data length in buffer
+      ppm_nsendbuffer    = 0_ppm_kind_int64    ! data length in buffer
+      ppm_nrecvbuffer    = 0_ppm_kind_int64    ! data length in buffer
       iset               = 0
       ibuffer            = 0
+
+      ppm_lsendlist      = .TRUE.
+      ppm_lrecvlist      = .TRUE.
 
       DO i=1,ppm_nproc
 

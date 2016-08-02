@@ -1,4 +1,4 @@
-      SUBROUTINE equi_mesh_map_ghost_put(this,info,ghostsize)
+      SUBROUTINE equi_mesh_map_ghost_put(this,info,ghostsize,sendlist,recvlist)
       !!! This routine sends the values of ghost mesh points
       !!! back to their origin in order to add their contribution to the
       !!! corresponding real mesh point.
@@ -37,6 +37,10 @@
       INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: ghostsize
       !!! Size of the ghost layer in numbers of grid points in all space
       !!! dimensions (1...ppm_dim).
+      INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: sendlist
+      !!! list of processors to send data to them.
+      INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: recvlist
+      !!! list of processors to receive data from them.
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -47,7 +51,7 @@
       INTEGER, DIMENSION(2)       :: ldu
       INTEGER, DIMENSION(ppm_dim) :: ghostsize_
       INTEGER                     :: i,j,lb,ub
-      INTEGER                     :: iopt,ibuffer
+      INTEGER                     :: iopt
       INTEGER                     :: nsendlist,nrecvlist
 
       LOGICAL :: valid
@@ -107,8 +111,8 @@
       !-------------------------------------------------------------------------
       !  Reset the buffer size counters
       !-------------------------------------------------------------------------
-      ppm_nsendbuffer = 0
-      ppm_nrecvbuffer = 0
+      ppm_nsendbuffer = 0_ppm_kind_int64
+      ppm_nrecvbuffer = 0_ppm_kind_int64
 
       !-------------------------------------------------------------------------
       !  Number of mesh blocks to be sent/recvd is reverse from the get
@@ -164,6 +168,12 @@
       CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
       or_fail_alloc("ppm_irecvlist")
 
+      CALL ppm_alloc(ppm_lsendlist,ldu,iopt,info)
+      or_fail_alloc("ppm_lsendlist")
+
+      CALL ppm_alloc(ppm_lrecvlist,ldu,iopt,info)
+      or_fail_alloc("ppm_lrecvlist")
+
       ldu(1) = topo%ncommseq + 1
       CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
       or_fail_alloc("ppm_psendbuffer")
@@ -192,6 +202,32 @@
       ppm_isendlist(1:ub) = topo%icommseq(1:ub)
       ppm_irecvlist(1:ub) = topo%icommseq(1:ub)
 
+      IF (PRESENT(sendlist)) THEN
+         ppm_lsendlist(1)=.TRUE.
+         DO i=2,ub
+            IF (ANY(ppm_isendlist(i).EQ.sendlist)) THEN
+               ppm_lsendlist(i)=.TRUE.
+            ELSE
+               ppm_lsendlist(i)=.FALSE.
+            ENDIF
+         ENDDO
+      ELSE
+         ppm_lsendlist(1:ub)=.TRUE.
+      ENDIF
+
+      IF (PRESENT(recvlist)) THEN
+         ppm_lrecvlist(1)=.TRUE.
+         DO i=2,ub
+            IF (ANY(ppm_irecvlist(i).EQ.recvlist)) THEN
+               ppm_lrecvlist(i)=.TRUE.
+            ELSE
+               ppm_lrecvlist(i)=.FALSE.
+            ENDIF
+         ENDDO
+      ELSE
+         ppm_lrecvlist(1:ub)=.TRUE.
+      ENDIF
+
       !----------------------------------------------------------------------
       !  Store the mesh block range for this processor interaction
       !----------------------------------------------------------------------
@@ -200,31 +236,33 @@
       ppm_precvbuffer(2:ub) = map%ghost_blk(2:ub)
 
       DO i=1,topo%ncommseq
-         ibuffer = i + 1
+         IF (ppm_lsendlist(i)) THEN
+            !----------------------------------------------------------------------
+            !  Store the definitions of the mesh blocks to be sent
+            !----------------------------------------------------------------------
+            lb = ppm_psendbuffer(i)
+            ub = ppm_psendbuffer(i+1)
+            DO j=lb,ub-1
+               ppm_mesh_isendblkstart(1:ppm_dim,j) = map%ghost_recvblkstart(1:ppm_dim,j)
+               ppm_mesh_isendblksize(1:ppm_dim,j)  = map%ghost_recvblksize(1:ppm_dim,j)
+               ppm_mesh_isendfromsub(j)            = map%ghost_recvtosub(j)
+               ppm_mesh_isendpatchid(1:ppm_dim,j)  = map%ghost_recvpatchid(1:ppm_dim,j)
+            ENDDO
+         ENDIF
 
-         !----------------------------------------------------------------------
-         !  Store the definitions of the mesh blocks to be sent
-         !----------------------------------------------------------------------
-         lb = ppm_psendbuffer(i)
-         ub = ppm_psendbuffer(ibuffer)
-         DO j=lb,ub-1
-            ppm_mesh_isendblkstart(1:ppm_dim,j) = map%ghost_recvblkstart(1:ppm_dim,j)
-            ppm_mesh_isendblksize(1:ppm_dim,j)  = map%ghost_recvblksize(1:ppm_dim,j)
-            ppm_mesh_isendfromsub(j)            = map%ghost_recvtosub(j)
-            ppm_mesh_isendpatchid(1:ppm_dim,j)  = map%ghost_recvpatchid(1:ppm_dim,j)
-         ENDDO
-
-         !----------------------------------------------------------------------
-         !  Store the definitions of the mesh blocks to be received
-         !----------------------------------------------------------------------
-         lb = ppm_precvbuffer(i)
-         ub = ppm_precvbuffer(ibuffer)
-         DO j=lb,ub-1
-            ppm_mesh_irecvblkstart(1:ppm_dim,j) = map%ghost_blkstart(1:ppm_dim,j)
-            ppm_mesh_irecvblksize(1:ppm_dim,j)  = map%ghost_blksize(1:ppm_dim,j)
-            ppm_mesh_irecvtosub(j)              = map%ghost_fromsub(j)
-            ppm_mesh_irecvpatchid(1:ppm_dim,j)  = map%ghost_patchid(1:ppm_dim,j)
-         ENDDO
+         IF (ppm_lrecvlist(i)) THEN
+            !----------------------------------------------------------------------
+            !  Store the definitions of the mesh blocks to be received
+            !----------------------------------------------------------------------
+            lb = ppm_precvbuffer(i)
+            ub = ppm_precvbuffer(i+1)
+            DO j=lb,ub-1
+               ppm_mesh_irecvblkstart(1:ppm_dim,j) = map%ghost_blkstart(1:ppm_dim,j)
+               ppm_mesh_irecvblksize(1:ppm_dim,j)  = map%ghost_blksize(1:ppm_dim,j)
+               ppm_mesh_irecvtosub(j)              = map%ghost_fromsub(j)
+               ppm_mesh_irecvpatchid(1:ppm_dim,j)  = map%ghost_patchid(1:ppm_dim,j)
+            ENDDO
+         ENDIF
       ENDDO !i=1,topo%ncommseq
 
       !DO i=1,ppm_nsendlist

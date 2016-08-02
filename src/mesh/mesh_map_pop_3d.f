@@ -121,14 +121,16 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(3) :: mofs,patchid
-      INTEGER, DIMENSION(4) :: ldu,ldl
-      INTEGER               :: i,j,k,ibuffer,Mdata,isub,bdim,jsub,edim
-      INTEGER               :: ipatch
-      INTEGER               :: iopt,totopo,xhi,yhi,zhi,xlo,ylo,zlo
-      INTEGER               :: imesh,jmesh,kmesh
-      INTEGER               :: btype,idom
-      INTEGER               :: rtype
+      INTEGER(ppm_kind_int64)        :: ibuffer
+      INTEGER(ppm_kind_int64)        :: Mdata
+      INTEGER, DIMENSION(3)          :: mofs,patchid
+      INTEGER, DIMENSION(1)          :: ldu
+      INTEGER                        :: i,j,k,isub,bdim,jsub,edim
+      INTEGER                        :: ipatch
+      INTEGER                        :: iopt,totopo,xhi,yhi,zhi,xlo,ylo,zlo
+      INTEGER                        :: imesh,jmesh,kmesh
+      INTEGER                        :: btype,idom
+      INTEGER                        :: rtype
       INTEGER, DIMENSION(:), POINTER :: sublist
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
@@ -257,7 +259,7 @@
       !-------------------------------------------------------------------------
       !  Determine the number of data points to be received
       !-------------------------------------------------------------------------
-      Mdata = 0
+      Mdata = 0_ppm_kind_int64
       DO i=1,ppm_nrecvlist
           !-------------------------------------------------------------------
           !  access mesh blocks belonging to the i-th processor in the
@@ -267,15 +269,16 @@
               !----------------------------------------------------------------
               !  Get the number of mesh points in this block
               !----------------------------------------------------------------
-              Mdata = Mdata + (ppm_mesh_irecvblksize(1,j)*         &
-              &       ppm_mesh_irecvblksize(2,j)* ppm_mesh_irecvblksize(3,j))
+              Mdata = Mdata + INT(ppm_mesh_irecvblksize(1,j),ppm_kind_int64)* &
+              &               INT(ppm_mesh_irecvblksize(2,j),ppm_kind_int64)* &
+              &               INT(ppm_mesh_irecvblksize(3,j),ppm_kind_int64)
           ENDDO
       ENDDO
 
       !-------------------------------------------------------------------------
       !  If there is nothing to be sent we are done
       !-------------------------------------------------------------------------
-      IF (Mdata.EQ.0) THEN
+      IF (Mdata.EQ.0_ppm_kind_int64) THEN
          IF (ppm_debug.GT.0) THEN
             stdout("There is no data to be received")
          ENDIF
@@ -288,7 +291,7 @@
       IF (ppm_debug.GT.1) THEN
          stdout_f('(2(A,I9))',"ppm_nrecvbuffer = ",ppm_nrecvbuffer," / Mdata*bdim = ",'Mdata*bdim')
       ENDIF
-      ppm_nrecvbuffer = ppm_nrecvbuffer - Mdata*bdim
+      ppm_nrecvbuffer = ppm_nrecvbuffer - Mdata*INT(bdim,ppm_kind_int64)
 
       ibuffer = ppm_nrecvbuffer
       IF (ppm_debug.GT.1) THEN
@@ -299,7 +302,7 @@
       !  Decrement the pointer into the send buffer to allow reuse by
       !  multiple sequential push-send-pop cycles.
       !-------------------------------------------------------------------------
-      Mdata = 0
+      Mdata = 0_ppm_kind_int64
       DO i=1,ppm_nsendlist
          !----------------------------------------------------------------------
          !  access mesh blocks belonging to the i-th processor in the
@@ -309,12 +312,13 @@
             !-------------------------------------------------------------------
             !  Get the number of mesh points in this block
             !-------------------------------------------------------------------
-            Mdata = Mdata + (ppm_mesh_isendblksize(1,j)* &
-            &                ppm_mesh_isendblksize(2,j)* &
-            &                ppm_mesh_isendblksize(3,j))
+            Mdata = Mdata + INT(ppm_mesh_isendblksize(1,j),ppm_kind_int64)* &
+            &               INT(ppm_mesh_isendblksize(2,j),ppm_kind_int64)* &
+            &               INT(ppm_mesh_isendblksize(3,j),ppm_kind_int64)
          ENDDO
       ENDDO
-      ppm_nsendbuffer = ppm_nsendbuffer - ppm_buffer_dim(ppm_buffer_set)*Mdata
+
+      ppm_nsendbuffer = ppm_nsendbuffer - INT(ppm_buffer_dim(ppm_buffer_set),ppm_kind_int64)*Mdata
 
       !-------------------------------------------------------------------------
       !  Debug output
@@ -505,9 +509,9 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
@@ -517,11 +521,11 @@
      &                           ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =     &
@@ -542,9 +546,9 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =   &
@@ -557,12 +561,12 @@
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =   &
@@ -591,42 +595,42 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -636,7 +640,7 @@
                               ELSE
                                  fdata(2,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(1,imesh,jmesh,kmesh) = .TRUE.
@@ -652,15 +656,15 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
@@ -668,35 +672,35 @@
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
@@ -709,7 +713,7 @@
                                  fdata(1,imesh,jmesh,kmesh) =    &
      &                              (fdata(1,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(2,imesh,jmesh,kmesh) =    &
@@ -732,59 +736,59 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -794,14 +798,14 @@
                               ELSE
                                  fdata(1,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(2,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(2,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(3,imesh,jmesh,kmesh) = .TRUE.
@@ -817,19 +821,19 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
@@ -837,53 +841,53 @@
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
@@ -896,7 +900,7 @@
                                  fdata(1,imesh,jmesh,kmesh) =    &
      &                              (fdata(1,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(2,imesh,jmesh,kmesh) =    &
@@ -905,7 +909,7 @@
                                  fdata(2,imesh,jmesh,kmesh) =    &
      &                              (fdata(2,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(3,imesh,jmesh,kmesh) =    &
@@ -928,76 +932,76 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -1007,21 +1011,21 @@
                               ELSE
                                  fdata(1,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(2,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(2,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(3,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(3,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(4,imesh,jmesh,kmesh) = .TRUE.
@@ -1037,23 +1041,23 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =   &
      &                           fdata(4,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
@@ -1061,71 +1065,71 @@
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =   &
      &                           fdata(4,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =   &
      &                           fdata(4,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =   &
      &                           fdata(4,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =   &
      &                           fdata(4,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
@@ -1138,7 +1142,7 @@
                                  fdata(1,imesh,jmesh,kmesh) =    &
      &                              (fdata(1,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(2,imesh,jmesh,kmesh) =    &
@@ -1147,7 +1151,7 @@
                                  fdata(2,imesh,jmesh,kmesh) =    &
      &                              (fdata(2,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(3,imesh,jmesh,kmesh) =    &
@@ -1156,7 +1160,7 @@
                                  fdata(3,imesh,jmesh,kmesh) =    &
      &                              (fdata(3,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(4,imesh,jmesh,kmesh) =    &
@@ -1179,93 +1183,93 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =     &
      &                           INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -1275,28 +1279,28 @@
                               ELSE
                                  fdata(1,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(2,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(2,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(3,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(3,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(4,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(4,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(5,imesh,jmesh,kmesh) = .TRUE.
@@ -1312,27 +1316,27 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =   &
      &                           fdata(4,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =   &
      &                           fdata(5,imesh,jmesh,kmesh)+ &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
@@ -1340,89 +1344,89 @@
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =   &
      &                           fdata(4,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =   &
      &                           fdata(5,imesh,jmesh,kmesh)+ &
      &                           ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =   &
      &                           fdata(4,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =   &
      &                           fdata(5,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =   &
      &                           fdata(4,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =   &
      &                           fdata(5,imesh,jmesh,kmesh)+ &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =   &
      &                           fdata(1,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =   &
      &                           fdata(2,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =   &
      &                           fdata(3,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =   &
      &                           fdata(4,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =   &
      &                           fdata(5,imesh,jmesh,kmesh)+ &
      &                           INT(ppm_recvbufferd(ibuffer))
@@ -1435,7 +1439,7 @@
                                  fdata(1,imesh,jmesh,kmesh) =    &
      &                              (fdata(1,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(2,imesh,jmesh,kmesh) =    &
@@ -1444,7 +1448,7 @@
                                  fdata(2,imesh,jmesh,kmesh) =    &
      &                              (fdata(2,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(3,imesh,jmesh,kmesh) =    &
@@ -1453,7 +1457,7 @@
                                  fdata(3,imesh,jmesh,kmesh) =    &
      &                              (fdata(3,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(4,imesh,jmesh,kmesh) =    &
@@ -1462,7 +1466,7 @@
                                  fdata(4,imesh,jmesh,kmesh) =    &
      &                              (fdata(4,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbufferd(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_double-ppm_myepsd)) THEN
                                  fdata(5,imesh,jmesh,kmesh) =    &
@@ -1486,9 +1490,9 @@
                            DO imesh=xlo,xhi
                               DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                                 ibuffer = ibuffer + 2
+                                 ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                                 ibuffer = ibuffer + 1
+                                 ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                                  fdata(k,imesh,jmesh,kmesh) =     &
@@ -1498,11 +1502,11 @@
      &                              ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =     &
-     &                              CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =     &
-     &                              CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                                  fdata(k,imesh,jmesh,kmesh) =     &
@@ -1525,9 +1529,9 @@
                            DO imesh=xlo,xhi
                               DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                                 ibuffer = ibuffer + 2
+                                 ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                                 ibuffer = ibuffer + 1
+                                 ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                                  fdata(k,imesh,jmesh,kmesh) =   &
@@ -1540,12 +1544,12 @@
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =   &
      &                              fdata(k,imesh,jmesh,kmesh)+ &
-     &                              CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =   &
      &                              fdata(k,imesh,jmesh,kmesh)+ &
-     &                              CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                                  fdata(k,imesh,jmesh,kmesh) =   &
@@ -1577,9 +1581,9 @@
                         IF (mask(imesh,jmesh,isub)) THEN
                            DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
                               IF (rtype.EQ.ppm_param_pop_replace) THEN
 #if    __KIND == __SINGLE_PRECISION
@@ -1590,11 +1594,11 @@
      &                              ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =     &
-     &                              CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =     &
-     &                              CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                                  fdata(k,imesh,jmesh,kmesh) =     &
@@ -1619,12 +1623,12 @@
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =   &
      &                              fdata(k,imesh,jmesh,kmesh)+ &
-     &                              CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =   &
      &                              fdata(k,imesh,jmesh,kmesh)+ &
-     &                              CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                                  fdata(k,imesh,jmesh,kmesh) =   &
@@ -1644,9 +1648,9 @@
                            ENDDO
                         ELSE
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ibuffer = ibuffer + (edim*2)
+                           ibuffer = ibuffer + INT(edim*2,ppm_kind_int64)
 #else
-                           ibuffer = ibuffer + edim
+                           ibuffer = ibuffer + INT(edim,ppm_kind_int64)
 #endif
                         ENDIF   ! mask.EQ..TRUE.
                      ENDDO
@@ -1660,9 +1664,9 @@
                      DO jmesh=ylo,yhi
                         DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ibuffer = ibuffer + 2
+                           ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                           ibuffer = ibuffer + 1
+                           ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                            fdata(imesh,jmesh,kmesh) =     &
@@ -1671,11 +1675,11 @@
                            fdata(imesh,jmesh,kmesh) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                            fdata(imesh,jmesh,kmesh) =     &
-     &                        CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                        CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                        ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                            fdata(imesh,jmesh,kmesh) =     &
-     &                        CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                        CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                        ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                            fdata(imesh,jmesh,kmesh) =     &
@@ -1696,9 +1700,9 @@
                      DO jmesh=ylo,yhi
                         DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ibuffer = ibuffer + 2
+                           ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                           ibuffer = ibuffer + 1
+                           ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                            fdata(imesh,jmesh,kmesh) = fdata(imesh,jmesh,kmesh)+&
@@ -1708,11 +1712,11 @@
      &                         ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                            fdata(imesh,jmesh,kmesh) = fdata(imesh,jmesh,kmesh)+&
-     &                        CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                        CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                        ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                            fdata(imesh,jmesh,kmesh) = fdata(imesh,jmesh,kmesh)+&
-     &                        CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                        CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                        ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                            fdata(imesh,jmesh,kmesh) = fdata(imesh,jmesh,kmesh)+ &
@@ -1737,9 +1741,9 @@
                      DO imesh=xlo,xhi
                         IF (mask(imesh,jmesh,isub)) THEN
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ibuffer = ibuffer + 2
+                           ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                           ibuffer = ibuffer + 1
+                           ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
                            IF (rtype.EQ.ppm_param_pop_replace) THEN
 #if    __KIND == __SINGLE_PRECISION
@@ -1749,11 +1753,11 @@
                               fdata(imesh,jmesh,kmesh) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(imesh,jmesh,kmesh) =     &
@@ -1775,11 +1779,11 @@
      &                            ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(imesh,jmesh,kmesh) = fdata(imesh,jmesh,kmesh)+&
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(imesh,jmesh,kmesh) = fdata(imesh,jmesh,kmesh)+&
-     &                           CMPLX(ppm_recvbufferd(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(imesh,jmesh,kmesh) = fdata(imesh,jmesh,kmesh)+ &
@@ -1797,9 +1801,9 @@
                            ENDIF
                         ELSE
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ibuffer = ibuffer + 2
+                           ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                           ibuffer = ibuffer + 1
+                           ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
                         ENDIF    ! mask.EQ..TRUE.
                      ENDDO
@@ -1983,9 +1987,9 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
@@ -1995,11 +1999,11 @@
      &                           ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
@@ -2020,9 +2024,9 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =    &
@@ -2035,12 +2039,12 @@
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =    &
@@ -2069,42 +2073,42 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -2114,7 +2118,7 @@
                               ELSE
                                  fdata(1,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(2,imesh,jmesh,kmesh) = .TRUE.
@@ -2130,15 +2134,15 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
@@ -2146,35 +2150,35 @@
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
@@ -2187,7 +2191,7 @@
                                  fdata(1,imesh,jmesh,kmesh) =        &
      &                               (fdata(1,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(2,imesh,jmesh,kmesh) =        &
@@ -2210,59 +2214,59 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -2272,14 +2276,14 @@
                               ELSE
                                  fdata(1,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(2,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(2,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(3,imesh,jmesh,kmesh) = .TRUE.
@@ -2295,19 +2299,19 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
@@ -2315,53 +2319,53 @@
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
@@ -2374,7 +2378,7 @@
                                  fdata(1,imesh,jmesh,kmesh) =        &
      &                               (fdata(1,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(2,imesh,jmesh,kmesh) =        &
@@ -2383,7 +2387,7 @@
                                  fdata(2,imesh,jmesh,kmesh) =        &
      &                               (fdata(2,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(3,imesh,jmesh,kmesh) =        &
@@ -2406,76 +2410,76 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -2485,21 +2489,21 @@
                               ELSE
                                  fdata(1,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(2,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(2,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(3,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(3,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(4,imesh,jmesh,kmesh) = .TRUE.
@@ -2515,23 +2519,23 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =    &
      &                           fdata(4,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
@@ -2539,71 +2543,71 @@
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =    &
      &                           fdata(4,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =    &
      &                           fdata(4,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =    &
      &                           fdata(4,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =    &
      &                           fdata(4,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
@@ -2616,7 +2620,7 @@
                                  fdata(1,imesh,jmesh,kmesh) =        &
      &                               (fdata(1,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(2,imesh,jmesh,kmesh) =        &
@@ -2625,7 +2629,7 @@
                                  fdata(2,imesh,jmesh,kmesh) =        &
      &                               (fdata(2,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(3,imesh,jmesh,kmesh) =        &
@@ -2634,7 +2638,7 @@
                                  fdata(3,imesh,jmesh,kmesh) =        &
      &                               (fdata(3,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(4,imesh,jmesh,kmesh) =        &
@@ -2657,93 +2661,93 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =     &
      &                           ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -2753,28 +2757,28 @@
                               ELSE
                                  fdata(1,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(2,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(2,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(3,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(3,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(4,imesh,jmesh,kmesh) = .TRUE.
                               ELSE
                                  fdata(4,imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(5,imesh,jmesh,kmesh) = .TRUE.
@@ -2790,27 +2794,27 @@
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =    &
      &                           fdata(4,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =    &
      &                           fdata(5,imesh,jmesh,kmesh) + &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
@@ -2818,89 +2822,89 @@
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =    &
      &                           fdata(4,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =    &
      &                           fdata(5,imesh,jmesh,kmesh) + &
      &                           ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =    &
      &                           fdata(4,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =    &
      &                           fdata(5,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =    &
      &                           fdata(4,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =    &
      &                           fdata(5,imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(1,imesh,jmesh,kmesh) =    &
      &                           fdata(1,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(2,imesh,jmesh,kmesh) =    &
      &                           fdata(2,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(3,imesh,jmesh,kmesh) =    &
      &                           fdata(3,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(4,imesh,jmesh,kmesh) =    &
      &                           fdata(4,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               fdata(5,imesh,jmesh,kmesh) =    &
      &                           fdata(5,imesh,jmesh,kmesh) + TRANSFER(ppm_recvbuffers(ibuffer),1)
 !      &                           INT(ppm_recvbuffers(ibuffer))
@@ -2913,7 +2917,7 @@
                                  fdata(1,imesh,jmesh,kmesh) =        &
      &                               (fdata(1,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(2,imesh,jmesh,kmesh) =        &
@@ -2922,7 +2926,7 @@
                                  fdata(2,imesh,jmesh,kmesh) =        &
      &                               (fdata(2,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(3,imesh,jmesh,kmesh) =        &
@@ -2931,7 +2935,7 @@
                                  fdata(3,imesh,jmesh,kmesh) =        &
      &                               (fdata(3,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(4,imesh,jmesh,kmesh) =        &
@@ -2940,7 +2944,7 @@
                                  fdata(4,imesh,jmesh,kmesh) =        &
      &                               (fdata(4,imesh,jmesh,kmesh) .AND. .FALSE.)
                               ENDIF
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               IF (ppm_recvbuffers(ibuffer) .GT.     &
      &                           (1.0_ppm_kind_single-ppm_myepss)) THEN
                                  fdata(5,imesh,jmesh,kmesh) =        &
@@ -2964,9 +2968,9 @@
                            DO imesh=xlo,xhi
                               DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                                 ibuffer = ibuffer + 2
+                                 ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                                 ibuffer = ibuffer + 1
+                                 ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                                  fdata(k,imesh,jmesh,kmesh) =     &
@@ -2976,11 +2980,11 @@
      &                              ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =     &
-     &                              CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =     &
-     &                              CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                                  fdata(k,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
@@ -3003,9 +3007,9 @@
                            DO imesh=xlo,xhi
                               DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                                 ibuffer = ibuffer + 2
+                                 ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                                 ibuffer = ibuffer + 1
+                                 ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                                  fdata(k,imesh,jmesh,kmesh) =    &
@@ -3018,12 +3022,12 @@
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =    &
      &                              fdata(k,imesh,jmesh,kmesh) + &
-     &                              CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =    &
      &                              fdata(k,imesh,jmesh,kmesh) + &
-     &                              CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                                  fdata(k,imesh,jmesh,kmesh) =    &
@@ -3055,9 +3059,9 @@
                         IF (mask(imesh,jmesh,isub)) THEN
                            DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                              ibuffer = ibuffer + 2
+                              ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
                               IF (rtype.EQ.ppm_param_pop_replace) THEN
 #if    __KIND == __DOUBLE_PRECISION
@@ -3068,11 +3072,11 @@
      &                              ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =     &
-     &                              CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =     &
-     &                              CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                                  fdata(k,imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
@@ -3097,12 +3101,12 @@
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =    &
      &                              fdata(k,imesh,jmesh,kmesh) + &
-     &                              CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                                  fdata(k,imesh,jmesh,kmesh) =    &
      &                              fdata(k,imesh,jmesh,kmesh) + &
-     &                              CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                              CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                              ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                                  fdata(k,imesh,jmesh,kmesh) =    &
@@ -3122,9 +3126,9 @@
                            ENDDO
                         ELSE
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ibuffer = ibuffer + (edim*2)
+                           ibuffer = ibuffer + INT(edim*2,ppm_kind_int64)
 #else
-                           ibuffer = ibuffer + edim
+                           ibuffer = ibuffer + INT(edim,ppm_kind_int64)
 #endif
                         ENDIF   ! mask.EQ..TRUE.
                      ENDDO
@@ -3138,9 +3142,9 @@
                      DO jmesh=ylo,yhi
                         DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ibuffer = ibuffer + 2
+                           ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                           ibuffer = ibuffer + 1
+                           ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                            fdata(imesh,jmesh,kmesh) =     &
@@ -3150,11 +3154,11 @@
      &                        ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                            fdata(imesh,jmesh,kmesh) =     &
-     &                        CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                        CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                        ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                            fdata(imesh,jmesh,kmesh) =     &
-     &                        CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                        CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                        ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                            fdata(imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
@@ -3175,9 +3179,9 @@
                      DO jmesh=ylo,yhi
                         DO imesh=xlo,xhi
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ibuffer = ibuffer + 2
+                           ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                           ibuffer = ibuffer + 1
+                           ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __DOUBLE_PRECISION
                            fdata(imesh,jmesh,kmesh) =    &
@@ -3190,12 +3194,12 @@
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                            fdata(imesh,jmesh,kmesh) =    &
      &                        fdata(imesh,jmesh,kmesh) + &
-     &                        CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                        CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                        ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                            fdata(imesh,jmesh,kmesh) =    &
      &                        fdata(imesh,jmesh,kmesh) + &
-     &                        CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                        CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                        ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                            fdata(imesh,jmesh,kmesh) =    &
@@ -3221,9 +3225,9 @@
                      DO imesh=xlo,xhi
                         IF (mask(imesh,jmesh,isub)) THEN
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ibuffer = ibuffer + 2
+                           ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                           ibuffer = ibuffer + 1
+                           ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
                            IF (rtype.EQ.ppm_param_pop_replace) THEN
 #if    __KIND == __DOUBLE_PRECISION
@@ -3234,11 +3238,11 @@
      &                           ppm_recvbuffers(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(imesh,jmesh,kmesh) =     &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(imesh,jmesh,kmesh) = TRANSFER(ppm_recvbuffers(ibuffer),1)
@@ -3263,12 +3267,12 @@
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                               fdata(imesh,jmesh,kmesh) =    &
      &                           fdata(imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                               fdata(imesh,jmesh,kmesh) =    &
      &                           fdata(imesh,jmesh,kmesh) + &
-     &                           CMPLX(ppm_recvbuffers(ibuffer-1),  &
+     &                           CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),  &
      &                           ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                               fdata(imesh,jmesh,kmesh) =    &
@@ -3287,9 +3291,9 @@
                            ENDIF
                         ELSE
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                           ibuffer = ibuffer + 2
+                           ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                           ibuffer = ibuffer + 1
+                           ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
                         ENDIF    ! mask.EQ..TRUE.
                      ENDDO

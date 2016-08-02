@@ -19,47 +19,43 @@
           !------------------------------------------------------------------
           !
           !------------------------------------------------------------------
-          INTEGER,  DIMENSION(:),   POINTER :: ppm_psendbuffer => NULL()
+          INTEGER,  DIMENSION(:),   POINTER :: psendbuffer => NULL()
           !!! pointer to particles within the send buffer
           !!!
           !!! In terms of particle *not* the actual position in the buffer
-          INTEGER,  DIMENSION(:),   POINTER :: ppm_precvbuffer => NULL()
+          INTEGER,  DIMENSION(:),   POINTER :: precvbuffer => NULL()
           !!! pointer to particles within the recv buffer
           !!!
           !!! In terms of particle *not* the actual position in the buffer
-          INTEGER                           :: ppm_nsendbuffer
+          INTEGER(ppm_kind_int64)           :: nsendbuffer
           !!! the size of the send buffer (not the array but the number of
           !!! used elements)
           !!!
           !!! In terms of entries in the buffer *not* the number of particles
-          INTEGER                           :: ppm_nrecvbuffer
+          INTEGER(ppm_kind_int64)           :: nrecvbuffer
           !!! the size of the recv buffer (not the array but the number of
           !!! used elements)
           !!!
           !!! In terms of entries in the buffer *not* the number of particles
-          INTEGER                           :: ppm_sendbufsize
-          !!! the actual size of the send buffer array
-          INTEGER                           :: ppm_recvbufsize
-          !!! the actual size of the receive buffer array
-          INTEGER                           :: ppm_buffer_set
+          INTEGER                           :: buffer_set
           !!! the total number of particle fields packed in
           !!! the send buffer, ie. xp, vp is two sets
-          INTEGER,  DIMENSION(:),   POINTER :: ppm_buffer2part  => NULL()
+          INTEGER,  DIMENSION(:),   POINTER :: buffer2part  => NULL()
           !!! Used for the original on-processor particle IDs in the order in which
           !!! they are in the sendbuffer. Used to push additional particle
           !!! data on the buffer in the correct order.
-          INTEGER,  DIMENSION(:),   POINTER :: ppm_buffer_type  => NULL()
+          INTEGER,  DIMENSION(:),   POINTER :: buffer_type  => NULL()
           !!! types of the data on the sendbuffer
-          INTEGER,  DIMENSION(:),   POINTER :: ppm_buffer_dim   => NULL()
+          INTEGER,  DIMENSION(:),   POINTER :: buffer_dim   => NULL()
           !!! dimensions of the original on-processor particle arrays.
           !----------------------------------------------------------------------
           !  mapping
           !----------------------------------------------------------------------
-          INTEGER                           :: ppm_map_type
-          INTEGER                           :: ppm_nsendlist
-          INTEGER                           :: ppm_nrecvlist
-          INTEGER,  DIMENSION(:),   POINTER :: ppm_isendlist => NULL()
-          INTEGER,  DIMENSION(:),   POINTER :: ppm_irecvlist => NULL()
+          INTEGER                           :: map_type
+          INTEGER                           :: nsendlist
+          INTEGER                           :: nrecvlist
+          INTEGER,  DIMENSION(:),   POINTER :: isendlist => NULL()
+          INTEGER,  DIMENSION(:),   POINTER :: irecvlist => NULL()
       END TYPE ppm_t_mapping_
 #endif
 
@@ -72,12 +68,12 @@
           REAL(MK), DIMENSION(:),   POINTER :: send  => NULL()
           REAL(MK), DIMENSION(:),   POINTER :: recv  => NULL()
 
-          INTEGER,  DIMENSION(:,:), POINTER :: ppm_ghosthack    => NULL()
+          INTEGER,  DIMENSION(:,:), POINTER :: ghosthack    => NULL()
           !!! invert map of ghost for symmetry
           !------------------------------------------------------------------
           !
           !------------------------------------------------------------------
-          REAL(MK), DIMENSION(:),   POINTER :: ppm_ghost_offset => NULL()
+          REAL(MK), DIMENSION(:),   POINTER :: ghost_offset => NULL()
           !!! ghost offset
           !!!
           !!! ghost particles may have a spatial offset compared to their real
@@ -94,7 +90,7 @@
           !!! `ppm_ghost_offset(ibuffer+0) = xp_offset(1,)`                     +
           !!! `ppm_ghost_offset(ibuffer+1) = xp_offset(2,)`                     +
           !!! `ppm_ghost_offset(ibuffer+2) = xp_offset(3,)`
-          REAL(MK), DIMENSION(:),   POINTER :: ppm_ghost_offset_fac => NULL()
+          REAL(MK), DIMENSION(:),   POINTER :: ghost_offset_fac => NULL()
           !!! ghost offset factor
           !!!
           !!! This buffer is needed for the special case of symmetric and

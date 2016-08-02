@@ -70,11 +70,12 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(3) :: ldu
-      INTEGER               :: i,j,k,l,m,tag
-      INTEGER               :: bdim,offs
-      INTEGER               :: iopt,Ndata
-      INTEGER               :: allsend,allrecv
+      INTEGER(ppm_kind_int64), DIMENSION(1) :: ld
+      INTEGER,                 DIMENSION(2) :: ldu
+      INTEGER                               :: i,j,k,l,m,tag
+      INTEGER                               :: bdim,offs
+      INTEGER                               :: iopt,Ndata
+      INTEGER                               :: allsend,allrecv
 
       LOGICAL :: sendrecv1,sendrecv2
 
@@ -110,7 +111,7 @@
          !-------------------------------------------------------------------------
          !  Initialize the buffer counters
          !-------------------------------------------------------------------------
-         ppm_nrecvbuffer = 0
+         ppm_nrecvbuffer = 0_ppm_kind_int64
 
          !-------------------------------------------------------------------------
          !  Allocate
@@ -128,23 +129,26 @@
          DO k=1,ppm_nrecvlist
             Ndata = 0
 
-            !---------------------------------------------------------------------
-            !  Number of mesh points to be received from the k-th processor in
-            !  the recvlist
-            !---------------------------------------------------------------------
-            DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
-               Ndata = Ndata + PRODUCT(ppm_mesh_irecvblksize(1:ppm_dim,i))
-            ENDDO
+            IF (ppm_lrecvlist(k)) THEN
+               !---------------------------------------------------------------------
+               !  Number of mesh points to be received from the k-th processor in
+               !  the recvlist
+               !---------------------------------------------------------------------
+               DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
+                  Ndata = Ndata + PRODUCT(ppm_mesh_irecvblksize(1:ppm_dim,i))
+               ENDDO
+
+               !---------------------------------------------------------------------
+               !  Increment the total receive buffer count
+               !---------------------------------------------------------------------
+               ppm_nrecvbuffer = ppm_nrecvbuffer + &
+               & INT(SUM(ppm_buffer_dim(1:ppm_buffer_set)),ppm_kind_int64)*INT(Ndata,ppm_kind_int64)
+            ENDIF
 
             !---------------------------------------------------------------------
             !  Store the number of mesh points in precv
             !---------------------------------------------------------------------
             precv(k) = Ndata
-
-            !---------------------------------------------------------------------
-            !  Increment the total receive buffer count
-            !---------------------------------------------------------------------
-            ppm_nrecvbuffer = ppm_nrecvbuffer + SUM(ppm_buffer_dim(1:ppm_buffer_set))*Ndata
          ENDDO
 
          IF (ppm_debug.GT.1) THEN
@@ -154,12 +158,12 @@
          !-------------------------------------------------------------------------
          !  Allocate the memory for the copy of the buffer
          !-------------------------------------------------------------------------
-         iopt   = ppm_param_alloc_grow
-         ldu(1) = ppm_nrecvbuffer
+         iopt  = ppm_param_alloc_grow
+         ld(1) = ppm_nrecvbuffer
          IF (ppm_kind.EQ.ppm_kind_double) THEN
-            CALL ppm_alloc(ppm_recvbufferd,ldu,iopt,info)
+            CALL ppm_alloc(ppm_recvbufferd,ld,iopt,info)
          ELSE
-            CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
+            CALL ppm_alloc(ppm_recvbuffers,ld,iopt,info)
          ENDIF
          or_fail_alloc("global receive buffer PPM_RECVBUFFER")
 
@@ -284,14 +288,15 @@
          !-------------------------------------------------------------------------
          DO k=1,ppm_nsendlist
             Ndata = 0
-
-            !---------------------------------------------------------------------
-            !  Number of mesh points to be sent off to the k-th processor in
-            !  the sendlist
-            !---------------------------------------------------------------------
-            DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
-               Ndata = Ndata + PRODUCT(ppm_mesh_isendblksize(1:ppm_dim,i))
-            ENDDO
+            IF (ppm_lsendlist(k)) THEN
+               !---------------------------------------------------------------------
+               !  Number of mesh points to be sent off to the k-th processor in
+               !  the sendlist
+               !---------------------------------------------------------------------
+               DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
+                  Ndata = Ndata + PRODUCT(ppm_mesh_isendblksize(1:ppm_dim,i))
+               ENDDO
+            ENDIF
 
             !---------------------------------------------------------------------
             !  Store the number of mesh points in psend
@@ -418,33 +423,9 @@
 #endif
 
          !-------------------------------------------------------------------------
-         !  Deallocate the send buffer to save memory
-         !-------------------------------------------------------------------------
-         iopt = ppm_param_dealloc
-         IF (ppm_kind.EQ.ppm_kind_single) THEN
-            CALL ppm_alloc(recvs,ldu,iopt,info)
-            or_fail_dealloc("recvs")
-
-            CALL ppm_alloc(sends,ldu,iopt,info)
-            or_fail_dealloc("sends")
-         ELSE
-            CALL ppm_alloc(recvd,ldu,iopt,info)
-            or_fail_dealloc("recvd")
-
-            CALL ppm_alloc(sendd,ldu,iopt,info)
-            or_fail_dealloc("sendd")
-         ENDIF
-
-         !-------------------------------------------------------------------------
          !  Deallocate
          !-------------------------------------------------------------------------
          iopt = ppm_param_dealloc
-         CALL ppm_alloc(nsend,ldu,iopt,info)
-         or_fail_dealloc("nsend")
-
-         CALL ppm_alloc(nrecv,ldu,iopt,info)
-         or_fail_dealloc("nrecv")
-
          CALL ppm_alloc(psend,ldu,iopt,info)
          or_fail_dealloc("psend")
 
