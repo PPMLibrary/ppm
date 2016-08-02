@@ -380,7 +380,7 @@ minclude ppm_create_collection(field_,field_,generate="abstract",vec=true,def_pt
           PROCEDURE(subpatch_data_destroy_), DEFERRED :: destroy
       END TYPE ppm_t_subpatch_data_
 minclude ppm_create_collection(subpatch_data_,subpatch_data_,generate="abstract")
-minclude ppm_create_collection(subpatch_data_,subpatch_data_,generate="abstract",vec=true,def_ptr=false,generate="abstract")
+minclude ppm_create_collection(subpatch_data_,subpatch_data_,generate="abstract",vec=true,def_ptr=false)
 
       TYPE, ABSTRACT, EXTENDS(ppm_t_discr_data) :: ppm_t_mesh_discr_data_
           CLASS(ppm_v_subpatch_data_), POINTER  :: subpatch => NULL()

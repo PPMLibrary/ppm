@@ -34,7 +34,7 @@
       !!! [NOTE]
       !!! The variables declared in this modules should not be directly accessed
       !!! by the user. They are managed interally by the library.
-
+         USE ppm_module_data, ONLY : ppm_kind_int64
          IMPLICIT NONE
 
          !----------------------------------------------------------------------
@@ -43,7 +43,7 @@
          INTEGER :: ppm_map_type_state
          INTEGER :: ppm_nrecvlist_state
          INTEGER :: ppm_nsendlist_state
-         INTEGER :: ppm_nsendbuffer_state
+         INTEGER(ppm_kind_int64) :: ppm_nsendbuffer_state
          INTEGER :: ppm_buffer_set_state
 
          INTEGER, DIMENSION(:), POINTER :: ppm_psendbuffer_state => NULL()

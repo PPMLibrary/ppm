@@ -18,7 +18,7 @@
       !   USE ppm_module_map_part_global
       !   USE ppm_module_map_part_partial
       USE ppm_module_data, ONLY : ppm_kind_double,ppm_kind_single,ppm_char, &
-      &   ppm_error_error
+      &   ppm_error_error,ppm_kind_int64
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_alloc
@@ -54,20 +54,16 @@
       !!! pointer to particles within the recv buffer
       !!!
       !!! In terms of particle *not* the actual position in the buffer
-      INTEGER                                        :: ppm_nsendbuffer
+      INTEGER(ppm_kind_int64)                        :: ppm_nsendbuffer
       !!! the size of the send buffer (not the array but the number of
       !!! used elements)
       !!!
       !!! In terms of entries in the buffer *not* the number of particles
-      INTEGER                                        :: ppm_nrecvbuffer
+      INTEGER(ppm_kind_int64)                        :: ppm_nrecvbuffer
       !!! the size of the recv buffer (not the array but the number of
       !!! used elements)
       !!!
       !!! In terms of entries in the buffer *not* the number of particles
-      INTEGER                                        :: ppm_sendbufsize
-      !!! the actual size of the send buffer array
-      INTEGER                                        :: ppm_recvbufsize
-      !!! the actual size of the receive buffer array
       INTEGER,               DIMENSION(:),   POINTER :: ppm_buffer2part => NULL()
       !!! Used for the original on-processor particle IDs in the order in which
       !!! they are in the sendbuffer. Used to push additional particle
@@ -114,6 +110,8 @@
       INTEGER,               DIMENSION(:),   POINTER :: ppm_isendlist => NULL()
       INTEGER,               DIMENSION(:),   POINTER :: ppm_irecvlist => NULL()
 
+      LOGICAL,               DIMENSION(:),   POINTER :: ppm_lsendlist => NULL()
+      LOGICAL,               DIMENSION(:),   POINTER :: ppm_lrecvlist => NULL()
       !----------------------------------------------------------------------
       !!! Holds mesh mapping, receive buffers and
       !!! mesh ghost layer mapping buffers.
@@ -161,8 +159,6 @@
       PUBLIC :: ppm_precvbuffer
       PUBLIC :: ppm_nsendbuffer
       PUBLIC :: ppm_nrecvbuffer
-      PUBLIC :: ppm_sendbufsize
-      PUBLIC :: ppm_recvbufsize
       PUBLIC :: ppm_buffer_set
       PUBLIC :: ppm_buffer2part
       PUBLIC :: ppm_buffer_type
@@ -176,6 +172,8 @@
       PUBLIC :: ppm_nrecvlist
       PUBLIC :: ppm_isendlist
       PUBLIC :: ppm_irecvlist
+      PUBLIC :: ppm_lsendlist
+      PUBLIC :: ppm_lrecvlist
 
       PUBLIC :: ppm_mesh_isendfromsub
       PUBLIC :: ppm_mesh_isendblkstart

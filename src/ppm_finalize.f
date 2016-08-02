@@ -118,6 +118,10 @@
       istat = istat + info
       CALL ppm_alloc(ppm_irecvlist,lda,iopt,info)
       istat = istat + info
+      CALL ppm_alloc(ppm_lsendlist,lda,iopt,info)
+      istat = istat + info
+      CALL ppm_alloc(ppm_lrecvlist,lda,iopt,info)
+      istat = istat + info
       CALL ppm_alloc(ppm_buffer_dim,lda,iopt,info)
       istat = istat + info
       CALL ppm_alloc(ppm_buffer_type,lda,iopt,info)
