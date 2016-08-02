@@ -17,37 +17,6 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
           INTEGER,         INTENT(  OUT) :: info
       END SUBROUTINE
 
-      SUBROUTINE DTYPE(particles_initialize2d)_(Pc,Npart_global,info, &
-      &          distrib,topoid,minphys,maxphys,cutoff,name)
-          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                       :: Pc
-          INTEGER,                                INTENT(INOUT) :: Npart_global
-          INTEGER,                                INTENT(  OUT) :: info
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: distrib
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: topoid
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: minphys
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: maxphys
-          REAL(MK),                     OPTIONAL, INTENT(IN   ) :: cutoff
-          CHARACTER(LEN=*),             OPTIONAL, INTENT(IN   ) :: name
-      END SUBROUTINE
-
-      SUBROUTINE DTYPE(particles_initialize3d)_(Pc,Npart_global,info, &
-      &          distrib,topoid,minphys,maxphys,cutoff,name)
-          IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim
-          IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                       :: Pc
-          INTEGER,                                INTENT(INOUT) :: Npart_global
-          INTEGER,                                INTENT(  OUT) :: info
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: distrib
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: topoid
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: minphys
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: maxphys
-          REAL(MK),                     OPTIONAL, INTENT(IN   ) :: cutoff
-          CHARACTER(LEN=*),             OPTIONAL, INTENT(IN   ) :: name
-      END SUBROUTINE
-
-      !!temporary hack to deal with both 2d and 3d
       SUBROUTINE DTYPE(part_initialize)_(Pc,Npart_global,info,&
       &          distrib,topoid,minphys,maxphys,cutoff,name)
           IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim

@@ -49,6 +49,7 @@
       USE ppm_module_alloc
       USE ppm_module_mpi
       IMPLICIT NONE
+
 #if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK=ppm_kind_single
 #else
@@ -81,14 +82,16 @@
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub
       REAL(ppm_kind_double)             :: t0
 
-      INTEGER, DIMENSION(:),      POINTER :: bcdef
-      INTEGER, DIMENSION(3)               :: ldu
-      INTEGER                             :: i,j,k,isub
-      INTEGER                             :: nsublist1,nsublist2,nghost
-      INTEGER                             :: nghostplus
-      INTEGER                             :: ipart,sendrank,recvrank
-      INTEGER                             :: iopt,iset,ibuffer
-      INTEGER                             :: tag1,tag2
+      INTEGER(ppm_kind_int64)               :: ibuffer
+      INTEGER(ppm_kind_int64), DIMENSION(1) :: ldc
+      INTEGER, DIMENSION(1)                 :: ldu
+      INTEGER, DIMENSION(:),   POINTER      :: bcdef
+      INTEGER                               :: i,j,k,isub
+      INTEGER                               :: nsublist1,nsublist2,nghost
+      INTEGER                               :: nghostplus
+      INTEGER                               :: ipart,sendrank,recvrank
+      INTEGER                               :: iopt,iset
+      INTEGER                               :: tag1,tag2
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_map_part_get_sub'
 
@@ -239,7 +242,7 @@
       ppm_nsendlist     =0
       ppm_nrecvlist     =0
       iset              =0
-      ibuffer           =0
+      ibuffer           =0_ppm_kind_int64
 
       !-------------------------------------------------------------------------
       !  Since we skip the local processor entirely, increment the pointers once
@@ -341,12 +344,12 @@
          !  particles, so we increment the buffer with Npart
          !----------------------------------------------------------------------
          iopt  =ppm_param_alloc_grow_preserve
-         ldu(1)=ibuffer + Npart*ppm_dim
+         ldc(1)=ibuffer + INT(Npart,ppm_kind_int64)*INT(ppm_dim,ppm_kind_int64)
          SELECT CASE (ppm_kind)
          CASE (ppm_kind_double)
-            CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
+            CALL ppm_alloc(ppm_sendbufferd,ldc,iopt,info)
          CASE DEFAULT
-            CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
+            CALL ppm_alloc(ppm_sendbuffers,ldc,iopt,info)
          END SELECT
          or_fail_alloc("global send buffer PPM_SENDBUFFER",ppm_error=ppm_error_fatal)
 
@@ -402,14 +405,14 @@
                             !  store the particle
                             !------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
-                            ibuffer=ibuffer + 1
+                            ibuffer=ibuffer + 1_ppm_kind_int64
                             ppm_sendbufferd(ibuffer)=REAL(xp(1,k),ppm_kind_double)
-                            ibuffer=ibuffer + 1
+                            ibuffer=ibuffer + 1_ppm_kind_int64
                             ppm_sendbufferd(ibuffer)=REAL(xp(2,k),ppm_kind_double)
 #else
-                            ibuffer=ibuffer + 1
+                            ibuffer=ibuffer + 1_ppm_kind_int64
                             ppm_sendbufferd(ibuffer)=xp(1,k)
-                            ibuffer=ibuffer + 1
+                            ibuffer=ibuffer + 1_ppm_kind_int64
                             ppm_sendbufferd(ibuffer)=xp(2,k)
 #endif
                          ENDIF ! for inside/outside
@@ -451,14 +454,14 @@
                             !  store the particle
                             !------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
-                            ibuffer=ibuffer + 1
+                            ibuffer=ibuffer + 1_ppm_kind_int64
                             ppm_sendbufferd(ibuffer)=xp(1,k)
-                            ibuffer=ibuffer + 1
+                            ibuffer=ibuffer + 1_ppm_kind_int64
                             ppm_sendbufferd(ibuffer)=xp(2,k)
 #else
-                            ibuffer=ibuffer + 1
+                            ibuffer=ibuffer + 1_ppm_kind_int64
                             ppm_sendbufferd(ibuffer)=REAL(xp(1,k),ppm_kind_single)
-                            ibuffer=ibuffer + 1
+                            ibuffer=ibuffer + 1_ppm_kind_int64
                             ppm_sendbufferd(ibuffer)=REAL(xp(2,k),ppm_kind_single)
 #endif
                          ENDIF ! for inside/outside
@@ -508,18 +511,18 @@
                            !  store the particle
                            !----------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=REAL(xp(1,k),ppm_kind_double)
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=REAL(xp(2,k),ppm_kind_double)
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=REAL(xp(3,k),ppm_kind_double)
 #else
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=xp(1,k)
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=xp(2,k)
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=xp(3,k)
 #endif
                         ENDIF
@@ -566,18 +569,18 @@
                            !  store the particle
                            !----------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=xp(1,k)
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=xp(2,k)
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=xp(3,k)
 #else
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=REAL(xp(1,k),ppm_kind_single)
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=REAL(xp(2,k),ppm_kind_single)
-                           ibuffer=ibuffer + 1
+                           ibuffer=ibuffer + 1_ppm_kind_int64
                            ppm_sendbufferd(ibuffer)=REAL(xp(3,k),ppm_kind_single)
 #endif
                         ENDIF

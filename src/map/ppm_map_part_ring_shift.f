@@ -76,9 +76,10 @@
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double) :: t0
 
-      INTEGER, DIMENSION(1) :: ldu
-      INTEGER               :: i
-      INTEGER               :: iopt,ibuffer,ipart
+      INTEGER(ppm_kind_int64) :: ibuffer
+      INTEGER, DIMENSION(1)   :: ldu
+      INTEGER                 :: i
+      INTEGER                 :: iopt,ipart
 
       CHARACTER(LEN=ppm_char) :: caller="ppm_map_part_ring_shift"
       !-------------------------------------------------------------------------
@@ -191,7 +192,7 @@
       !-------------------------------------------------------------------------
       !  Fill the sendbuffer with the data that will be send away
       !-------------------------------------------------------------------------
-      ibuffer = 0
+      ibuffer = 0_ppm_kind_int64
       DO ipart = 1,Npart
          !----------------------------------------------------------------------
          !  Store the id of the data entity
@@ -202,7 +203,7 @@
          !  Store the data
          !----------------------------------------------------------------------
          DO i = 1,lda
-            ibuffer                  = ibuffer + 1
+            ibuffer                  = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
             ppm_sendbuffers(ibuffer) = xp(i,ipart)
 #else

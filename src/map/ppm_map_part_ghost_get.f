@@ -108,9 +108,8 @@
       USE ppm_module_mapping_typedef, ONLY : ppm_psendbuffer,ppm_nsendlist, &
       &   ppm_nrecvlist,ppm_nsendbuffer,ppm_isendlist,ppm_buffer2part,      &
       &   ppm_buffer_dim,ppm_buffer_set,ppm_buffer_type,ppm_irecvlist,      &
-      &   ppm_sendbuffers,ppm_sendbufferd,ppm_sendbufsize,                  &
-      &   ppm_ghost_offset_facs,ppm_ghost_offset_facd,ppm_ghost_offsets,    &
-      &   ppm_ghost_offsetd,ppm_map_type
+      &   ppm_sendbuffers,ppm_sendbufferd,ppm_ghost_offset_facs,            &
+      &   ppm_ghost_offset_facd,ppm_ghost_offsets,ppm_ghost_offsetd,ppm_map_type
       IMPLICIT NONE
 
 #if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
@@ -158,11 +157,13 @@
       REAL(ppm_kind_double)             :: t0
       REAL(MK)                          :: eps
 
+      INTEGER(ppm_kind_int64)       :: ibuffer
+      INTEGER                       :: sendbufsize
       INTEGER, DIMENSION(3)         :: ldu
       INTEGER                       :: i,j,k,isub
       INTEGER                       :: nlist1,nlist2,nghost,nghostplus
       INTEGER                       :: ipart,sendrank,recvrank
-      INTEGER                       :: iopt,iset,ibuffer
+      INTEGER                       :: iopt,iset
       INTEGER                       :: nbc,npbc,nsbc
       INTEGER, DIMENSION(2*ppm_dim) :: ibc
 
@@ -254,15 +255,15 @@
 
       ! for now here, but this can be done better
       ! TODO: keep this consistant throughout simulation
-      ppm_sendbufsize = 0
+      sendbufsize = 0
       SELECT CASE (ppm_kind)
       CASE (ppm_kind_double)
          IF (ASSOCIATED(ppm_sendbufferd)) THEN
-            ppm_sendbufsize = SIZE(ppm_sendbufferd)
+            sendbufsize = SIZE(ppm_sendbufferd)
          ENDIF !(ASSOCIATED(ppm_sendbufferd))
       CASE (ppm_kind_single)
          IF (ASSOCIATED(ppm_sendbuffers)) THEN
-            ppm_sendbufsize = SIZE(ppm_sendbuffers)
+            sendbufsize = SIZE(ppm_sendbuffers)
          ENDIF !(ASSOCIATED(ppm_sendbuffers))
       END SELECT
 
@@ -625,7 +626,7 @@
       ppm_nsendlist      = 0
       ppm_nrecvlist      = 0
       iset               = 0
-      ibuffer            = 0
+      ibuffer            = 0_ppm_kind_int64
       k                  = 1
 
       !-------------------------------------------------------------------------
@@ -686,7 +687,7 @@
          !----------------------------------------------------------------------
          iopt   = ppm_param_alloc_grow
          ldu(1) = ppm_dim*(nghostplus - nghost)*topo%nsublist
-         ppm_sendbufsize = ldu(1)
+         sendbufsize = ldu(1)
          !----------------------------------------------------------------------
          !  First allocate the sendbuffer
          !----------------------------------------------------------------------
@@ -854,7 +855,7 @@
             SELECT CASE (ppm_kind)
             CASE (ppm_kind_double)
                IF (ASSOCIATED(ppm_sendbufferd)) THEN
-                  ldu(1)=ppm_sendbufsize+(nghostplus-nghost-ibuffer)*ppm_dim
+                  ldu(1)=sendbufsize+(nghostplus-nghost-ibuffer)*ppm_dim
                ELSE
                   !TODO
                   !TOCHECK
@@ -870,7 +871,7 @@
                or_fail_alloc('global send buffer ppm_ghost_offset_facd',ppm_error=ppm_error_fatal)
             CASE (ppm_kind_single)
                IF (ASSOCIATED(ppm_sendbuffers)) THEN
-                  ldu(1)=ppm_sendbufsize+(nghostplus-nghost-ibuffer)*ppm_dim
+                  ldu(1)=sendbufsize+(nghostplus-nghost-ibuffer)*ppm_dim
                ELSE
                   ldu(1)=(nghostplus-nghost-ibuffer)*ppm_dim
                ENDIF
@@ -881,7 +882,7 @@
                CALL ppm_alloc(ppm_ghost_offset_facs,ldu,iopt,info)
                or_fail_alloc('global send buffer ppm_ghost_offset_facs',ppm_error=ppm_error_fatal)
             END SELECT
-            ppm_sendbufsize=ldu(1)
+            sendbufsize=ldu(1)
 
             IF (ASSOCIATED(ppm_buffer2part)) THEN
                ldu(1) = SIZE(ppm_buffer2part) + nghostplus - nghost - iset
@@ -926,44 +927,44 @@
                      SELECT CASE (ppm_kind)
                      CASE (ppm_kind_double)
 #if    __KIND == __SINGLE_PRECISION
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbufferd(ibuffer)      =REAL(xt(1,i),ppm_kind_double)
                         ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_double)
                         ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_double)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbufferd(ibuffer)      =REAL(xt(2,i),ppm_kind_double)
                         ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_double)
                         ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_double)
 #else
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbufferd(ibuffer)      =xt(1,i)
                         ppm_ghost_offsetd(ibuffer)    =xt_offset(1,i)
                         ppm_ghost_offset_facd(ibuffer)=xt_off_fac(1,i)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbufferd(ibuffer)      =xt(2,i)
                         ppm_ghost_offsetd(ibuffer)    =xt_offset(2,i)
                         ppm_ghost_offset_facd(ibuffer)=xt_off_fac(2,i)
 #endif
                      CASE (ppm_kind_single)
 #if    __KIND == __SINGLE_PRECISION
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer)      =xt(1,i)
                         ppm_ghost_offsets(ibuffer)    =xt_offset(1,i)
                         ppm_ghost_offset_facs(ibuffer)=xt_off_fac(1,i)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer)      =xt(2,i)
                         ppm_ghost_offsets(ibuffer)    =xt_offset(2,i)
                         ppm_ghost_offset_facs(ibuffer)=xt_off_fac(2,i)
 #else
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
                         ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
                         ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
                         ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
                         ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
@@ -1003,64 +1004,64 @@
                      SELECT CASE (ppm_kind)
                      CASE (ppm_kind_double)
 #if    __KIND == __SINGLE_PRECISION
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbufferd(ibuffer)      =REAL(xt(1,i),ppm_kind_double)
                         ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_double)
                         ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_double)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbufferd(ibuffer)      =REAL(xt(2,i),ppm_kind_double)
                         ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_double)
                         ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_double)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbufferd(ibuffer)      =REAL(xt(3,i),ppm_kind_double)
                         ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(3,i),ppm_kind_double)
                         ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(3,i),ppm_kind_double)
 #else
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbufferd(ibuffer)      =xt(1,i)
                         ppm_ghost_offsetd(ibuffer)    =xt_offset(1,i)
                         ppm_ghost_offset_facd(ibuffer)=xt_off_fac(1,i)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbufferd(ibuffer)      =xt(2,i)
                         ppm_ghost_offsetd(ibuffer)    =xt_offset(2,i)
                         ppm_ghost_offset_facd(ibuffer)=xt_off_fac(2,i)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbufferd(ibuffer)      =xt(3,i)
                         ppm_ghost_offsetd(ibuffer)    =xt_offset(3,i)
                         ppm_ghost_offset_facd(ibuffer)=xt_off_fac(3,i)
 #endif
                      CASE (ppm_kind_single)
 #if    __KIND == __SINGLE_PRECISION
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer)      =xt(1,i)
                         ppm_ghost_offsets(ibuffer)    =xt_offset(1,i)
                         ppm_ghost_offset_facs(ibuffer)=xt_off_fac(1,i)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer)      =xt(2,i)
                         ppm_ghost_offsets(ibuffer)    =xt_offset(2,i)
                         ppm_ghost_offset_facs(ibuffer)=xt_off_fac(2,i)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer)      =xt(3,i)
                         ppm_ghost_offsets(ibuffer)    =xt_offset(3,i)
                         ppm_ghost_offset_facs(ibuffer)=xt_off_fac(3,i)
 #else
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
                         ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
                         ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
                         ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
                         ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
 
-                        ibuffer = ibuffer + 1
+                        ibuffer = ibuffer + 1_ppm_kind_int64
                         ppm_sendbuffers(ibuffer)      =REAL(xt(3,i),ppm_kind_single)
                         ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(3,i),ppm_kind_single)
                         ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(3,i),ppm_kind_single)
@@ -1298,7 +1299,7 @@
                   !-------------------------------------------------------------
                   iopt   = ppm_param_alloc_grow_preserve
                   ldu(1) = ibuffer + nghostplus*ppm_dim*10 ! test 20061109
-                  IF ((ibuffer + nghostplus*ppm_dim).GT.ppm_sendbufsize) THEN
+                  IF ((ibuffer + nghostplus*ppm_dim).GT.sendbufsize) THEN
                      SELECT CASE (ppm_kind)
                      CASE (ppm_kind_double)
                         CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
@@ -1315,7 +1316,7 @@
                         CALL ppm_alloc(ppm_ghost_offset_facs,ldu,iopt,info)
                         or_fail_alloc('global send buffer ppm_ghost_offset_facs',ppm_error=ppm_error_fatal)
                      END SELECT
-                     ppm_sendbufsize = ldu(1)
+                     sendbufsize = ldu(1)
                   ENDIF
 
                   ldu(1) = iset + nghostplus*10 ! test 20061109
@@ -1368,23 +1369,23 @@
                               ppm_buffer2part(iset) = ighost(i)
 
 #if    __KIND == __SINGLE_PRECISION
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbufferd(ibuffer)      =REAL(xt(1,i),ppm_kind_double)
                               ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_double)
                               ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_double)
 
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbufferd(ibuffer)      =REAL(xt(2,i),ppm_kind_double)
                               ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_double)
                               ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_double)
 #else
 
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbufferd(ibuffer)      =xt(1,i)
                               ppm_ghost_offsetd(ibuffer)    =xt_offset(1,i)
                               ppm_ghost_offset_facd(ibuffer)=xt_off_fac(1,i)
 
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbufferd(ibuffer)      =xt(2,i)
                               ppm_ghost_offsetd(ibuffer)    =xt_offset(2,i)
                               ppm_ghost_offset_facd(ibuffer)=xt_off_fac(2,i)
@@ -1417,22 +1418,22 @@
                               ppm_buffer2part(iset) = ighost(i)
 
 #if    __KIND == __SINGLE_PRECISION
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbuffers(ibuffer)      =xt(1,i)
                               ppm_ghost_offsets(ibuffer)    =xt_offset(1,i)
                               ppm_ghost_offset_facs(ibuffer)=xt_off_fac(1,i)
 
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbuffers(ibuffer)      =xt(2,i)
                               ppm_ghost_offsets(ibuffer)    =xt_offset(2,i)
                               ppm_ghost_offset_facs(ibuffer)=xt_off_fac(2,i)
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
                               ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
                               ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
 
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
                               ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
                               ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
@@ -1474,30 +1475,30 @@
                               !  store the particle
                               !----------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
-                               ibuffer = ibuffer + 1
+                               ibuffer = ibuffer + 1_ppm_kind_int64
                                ppm_sendbufferd(ibuffer)      =REAL(xt(1,i),ppm_kind_double)
                                ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_double)
                                ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_double)
 
-                               ibuffer = ibuffer + 1
+                               ibuffer = ibuffer + 1_ppm_kind_int64
                                ppm_sendbufferd(ibuffer)      =REAL(xt(2,i),ppm_kind_double)
                                ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_double)
                                ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_double)
 
-                               ibuffer = ibuffer + 1
+                               ibuffer = ibuffer + 1_ppm_kind_int64
                                ppm_sendbufferd(ibuffer)      =REAL(xt(3,i),ppm_kind_double)
                                ppm_ghost_offsetd(ibuffer)    =REAL(xt_offset(3,i),ppm_kind_double)
                                ppm_ghost_offset_facd(ibuffer)=REAL(xt_off_fac(3,i),ppm_kind_double)
 #else
-                               ibuffer = ibuffer + 1
+                               ibuffer = ibuffer + 1_ppm_kind_int64
                                ppm_sendbufferd(ibuffer)   = xt(1,i)
                                ppm_ghost_offsetd(ibuffer) = xt_offset(1,i)
                                ppm_ghost_offset_facd(ibuffer) = xt_off_fac(1,i)
-                               ibuffer = ibuffer + 1
+                               ibuffer = ibuffer + 1_ppm_kind_int64
                                ppm_sendbufferd(ibuffer)   = xt(2,i)
                                ppm_ghost_offsetd(ibuffer) = xt_offset(2,i)
                                ppm_ghost_offset_facd(ibuffer) = xt_off_fac(2,i)
-                               ibuffer = ibuffer + 1
+                               ibuffer = ibuffer + 1_ppm_kind_int64
                                ppm_sendbufferd(ibuffer)   = xt(3,i)
                                ppm_ghost_offsetd(ibuffer) = xt_offset(3,i)
                                ppm_ghost_offset_facd(ibuffer) = xt_off_fac(3,i)
@@ -1536,30 +1537,30 @@
                               !  store the particle
                               !----------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbuffers(ibuffer)   = xt(1,i)
                               ppm_ghost_offsets(ibuffer) = xt_offset(1,i)
                               ppm_ghost_offset_facs(ibuffer) = xt_off_fac(1,i)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbuffers(ibuffer)   = xt(2,i)
                               ppm_ghost_offsets(ibuffer) = xt_offset(2,i)
                               ppm_ghost_offset_facs(ibuffer) = xt_off_fac(2,i)
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbuffers(ibuffer)   = xt(3,i)
                               ppm_ghost_offsets(ibuffer) = xt_offset(3,i)
                               ppm_ghost_offset_facs(ibuffer) = xt_off_fac(3,i)
 #else
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbuffers(ibuffer)      =REAL(xt(1,i),ppm_kind_single)
                               ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(1,i),ppm_kind_single)
                               ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(1,i),ppm_kind_single)
 
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbuffers(ibuffer)      =REAL(xt(2,i),ppm_kind_single)
                               ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(2,i),ppm_kind_single)
                               ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(2,i),ppm_kind_single)
 
-                              ibuffer = ibuffer + 1
+                              ibuffer = ibuffer + 1_ppm_kind_int64
                               ppm_sendbuffers(ibuffer)      =REAL(xt(3,i),ppm_kind_single)
                               ppm_ghost_offsets(ibuffer)    =REAL(xt_offset(3,i),ppm_kind_single)
                               ppm_ghost_offset_facs(ibuffer)=REAL(xt_off_fac(3,i),ppm_kind_single)

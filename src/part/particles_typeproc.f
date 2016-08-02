@@ -202,12 +202,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           end_subroutine()
       END SUBROUTINE DTYPE(part_destroy)
 
-#define __DIM 2
-#include "part/ppm_particles_initialize.f"
-#define __DIM 3
-#include "part/ppm_particles_initialize.f"
-
-      !!temporary hack to deal with both 2d and 3d
       SUBROUTINE DTYPE(part_initialize)(Pc,Npart_global,info,&
       &          distrib,topoid,minphys,maxphys,cutoff,name)
           !-----------------------------------------------------------------------
@@ -248,17 +242,98 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
+          TYPE(ppm_t_topo), POINTER :: topo
+
+          REAL(MK), DIMENSION(ppm_dim)      :: min_phys,max_phys,len_phys
+          REAL(MK), DIMENSION(:,:), POINTER :: xp
+          REAL(MK), DIMENSION(:  ), POINTER :: randnb
+          REAL(MK)                          :: y,z,h
+          REAL(MK)                          :: hx,hy,hz
+          REAL(MK)                          :: shift
+
+          INTEGER :: ip,i,j,k,Npart,iopt
+          INTEGER :: nijk(ppm_dim),nijk_global(ppm_dim)
+          INTEGER :: remaining_rows
+          INTEGER :: distribution
+
+          CHARACTER(LEN = ppm_char) :: filename
+
+          LOGICAL :: lperiodic
+
           start_subroutine("part_initialize")
+
+          distribution=MERGE(distrib,ppm_param_part_init_cartesian,PRESENT(distrib))
+
+          !Get boundaries of computational domain
+          IF (PRESENT(topoid).AND.(PRESENT(minphys).OR.PRESENT(maxphys))) THEN
+             fail("probable conflict of optional arguments. Use topoid OR minphys")
+          ENDIF
+
+          lperiodic=.FALSE.
+
+          IF (PRESENT(topoid)) THEN
+             topo => ppm_topo(topoid)%t
+
+             SELECT CASE (MK)
+             CASE (ppm_kind_single)
+                min_phys = topo%min_physs
+                max_phys = topo%max_physs
+
+             CASE (ppm_kind_double)
+                min_phys = topo%min_physd
+                max_phys = topo%max_physd
+
+             END SELECT
+
+             IF (ANY(topo%bcdef(1:2*ppm_dim).EQ.ppm_param_bcdef_periodic)) THEN
+                lperiodic=.TRUE.
+             ENDIF
+          ELSE IF (PRESENT(minphys).AND.PRESENT(maxphys)) THEN
+             min_phys = minphys
+             max_phys = maxphys
+          ELSE
+             fail("optional arguments needed to define the domain boundaries",ppm_error=ppm_error_fatal)
+          ENDIF
+
+          len_phys=max_phys-min_phys
+
+          check_true(<#MINVAL(len_phys(1:ppm_dim)).GT.0.0_MK#>,&
+          & "Domain length is <= 0 along one dimension. Check input parameters")
 
           SELECT CASE (ppm_dim)
           CASE (2)
-             CALL DTYPE(particles_initialize2d)(Pc,Npart_global,info,&
-             &    distrib,topoid,minphys,maxphys,cutoff,name=name)
+#define __DIM 2
+#include "part/ppm_particles_initialize.f"
+#undef __DIM
           CASE DEFAULT
-             CALL DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
-             &    distrib,topoid,minphys,maxphys,cutoff,name=name)
+#define __DIM 3
+#include "part/ppm_particles_initialize.f"
+#undef __DIM
           END SELECT
           or_fail("particles_initialize")
+
+          NULLIFY(xp)
+
+          ! (global) average interparticle spacing
+          Pc%h_avg = (PRODUCT(len_phys)/REAL(Npart_global))**(1./REAL(ppm_dim))
+          ! min interparticle spacing (not needed now)
+          Pc%h_min = -1._MK
+
+          Pc%flags(ppm_part_areinside) = .TRUE.
+
+          ! set cutoff to a default value
+          Pc%ghostlayer=MERGE(cutoff,2.1_MK*Pc%h_avg,PRESENT(cutoff))
+
+          IF (PRESENT(topoid)) THEN
+             Pc%active_topoid = topoid
+          ENDIF
+
+          ! Even though convenient, this code should not be here
+          ! Neighborlists have lots of options and are costly. The user should
+          ! have the chance to decide himself where and how to create them.
+          !CALL Pc%create_neighlist(Pc,info,name='self',&
+          !    skin=0._MK,symmetry=.FALSE.,cutoff=cutoff)
+          !    or_fail("failed to create neighbour list")
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_initialize)
@@ -508,7 +583,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       END SUBROUTINE DTYPE(part_del_part)
 
       FUNCTION DTYPE(part_size)(Pc) RESULT(res)
-          !!! Returns the size of array for particle data
+          !!! Returns the size of array for particle data local size
           !!! [NOTE]
           !!! It returns -1 if the particle is not initialized yet
           IMPLICIT NONE
@@ -530,7 +605,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       END FUNCTION DTYPE(part_size)
 
       SUBROUTINE DTYPE(part_grow_size)(Pc,info)
-          !!! Increase the size of the data array for particle set.
+          !!! Increase the local size of the data array for particle set.
           !!!
           !!! [NOTE]
           !!! It preservers the available data
@@ -1407,7 +1482,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !!! Data structure containing the particles
 
           REAL(MK), DIMENSION(:,:), TARGET       :: disp
-          !!! Data structure containing the particles
+          !!! Data structure containing the particles displacement
 
           INTEGER,                  INTENT(  OUT) :: info
           !!! Return status, on success 0.
@@ -1418,7 +1493,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
 
           CLASS(ppm_t_operator_discr_),   POINTER :: op
 
-          REAL(MK), DIMENSION(:,:), POINTER :: xp => NULL()
+          REAL(MK), DIMENSION(:,:), POINTER :: xp
 
           INTEGER :: ip
 
@@ -1427,6 +1502,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !-----------------------------------------------------------------
           !  checks
           !-----------------------------------------------------------------
+          NULLIFY(xp)
           CALL Pc%get_xp(xp,info)
           or_fail("Particle positions cannot be accessed")
 
@@ -2228,9 +2304,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
           CLASS(DTYPE(ppm_t_part_mapping)_), POINTER:: map
 
-          INTEGER :: vec_size,npart,i
-
-          LOGICAL, DIMENSION(ppm_param_length_pptflags):: flags
+          INTEGER :: vec_size,i
 
           start_subroutine("part_map_create")
 

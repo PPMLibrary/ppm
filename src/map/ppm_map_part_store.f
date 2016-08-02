@@ -97,7 +97,7 @@
       !-------------------------------------------------------------------------
       !  store the ppm_nsendbuffer: the size of the send buffer - here zero
       !-------------------------------------------------------------------------
-      ppm_nsendbuffer_state = 0
+      ppm_nsendbuffer_state = 0_ppm_kind_int64
 
       !-------------------------------------------------------------------------
       !  store the ppm_buffer_set: the current number of sets stored - here zero

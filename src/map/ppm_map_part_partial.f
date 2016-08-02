@@ -85,12 +85,13 @@
 
       REAL(ppm_kind_double) :: t0
 
+      INTEGER(ppm_kind_int64)        :: ibuffer
       INTEGER, DIMENSION(3)          :: ldu
       INTEGER, DIMENSION(:), POINTER :: bcdef
       INTEGER                        :: i,j,k,idom,ipart,nlist1,nlist2
       INTEGER                        :: sendrank,recvrank
       INTEGER                        :: nneighsubs, jdom
-      INTEGER                        :: iopt,iset,ibuffer,isonneigh
+      INTEGER                        :: iopt,iset,isonneigh
       INTEGER                        :: recvidx
 
       CHARACTER(ppm_char) :: caller = 'ppm_map_part_partial'
@@ -479,7 +480,7 @@
       ppm_nsendlist      = 0
       ppm_nrecvlist      = 0
       iset               = 0
-      ibuffer            = 0
+      ibuffer            = 0_ppm_kind_int64
       DO i=1,topo%ncommseq
          !----------------------------------------------------------------------
          !  get next neighbor to send/recv to/from.
@@ -528,26 +529,26 @@
                       !---------------------------------------------------------
                       IF (ppm_kind .EQ. ppm_kind_double) THEN
 #if    __KIND == __SINGLE_PRECISION
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbufferd(ibuffer) = REAL(xp(1,ipart),ppm_kind_double)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbufferd(ibuffer) = REAL(xp(2,ipart),ppm_kind_double)
 #else
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbufferd(ibuffer) = xp(1,ipart)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbufferd(ibuffer) = xp(2,ipart)
 #endif
                       ELSE
 #if    __KIND == __SINGLE_PRECISION
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbuffers(ibuffer) = xp(1,ipart)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbuffers(ibuffer) = xp(2,ipart)
 #else
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbuffers(ibuffer) = REAL(xp(1,ipart),ppm_kind_single)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbuffers(ibuffer) = REAL(xp(2,ipart),ppm_kind_single)
 #endif
                       ENDIF
@@ -575,34 +576,34 @@
                       !---------------------------------------------------------
                       IF (ppm_kind .EQ. ppm_kind_double) THEN
 #if    __KIND == __SINGLE_PRECISION
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbufferd(ibuffer) = REAL(xp(1,ipart),ppm_kind_double)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbufferd(ibuffer) = REAL(xp(2,ipart),ppm_kind_double)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbufferd(ibuffer) = REAL(xp(3,ipart),ppm_kind_double)
 #else
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbufferd(ibuffer) = xp(1,ipart)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbufferd(ibuffer) = xp(2,ipart)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbufferd(ibuffer) = xp(3,ipart)
 #endif
                       ELSE
 #if    __KIND == __SINGLE_PRECISION
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbuffers(ibuffer) = xp(1,ipart)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbuffers(ibuffer) = xp(2,ipart)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbuffers(ibuffer) = xp(3,ipart)
 #else
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbuffers(ibuffer) = REAL(xp(1,ipart),ppm_kind_single)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbuffers(ibuffer) = REAL(xp(2,ipart),ppm_kind_single)
-                         ibuffer                  = ibuffer + 1
+                         ibuffer                  = ibuffer + 1_ppm_kind_int64
                          ppm_sendbuffers(ibuffer) = REAL(xp(3,ipart),ppm_kind_single)
 #endif
                       ENDIF

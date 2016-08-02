@@ -70,12 +70,13 @@
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double) :: t0
 
-      INTEGER, DIMENSION(2) :: ldu
-      INTEGER               :: i,j,k,l,m
-      INTEGER               :: bdim,sbdim
-      INTEGER               :: iopt,tag
-      INTEGER               :: qpart
-      INTEGER               :: npart_send,npart_recv
+      INTEGER(ppm_kind_int64), DIMENSION(1) :: ldc
+      INTEGER,                 DIMENSION(2) :: ldu
+      INTEGER                               :: i,j,k,l,m
+      INTEGER                               :: bdim,sbdim
+      INTEGER                               :: iopt,tag
+      INTEGER                               :: qpart
+      INTEGER                               :: npart_send,npart_recv
 
       CHARACTER(ppm_char) :: caller='ppm_map_part_isend'
 
@@ -279,7 +280,7 @@
          !-------------------------------------------------------------------------
          !  Count the size of the receive buffer
          !----------------------------------------------------------------------
-         ppm_nrecvbuffer=sbdim*npart_recv
+         ppm_nrecvbuffer=INT(sbdim,ppm_kind_int64)*INT(npart_recv,ppm_kind_int64)
 
          !-------------------------------------------------------------------------
          !  Counter for the total set of new particles
@@ -309,13 +310,13 @@
          !  Allocate the memory for the copy of the particle buffer
          !-------------------------------------------------------------------------
          iopt   = ppm_param_alloc_grow
-         ldu(1) = ppm_nrecvbuffer
+         ldc(1) = ppm_nrecvbuffer
          SELECT CASE (ppm_kind)
          CASE (ppm_kind_double)
-            CALL ppm_alloc(ppm_recvbufferd,ldu,iopt,info)
+            CALL ppm_alloc(ppm_recvbufferd,ldc,iopt,info)
 
          CASE DEFAULT
-            CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
+            CALL ppm_alloc(ppm_recvbuffers,ldc,iopt,info)
 
          END SELECT
          or_fail_alloc('global receive buffer PPM_RECVBUFFER',ppm_error=ppm_error_fatal)

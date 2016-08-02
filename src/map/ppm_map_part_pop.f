@@ -135,11 +135,12 @@
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double) :: t0
 
-      INTEGER, DIMENSION(2) :: ldu
-      INTEGER               :: k,ipart,bdim,ibuffer,btype
-      INTEGER               :: iopt,edim,istart
+      INTEGER(ppm_kind_int64) :: ibuffer
+      INTEGER, DIMENSION(2)   :: ldu
+      INTEGER                 :: k,ipart,bdim,btype
+      INTEGER                 :: iopt,edim,istart
 #if   __DIM == 1
-      INTEGER, PARAMETER    :: lda = 1
+      INTEGER, PARAMETER      :: lda = 1
 #endif
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_map_part_pop'
@@ -247,16 +248,17 @@
       ENDIF
 
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
-         ppm_nrecvbuffer = ppm_nrecvbuffer - (newNpart - Npart)*bdim
+         ppm_nrecvbuffer = ppm_nrecvbuffer - INT(newNpart - Npart,ppm_kind_int64)*INT(bdim,ppm_kind_int64)
       ELSE
-         ppm_nrecvbuffer = ppm_nrecvbuffer - newNpart*bdim
+         ppm_nrecvbuffer = ppm_nrecvbuffer - INT(newNpart,ppm_kind_int64)*INT(bdim,ppm_kind_int64)
       ENDIF
       !-------------------------------------------------------------------------
       !  Decrement the pointer into the send buffer to allow reuse by
       !  multiple sequential push-send-pop cycles.
       !-------------------------------------------------------------------------
       ppm_nsendbuffer = ppm_nsendbuffer - &
-      & ppm_buffer_dim(ppm_buffer_set)*(ppm_psendbuffer(ppm_nsendlist+1)-1)
+      & INT(ppm_buffer_dim(ppm_buffer_set),ppm_kind_int64)* &
+      & INT(ppm_psendbuffer(ppm_nsendlist+1)-1,ppm_kind_int64)
 
       ibuffer = ppm_nrecvbuffer
 
@@ -290,18 +292,18 @@
          CASE (1)
             DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-               ibuffer = ibuffer + 2
+               ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                pdata(1,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
                pdata(1,ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),ppm_recvbufferd(ibuffer),ppm_kind_single)
+               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),ppm_recvbufferd(ibuffer),ppm_kind_double)
+               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                pdata(1,ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -319,33 +321,33 @@
             DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
-               ibuffer = ibuffer + 2
+               ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                pdata(1,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
                pdata(1,ipart) = ppm_recvbufferd(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                pdata(1,ipart) = INT(ppm_recvbufferd(ibuffer))
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
                IF (ppm_recvbufferd(ibuffer) .GT.     &
@@ -354,7 +356,7 @@
                ELSE
                   pdata(1,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbufferd(ibuffer) .GT.     &
      &            (1.0_ppm_kind_double-ppm_myepsd)) THEN
                   pdata(2,ipart) = .TRUE.
@@ -370,45 +372,45 @@
             DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
-               ibuffer = ibuffer + 2
+               ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                pdata(1,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
                pdata(1,ipart) = ppm_recvbufferd(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = ppm_recvbufferd(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                pdata(1,ipart) = INT(ppm_recvbufferd(ibuffer))
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = INT(ppm_recvbufferd(ibuffer))
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
                IF (ppm_recvbufferd(ibuffer) .GT.     &
@@ -417,14 +419,14 @@
                ELSE
                   pdata(1,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbufferd(ibuffer) .GT.     &
      &            (1.0_ppm_kind_double-ppm_myepsd)) THEN
                   pdata(2,ipart) = .TRUE.
                ELSE
                   pdata(2,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbufferd(ibuffer) .GT.     &
      &            (1.0_ppm_kind_double-ppm_myepsd)) THEN
                   pdata(3,ipart) = .TRUE.
@@ -440,57 +442,57 @@
             DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
-               ibuffer = ibuffer + 2
+               ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                pdata(1,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
                pdata(1,ipart) = ppm_recvbufferd(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = ppm_recvbufferd(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = ppm_recvbufferd(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(4,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(4,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(4,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(4,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                pdata(1,ipart) = INT(ppm_recvbufferd(ibuffer))
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = INT(ppm_recvbufferd(ibuffer))
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = INT(ppm_recvbufferd(ibuffer))
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
                IF (ppm_recvbufferd(ibuffer) .GT.     &
@@ -499,21 +501,21 @@
                ELSE
                   pdata(1,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbufferd(ibuffer) .GT.     &
      &            (1.0_ppm_kind_double-ppm_myepsd)) THEN
                   pdata(2,ipart) = .TRUE.
                ELSE
                   pdata(2,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbufferd(ibuffer) .GT.     &
      &            (1.0_ppm_kind_double-ppm_myepsd)) THEN
                   pdata(3,ipart) = .TRUE.
                ELSE
                   pdata(3,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbufferd(ibuffer) .GT.     &
      &            (1.0_ppm_kind_double-ppm_myepsd)) THEN
                   pdata(4,ipart) = .TRUE.
@@ -529,69 +531,69 @@
             DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
-               ibuffer = ibuffer + 2
+               ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                pdata(1,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(5,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
                pdata(1,ipart) = ppm_recvbufferd(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = ppm_recvbufferd(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = ppm_recvbufferd(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = ppm_recvbufferd(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(5,ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(4,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(4,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(5,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(5,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(4,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(4,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(5,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(5,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                pdata(1,ipart) = INT(ppm_recvbufferd(ibuffer))
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = INT(ppm_recvbufferd(ibuffer))
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = INT(ppm_recvbufferd(ibuffer))
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = INT(ppm_recvbufferd(ibuffer))
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(5,ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
                IF (ppm_recvbufferd(ibuffer) .GT.     &
@@ -600,28 +602,28 @@
                ELSE
                   pdata(1,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbufferd(ibuffer) .GT.     &
      &            (1.0_ppm_kind_double-ppm_myepsd)) THEN
                   pdata(2,ipart) = .TRUE.
                ELSE
                   pdata(2,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbufferd(ibuffer) .GT.     &
      &            (1.0_ppm_kind_double-ppm_myepsd)) THEN
                   pdata(3,ipart) = .TRUE.
                ELSE
                   pdata(3,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbufferd(ibuffer) .GT.     &
      &            (1.0_ppm_kind_double-ppm_myepsd)) THEN
                   pdata(4,ipart) = .TRUE.
                ELSE
                   pdata(4,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbufferd(ibuffer) .GT.     &
      &            (1.0_ppm_kind_double-ppm_myepsd)) THEN
                   pdata(5,ipart) = .TRUE.
@@ -639,9 +641,9 @@
                DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
-                  ibuffer = ibuffer + 2
+                  ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                   pdata(k,ipart) = REAL(ppm_recvbufferd(ibuffer),       &
@@ -649,10 +651,10 @@
 #elif  __KIND == __DOUBLE_PRECISION
                   pdata(k,ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                  pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+                  pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &                ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                  pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+                  pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),    &
      &                ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                   pdata(k,ipart) = INT(ppm_recvbufferd(ibuffer))
@@ -674,18 +676,18 @@
          !----------------------------------------------------------------------
          DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-            ibuffer = ibuffer + 2
+            ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-            ibuffer = ibuffer + 1
+            ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
             pdata(ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
             pdata(ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),ppm_recvbufferd(ibuffer),ppm_kind_single)
+            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),ppm_recvbufferd(ibuffer),ppm_kind_double)
+            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
             pdata(ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -711,19 +713,19 @@
             DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
-               ibuffer = ibuffer + 2
+               ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                pdata(1,ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
                pdata(1,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
                pdata(1,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
@@ -743,33 +745,33 @@
             DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
-               ibuffer = ibuffer + 2
+               ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                pdata(1,ipart) = ppm_recvbuffers(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
                pdata(1,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(1,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
                pdata(1,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 #elif  __KIND == __LOGICAL
                IF (ppm_recvbuffers(ibuffer) .GT.      &
@@ -778,7 +780,7 @@
                ELSE
                   pdata(1,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbuffers(ibuffer) .GT.      &
      &            (1.0_ppm_kind_single-ppm_myepss)) THEN
                   pdata(2,ipart) = .TRUE.
@@ -794,45 +796,45 @@
             DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
-               ibuffer = ibuffer + 2
+               ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                pdata(1,ipart) = ppm_recvbuffers(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = ppm_recvbuffers(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
                pdata(1,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
                pdata(1,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 #elif  __KIND == __LOGICAL
                IF (ppm_recvbuffers(ibuffer) .GT.      &
@@ -841,14 +843,14 @@
                ELSE
                   pdata(1,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbuffers(ibuffer) .GT.      &
      &            (1.0_ppm_kind_single-ppm_myepss)) THEN
                   pdata(2,ipart) = .TRUE.
                ELSE
                   pdata(2,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbuffers(ibuffer) .GT.      &
      &            (1.0_ppm_kind_single-ppm_myepss)) THEN
                   pdata(3,ipart) = .TRUE.
@@ -864,57 +866,57 @@
             DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
-               ibuffer = ibuffer + 2
+               ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                pdata(1,ipart) = ppm_recvbuffers(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = ppm_recvbuffers(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = ppm_recvbuffers(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
                pdata(1,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(4,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(4,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(4,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(4,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
                pdata(1,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 #elif  __KIND == __LOGICAL
                IF (ppm_recvbuffers(ibuffer) .GT.      &
@@ -923,21 +925,21 @@
                ELSE
                   pdata(1,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbuffers(ibuffer) .GT.      &
      &            (1.0_ppm_kind_single-ppm_myepss)) THEN
                   pdata(2,ipart) = .TRUE.
                ELSE
                   pdata(2,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbuffers(ibuffer) .GT.      &
      &            (1.0_ppm_kind_single-ppm_myepss)) THEN
                   pdata(3,ipart) = .TRUE.
                ELSE
                   pdata(3,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbuffers(ibuffer) .GT.      &
      &            (1.0_ppm_kind_single-ppm_myepss)) THEN
                   pdata(4,ipart) = .TRUE.
@@ -953,69 +955,69 @@
             DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
-               ibuffer = ibuffer + 2
+               ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                pdata(1,ipart) = ppm_recvbuffers(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = ppm_recvbuffers(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = ppm_recvbuffers(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = ppm_recvbuffers(ibuffer)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(5,ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
                pdata(1,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(5,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(4,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(4,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
-               ibuffer = ibuffer + 2
-               pdata(5,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(5,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               pdata(1,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(2,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(3,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(4,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(4,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
-               ibuffer = ibuffer + 2
-               pdata(5,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+               ibuffer = ibuffer + 2_ppm_kind_int64
+               pdata(5,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &             ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
                pdata(1,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(2,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(3,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(4,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                pdata(5,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 #elif  __KIND == __LOGICAL
                IF (ppm_recvbuffers(ibuffer) .GT.      &
@@ -1024,28 +1026,28 @@
                ELSE
                   pdata(1,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbuffers(ibuffer) .GT.      &
      &            (1.0_ppm_kind_single-ppm_myepss)) THEN
                   pdata(2,ipart) = .TRUE.
                ELSE
                   pdata(2,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbuffers(ibuffer) .GT.      &
      &            (1.0_ppm_kind_single-ppm_myepss)) THEN
                   pdata(3,ipart) = .TRUE.
                ELSE
                   pdata(3,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbuffers(ibuffer) .GT.      &
      &            (1.0_ppm_kind_single-ppm_myepss)) THEN
                   pdata(4,ipart) = .TRUE.
                ELSE
                   pdata(4,ipart) = .FALSE.
                ENDIF
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                IF (ppm_recvbuffers(ibuffer) .GT.      &
      &            (1.0_ppm_kind_single-ppm_myepss)) THEN
                   pdata(5,ipart) = .TRUE.
@@ -1062,9 +1064,9 @@
                DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
-                  ibuffer = ibuffer + 2
+                  ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                   pdata(k,ipart) = ppm_recvbuffers(ibuffer)
@@ -1072,10 +1074,10 @@
                   pdata(k,ipart) = REAL(ppm_recvbuffers(ibuffer),       &
      &                ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                  pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+                  pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &                ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                  pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+                  pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),    &
      &                ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
                   pdata(k,ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
@@ -1097,18 +1099,18 @@
          !----------------------------------------------------------------------
          DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-            ibuffer = ibuffer + 2
+            ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-            ibuffer = ibuffer + 1
+            ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
             pdata(ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
             pdata(ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),ppm_recvbuffers(ibuffer),ppm_kind_double)
+            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),ppm_recvbuffers(ibuffer),ppm_kind_single)
+            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
             pdata(ipart) = TRANSFER(ppm_recvbuffers(ibuffer),1)
 #elif  __KIND == __LOGICAL
@@ -1132,18 +1134,18 @@
          DO ipart=istart,newNpart
             DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-               ibuffer = ibuffer + 2
+               ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                pdata(k,ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
                pdata(k,ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),ppm_recvbufferd(ibuffer),ppm_kind_single)
+               pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),ppm_recvbufferd(ibuffer),ppm_kind_double)
+               pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
                pdata(k,ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -1161,18 +1163,18 @@
          !----------------------------------------------------------------------
          DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-            ibuffer = ibuffer + 2
+            ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-            ibuffer = ibuffer + 1
+            ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
             pdata(ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
             pdata(ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),ppm_recvbufferd(ibuffer),ppm_kind_single)
+            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),ppm_recvbufferd(ibuffer),ppm_kind_double)
+            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1_ppm_kind_int64),ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
             pdata(ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -1193,18 +1195,18 @@
          DO ipart=istart,newNpart
             DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-                ibuffer = ibuffer + 2
+                ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-                ibuffer = ibuffer + 1
+                ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
                 pdata(k,ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
                 pdata(k,ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),ppm_recvbuffers(ibuffer),ppm_kind_double)
+                pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),ppm_recvbuffers(ibuffer),ppm_kind_single)
+                pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
                 pdata(k,ipart) = INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
@@ -1222,18 +1224,18 @@
          !----------------------------------------------------------------------
          DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-            ibuffer = ibuffer + 2
+            ibuffer = ibuffer + 2_ppm_kind_int64
 #else
-            ibuffer = ibuffer + 1
+            ibuffer = ibuffer + 1_ppm_kind_int64
 #endif
 #if    __KIND == __SINGLE_PRECISION
             pdata(ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
             pdata(ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),ppm_recvbuffers(ibuffer),ppm_kind_double)
+            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),ppm_recvbuffers(ibuffer),ppm_kind_single)
+            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1_ppm_kind_int64),ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
             pdata(ipart) = INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL

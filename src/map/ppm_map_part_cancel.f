@@ -42,7 +42,7 @@
       !-------------------------------------------------------------------------
       USE ppm_module_substart
       USE ppm_module_substop
-      USE ppm_module_data, ONLY : ppm_kind_double,ppm_char
+      USE ppm_module_data, ONLY : ppm_kind_double,ppm_char,ppm_kind_int64
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
@@ -62,8 +62,8 @@
       CALL substart(caller,t0,info)
 
       ppm_buffer_set  = 0
-      ppm_nsendbuffer = 0
-      ppm_nrecvbuffer = 0
+      ppm_nsendbuffer = 0_ppm_kind_int64
+      ppm_nrecvbuffer = 0_ppm_kind_int64
 
       !-------------------------------------------------------------------------
       !  Return

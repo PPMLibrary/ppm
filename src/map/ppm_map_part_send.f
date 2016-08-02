@@ -68,11 +68,12 @@
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double) :: t0
 
-      INTEGER, DIMENSION(3)               :: ldl,ldu
-      INTEGER                             :: i,j,k,idom,bdim,sbdim
-      INTEGER                             :: nbuffer,ibuffer,jbuffer
-      INTEGER                             :: iopt,count,tag1,qpart,msend,mrecv
-      INTEGER                             :: npart_send,npart_recv
+      INTEGER(ppm_kind_int64), DIMENSION(1) :: ldc
+      INTEGER,                 DIMENSION(2) :: ldu
+      INTEGER                               :: i,j,k,idom,bdim,sbdim
+      INTEGER                               :: nbuffer,ibuffer,jbuffer
+      INTEGER                               :: iopt,count,tag1,qpart,msend,mrecv
+      INTEGER                               :: npart_send,npart_recv
 
       CHARACTER(ppm_char) :: caller='ppm_map_part_send'
 
@@ -152,7 +153,7 @@
       !-------------------------------------------------------------------------
       !  Count the size of the buffer that WILL be sent
       !-------------------------------------------------------------------------
-      ppm_nrecvbuffer = ibuffer
+      ppm_nrecvbuffer = INT(ibuffer,ppm_kind_int64)
       nsend(1)        = ibuffer
       nrecv(1)        = ibuffer
       psend(1)        = qpart
@@ -225,7 +226,7 @@
       !  Increment the total receive buffer
       !----------------------------------------------------------------------
       DO k=2,ppm_nsendlist
-         ppm_nrecvbuffer = ppm_nrecvbuffer + nrecv(k)
+         ppm_nrecvbuffer = ppm_nrecvbuffer + INT(nrecv(k),ppm_kind_int64)
       ENDDO
       !----------------------------------------------------------------------
       !  Increment the total number of particle to receive
@@ -244,12 +245,12 @@
       !  Allocate the memory for the copy of the particle buffer
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_grow
-      ldu(1) = ppm_nrecvbuffer
+      ldc(1) = ppm_nrecvbuffer
       SELECT CASE (ppm_kind)
       CASE (ppm_kind_double)
-         CALL ppm_alloc(ppm_recvbufferd,ldu,iopt,info)
+         CALL ppm_alloc(ppm_recvbufferd,ldc,iopt,info)
       CASE DEFAULT
-         CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
+         CALL ppm_alloc(ppm_recvbuffers,ldc,iopt,info)
       END SELECT
       or_fail_alloc('global receive buffer PPM_RECVBUFFER', &
       & ppm_error=ppm_error_fatal)
@@ -483,8 +484,8 @@
       !  when sending ghosts back (ppm_map_part_ghost_put())
       !-------------------------------------------------------------------------
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
-         ldu(1) = ppm_nsendlist + 1
          iopt   = ppm_param_alloc_grow
+         ldu(1) = ppm_nsendlist + 1
          CALL ppm_alloc(ppm_precvbuffer,ldu,iopt,info)
          or_fail_alloc('global recv buffer pointer PPM_PRECVBUFFER', &
          & ppm_error=ppm_error_fatal)
@@ -498,12 +499,12 @@
       !-------------------------------------------------------------------------
       !  low level debugging
       !-------------------------------------------------------------------------
-!write(mesg,'(a,i4.4)') 'recvbuf',ppm_rank
-!open(10,file=mesg)
-!DO i=1,ppm_nrecvbuffer,2
-!   WRITE(10,*) ppm_recvbuffers(i),ppm_recvbuffers(i+1)
-!ENDDO
-!close(10)
+      !stdout_f('(a,i4.4)',"recvbuf",ppm_rank)
+      !OPEN(UNIT=10,FILE=cbuf)
+      !DO i=1,ppm_nrecvbuffer,2
+      !   WRITE(UNIT=10,FMT=*) ppm_recvbuffers(i),ppm_recvbuffers(i+1)
+      !ENDDO
+      !CLOSE(UNIT=10)
 
       !-------------------------------------------------------------------------
       !  Deallocate the send buffer to save memory

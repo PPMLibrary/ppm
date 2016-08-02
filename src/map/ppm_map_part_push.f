@@ -126,11 +126,13 @@
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double) :: t0
 
-      INTEGER, DIMENSION(3) :: ldu
-      INTEGER               :: i,j,k,ipart,ibuffer,icount
-      INTEGER               :: iopt,ldb,incr
+      INTEGER(ppm_kind_int64)               :: ibuffer
+      INTEGER(ppm_kind_int64), DIMENSION(1) :: ldc
+      INTEGER,                 DIMENSION(1) :: ldu
+      INTEGER                               :: i,j,k,ipart,icount
+      INTEGER                               :: iopt,ldb,incr
 #if   __DIM == 1
-      INTEGER, PARAMETER    :: lda = 1
+      INTEGER,                  PARAMETER   :: lda = 1
 #endif
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_map_part_push'
@@ -216,9 +218,9 @@
             incr = incr + (ppm_psendbuffer(i+1)-ppm_psendbuffer(i))*ldb
          ENDDO
 
-         ldu(1) = ppm_nsendbuffer + incr
-         iopt   = ppm_param_alloc_grow_preserve
-         CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
+         iopt=ppm_param_alloc_grow_preserve
+         ldc(1) = ppm_nsendbuffer + INT(incr,ppm_kind_int64)
+         CALL ppm_alloc(ppm_sendbufferd,ldc,iopt,info)
          or_fail_alloc('global send buffer PPM_SENDBUFFERD',ppm_error=ppm_error_fatal)
 
          DO i=1,ppm_nsendlist
@@ -240,18 +242,18 @@
                   !  Get the particle id
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
                   ppm_sendbufferd(ibuffer) = pdata(1,ipart)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(1,ipart)),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(1,ipart))
 #elif  __KIND == __INTEGER
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
@@ -272,34 +274,34 @@
                   !  Get the particle id
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
                   ppm_sendbufferd(ibuffer) = pdata(1,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = pdata(2,ipart)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(1,ipart)),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(2,ipart)),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(1,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(2,ipart))
 #elif  __KIND == __INTEGER
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
@@ -307,7 +309,7 @@
                   ELSE
                      ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(2,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
                   ELSE
@@ -324,48 +326,48 @@
                   !  Get the particle id
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
                   ppm_sendbufferd(ibuffer) = pdata(1,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = pdata(2,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = pdata(3,ipart)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(1,ipart)),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(2,ipart)),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(3,ipart)),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(1,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(2,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(3,ipart))
 #elif  __KIND == __INTEGER
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
@@ -373,13 +375,13 @@
                   ELSE
                      ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(2,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
                   ELSE
                      ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(3,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
                   ELSE
@@ -396,78 +398,78 @@
                   !  Get the particle id
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),   &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),   &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),   &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(4,ipart),   &
      &                ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
                   ppm_sendbufferd(ibuffer) = pdata(1,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = pdata(2,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = pdata(3,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = pdata(4,ipart)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                   ppm_sendbufferd(ibuffer) =         &
      &                       REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(1,ipart)),  &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =         &
      &                       REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(2,ipart)),  &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =         &
      &                       REAL(pdata(3,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(3,ipart)),  &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =         &
      &                       REAL(pdata(4,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(4,ipart)),  &
      &                ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                   ppm_sendbufferd(ibuffer) =     &
      &                       REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(1,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =     &
      &                       REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(2,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =     &
      &                       REAL(pdata(3,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(3,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =     &
      &                       REAL(pdata(4,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(4,ipart))
 #elif  __KIND == __INTEGER
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(4,ipart),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
@@ -475,19 +477,19 @@
                   ELSE
                      ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(2,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
                   ELSE
                      ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(3,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
                   ELSE
                      ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(4,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
                   ELSE
@@ -504,96 +506,96 @@
                   !  Get the particle id
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),   &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),   &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),   &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(4,ipart),   &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(5,ipart),   &
      &                ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
                   ppm_sendbufferd(ibuffer) = pdata(1,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = pdata(2,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = pdata(3,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = pdata(4,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = pdata(5,ipart)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                   ppm_sendbufferd(ibuffer) =         &
      &                       REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(1,ipart)),  &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =         &
      &                       REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(2,ipart)),  &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =         &
      &                       REAL(pdata(3,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(3,ipart)),  &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =         &
      &                       REAL(pdata(4,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(4,ipart)),  &
      &                ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =         &
      &                       REAL(pdata(5,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(5,ipart)),  &
      &                ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                   ppm_sendbufferd(ibuffer) =     &
      &                       REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(1,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =     &
      &                       REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(2,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =     &
      &                       REAL(pdata(3,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(3,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =     &
      &                       REAL(pdata(4,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(4,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) =     &
      &                       REAL(pdata(5,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = AIMAG(pdata(5,ipart))
 #elif  __KIND == __INTEGER
                   ppm_sendbufferd(ibuffer) = REAL(pdata(1,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(2,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(3,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(4,ipart),ppm_kind_double)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbufferd(ibuffer) = REAL(pdata(5,ipart),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
@@ -601,25 +603,25 @@
                   ELSE
                      ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(2,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
                   ELSE
                      ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(3,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
                   ELSE
                      ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(4,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
                   ELSE
                      ppm_sendbufferd(ibuffer) = 0.0_ppm_kind_double
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(5,ipart)) THEN
                      ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
                   ELSE
@@ -637,7 +639,7 @@
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
                   DO k=1,lda
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
                      ppm_sendbufferd(ibuffer) = REAL(pdata(k,ipart),   &
      &                   ppm_kind_double)
@@ -646,13 +648,13 @@
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                      ppm_sendbufferd(ibuffer) =         &
      &                          REAL(pdata(k,ipart),ppm_kind_double)
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(k,ipart)),  &
      &                   ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                      ppm_sendbufferd(ibuffer) =     &
      &                          REAL(pdata(k,ipart),ppm_kind_double)
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      ppm_sendbufferd(ibuffer) = AIMAG(pdata(k,ipart))
 #elif  __KIND == __INTEGER
                      ppm_sendbufferd(ibuffer) = REAL(pdata(k,ipart),ppm_kind_double)
@@ -676,19 +678,19 @@
                !  Get the particle id
                !----------------------------------------------------------------
                ipart = ppm_buffer2part(j)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
                ppm_sendbufferd(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
                ppm_sendbufferd(ibuffer) = pdata(ipart)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                ppm_sendbufferd(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                ppm_sendbufferd(ibuffer) = REAL(AIMAG(pdata(ipart)),  &
      &             ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                ppm_sendbufferd(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                ppm_sendbufferd(ibuffer) = AIMAG(pdata(ipart))
 #elif  __KIND == __INTEGER
                ppm_sendbufferd(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
@@ -713,9 +715,10 @@
          DO i=1,ppm_nsendlist
             incr = incr + (ppm_psendbuffer(i+1)-ppm_psendbuffer(i))*ldb
          ENDDO
-         ldu(1) = ppm_nsendbuffer + incr
-         iopt   = ppm_param_alloc_grow_preserve
-         CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
+
+         iopt=ppm_param_alloc_grow_preserve
+         ldc(1) = ppm_nsendbuffer + INT(incr,ppm_kind_int64)
+         CALL ppm_alloc(ppm_sendbuffers,ldc,iopt,info)
          or_fail_alloc('global send buffer PPM_SENDBUFFERS',ppm_error=ppm_error_fatal)
 
          DO i=1,ppm_nsendlist
@@ -737,22 +740,18 @@
                   !  Get the particle id
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
                   ppm_sendbuffers(ibuffer) = pdata(1,ipart)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
-     &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(1,ipart)),  &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),ppm_kind_single)
+                  ibuffer = ibuffer + 1_ppm_kind_int64
+                  ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(1,ipart)),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
-     &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),ppm_kind_single)
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(1,ipart))
 #elif  __KIND == __INTEGER
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(1,ipart),1.0_ppm_kind_single)
@@ -773,42 +772,34 @@
                   !  Get the particle id
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
-     &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),ppm_kind_single)
+                  ibuffer = ibuffer + 1_ppm_kind_int64
+                  ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
                   ppm_sendbuffers(ibuffer) = pdata(1,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = pdata(2,ipart)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
-     &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(1,ipart)),  &
-     &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
-     &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(2,ipart)),  &
-     &                ppm_kind_single)
+                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),ppm_kind_single)
+                  ibuffer = ibuffer + 1_ppm_kind_int64
+                  ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(1,ipart)),ppm_kind_single)
+                  ibuffer = ibuffer + 1_ppm_kind_int64
+                  ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),ppm_kind_single)
+                  ibuffer = ibuffer + 1_ppm_kind_int64
+                  ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(2,ipart)),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
-     &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),ppm_kind_single)
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(1,ipart))
-                  ibuffer = ibuffer + 1
-                  ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
-     &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
+                  ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),ppm_kind_single)
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(2,ipart))
 #elif  __KIND == __INTEGER
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(1,ipart),1.0_ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(2,ipart),1.0_ppm_kind_single)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
@@ -816,7 +807,7 @@
                   ELSE
                      ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(2,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                   ELSE
@@ -833,60 +824,60 @@
                   !  Get the particle id
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
                   ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
      &                ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
                   ppm_sendbuffers(ibuffer) = pdata(1,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = pdata(2,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = pdata(3,ipart)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                   ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(1,ipart)),  &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(2,ipart)),  &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(3,ipart)),  &
      &                ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                   ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(1,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(2,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(3,ipart))
 #elif  __KIND == __INTEGER
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(1,ipart),1.0_ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(2,ipart),1.0_ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(3,ipart),1.0_ppm_kind_single)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
@@ -894,13 +885,13 @@
                   ELSE
                      ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(2,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                   ELSE
                      ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(3,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                   ELSE
@@ -917,78 +908,78 @@
                   !  Get the particle id
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
                   ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(4,ipart),   &
      &                ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
                   ppm_sendbuffers(ibuffer) = pdata(1,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = pdata(2,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = pdata(3,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = pdata(4,ipart)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                   ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(1,ipart)),  &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(2,ipart)),  &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(3,ipart)),  &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(4,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(4,ipart)),  &
      &                ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                   ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(1,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(2,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(3,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(4,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(4,ipart))
 #elif  __KIND == __INTEGER
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(1,ipart),1.0_ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(2,ipart),1.0_ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(3,ipart),1.0_ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(4,ipart),1.0_ppm_kind_single)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
@@ -996,19 +987,19 @@
                   ELSE
                      ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(2,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                   ELSE
                      ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(3,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                   ELSE
                      ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(4,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                   ELSE
@@ -1025,96 +1016,96 @@
                   !  Get the particle id
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
                   ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(4,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(5,ipart),   &
      &                ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
                   ppm_sendbuffers(ibuffer) = pdata(1,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = pdata(2,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = pdata(3,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = pdata(4,ipart)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = pdata(5,ipart)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                   ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(1,ipart)),  &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(2,ipart)),  &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(3,ipart)),  &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(4,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(4,ipart)),  &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(5,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(5,ipart)),  &
      &                ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                   ppm_sendbuffers(ibuffer) = REAL(pdata(1,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(1,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(2,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(2,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(3,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(3,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(4,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(4,ipart))
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = REAL(pdata(5,ipart),   &
      &                ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = AIMAG(pdata(5,ipart))
 #elif  __KIND == __INTEGER
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(1,ipart),1.0_ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(2,ipart),1.0_ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(3,ipart),1.0_ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(4,ipart),1.0_ppm_kind_single)
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   ppm_sendbuffers(ibuffer) = TRANSFER(pdata(5,ipart),1.0_ppm_kind_single)
 #elif  __KIND == __LOGICAL
                   IF (pdata(1,ipart)) THEN
@@ -1122,25 +1113,25 @@
                   ELSE
                      ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(2,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                   ELSE
                      ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(3,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                   ELSE
                      ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(4,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                   ELSE
                      ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                   ENDIF
-                  ibuffer = ibuffer + 1
+                  ibuffer = ibuffer + 1_ppm_kind_int64
                   IF (pdata(5,ipart)) THEN
                      ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                   ELSE
@@ -1159,7 +1150,7 @@
                   !-------------------------------------------------------------
                   ipart = ppm_buffer2part(j)
                   DO k=1,lda
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
                      ppm_sendbuffers(ibuffer) = REAL(pdata(k,ipart),   &
      &                   ppm_kind_single)
@@ -1168,13 +1159,13 @@
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                      ppm_sendbuffers(ibuffer) = REAL(pdata(k,ipart),   &
      &                   ppm_kind_single)
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(k,ipart)),  &
      &                   ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                      ppm_sendbuffers(ibuffer) = REAL(pdata(k,ipart),   &
      &                   ppm_kind_single)
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      ppm_sendbuffers(ibuffer) = AIMAG(pdata(k,ipart))
 #elif  __KIND == __INTEGER
                      ppm_sendbuffers(ibuffer) = TRANSFER(pdata(k,ipart),1.0_ppm_kind_single)
@@ -1198,19 +1189,19 @@
                !  Get the particle id
                !----------------------------------------------------------------
                ipart = ppm_buffer2part(j)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __DOUBLE_PRECISION
                ppm_sendbuffers(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
                ppm_sendbuffers(ibuffer) = pdata(ipart)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                ppm_sendbuffers(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                ppm_sendbuffers(ibuffer) = REAL(AIMAG(pdata(ipart)),  &
      &             ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                ppm_sendbuffers(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
-               ibuffer = ibuffer + 1
+               ibuffer = ibuffer + 1_ppm_kind_int64
                ppm_sendbuffers(ibuffer) = AIMAG(pdata(ipart))
 #elif  __KIND == __INTEGER
                ppm_sendbuffers(ibuffer) = TRANSFER(pdata(ipart),1.0_ppm_kind_single)
@@ -1253,13 +1244,13 @@
                      !----------------------------------------------------------
                      !  Get the particle id
                      !----------------------------------------------------------
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      icount  = icount  + 1
                      ppm_sendbufferd(ibuffer) = &
                      & ppm_sendbufferd(ibuffer)*ppm_ghost_offset_facd(icount)+ &
                      & ppm_ghost_offsetd(icount)
 
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      icount  = icount  + 1
                      ppm_sendbufferd(ibuffer) = &
                      & ppm_sendbufferd(ibuffer)*ppm_ghost_offset_facd(icount)+ &
@@ -1273,19 +1264,19 @@
                      !----------------------------------------------------------
                      !  Get the particle id
                      !----------------------------------------------------------
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      icount  = icount  + 1
                      ppm_sendbufferd(ibuffer) = &
                      & ppm_sendbufferd(ibuffer)*ppm_ghost_offset_facd(icount)+ &
                      & ppm_ghost_offsetd(icount)
 
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      icount  = icount  + 1
                      ppm_sendbufferd(ibuffer) = &
                      & ppm_sendbufferd(ibuffer)*ppm_ghost_offset_facd(icount)+ &
                      & ppm_ghost_offsetd(icount)
 
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      icount  = icount  + 1
                      ppm_sendbufferd(ibuffer) = &
                      & ppm_sendbufferd(ibuffer)*ppm_ghost_offset_facd(icount)+ &
@@ -1304,13 +1295,13 @@
                      !----------------------------------------------------------
                      !  Get the particle id
                      !----------------------------------------------------------
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      icount  = icount  + 1
                      ppm_sendbuffers(ibuffer) = &
                      & ppm_sendbuffers(ibuffer)*ppm_ghost_offset_facs(icount)+ &
                      & ppm_ghost_offsets(icount)
 
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      icount  = icount  + 1
                      ppm_sendbuffers(ibuffer) = &
                      & ppm_sendbuffers(ibuffer)*ppm_ghost_offset_facs(icount)+ &
@@ -1324,19 +1315,19 @@
                      !----------------------------------------------------------
                      !  Get the particle id
                      !----------------------------------------------------------
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      icount  = icount  + 1
                      ppm_sendbuffers(ibuffer) = &
                      & ppm_sendbuffers(ibuffer)*ppm_ghost_offset_facs(icount)+ &
                      & ppm_ghost_offsets(icount)
 
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      icount  = icount  + 1
                      ppm_sendbuffers(ibuffer) = &
                      & ppm_sendbuffers(ibuffer)*ppm_ghost_offset_facs(icount)+ &
                      & ppm_ghost_offsets(icount)
 
-                     ibuffer = ibuffer + 1
+                     ibuffer = ibuffer + 1_ppm_kind_int64
                      icount  = icount  + 1
                      ppm_sendbuffers(ibuffer) = &
                      & ppm_sendbuffers(ibuffer)*ppm_ghost_offset_facs(icount)+ &

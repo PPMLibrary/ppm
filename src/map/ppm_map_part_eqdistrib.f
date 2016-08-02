@@ -83,9 +83,11 @@
 
       REAL(ppm_kind_double) :: t0
 
+      INTEGER(ppm_kind_int64) :: ibuffer
+
       INTEGER, DIMENSION(3) :: ldu
       INTEGER               :: i,j,k,ipart
-      INTEGER               :: iopt,iset,ibuffer,totalpart
+      INTEGER               :: iopt,iset,totalpart
       INTEGER               :: ipos,max_val,max_exc,min_val,min_exc,temp_val
 
       CHARACTER(ppm_char) :: caller='ppm_map_part_eqdistrib'
@@ -123,8 +125,8 @@
       !-------------------------------------------------------------------------
       !  Save the map type for the subsequent calls (not used yet)
       !-------------------------------------------------------------------------
-      ppm_map_type     = ppm_param_map_global
-      map%ppm_map_type = ppm_param_map_global
+      ppm_map_type = ppm_param_map_global
+      map%map_type = ppm_param_map_global
 
       !-------------------------------------------------------------------------
       !  Allocate memory for particle per processor lists
@@ -356,7 +358,7 @@
       !-------------------------------------------------------------------------
       ppm_psendbuffer(1) = 1
       iset               = 0
-      ibuffer            = 0
+      ibuffer            = 0_ppm_kind_int64
 
       ppm_isendlist(1) = ppm_rank
       ppm_irecvlist(1) = ppm_rank
@@ -377,7 +379,7 @@
          !  Store the particle
          !----------------------------------------------------------------------
          DO i = 1,ppm_dim
-            ibuffer                  = ibuffer + 1
+            ibuffer                  = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
             ppm_sendbuffers(ibuffer) = xp(i,ipart)
 #else
@@ -408,7 +410,7 @@
                !  Store the particle
                !---------------------------------------------------------------
                DO i = 1, ppm_dim
-                  ibuffer                  = ibuffer + 1
+                  ibuffer                  = ibuffer + 1_ppm_kind_int64
 #if    __KIND == __SINGLE_PRECISION
                   ppm_sendbuffers(ibuffer) = xp(i,temp_val)
 #else
