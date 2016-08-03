@@ -135,12 +135,13 @@
       !!! accordingly).
 
       INTEGER(ppm_kind_int64)                        :: ibuffer
+      INTEGER(ppm_kind_int64)                        :: Ndata
       INTEGER(ppm_kind_int64), DIMENSION(1)          :: ld
       INTEGER,                 DIMENSION(1)          :: ldu
       INTEGER,                 DIMENSION(2)          :: mofs,patchid
       INTEGER                                        :: i,j,k,isub,imesh,jmesh,jsub
       INTEGER                                        :: ipatch
-      INTEGER                                        :: iopt,Ndata,xlo,xhi,ylo,yhi,ldb
+      INTEGER                                        :: iopt,xlo,xhi,ylo,yhi,ldb
       INTEGER,                 DIMENSION(:), POINTER :: sublist
 #if   __DIM == __SFIELD
       INTEGER,                 PARAMETER             :: lda = 1
@@ -170,7 +171,7 @@
       !-------------------------------------------------------------------------
       !  Count number of data points to be sent
       !-------------------------------------------------------------------------
-      Ndata = 0
+      Ndata = 0_ppm_kind_int64
       DO i=1,ppm_nsendlist
          IF (ppm_lsendlist(i)) THEN
             !----------------------------------------------------------------------
@@ -181,8 +182,8 @@
                !-------------------------------------------------------------------
                !  Get the number of mesh points in this block
                !-------------------------------------------------------------------
-               Ndata = Ndata + (ppm_mesh_isendblksize(1,j)* &
-               &                ppm_mesh_isendblksize(2,j))
+               Ndata = Ndata + INT(ppm_mesh_isendblksize(1,j),ppm_kind_int64)* &
+               &               INT(ppm_mesh_isendblksize(2,j),ppm_kind_int64)
             ENDDO
          ENDIF
       ENDDO
@@ -230,7 +231,7 @@
       !-------------------------------------------------------------------------
       !  If there is nothing to be sent we are done
       !-------------------------------------------------------------------------
-      IF (Ndata.EQ.0) THEN
+      IF (Ndata.EQ.0_ppm_kind_int64) THEN
          IF (ppm_debug.GT.1) THEN
             fail('There is no data to be sent. Skipping push.', &
             & ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
@@ -265,7 +266,7 @@
          !  (Re)allocate memory for the buffer
          !----------------------------------------------------------------------
          iopt  = ppm_param_alloc_grow_preserve
-         ld(1) = ppm_nsendbuffer + INT(ldb,ppm_kind_int64)*INT(Ndata,ppm_kind_int64)
+         ld(1) = ppm_nsendbuffer + INT(ldb,ppm_kind_int64)*Ndata
          CALL ppm_alloc(ppm_sendbufferd,ld,iopt,info)
          or_fail_alloc("ppm_sendbufferd")
 
@@ -813,7 +814,7 @@
          !  (Re)allocate memory for the buffer
          !----------------------------------------------------------------------
          iopt  = ppm_param_alloc_grow_preserve
-         ld(1) = ppm_nsendbuffer + INT(ldb,ppm_kind_int64)*INT(Ndata,ppm_kind_int64)
+         ld(1) = ppm_nsendbuffer + INT(ldb,ppm_kind_int64)*Ndata
          CALL ppm_alloc(ppm_sendbuffers,ld,iopt,info)
          or_fail_alloc('global send buffer PPM_SENDBUFFERS',ppm_error=ppm_error_fatal)
 

@@ -72,10 +72,12 @@
       !-------------------------------------------------------------------------
       INTEGER(ppm_kind_int64), DIMENSION(1) :: ld
       INTEGER,                 DIMENSION(2) :: ldu
-      INTEGER                               :: i,j,k,l,m,tag
-      INTEGER                               :: bdim,offs
+      INTEGER                               :: i,j,k,tag
+      INTEGER                               :: bdim
       INTEGER                               :: iopt,Ndata
-      INTEGER                               :: allsend,allrecv
+      INTEGER(ppm_kind_int64)               :: l,m
+      INTEGER(ppm_kind_int64)               :: offs
+      INTEGER(ppm_kind_int64)               :: allsend,allrecv
 
       LOGICAL :: sendrecv1,sendrecv2
 
@@ -171,7 +173,10 @@
          !-------------------------------------------------------------------------
          !  Sum of all mesh points that will be received
          !-------------------------------------------------------------------------
-         allrecv = SUM(precv(1:ppm_nrecvlist))
+         allrecv = 0.0_ppm_kind_int64
+         DO i=1,ppm_nrecvlist
+            allrecv = allrecv + INT(precv(i),ppm_kind_int64)
+         ENDDO
 
          !-------------------------------------------------------------------------
          !  Allocate
@@ -187,25 +192,25 @@
          !  buffer
          !-------------------------------------------------------------------------
          bdim = 0
-         offs = 0
+         offs = 0_ppm_kind_int64
          IF (ppm_debug.GT.1) THEN
             DO k=1,ppm_buffer_set
-               offs    = offs + allrecv*bdim
-               pp(1,k) = offs + 1
+               offs    = offs + allrecv*INT(bdim,ppm_kind_int64)
+               pp(1,k) = offs + 1_ppm_kind_int64
                bdim    = ppm_buffer_dim(k)
                DO j=2,ppm_nrecvlist
-                  pp(j,k) = pp(j-1,k) + precv(j-1)*bdim
+                  pp(j,k) = pp(j-1,k) + INT(precv(j-1),ppm_kind_int64)*INT(bdim,ppm_kind_int64)
                   stdout_f('(A,I9)',"pp(j,k)=",'pp(j,k)')
                   stdout_f('(A,I9,A,I4)',"precv(j-1)=",'precv(j-1)',", bdim=",bdim)
                ENDDO
             ENDDO
          ELSE
             DO k=1,ppm_buffer_set
-               offs    = offs + allrecv*bdim
-               pp(1,k) = offs + 1
+               offs    = offs + allrecv*INT(bdim,ppm_kind_int64)
+               pp(1,k) = offs + 1_ppm_kind_int64
                bdim    = ppm_buffer_dim(k)
                DO j=2,ppm_nrecvlist
-                  pp(j,k) = pp(j-1,k) + precv(j-1)*bdim
+                  pp(j,k) = pp(j-1,k) + INT(precv(j-1),ppm_kind_int64)*INT(bdim,ppm_kind_int64)
                ENDDO
             ENDDO
          ENDIF
@@ -308,7 +313,10 @@
          !-------------------------------------------------------------------------
          !  Sum of all mesh points that will be sent
          !-------------------------------------------------------------------------
-         allsend = SUM(psend(1:ppm_nsendlist))
+         allsend = 0_ppm_kind_int64
+         DO i=1,ppm_nsendlist
+            allsend = allsend + INT(psend(i),ppm_kind_int64)
+         ENDDO
 
          !-------------------------------------------------------------------------
          !  Allocate
@@ -324,24 +332,24 @@
          !  buffer
          !-------------------------------------------------------------------------
          bdim = 0
-         offs = 0
+         offs = 0_ppm_kind_int64
          IF (ppm_debug.GT.1) THEN
             DO k=1,ppm_buffer_set
-               offs    = offs + allsend*bdim
-               qq(1,k) = offs + 1
+               offs    = offs + allsend*INT(bdim,ppm_kind_int64)
+               qq(1,k) = offs + 1_ppm_kind_int64
                bdim    = ppm_buffer_dim(k)
                DO j=2,ppm_nsendlist
-                  qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
+                  qq(j,k) = qq(j-1,k) + INT(psend(j-1),ppm_kind_int64)*INT(bdim,ppm_kind_int64)
                   stdout_f('(A,I9)',"qq(j,k)=",'qq(j,k)')
                ENDDO
             ENDDO
          ELSE
             DO k=1,ppm_buffer_set
-               offs    = offs + allsend*bdim
-               qq(1,k) = offs + 1
+               offs    = offs + allsend*INT(bdim,ppm_kind_int64)
+               qq(1,k) = offs + 1_ppm_kind_int64
                bdim    = ppm_buffer_dim(k)
                DO j=2,ppm_nsendlist
-                  qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
+                  qq(j,k) = qq(j-1,k) + INT(psend(j-1),ppm_kind_int64)*INT(bdim,ppm_kind_int64)
                ENDDO
             ENDDO
          ENDIF
@@ -352,8 +360,8 @@
                !----------------------------------------------------------------------
                !  For each processor
                !----------------------------------------------------------------------
-               l=qq(1,k)-1
-               m=pp(1,k)-1
+               l=qq(1,k)-1_ppm_kind_int64
+               m=pp(1,k)-1_ppm_kind_int64
                DO j=1,psend(1)*bdim
                   ppm_recvbufferd(m+j)=ppm_sendbufferd(l+j)
                ENDDO
@@ -389,8 +397,8 @@
                !  For each processor
                !----------------------------------------------------------------------
                bdim = ppm_buffer_dim(k)
-               l=qq(1,k)-1
-               m=pp(1,k)-1
+               l=qq(1,k)-1_ppm_kind_int64
+               m=pp(1,k)-1_ppm_kind_int64
                DO j=1,psend(1)*bdim
                   ppm_recvbuffers(m+j)=ppm_sendbuffers(l+j)
                ENDDO
@@ -433,10 +441,10 @@
          or_fail_dealloc("precv")
 
 #ifdef __MPI
-         CALL ppm_alloc(   pp,ldu,iopt,info)
+         CALL ppm_alloc(pp,ldu,iopt,info)
          or_fail_dealloc("pp")
 
-         CALL ppm_alloc(   qq,ldu,iopt,info)
+         CALL ppm_alloc(qq,ldu,iopt,info)
          or_fail_dealloc("qq")
       ENDIF !(sendrecv1)
 

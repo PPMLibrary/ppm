@@ -43,8 +43,11 @@
       !-------------------------------------------------------------------------
       INTEGER(ppm_kind_int64), DIMENSION(1) :: ld
       INTEGER,                 DIMENSION(3) :: ldu
-      INTEGER                               :: i,j,k,ibuffer,jbuffer,bdim,offs
-      INTEGER                               :: iopt,tag1,Ndata,msend,mrecv,allsend,allrecv
+      INTEGER                               :: i,j,k,bdim
+      INTEGER                               :: iopt,tag1,Ndata,msend,mrecv
+      INTEGER(ppm_kind_int64)               :: ibuffer,jbuffer
+      INTEGER(ppm_kind_int64)               :: offs
+      INTEGER(ppm_kind_int64)               :: allsend,allrecv
 
       start_subroutine("mesh_map_send")
 
@@ -100,14 +103,14 @@
          Ndata = Ndata + PRODUCT(ppm_mesh_isendblksize(1:ppm_dim,j))
       ENDDO
 
-      ibuffer = SUM(ppm_buffer_dim(1:ppm_buffer_set))*Ndata
+      k = SUM(ppm_buffer_dim(1:ppm_buffer_set))*Ndata
 
       !-------------------------------------------------------------------------
       !  Initialize the buffer counters
       !-------------------------------------------------------------------------
-      ppm_nrecvbuffer = INT(ibuffer,ppm_kind_int64)
-      nsend(1)        = ibuffer
-      nrecv(1)        = ibuffer
+      ppm_nrecvbuffer = INT(k,ppm_kind_int64)
+      nsend(1)        = k
+      nrecv(1)        = k
       psend(1)        = Ndata
       precv(1)        = Ndata
       mrecv           = -1
@@ -242,8 +245,14 @@
       !-------------------------------------------------------------------------
       !  Sum of all mesh points that will be sent and received
       !-------------------------------------------------------------------------
-      allsend = SUM(psend(1:ppm_nsendlist))
-      allrecv = SUM(precv(1:ppm_nrecvlist))
+      allsend = 0_ppm_kind_int64
+      allrecv = 0_ppm_kind_int64
+      DO i=1,ppm_nsendlist
+         allsend = allsend + INT(psend(i),ppm_kind_int64)
+      ENDDO
+      DO i=1,ppm_nrecvlist
+         allrecv = allrecv + INT(precv(i),ppm_kind_int64)
+      ENDDO
 
       !-------------------------------------------------------------------------
       !  Compute the pointer to the position of the data in the main send
@@ -253,13 +262,13 @@
          stdout_f('(A,I9)',"ppm_buffer_set = ",ppm_buffer_set)
       ENDIF
       bdim = 0
-      offs = 0
+      offs = 0_ppm_kind_int64
       DO k=1,ppm_buffer_set
-         offs    = offs + allsend*bdim
-         qq(1,k) = offs + 1
+         offs    = offs + allsend*INT(bdim,ppm_kind_int64)
+         qq(1,k) = offs + 1_ppm_kind_int64
          bdim    = ppm_buffer_dim(k)
          DO j=2,ppm_nsendlist
-            qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
+            qq(j,k) = qq(j-1,k) + INT(psend(j-1),ppm_kind_int64)*INT(bdim,ppm_kind_int64)
             IF (ppm_debug.GT.1) THEN
                stdout_f('(A,I9)',"qq(j,k) = ",'qq(j,k)')
             ENDIF
@@ -271,13 +280,13 @@
       !  buffer
       !-------------------------------------------------------------------------
       bdim = 0
-      offs = 0
+      offs = 0_ppm_kind_int64
       DO k=1,ppm_buffer_set
-         offs    = offs + allrecv*bdim
-         pp(1,k) = offs + 1
+         offs    = offs + allrecv*INT(bdim,ppm_kind_int64)
+         pp(1,k) = offs + 1_ppm_kind_int64
          bdim    = ppm_buffer_dim(k)
          DO j=2,ppm_nrecvlist
-            pp(j,k) = pp(j-1,k) + precv(j-1)*bdim
+            pp(j,k) = pp(j-1,k) + INT(precv(j-1),ppm_kind_int64)*INT(bdim,ppm_kind_int64)
             IF (ppm_debug.GT.1) THEN
                stdout_f('(A,I9)',"pp(j,k) = ",'pp(j,k)')
                stdout_f('(A,I9,A,I4)',"precv(j-1) = ",'precv(j-1)',", bdim = ",bdim)
@@ -290,21 +299,21 @@
       !-------------------------------------------------------------------------
       IF (ppm_kind.EQ.ppm_kind_double) THEN
          DO k=1,ppm_buffer_set
-            ibuffer = pp(1,k) - 1
-            jbuffer = qq(1,k) - 1
+            ibuffer = pp(1,k) - 1_ppm_kind_int64
+            jbuffer = qq(1,k) - 1_ppm_kind_int64
             DO j=1,psend(1)*ppm_buffer_dim(k)
-               ibuffer                  = ibuffer + 1
-               jbuffer                  = jbuffer + 1
+               ibuffer                  = ibuffer + 1_ppm_kind_int64
+               jbuffer                  = jbuffer + 1_ppm_kind_int64
                ppm_recvbufferd(ibuffer) = ppm_sendbufferd(jbuffer)
             ENDDO
          ENDDO
       ELSE
          DO k=1,ppm_buffer_set
-            ibuffer = pp(1,k) - 1
-            jbuffer = qq(1,k) - 1
+            ibuffer = pp(1,k) - 1_ppm_kind_int64
+            jbuffer = qq(1,k) - 1_ppm_kind_int64
             DO j=1,psend(1)*ppm_buffer_dim(k)
-               ibuffer                  = ibuffer + 1
-               jbuffer                  = jbuffer + 1
+               ibuffer                  = ibuffer + 1_ppm_kind_int64
+               jbuffer                  = jbuffer + 1_ppm_kind_int64
                ppm_recvbuffers(ibuffer) = ppm_sendbuffers(jbuffer)
             ENDDO
          ENDDO
@@ -322,15 +331,15 @@
             !-------------------------------------------------------------------
             !  Collect each buffer set
             !-------------------------------------------------------------------
-            ibuffer = 0
+            ibuffer = 0_ppm_kind_int64
             DO j=1,ppm_buffer_set
-               jbuffer = qq(k,j) - 1
+               jbuffer = qq(k,j) - 1_ppm_kind_int64
                !----------------------------------------------------------------
                !  Collect the data into the send buffer
                !----------------------------------------------------------------
                DO i=1,psend(k)*ppm_buffer_dim(j)
-                  ibuffer        = ibuffer + 1
-                  jbuffer        = jbuffer + 1
+                  ibuffer        = ibuffer + 1_ppm_kind_int64
+                  jbuffer        = jbuffer + 1_ppm_kind_int64
                   sendd(ibuffer) = ppm_sendbufferd(jbuffer)
                ENDDO
             ENDDO
@@ -377,12 +386,12 @@
             !-------------------------------------------------------------------
             !  Store the data back in the recv buffer
             !-------------------------------------------------------------------
-            ibuffer = 0
+            ibuffer = 0_ppm_kind_int64
             DO j=1,ppm_buffer_set
-               jbuffer = pp(k,j) - 1
+               jbuffer = pp(k,j) - 1_ppm_kind_int64
                DO i=1,precv(k)*ppm_buffer_dim(j)
-                  ibuffer                  = ibuffer + 1
-                  jbuffer                  = jbuffer + 1
+                  ibuffer                  = ibuffer + 1_ppm_kind_int64
+                  jbuffer                  = jbuffer + 1_ppm_kind_int64
                   ppm_recvbufferd(jbuffer) = recvd(ibuffer)
                ENDDO
             ENDDO
@@ -395,15 +404,15 @@
             !-------------------------------------------------------------------
             !  Collect each buffer set
             !-------------------------------------------------------------------
-            ibuffer = 0
+            ibuffer = 0_ppm_kind_int64
             DO j=1,ppm_buffer_set
-               jbuffer = qq(k,j) - 1
+               jbuffer = qq(k,j) - 1_ppm_kind_int64
                !----------------------------------------------------------------
                !  Collect the data into the send buffer
                !----------------------------------------------------------------
                DO i=1,psend(k)*ppm_buffer_dim(j)
-                  ibuffer        = ibuffer + 1
-                  jbuffer        = jbuffer + 1
+                  ibuffer        = ibuffer + 1_ppm_kind_int64
+                  jbuffer        = jbuffer + 1_ppm_kind_int64
                   sends(ibuffer) = ppm_sendbuffers(jbuffer)
                ENDDO
             ENDDO
@@ -450,12 +459,12 @@
             !-------------------------------------------------------------------
             !  Store the data back in the recv buffer
             !-------------------------------------------------------------------
-            ibuffer = 0
+            ibuffer = 0_ppm_kind_int64
             DO j=1,ppm_buffer_set
-               jbuffer = pp(k,j) - 1
+               jbuffer = pp(k,j) - 1_ppm_kind_int64
                DO i=1,precv(k)*ppm_buffer_dim(j)
-                  ibuffer                  = ibuffer + 1
-                  jbuffer                  = jbuffer + 1
+                  ibuffer                  = ibuffer + 1_ppm_kind_int64
+                  jbuffer                  = jbuffer + 1_ppm_kind_int64
                   ppm_recvbuffers(jbuffer) = recvs(ibuffer)
                ENDDO
             ENDDO
