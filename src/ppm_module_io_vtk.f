@@ -35,10 +35,12 @@
 #define __SCA              6
 
       MODULE ppm_module_io_vtk
-         USE ppm_module_data,      ONLY: ppm_char, ppm_error_fatal, &
-         &   ppm_kind_single, ppm_kind_double,ppm_error_error,      &
-         &   ppm_rank,ppm_nproc, ppm_comm
-         USE ppm_module_error,     ONLY: ppm_error, ppm_err_argument
+         USE ppm_module_data, ONLY: ppm_dim,ppm_char, ppm_error_fatal, &
+         &   ppm_kind_single, ppm_kind_double,ppm_error_error,         &
+         &   ppm_rank,ppm_nproc,ppm_comm,ppm_type_int,ppm_type_real,   &
+         &   ppm_type_real_single,ppm_param_bcdef_periodic
+         USE ppm_module_error,     ONLY: ppm_error,ppm_err_argument, &
+         &   ppm_err_sub_failed
          USE ppm_module_substart,  ONLY: substart
          USE ppm_module_substop,   ONLY: substop
          USE ppm_module_mpi

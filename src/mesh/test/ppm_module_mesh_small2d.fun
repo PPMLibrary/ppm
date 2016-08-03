@@ -1,5 +1,6 @@
 test_suite ppm_module_mesh_small2d
 
+USE ppm_module_write
 USE ppm_module_mesh_typedef
 USE ppm_module_topo_typedef
 USE ppm_module_field_typedef

@@ -132,7 +132,7 @@
       REAL(MK), DIMENSION(:)       , POINTER :: max_phys
       REAL(MK),  DIMENSION(ppm_dim)          :: dxi,dx
       REAL(MK),  DIMENSION(ppm_dim)          :: len_phys
-      REAL(MK)                               :: x1,x2,x3,epsilon
+      REAL(MK)                               :: x1,x2,x3
       INTEGER                                :: kernel_support
       INTEGER,  DIMENSION(ppm_dim+2)         :: ldu,ldl
       INTEGER,  DIMENSION(ppm_dim)           :: Nc
@@ -140,7 +140,7 @@
       INTEGER                                :: jjdec,nb_sub,npart,ipart
       INTEGER                                :: ip1,nlist1
       INTEGER                                :: ip2,ip3
-      INTEGER                                :: isub,ifrom,ito,ip,dim,iopt,isubl
+      INTEGER                                :: isub,ip,dim,iopt,isubl
       INTEGER                                :: max_partnumber,idom,nlist2,idoml
       INTEGER, DIMENSION(ppm_dim)            :: Nm
       INTEGER                                :: nsubs
@@ -324,7 +324,6 @@
          dx(i)       = len_phys(i)/REAL(Nc(i),MK)
       ENDDO
       dxi     = 1.0_MK/dx
-      epsilon = 0.000001_MK
 
       !--------------------------------------------------------------------------
       !  Initialize the particle list

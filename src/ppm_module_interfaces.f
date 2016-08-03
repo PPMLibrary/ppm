@@ -23,11 +23,13 @@
       !----------------------------------------------------------------------
       !  Modules
       !----------------------------------------------------------------------
-      USE ppm_module_container_typedef
       USE ppm_module_data
+      USE ppm_module_container_typedef
       USE ppm_module_util_functions
       USE ppm_module_options
       IMPLICIT NONE
+
+      PRIVATE
 
       !----------------------------------------------------------------------
       ! Global parameters
@@ -93,9 +95,6 @@
       !----------------------------------------------------------------------
       ! Module variables
       !----------------------------------------------------------------------
-      INTEGER, PRIVATE, DIMENSION(3) :: ldc
-      !!! Generic type for all main PPM types
-
       !----------------------------------------------------------------------
       ! Type declaration
       !----------------------------------------------------------------------
@@ -113,7 +112,6 @@ minclude ppm_create_collection(main_abstr,main_abstr,generate="concrete",vec=tru
           !!! name (optional...)
       END TYPE ppm_t_discr_kind
 minclude ppm_create_collection(discr_kind,discr_kind,generate="concrete",vec=true,def_ptr=true)
-
 
       TYPE, ABSTRACT, EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_data
           !!! Data (discretized on either Particles or Meshes)
@@ -171,7 +169,6 @@ minclude ppm_create_collection(discr_data,discr_data,generate="concrete",vec=tru
           PROCEDURE(operator_discretize_on_), DEFERRED :: discretize_on
       END TYPE ppm_t_operator_
 minclude ppm_create_collection(operator_,operator_,generate="abstract")
-
 
       TYPE, ABSTRACT :: ppm_t_operator_discr_
           !!! discretized operator
@@ -577,7 +574,6 @@ minclude ppm_create_collection(A_subpatch_,A_subpatch_,generate="abstract")
           TYPE(ppm_t_ptr_subpatch), DIMENSION(:), POINTER :: vec       => NULL()
       END TYPE ppm_t_subpatch_ptr_array
 
-
       TYPE, ABSTRACT, EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
           !!! Type for equispaced cartesian meshes on subs
 
@@ -815,6 +811,102 @@ minclude ppm_create_collection_interfaces(mesh_discr_data_,mesh_discr_data_,vec=
 #include "operator/operator_interfaces.f"
 
       END INTERFACE
+
+
+      !----------------------------------------------------------------------
+      !  PUBLIC
+      !----------------------------------------------------------------------
+      PUBLIC :: ppm_t_main_abstr
+      PUBLIC :: ppm_t_ptr_main_abstr
+      PUBLIC :: ppm_v_main_abstr
+      PUBLIC :: ppm_t_discr_kind
+      PUBLIC :: ppm_t_ptr_discr_kind
+      PUBLIC :: ppm_v_discr_kind
+      PUBLIC :: ppm_t_discr_data
+      PUBLIC :: ppm_t_ptr_discr_data
+      PUBLIC :: ppm_v_discr_data
+
+      PUBLIC :: ppm_t_operator_
+      PUBLIC :: ppm_t_ptr_operator
+      PUBLIC :: ppm_c_operator_
+      PUBLIC :: ppm_t_operator_discr_
+      PUBLIC :: ppm_t_ptr_operator_discr
+      PUBLIC :: ppm_c_operator_discr_
+      PUBLIC :: ppm_t_operator_discr
+      PUBLIC :: ppm_c_operator_discr
+
+      PUBLIC :: ppm_t_mapping_
+      PUBLIC :: ppm_t_part_mapping_s_
+      PUBLIC :: ppm_t_ptr_part_mapping_s
+      PUBLIC :: ppm_t_part_mapping_d_
+      PUBLIC :: ppm_t_ptr_part_mapping_d
+      PUBLIC :: ppm_c_part_mapping_s_
+      PUBLIC :: ppm_c_part_mapping_d_
+      PUBLIC :: ppm_t_mesh_mapping_
+      PUBLIC :: ppm_t_ptr_mesh_mapping
+      PUBLIC :: ppm_c_mesh_mapping_
+
+      PUBLIC :: ppm_t_part_prop_s_
+      PUBLIC :: ppm_t_part_prop_d_
+      PUBLIC :: ppm_t_ptr_part_prop_s
+      PUBLIC :: ppm_t_ptr_part_prop_d
+      PUBLIC :: ppm_c_part_prop_s_
+      PUBLIC :: ppm_c_part_prop_d_
+      PUBLIC :: ppm_v_part_prop_s_
+      PUBLIC :: ppm_v_part_prop_d_
+
+      PUBLIC :: ppm_t_neighlist_s_
+      PUBLIC :: ppm_t_ptr_neighlist_s
+      PUBLIC :: ppm_t_neighlist_d_
+      PUBLIC :: ppm_t_ptr_neighlist_d
+      PUBLIC :: ppm_c_neighlist_s_
+      PUBLIC :: ppm_c_neighlist_d_
+      PUBLIC :: particles_stats_s_
+      PUBLIC :: particles_stats_d_
+
+
+      PUBLIC :: ppm_t_particles_s_
+      PUBLIC :: ppm_t_particles_d_
+      PUBLIC :: ppm_t_ptr_particles_s
+      PUBLIC :: ppm_t_ptr_particles_d
+      PUBLIC :: ppm_c_particles_s_
+      PUBLIC :: ppm_c_particles_d_
+
+      PUBLIC :: ppm_t_discr_info_
+      PUBLIC :: ppm_t_ptr_discr_info
+      PUBLIC :: ppm_c_discr_info_
+      PUBLIC :: ppm_t_field_
+      PUBLIC :: ppm_t_ptr_field
+      PUBLIC :: ppm_c_field_
+      PUBLIC :: ppm_v_field_
+
+      PUBLIC :: ppm_t_subpatch_data_
+      PUBLIC :: ppm_t_ptr_subpatch_data
+      PUBLIC :: ppm_c_subpatch_data_
+      PUBLIC :: ppm_v_subpatch_data_
+      PUBLIC :: ppm_t_mesh_discr_data_
+      PUBLIC :: ppm_t_ptr_mesh_discr_data
+      PUBLIC :: ppm_c_mesh_discr_data_
+      PUBLIC :: ppm_v_mesh_discr_data_
+
+      PUBLIC :: ppm_t_subpatch_
+      PUBLIC :: ppm_t_ptr_subpatch
+      PUBLIC :: ppm_c_subpatch_
+      PUBLIC :: ppm_t_A_subpatch_
+      PUBLIC :: ppm_t_ptr_A_subpatch
+      PUBLIC :: ppm_c_A_subpatch_
+      PUBLIC :: ppm_t_mesh_maplist
+      PUBLIC :: ppm_t_subpatch_ptr_array
+
+      PUBLIC :: ppm_t_equi_mesh_
+      PUBLIC :: ppm_t_ptr_equi_mesh
+      PUBLIC :: ppm_c_equi_mesh_
+      PUBLIC :: ppm_t_var_discr_pair
+      PUBLIC :: ppm_t_ptr_var_discr_pair
+      PUBLIC :: ppm_v_var_discr_pair
+      PUBLIC :: ppm_t_field_discr_pair
+      PUBLIC :: ppm_t_ptr_field_discr_pair
+      PUBLIC :: ppm_v_field_discr_pair
 
       CONTAINS
 

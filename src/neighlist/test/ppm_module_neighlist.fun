@@ -1,4 +1,5 @@
 test_suite ppm_module_neighlist
+  USE ppm_module_data
   USE ppm_module_interfaces
 
   INTEGER, PARAMETER              :: debug = 0

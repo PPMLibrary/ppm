@@ -16,6 +16,7 @@
       USE ppm_module_data
       USE ppm_module_alloc
       USE ppm_module_error
+      USE ppm_module_write
       USE ppm_module_util_functions
       USE ppm_module_interfaces
       USE ppm_module_mapping_typedef
@@ -192,40 +193,40 @@ minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
       ! TODO: stuff that should be moved somewhere else:
       !------------------------------------------------
       !used to be in ppm_module_map_field.f
-      REAL(ppm_kind_single), DIMENSION(:),   POINTER :: sends => NULL()
-      REAL(ppm_kind_single), DIMENSION(:),   POINTER :: recvs => NULL()
-      REAL(ppm_kind_double), DIMENSION(:),   POINTER :: sendd => NULL()
-      REAL(ppm_kind_double), DIMENSION(:),   POINTER :: recvd => NULL()
+      REAL(ppm_kind_single),   DIMENSION(:),   POINTER :: sends => NULL()
+      REAL(ppm_kind_single),   DIMENSION(:),   POINTER :: recvs => NULL()
+      REAL(ppm_kind_double),   DIMENSION(:),   POINTER :: sendd => NULL()
+      REAL(ppm_kind_double),   DIMENSION(:),   POINTER :: recvd => NULL()
 
-      INTEGER,               DIMENSION(:),   POINTER :: nsend => NULL()
-      INTEGER,               DIMENSION(:),   POINTER :: nrecv => NULL()
-      INTEGER,               DIMENSION(:),   POINTER :: psend => NULL()
-      INTEGER,               DIMENSION(:),   POINTER :: precv => NULL()
+      INTEGER,                 DIMENSION(:),   POINTER :: nsend => NULL()
+      INTEGER,                 DIMENSION(:),   POINTER :: nrecv => NULL()
+      INTEGER,                 DIMENSION(:),   POINTER :: psend => NULL()
+      INTEGER,                 DIMENSION(:),   POINTER :: precv => NULL()
 
-      INTEGER,               DIMENSION(:,:), POINTER :: pp => NULL()
-      INTEGER,               DIMENSION(:,:), POINTER :: qq => NULL()
+      INTEGER(ppm_kind_int64), DIMENSION(:,:), POINTER :: pp => NULL()
+      INTEGER(ppm_kind_int64), DIMENSION(:,:), POINTER :: qq => NULL()
 
-      INTEGER,               DIMENSION(:  ), POINTER :: irecvfromsub  => NULL()
-      INTEGER,               DIMENSION(:  ), POINTER :: irecvtosub    => NULL()
-      INTEGER,               DIMENSION(:,:), POINTER :: irecvpatchid  => NULL()
-      INTEGER,               DIMENSION(:,:), POINTER :: irecvblkstart => NULL()
-      INTEGER,               DIMENSION(:,:), POINTER :: irecvblksize  => NULL()
+      INTEGER,                 DIMENSION(:  ), POINTER :: irecvfromsub  => NULL()
+      INTEGER,                 DIMENSION(:  ), POINTER :: irecvtosub    => NULL()
+      INTEGER,                 DIMENSION(:,:), POINTER :: irecvpatchid  => NULL()
+      INTEGER,                 DIMENSION(:,:), POINTER :: irecvblkstart => NULL()
+      INTEGER,                 DIMENSION(:,:), POINTER :: irecvblksize  => NULL()
 
       !used to be in ppm_module_map_field_ghost.f
-      INTEGER,               DIMENSION(:  ), POINTER :: isendfromsub  => NULL()
-      INTEGER,               DIMENSION(:  ), POINTER :: isendtosub    => NULL()
-      INTEGER,               DIMENSION(:,:), POINTER :: isendpatchid  => NULL()
-      INTEGER,               DIMENSION(:,:), POINTER :: isendblkstart => NULL()
-      INTEGER,               DIMENSION(:,:), POINTER :: isendblksize  => NULL()
-      INTEGER,               DIMENSION(:,:), POINTER :: ioffset       => NULL()
+      INTEGER,                 DIMENSION(:  ), POINTER :: isendfromsub  => NULL()
+      INTEGER,                 DIMENSION(:  ), POINTER :: isendtosub    => NULL()
+      INTEGER,                 DIMENSION(:,:), POINTER :: isendpatchid  => NULL()
+      INTEGER,                 DIMENSION(:,:), POINTER :: isendblkstart => NULL()
+      INTEGER,                 DIMENSION(:,:), POINTER :: isendblksize  => NULL()
+      INTEGER,                 DIMENSION(:,:), POINTER :: ioffset       => NULL()
 
-      INTEGER,               DIMENSION(:  ), POINTER :: sendbuf       => NULL()
-      INTEGER,               DIMENSION(:  ), POINTER :: recvbuf       => NULL()
+      INTEGER,                 DIMENSION(:  ), POINTER :: sendbuf       => NULL()
+      INTEGER,                 DIMENSION(:  ), POINTER :: recvbuf       => NULL()
 
       ! sorted (according to proc-proc interaction order) offset list)
-      INTEGER,               DIMENSION(:,:), POINTER :: mesh_ghost_offset => NULL()
+      INTEGER,                 DIMENSION(:,:), POINTER :: mesh_ghost_offset => NULL()
 
-      INTEGER,               DIMENSION(:),   POINTER :: invsublist => NULL()
+      INTEGER,                 DIMENSION(:),   POINTER :: invsublist => NULL()
 
       !----------------------------------------------------------------------
       !  Type-bound procedures

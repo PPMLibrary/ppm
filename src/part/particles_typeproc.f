@@ -858,6 +858,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           !-----------------------------------------------------------------------
           ! Print out summary information about this property
           !-----------------------------------------------------------------------
+          USE ppm_module_util_functions, ONLY : color_print
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Arguments
@@ -1688,6 +1689,7 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           ! Print out summary information about this Particle set
           ! (list of properties, operators, etc...)
           !-----------------------------------------------------------------------
+          USE ppm_module_util_functions, ONLY : color_print
           IMPLICIT NONE
 
           DEFINE_MK()

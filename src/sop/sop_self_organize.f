@@ -89,8 +89,9 @@
               FUNCTION D_fun(f1,dfdx,opts,f2)
                   USE ppm_module_data, ONLY: ppm_dim
                   USE ppm_module_interfaces
-                  import DTYPE(ppm_t_options_sop)
-                  DEFINE_MK()
+                  IMPORT DTYPE(ppm_t_options_sop)
+                  IMPORT                                     :: MK
+                  IMPLICIT NONE
                   REAL(MK)                                   :: D_fun
                   REAL(MK),                   INTENT(IN)     :: f1
                   REAL(MK),DIMENSION(ppm_dim),INTENT(IN)     :: dfdx
@@ -102,7 +103,8 @@
               FUNCTION nb_fun(kappa,scale_D)
                   USE ppm_module_data, ONLY: ppm_dim
                   USE ppm_module_interfaces
-                  DEFINE_MK()
+                  IMPORT                                     :: MK
+                  IMPLICIT NONE
                   REAL(MK)                                   :: nb_fun
                   REAL(MK),                INTENT(IN)        :: kappa
                   REAL(MK),                INTENT(IN)        :: scale_D
@@ -112,7 +114,8 @@
               FUNCTION wp_fun(pos)
                   USE ppm_module_data, ONLY: ppm_dim
                   USE ppm_module_interfaces
-                  DEFINE_MK()
+                  IMPORT                                     :: MK
+                  IMPLICIT NONE
                   REAL(MK),DIMENSION(ppm_dim),INTENT(IN)     :: pos
                   REAL(MK)                                   :: wp_fun
               END FUNCTION wp_fun
@@ -121,7 +124,8 @@
               FUNCTION level_fun(pos)
                   USE ppm_module_data, ONLY: ppm_dim
                   USE ppm_module_interfaces
-                  DEFINE_MK()
+                  IMPORT                                     :: MK
+                  IMPLICIT NONE
                   REAL(MK),DIMENSION(ppm_dim),INTENT(IN)     :: pos
                   REAL(MK)                                   :: level_fun
               END FUNCTION level_fun
@@ -130,7 +134,8 @@
               FUNCTION wp_grad_fun(pos)
                   USE ppm_module_data, ONLY: ppm_dim
                   USE ppm_module_interfaces
-                  DEFINE_MK()
+                  IMPORT                                     :: MK
+                  IMPLICIT NONE
                   REAL(MK),DIMENSION(ppm_dim)                :: wp_grad_fun
                   REAL(MK),DIMENSION(ppm_dim),INTENT(IN)     :: pos
               END FUNCTION wp_grad_fun
@@ -139,7 +144,8 @@
               FUNCTION level_grad_fun(pos)
                   USE ppm_module_data, ONLY: ppm_dim
                   USE ppm_module_interfaces
-                  DEFINE_MK()
+                  IMPORT                                     :: MK
+                  IMPLICIT NONE
                   REAL(MK),DIMENSION(ppm_dim)                :: level_grad_fun
                   REAL(MK),DIMENSION(ppm_dim),INTENT(IN)     :: pos
               END FUNCTION level_grad_fun

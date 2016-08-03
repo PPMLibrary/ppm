@@ -15,6 +15,7 @@
       USE ppm_module_data
       USE ppm_module_util_functions
       USE ppm_module_interfaces
+      USE ppm_module_options
       USE ppm_module_particles_typedef
       USE ppm_module_vbp_typedef
       IMPLICIT NONE

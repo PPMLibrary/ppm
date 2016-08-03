@@ -71,14 +71,14 @@
       REAL(MK) , DIMENSION(:,:)    , POINTER :: xp => NULL()
       INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
       INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
-      REAL(MK)                               :: x1,x2,x3,epsilon
+      REAL(MK)                               :: x1,x2,x3
       INTEGER                                :: kernel_support
       INTEGER,  DIMENSION(ppm_dim+2)         :: ldu,ldl
       INTEGER                                :: i,j,k,ii,jj,kk,iidec,maptype,Np
       INTEGER                                :: jjdec,nb_sub,npart,ipart
       INTEGER                                :: kkdec,ip1,nbpt_z,nlist1
-      INTEGER                                :: ip2,ip3,nbpt_x,nbpt_y,iface
-      INTEGER                                :: isub,ifrom,ito,ip,dim,iopt,isubl
+      INTEGER                                :: ip2,ip3,nbpt_x,nbpt_y
+      INTEGER                                :: isub,ip,dim,iopt,isubl
       INTEGER                                :: max_partnumber,nlist2
       INTEGER                                :: nsubpatch,ipatch
       LOGICAL                                :: internal_weights,lok

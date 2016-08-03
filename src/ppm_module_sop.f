@@ -6,6 +6,7 @@
 #define __DOUBLE_PRECISION 2
 
 
+      USE ppm_module_data
       USE ppm_module_interfaces
       USE ppm_module_topo_typedef
       USE ppm_module_particles_typedef

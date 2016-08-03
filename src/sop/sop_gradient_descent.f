@@ -1169,10 +1169,11 @@
           !!! statistics on output
           INTERFACE
               FUNCTION D_fun(f1,dfdx,opts,f2)
-                  USE ppm_module_data, ONLY: ppm_dim
+                  USE ppm_module_data, ONLY : ppm_dim
                   USE ppm_module_typedef
                   USE ppm_module_sop_typedef
-                  DEFINE_MK()
+                  IMPORT                                 :: MK
+                  IMPLICIT NONE
                   REAL(MK)                               :: D_fun
                   REAL(MK),                   INTENT(IN) :: f1
                   REAL(MK),DIMENSION(ppm_dim),INTENT(IN) :: dfdx
@@ -1182,41 +1183,47 @@
 
               !Function that returns the width of the narrow band
               FUNCTION nb_fun(kappa,scale_D)
+                  USE ppm_module_data, ONLY : ppm_dim
                   USE ppm_module_typedef
-                  DEFINE_MK()
+                  IMPORT                               :: MK
+                  IMPLICIT NONE
                   REAL(MK)                             :: nb_fun
                   REAL(MK),                INTENT(IN)  :: kappa
                   REAL(MK),                INTENT(IN)  :: scale_D
               END FUNCTION nb_fun
 
               FUNCTION wp_fun(pos)
-                  USE ppm_module_data, ONLY: ppm_dim
+                  USE ppm_module_data, ONLY : ppm_dim
                   USE ppm_module_typedef
-                  DEFINE_MK()
+                  IMPORT                                  :: MK
+                  IMPLICIT NONE
                   REAL(MK),DIMENSION(ppm_dim),INTENT(IN)  :: pos
                   REAL(MK)                                :: wp_fun
               END FUNCTION wp_fun
 
               FUNCTION wp_grad_fun(pos)
-                  USE ppm_module_data, ONLY: ppm_dim
+                  USE ppm_module_data, ONLY : ppm_dim
                   USE ppm_module_typedef
-                  DEFINE_MK()
+                  IMPORT                                  :: MK
+                  IMPLICIT NONE
                   REAL(MK),DIMENSION(ppm_dim),INTENT(IN)  :: pos
                   REAL(MK),DIMENSION(ppm_dim)             :: wp_grad_fun
               END FUNCTION wp_grad_fun
 
               FUNCTION level_fun(pos)
-                  USE ppm_module_data, ONLY: ppm_dim
+                  USE ppm_module_data, ONLY : ppm_dim
                   USE ppm_module_typedef
-                  DEFINE_MK()
+                  IMPORT                                  :: MK
+                  IMPLICIT NONE
                   REAL(MK),DIMENSION(ppm_dim),INTENT(IN)  :: pos
                   REAL(MK)                                :: level_fun
               END FUNCTION level_fun
 
               FUNCTION level_grad_fun(pos)
-                  USE ppm_module_data, ONLY: ppm_dim
+                  USE ppm_module_data, ONLY : ppm_dim
                   USE ppm_module_typedef
-                  DEFINE_MK()
+                  IMPORT                                  :: MK
+                  IMPLICIT NONE
                   REAL(MK),DIMENSION(ppm_dim),INTENT(IN)  :: pos
                   REAL(MK),DIMENSION(ppm_dim)             :: level_grad_fun
               END FUNCTION level_grad_fun

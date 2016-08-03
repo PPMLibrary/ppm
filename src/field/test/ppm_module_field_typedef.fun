@@ -3,6 +3,7 @@ test_suite ppm_module_field_typedef
   USE ppm_module_mesh_typedef
   USE ppm_module_topo_typedef
   USE ppm_module_data
+  USE ppm_module_write
   USE ppm_module_mktopo
   USE ppm_module_finalize
   USE ppm_module_interfaces

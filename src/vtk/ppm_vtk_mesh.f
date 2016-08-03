@@ -57,10 +57,8 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-!       CLASS(ppm_t_subpatch_),      POINTER :: p     => NULL()
       CLASS(ppm_t_subpatch_data_), POINTER :: pdat
       CLASS(ppm_t_discr_data),     POINTER :: fld
-      CLASS(ppm_t_discr_info_),    POINTER :: el
 
 #if   __DIM  == __2D
       REAL(MKS), DIMENSION(:,:),     POINTER :: fdata2_rs
@@ -88,12 +86,10 @@
       INTEGER               :: isub,sub2proc
       INTEGER               :: icomp
       INTEGER, DIMENSION(2*__DIM) :: whole_ext,extent
-      INTEGER, DIMENSION(__DIM) :: istart,iend,nc
+      INTEGER, DIMENSION(__DIM) :: istart,nc
 
       CHARACTER(LEN=ppm_char) :: scratch
       CHARACTER(LEN=ppm_char) :: fname,vname
-
-      LOGICAL :: lopen,lexists
 
       start_subroutine("ppm_vtk_mesh")
       !-------------------------------------------------------------------------
