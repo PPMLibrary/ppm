@@ -1,5 +1,6 @@
 test_suite ppm_module_mesh_mappings2
 
+USE ppm_module_write
 USE ppm_module_mesh_typedef
 USE ppm_module_topo_typedef
 USE ppm_module_field_typedef
@@ -337,6 +338,125 @@ REAL(MK),DIMENSION(ndim)         :: offset
 #ifdef __MPI
         CALL MPI_BARRIER(comm,info)
 #endif
+        end_subroutine()
+    end test
+
+    test selective_mappings
+        USE ppm_module_util_commopt
+
+        CLASS(ppm_t_subpatch_), POINTER :: sbpitr
+
+        TYPE(ppm_t_field) :: Field1
+
+        INTEGER, DIMENSION(:,:,:), POINTER :: wp
+        INTEGER, DIMENSION(:), ALLOCATABLE :: sendlist,recvlist
+
+        start_subroutine("selective_mappings")
+
+        offset = 0.0_MK
+        Nm = (/40,40,40/)
+        ighostsize=1
+        sca_ghostsize = MAXVAL(REAL(ighostsize,MK)/REAL(Nm-1,MK))
+
+        decomp=ppm_param_decomp_xy_slab
+        assig  = ppm_param_assign_internal
+        topoid = 0
+
+        ! create topology
+        CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys, &
+        &               bcdef,sca_ghostsize,cost,info)
+        Assert_Equal(info,0)
+
+        ! communication optimization, which also take care of vertex coloring
+        CALL ppm_util_commopt(topoid,info)
+        Assert_Equal(info,0)
+
+        topo => ppm_topo(topoid)%t
+
+        ! create mesh
+        CALL Mesh1%create(topoid,offset,info,Nm=Nm,&
+        &    ghostsize=ighostsize,name='Mesh1')
+        Assert_Equal(info,0)
+
+        ! define uniform mesh everywhere
+        CALL Mesh1%def_uniform(info)
+        Assert_Equal(info,0)
+
+        ! create scaler integer Field
+        CALL Field1%create(1,info,dtype=ppm_type_int,name='scaField')
+        Assert_Equal(info,0)
+
+        ! descretize Field on the mesh
+        CALL Field1%discretize_on(Mesh1,info)
+        Assert_Equal(info,0)
+
+        NULLIFY(wp)
+
+        ! Initialize Field
+        sbpitr => Mesh1%subpatch%begin()
+        DO WHILE (ASSOCIATED(sbpitr))
+           CALL sbpitr%get_field(Field1,wp,info)
+           Assert_Equal(info,0)
+           IF (ppm_dim.EQ.3) THEN
+              wp=99999
+              wp(1,1,1)=ppm_rank
+              wp(sbpitr%nnodes(1),1,1)=ppm_rank
+              wp(1,sbpitr%nnodes(2),1)=ppm_rank
+              wp(sbpitr%nnodes(1),sbpitr%nnodes(2),1)=ppm_rank
+              wp(1,1,sbpitr%nnodes(3))=ppm_rank
+              wp(sbpitr%nnodes(1),1,sbpitr%nnodes(3))=ppm_rank
+              wp(1,sbpitr%nnodes(2),sbpitr%nnodes(3))=ppm_rank
+              wp(sbpitr%nnodes(1),sbpitr%nnodes(2),sbpitr%nnodes(3))=ppm_rank
+           ELSE
+              wp=0
+           ENDIF
+           sbpitr => Mesh1%subpatch%next()
+        ENDDO
+
+        ! Define the selective sendlist and receivelist for selective ghost mappings
+        ! This is done using processors coloring
+        IF (topo%ineighcolor(0).EQ.1) THEN
+           ALLOCATE(sendlist(COUNT(topo%ineighcolor(1:topo%nneighproc).NE.1)))
+           ALLOCATE(recvlist(0))
+           sendlist=PACK(topo%ineighproc(1:topo%nneighproc),topo%ineighcolor(1:topo%nneighproc).NE.1)
+           recvlist=-1
+        ELSE
+           ALLOCATE(sendlist(0))
+           ALLOCATE(recvlist(COUNT(topo%ineighcolor(1:topo%nneighproc).EQ.1)))
+           sendlist=-1
+           recvlist=PACK(topo%ineighproc(1:topo%nneighproc),topo%ineighcolor(1:topo%nneighproc).EQ.1)
+        ENDIF
+
+        ! ghost update
+        CALL Mesh1%map_ghost_get(info,sendlist=sendlist,recvlist=recvlist)
+        Assert_Equal(info,0)
+        CALL Field1%map_ghost_push(Mesh1,info)
+        Assert_Equal(info,0)
+        CALL Mesh1%map_isend(info)
+        Assert_Equal(info,0)
+        CALL Field1%map_ghost_pop(Mesh1,info)
+        Assert_Equal(info,0)
+
+        ! Check the updated values
+        sbpitr => Mesh1%subpatch%begin()
+        DO WHILE (ASSOCIATED(sbpitr))
+           CALL sbpitr%get_field(Field1,wp,info)
+           Assert_Equal(info,0)
+           IF (ppm_dim.EQ.3) THEN
+              IF (topo%ineighcolor(0).NE.1) THEN
+                 Assert_True(wp(1,1,0).EQ.MOD(ppm_rank-1+ppm_nproc,ppm_nproc))
+                 Assert_True(wp(sbpitr%nnodes(1),1,0).EQ.MOD(ppm_rank-1+ppm_nproc,ppm_nproc))
+                 Assert_True(wp(1,sbpitr%nnodes(2),0).EQ.MOD(ppm_rank-1+ppm_nproc,ppm_nproc))
+                 Assert_True(wp(sbpitr%nnodes(1),sbpitr%nnodes(2),0).EQ.MOD(ppm_rank-1+ppm_nproc,ppm_nproc))
+                 Assert_True(wp(1,1,sbpitr%nnodes(3)+1).EQ.MOD(ppm_rank+1+ppm_nproc,ppm_nproc))
+                 Assert_True(wp(sbpitr%nnodes(1),1,sbpitr%nnodes(3)+1).EQ.MOD(ppm_rank+1+ppm_nproc,ppm_nproc))
+                 Assert_True(wp(1,sbpitr%nnodes(2),sbpitr%nnodes(3)+1).EQ.MOD(ppm_rank+1+ppm_nproc,ppm_nproc))
+                 Assert_True(wp(sbpitr%nnodes(1),sbpitr%nnodes(2),sbpitr%nnodes(3)+1).EQ.MOD(ppm_rank+1+ppm_nproc,ppm_nproc))
+              ENDIF
+           ENDIF
+           sbpitr => Mesh1%subpatch%next()
+        ENDDO
+
         end_subroutine()
     end test
 
