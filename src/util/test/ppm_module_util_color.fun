@@ -1,6 +1,8 @@
 test_suite ppm_module_util_color
 
     USE ppm_module_data
+    USE ppm_module_substart
+    USE ppm_module_substop
 
     INTEGER, PARAMETER                    :: debug = 0
     INTEGER, PARAMETER                    :: MK = KIND(1.0d0)

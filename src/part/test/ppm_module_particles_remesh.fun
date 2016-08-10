@@ -1,5 +1,7 @@
 test_suite ppm_module_particles_remesh
 
+USE ppm_module_substart
+USE ppm_module_substop
 USE ppm_module_mesh_typedef
 USE ppm_module_topo_typedef
 USE ppm_module_field_typedef

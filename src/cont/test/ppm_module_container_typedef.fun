@@ -39,9 +39,13 @@ test_suite ppm_module_container_typedef
   !----------------------------------------------
 
   test collections_basic_features
+    USE ppm_module_data
     IMPLICIT NONE
+
     TYPE(ppm_c_equi_mesh)            :: c_M
+
     CLASS(ppm_t_equi_mesh_), POINTER :: M => NULL()
+
     INTEGER                          :: count_el,total_el=1000
 
     ppm_debug = 0

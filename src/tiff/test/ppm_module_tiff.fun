@@ -1,8 +1,8 @@
 test_suite ppm_module_tiff
 
-#ifdef __MPI
-  INCLUDE "mpif.h"
-#endif
+USE ppm_module_substart
+USE ppm_module_substop
+USE ppm_module_mpi
 
   INTEGER,  PARAMETER                 :: debug = 0
   INTEGER,  PARAMETER                 :: MK = KIND(1.0D0)

@@ -1,5 +1,7 @@
 test_suite ppm_particles_dcops
 
+USE ppm_module_substart
+USE ppm_module_substop
 USE ppm_module_interfaces
 USE ppm_module_particles_typedef
 USE ppm_module_topo_typedef

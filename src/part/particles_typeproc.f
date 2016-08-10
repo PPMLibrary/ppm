@@ -1507,35 +1507,22 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
           CALL Pc%get_xp(xp,info)
           or_fail("Particle positions cannot be accessed")
 
-          !FORALL (ip=1:Pc%Npart) xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + disp(1:ppm_dim,ip)
-          DO ip=1,Pc%Npart
-             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + disp(1:ppm_dim,ip)
-          ENDDO
+          SELECT CASE (ppm_dim)
+          CASE (2)
+             DO ip=1,Pc%Npart
+                xp(1,ip) = xp(1,ip) + disp(1,ip)
+                xp(2,ip) = xp(2,ip) + disp(2,ip)
+             ENDDO
+          CASE (3)
+             DO ip=1,Pc%Npart
+                xp(1,ip) = xp(1,ip) + disp(1,ip)
+                xp(2,ip) = xp(2,ip) + disp(2,ip)
+                xp(3,ip) = xp(3,ip) + disp(3,ip)
+             ENDDO
+          END SELECT
 
           CALL Pc%set_xp(xp,info)
           or_fail("set_xp")
-
-          !-----------------------------------------------------------------
-          !  update states
-          !-----------------------------------------------------------------
-          Pc%flags(ppm_part_ghosts) = .FALSE.
-
-          prop => Pc%props%begin()
-          DO WHILE (ASSOCIATED(prop))
-             prop%flags(ppm_ppt_ghosts) = .FALSE.
-             prop => Pc%props%next()
-          ENDDO
-
-          IF (ASSOCIATED(Pc%ops)) THEN
-             op => Pc%ops%begin()
-             DO WHILE (ASSOCIATED(op))
-                op%flags(ppm_ops_iscomputed) = .FALSE.
-                op => Pc%ops%next()
-             ENDDO
-          ENDIF
-
-          Pc%flags(ppm_part_partial) = .FALSE.
-          Pc%flags(ppm_part_cartesian) = .FALSE.
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_move)
@@ -1589,11 +1576,11 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
              fail('Particles structure had not been defined. Call allocate first')
           ENDIF
 
-          topoid   =Pc%active_topoid
-          topo     => ppm_topo(topoid)%t
-          xp       => Pc%xp
-          Npart    =Pc%Npart
-          almostone=NEAREST(1._MK,-1._MK)
+          topoid    =  Pc%active_topoid
+          topo      => ppm_topo(topoid)%t
+          xp        => Pc%xp
+          Npart     =  Pc%Npart
+          almostone =  NEAREST(1._MK,-1._MK)
 
           !-----------------------------------------------------------------
           !  Move particles if needed
@@ -2283,7 +2270,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
       END FUNCTION DTYPE(has_ghosts)
 
       SUBROUTINE DTYPE(part_map_create)(Pc,id,source_topoid,target_topoid,info)
-          !!! Adds a property to an existing particle set
+          !!!
           !-------------------------------------------------------------------------
           !  Modules
           !-------------------------------------------------------------------------
@@ -2354,7 +2341,7 @@ minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 
           END ASSOCIATE
 
-          IF (.NOT. ASSOCIATED(Pc%maps%vec(id)%t)) THEN
+          IF (.NOT.ASSOCIATED(Pc%maps%vec(id)%t)) THEN
              ALLOCATE(DTYPE(ppm_t_part_mapping)::Pc%maps%vec(id)%t,STAT=info)
              or_fail_alloc("Pc%maps%vec(id)%t")
           ENDIF

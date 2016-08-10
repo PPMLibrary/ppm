@@ -1,6 +1,10 @@
 test_suite ppm_module_mesh_mappings2
 
+USE ppm_module_data
+USE ppm_module_error
 USE ppm_module_write
+USE ppm_module_substart
+USE ppm_module_substop
 USE ppm_module_mesh_typedef
 USE ppm_module_topo_typedef
 USE ppm_module_field_typedef

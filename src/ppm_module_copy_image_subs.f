@@ -36,6 +36,8 @@
       MODULE ppm_module_copy_image_subs
       !!! This module provides the decomposition routines.
          IMPLICIT NONE
+
+         PRIVATE
          !----------------------------------------------------------------------
          !  Define interface to periodic image copy routine
          !----------------------------------------------------------------------
@@ -43,6 +45,8 @@
             MODULE PROCEDURE copy_imgsubs_s
             MODULE PROCEDURE copy_imgsubs_d
          END INTERFACE
+
+         PUBLIC :: ppm_copy_image_subs
 
          !----------------------------------------------------------------------
          !  include the source

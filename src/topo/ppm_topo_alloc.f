@@ -153,8 +153,10 @@
 
             ppm_next_avail_topo = ppm_next_avail_topo + 1
          ELSE
+            ! We are using this topoid for the new topology
             topoid = ppm_next_avail_topo
 
+            ! We need to find the next available topoid
             ppm_next_avail_topo=-1
 
             DO i=1,SIZE(ppm_topo)
@@ -196,25 +198,12 @@
 
          CALL ppm_alloc(topo%max_physs,ldc,iopt,info)
          or_fail_alloc("max extent of domain TOPO%MAX_PHYSS",ppm_error=ppm_error_fatal)
-
-         IF (ASSOCIATED(topo%min_physd)) DEALLOCATE(topo%min_physd,STAT=info)
-         NULLIFY(topo%min_physd)
-
-         IF (ASSOCIATED(topo%max_physd)) DEALLOCATE(topo%max_physd,STAT=info)
-         NULLIFY(topo%max_physd)
-
-      CASE DEFAULT
+      CASE (ppm_kind_double)
           CALL ppm_alloc(topo%min_physd,ldc,iopt,info)
           or_fail_alloc("min extent of domain TOPO%MIN_PHYSD",ppm_error=ppm_error_fatal)
 
           CALL ppm_alloc(topo%max_physd,ldc,iopt,info)
           or_fail_alloc("max extent of domain TOPO%MAX_PHYSD",ppm_error=ppm_error_fatal)
-
-          IF (ASSOCIATED(topo%min_physs)) DEALLOCATE(topo%min_physs,STAT=info)
-          NULLIFY(topo%min_physs)
-
-          IF (ASSOCIATED(topo%max_physs)) DEALLOCATE(topo%max_physs,STAT=info)
-          NULLIFY(topo%max_physs)
       END SELECT
       !-------------------------------------------------------------------------
       !  The MAX of naublist and 1 is needed to avoid allocation failures
@@ -236,24 +225,12 @@
 
           CALL ppm_alloc(topo%max_subs,ldc,iopt,info)
           or_fail_alloc("max extent of subs TOPO%MAX_SUBS",ppm_error=ppm_error_fatal)
-
-          IF (ASSOCIATED(topo%min_subd)) DEALLOCATE(topo%min_subd,STAT=info)
-          NULLIFY(topo%min_subd)
-
-          IF (ASSOCIATED(topo%max_subd)) DEALLOCATE(topo%max_subd,STAT=info)
-          NULLIFY(topo%max_subd)
-      CASE DEFAULT
+      CASE (ppm_kind_double)
           CALL ppm_alloc(topo%min_subd,ldc,iopt,info)
           or_fail_alloc("min extent of subs TOPO%MIN_SUBD",ppm_error=ppm_error_fatal)
 
           CALL ppm_alloc(topo%max_subd,ldc,iopt,info)
           or_fail_alloc("max extent of subs TOPO%MAX_SUBD",ppm_error=ppm_error_fatal)
-
-          IF (ASSOCIATED(topo%min_subs)) DEALLOCATE(topo%min_subs,STAT=info)
-          NULLIFY(topo%min_subs)
-
-          IF (ASSOCIATED(topo%max_subs)) DEALLOCATE(topo%max_subs,STAT=info)
-          NULLIFY(topo%max_subs)
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -287,16 +264,8 @@
       SELECT CASE (prec)
       CASE (ppm_kind_single)
          CALL ppm_alloc(topo%sub_costs,ldc,iopt,info)
-
-         IF (ASSOCIATED(topo%sub_costd)) DEALLOCATE(topo%sub_costd,STAT=info)
-         NULLIFY(topo%sub_costd)
-
-      CASE DEFAULT
+      CASE (ppm_kind_double)
          CALL ppm_alloc(topo%sub_costd,ldc,iopt,info)
-
-         IF (ASSOCIATED(topo%sub_costs)) DEALLOCATE(topo%sub_costs,STAT=info)
-         NULLIFY(topo%sub_costs)
-
       END SELECT
       or_fail_alloc("subdomain costs TOPO%SUB_COST",ppm_error=ppm_error_fatal)
 
@@ -336,12 +305,8 @@
       or_fail_alloc("list of neighbor processors TOPO%INEIGHPROC",ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
-      !  Nullify the communication sequence. It will be allocated when
-      !  first used.
+      !  Initialize optmization status flags
       !-------------------------------------------------------------------------
-      IF (ASSOCIATED(topo%icommseq)) DEALLOCATE(topo%icommseq,STAT=info)
-      NULLIFY(topo%icommseq)
-
       topo%isoptimized = .FALSE.
 
       !-------------------------------------------------------------------------
@@ -362,16 +327,16 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF (nsubs .LE. 0) THEN
+          IF (nsubs.LE.0) THEN
              fail("nsubs must be >0",exit_point=8888)
           ENDIF
-          IF (nsublist .LE. 0) THEN
+          IF (nsublist.LE.0) THEN
              fail("nsublist must be >0",exit_point=8888)
           ENDIF
-          IF (nsubs .LT. nsublist) THEN
+          IF (nsubs.LT.nsublist) THEN
              fail("total number of subs is smaller than local",exit_point=8888)
           ENDIF
-          IF (maxneigh .LT. 0) THEN
+          IF (maxneigh.LT.0) THEN
              fail("maxneigh must be >=0",exit_point=8888)
           ENDIF
           IF (topoid.NE.0) THEN

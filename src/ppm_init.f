@@ -293,7 +293,7 @@
          IF (tolexp.LT.INT(LOG10(EPSILON(ppm_myepsd)))) THEN
             fail('Tolerance must not be smaller than machine epsilon',ppm_err_tol_warn,ppm_error=ppm_error_fatal)
          ENDIF
-         ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
+         ppm_myepsd = 10.0_ppm_kind_double**tolexp
          ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
          WRITE(cbuf,'(A,E17.10)') 'Floating point tolerance set to ',ppm_myepsd
 
@@ -305,7 +305,7 @@
          IF (tolexp.LT.INT(LOG10(EPSILON(ppm_myepss)))) THEN
             fail('Tolerance must not be smaller than machine epsilon',ppm_err_tol_warn,ppm_error=ppm_error_fatal)
          ENDIF
-         ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
+         ppm_myepsd = 10.0_ppm_kind_double**tolexp
          ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
          WRITE(cbuf,'(A,E17.10)') 'Floating point tolerance set to ',ppm_myepss
 

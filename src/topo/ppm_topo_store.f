@@ -192,10 +192,6 @@
       DO i=1,nsubs
          topo%sub2proc(i) = sub2proc(i)
       ENDDO
-      !-------------------------------------------------------------------------
-      !  initialize optmization status flags
-      !-------------------------------------------------------------------------
-      topo%isoptimized = .FALSE.
 
       !-------------------------------------------------------------------------
       !  Store the extent of the subdomains

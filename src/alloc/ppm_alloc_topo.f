@@ -133,6 +133,7 @@
             IF (ASSOCIATED(topo%ineighproc))  DEALLOCATE(topo%ineighproc, STAT=info)
             IF (ASSOCIATED(topo%ineighcolor)) DEALLOCATE(topo%ineighcolor,STAT=info)
             IF (ASSOCIATED(topo%icommseq))    DEALLOCATE(topo%icommseq,   STAT=info)
+            or_fail_dealloc('Deallocating topo',exit_point=no)
 
             NULLIFY(topo%min_physs)
             NULLIFY(topo%min_physd)
@@ -159,6 +160,10 @@
             topo%nsubs      = ppm_param_undefined
             topo%nsublist   = ppm_param_undefined
             topo%nneighproc = ppm_param_undefined
+            topo%ncommseq   = ppm_param_undefined
+
+            topo%ghostsizes = 0.0_ppm_kind_single
+            topo%ghostsized = 0.0_ppm_kind_double
 
             DEALLOCATE(topo,STAT=info)
             or_fail_dealloc('Deallocating topo',exit_point=no)
@@ -192,6 +197,9 @@
          NULLIFY(topo%nneighsubs)
          NULLIFY(topo%ineighproc)
          NULLIFY(topo%ineighcolor)
+         !-------------------------------------------------------------------------
+         !  Nullify the communication sequence. It will be allocated when first used.
+         !-------------------------------------------------------------------------
          NULLIFY(topo%icommseq)
 
          topo%ID = 0
@@ -199,6 +207,9 @@
          topo%nsubs = 0
          topo%nsublist = 0
          topo%nneighproc = 0
+         topo%ncommseq = 0
+         topo%ghostsizes = 0.0_ppm_kind_single
+         topo%ghostsized = 0.0_ppm_kind_double
       ENDIF
 
       !-------------------------------------------------------------------------

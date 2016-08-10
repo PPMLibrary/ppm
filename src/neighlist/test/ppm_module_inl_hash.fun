@@ -1,5 +1,8 @@
 test_suite ppm_module_inl_hash
 
+  USE ppm_module_substart
+  USE ppm_module_substop
+
   INTEGER, PARAMETER :: debug = 0
   INTEGER, PARAMETER :: MK = KIND(1.0D0) !KIND(1.0E0)
   INTEGER, PARAMETER :: ndim=2

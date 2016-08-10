@@ -146,7 +146,7 @@
           !!!
           INTEGER                                        :: nneighproc
           !!! number of neighboring processors.
-          LOGICAL                                        :: isoptimized
+          LOGICAL                                        :: isoptimized = .FALSE.
           !!! has optimal communication sequence already been determined for
           !!! this topology?
           INTEGER                                        :: ncommseq

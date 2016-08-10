@@ -1,5 +1,9 @@
 test_suite ppm_module_mesh
 
+USE ppm_module_data
+USE ppm_module_error
+USE ppm_module_substart
+USE ppm_module_substop
 USE ppm_module_mesh_typedef
 USE ppm_module_topo_typedef
 USE ppm_module_field_typedef
@@ -263,6 +267,8 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
     end test
 
     test ghost_mappings
+        IMPLICIT NONE
+
         TYPE(ppm_t_field) :: Field1,Field2
         REAL(ppm_kind_double),DIMENSION(ndim) :: pos
         INTEGER                             :: p_idx, nb_errors

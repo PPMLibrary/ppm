@@ -79,7 +79,7 @@
       !-------------------------------------------------------------------------
       !  Validity check
       !-------------------------------------------------------------------------
-      IF ((topoid.GE.1).AND.(topoid.LE.SIZE(ppm_topo))) THEN
+      IF (topoid.GE.1.AND.topoid.LE.SIZE(ppm_topo)) THEN
          valid = ppm_topo(topoid)%t%isdefined
       ELSE
          valid = .FALSE.
@@ -101,11 +101,11 @@
              valid = .FALSE.
              fail('ppm_topo pointer is not associated!',exit_point=8888)
           ENDIF
-          IF ((topoid.GT.SIZE(ppm_topo)).OR.(topoid.LT.1)) THEN
+          IF (topoid.GT.SIZE(ppm_topo).OR.topoid.LT.1) THEN
              valid = .FALSE.
              fail('topoid indexing outside ppm_topo!',exit_point=8888)
           ENDIF
-          IF (.NOT. ASSOCIATED(ppm_topo(topoid)%t)) THEN
+          IF (.NOT.ASSOCIATED(ppm_topo(topoid)%t)) THEN
              valid = .FALSE.
              fail('ppm_topo(topoid) pointer not associated!',exit_point=8888)
           ENDIF

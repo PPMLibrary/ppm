@@ -1,11 +1,13 @@
 test_suite ppm_module_particles_PSE
 
+USE ppm_module_data
+USE ppm_module_substart
+USE ppm_module_substop
+USE ppm_module_interfaces
 USE ppm_module_particles_typedef
 USE ppm_module_topo_typedef
 USE ppm_module_field_typedef
 USE ppm_module_operator_typedef
-USE ppm_module_interfaces
-USE ppm_module_data
 
 INTEGER, PARAMETER              :: debug = 0
 INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)

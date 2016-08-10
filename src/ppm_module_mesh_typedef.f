@@ -966,6 +966,9 @@ minclude ppm_get_field_template(4,l)
 
           !Creating a global ID for this mesh
           this%ID = ppm_mesh%nb
+          ! TODO !
+          ! This ID can be wrong in case of craeting several mesh and destroy
+          ! some and create new ones.
 
           !-------------------------------------------------------------------------
           !  Return

@@ -38,6 +38,8 @@
 
          IMPLICIT NONE
 
+         PRIVATE
+
          !----------------------------------------------------------------------
          !  Define interface to boundary condition definition routine
          !----------------------------------------------------------------------
@@ -45,6 +47,8 @@
             MODULE PROCEDURE define_subsbc_s
             MODULE PROCEDURE define_subsbc_d
          END INTERFACE
+
+         PUBLIC :: ppm_define_subs_bc
 
          !----------------------------------------------------------------------
          !  include the source

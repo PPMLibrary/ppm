@@ -6,15 +6,17 @@
       !----------------------------------------------------------------------
       !  Modules
       !----------------------------------------------------------------------
+      USE ppm_module_data
+      USE ppm_module_alloc
+      USE ppm_module_error
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_topo_typedef
       USE ppm_module_interfaces
-      USE ppm_module_data
-      USE ppm_module_alloc
-      USE ppm_module_error
       USE ppm_module_util_functions
       IMPLICIT NONE
+
+      PRIVATE
 
       !----------------------------------------------------------------------
       ! Internal parameters
@@ -23,12 +25,12 @@
       !----------------------------------------------------------------------
       ! Global variables
       !----------------------------------------------------------------------
-      INTEGER                        :: ppm_nb_fields = 0
+      INTEGER               :: ppm_nb_fields = 0
 
       !----------------------------------------------------------------------
       ! Module variables
       !----------------------------------------------------------------------
-      INTEGER, PRIVATE, DIMENSION(3) :: ldc
+      INTEGER, DIMENSION(3) :: ldc
 
       !----------------------------------------------------------------------
       ! Type declaration
@@ -58,6 +60,22 @@ minclude ppm_create_collection(discr_info,discr_info,generate="extend")
       END TYPE ppm_t_field
 minclude ppm_create_collection(field,field,generate="extend")
 minclude ppm_create_collection(field,field,generate="extend",vec=true)
+
+      !----------------------------------------------------------------------
+      ! PUBLIC from ppm_module_interfaces
+      !----------------------------------------------------------------------
+      PUBLIC :: ppm_t_discr_info_
+      PUBLIC :: ppm_t_field_
+
+      !----------------------------------------------------------------------
+      ! PUBLIC
+      !----------------------------------------------------------------------
+      PUBLIC :: ppm_t_discr_info
+      PUBLIC :: ppm_c_discr_info
+      PUBLIC :: ppm_t_field
+      PUBLIC :: ppm_c_field
+      PUBLIC :: ppm_v_field
+
 
       !----------------------------------------------------------------------
       !  Type-bound procedures

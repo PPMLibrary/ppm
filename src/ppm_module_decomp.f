@@ -41,11 +41,13 @@
 
          IMPLICIT NONE
 
+         PRIVATE
+
          !----------------------------------------------------------------------
          !  Local work arrays used in ppm_decomp_pruned_cell
          !----------------------------------------------------------------------
-         INTEGER , DIMENSION(:), POINTER, PRIVATE :: npbx  => NULL()
-         INTEGER , DIMENSION(:), POINTER, PRIVATE :: npbxg => NULL()
+         INTEGER , DIMENSION(:), POINTER :: npbx  => NULL()
+         INTEGER , DIMENSION(:), POINTER :: npbxg => NULL()
 
          !----------------------------------------------------------------------
          !  Define interface to box split routine
@@ -78,6 +80,12 @@
             MODULE PROCEDURE decomp_tree_s
             MODULE PROCEDURE decomp_tree_d
          END INTERFACE
+
+
+         PUBLIC :: ppm_decomp_boxsplit
+         PUBLIC :: ppm_decomp_cartesian
+         PUBLIC :: ppm_decomp_pruned_cell
+         PUBLIC :: ppm_decomp_tree
 
          !----------------------------------------------------------------------
          !  include the source
