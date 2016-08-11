@@ -4,14 +4,21 @@
          !----------------------------------------------------------------------
          !  Modules
          !----------------------------------------------------------------------
-         USE ppm_module_alloc
          USE ppm_module_data
+         USE ppm_module_alloc
          USE ppm_module_error
          USE ppm_module_write
          USE ppm_module_substart
          USE ppm_module_substop
          IMPLICIT NONE
 
+         PRIVATE
+         !----------------------------------------------------------------------
+         ! Module variables
+         !----------------------------------------------------------------------
+         !----------------------------------------------------------------------
+         ! Type declaration
+         !----------------------------------------------------------------------
          TYPE,ABSTRACT :: ppm_t_options
          END TYPE
 
@@ -28,16 +35,20 @@
              INTEGER                        :: order = 2
              REAL(ppm_kind_double)          :: c = 0.5_ppm_kind_double
              !!! - for dcpse operators
-
          CONTAINS
              PROCEDURE :: create  => options_op_create
              PROCEDURE :: destroy => options_op_destroy
          END TYPE
 
+         !----------------------------------------------------------------------
+         !  PUBLIC
+         !----------------------------------------------------------------------
+         PUBLIC :: ppm_t_options
+         PUBLIC :: ppm_t_options_op
 
-      !----------------------------------------------------------------------
-      ! Type-bound procedures
-      !----------------------------------------------------------------------
+         !----------------------------------------------------------------------
+         ! Type-bound procedures
+         !----------------------------------------------------------------------
       CONTAINS
 
          SUBROUTINE options_op_create(this,method,info,with_ghosts,vector,&

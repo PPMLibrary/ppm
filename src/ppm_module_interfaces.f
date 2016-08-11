@@ -24,9 +24,14 @@
       !  Modules
       !----------------------------------------------------------------------
       USE ppm_module_data
+      USE ppm_module_alloc
+      USE ppm_module_error
+      USE ppm_module_write
+      USE ppm_module_substart
+      USE ppm_module_substop
       USE ppm_module_container_typedef
+      USE ppm_module_options, ONLY : ppm_t_options
       USE ppm_module_util_functions
-      USE ppm_module_options
       IMPLICIT NONE
 
       PRIVATE
