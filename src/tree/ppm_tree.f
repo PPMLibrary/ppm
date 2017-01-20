@@ -222,26 +222,26 @@
       REAL(ppm_kind_double), DIMENSION(1:ppm_dim)    :: meshdx,meshdxinv
       REAL(ppm_kind_double), DIMENSION(1:ppm_dim)    :: mins,maxs
 
-      REAL(ppm_kind_double), DIMENSION(:  ), POINTER :: cpos  => NULL()
-      REAL(ppm_kind_double), DIMENSION(:  ), POINTER :: costc => NULL()
+      REAL(ppm_kind_double), DIMENSION(:  ), POINTER :: cpos
+      REAL(ppm_kind_double), DIMENSION(:  ), POINTER :: costc
 
-      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: minc  => NULL()
-      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: maxc  => NULL()
+      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: minc
+      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: maxc
 
-      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: min_box_ => NULL()
-      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: max_box_ => NULL()
+      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: min_box_
+      REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: max_box_
 
       REAL(ppm_kind_double)                          :: t0
       REAL(ppm_kind_double)                          :: r0,r1,r2
       REAL(ppm_kind_double)                          :: maxcost
       REAL(MK)                                       :: lmyeps
 #if   __TYPE == __DECOMP
-      REAL(ppm_kind_double), DIMENSION(:  ), POINTER :: boxcost => NULL()
+      REAL(ppm_kind_double), DIMENSION(:  ), POINTER :: boxcost
 
-      INTEGER , DIMENSION(:  ), POINTER :: blevel  => NULL()
+      INTEGER , DIMENSION(:  ), POINTER :: blevel
       INTEGER                           :: nlevel
 #endif
-      INTEGER , DIMENSION(:  ), POINTER :: icut  => NULL()
+      INTEGER , DIMENSION(:  ), POINTER :: icut
       INTEGER , DIMENSION(ppm_dim)      :: thisNm
       INTEGER , DIMENSION(2*ppm_dim)    :: ghostNm
       INTEGER , DIMENSION(2)            :: ldc
@@ -292,11 +292,18 @@
       ENDIF
 
       !-------------------------------------------------------------------------
+      !  Clear pointers
+      !-------------------------------------------------------------------------
+      NULLIFY(cpos,costc,minc,maxc,min_box_,max_box_,icut)
+#if   __TYPE == __DECOMP
+      NULLIFY(boxcost,blevel)
+#endif
+
+      !-------------------------------------------------------------------------
       !  Check what kind of input data is given
       !-------------------------------------------------------------------------
-      have_particles = .FALSE.
+      have_particles = Np.GT.0
       have_mesh      = .FALSE.
-      IF (Np.GT.0) have_particles = .TRUE.
       IF (SIZE(Nm,1).GE.ppm_dim) THEN
          IF (ppm_dim.GT.2) THEN
             IF ((Nm(1).GT.1).AND.(Nm(2).GT.1).AND.(Nm(3).GT.1)) have_mesh = .TRUE.
@@ -397,8 +404,7 @@
       !-------------------------------------------------------------------------
       !  Clear module pointers
       !-------------------------------------------------------------------------
-      NULLIFY(tree_lhbx)
-      NULLIFY(tree_lpdx)
+      NULLIFY(tree_lhbx,tree_lpdx)
 
       !-------------------------------------------------------------------------
       !  Guess tree size based on assumed uniform distribution
@@ -482,6 +488,7 @@
          CALL ppm_alloc(Nmc,ldc,iopt,info)
          or_fail_alloc('list of divisible boxes BOXLIST')
       ENDIF
+
       IF (have_particles) THEN
          ldc(1) = 2**ncut
          CALL ppm_alloc(cbox,ldc,iopt,info)
@@ -596,6 +603,22 @@
       or_fail("ppm_tree_done failed!")
 
       IF ((.NOT.lcontinue).AND.(ppm_debug.GT.0)) THEN
+         iopt=ppm_param_alloc_fit
+         ldc(1)=ppm_dim
+         ldc(2)=nbox
+         CALL ppm_alloc(min_box,ldc,iopt,info)
+         or_fail_alloc("Failed to allocate min_box")
+
+         CALL ppm_alloc(max_box,ldc,iopt,info)
+         or_fail_alloc("Failed to allocate max_box")
+
+         DO j=1,ldc(2)
+            DO i=1,ldc(1)
+               min_box(i,j)=REAL(min_box_(i,j),MK)
+               max_box(i,j)=REAL(max_box_(i,j),MK)
+            ENDDO
+         ENDDO
+
          stdout("Nothing to be done. Exiting.")
          GOTO 9999
       ENDIF
@@ -968,12 +991,11 @@
       !-------------------------------------------------------------------------
       !  Return particle lists
       !-------------------------------------------------------------------------
-      NULLIFY(lhbx)
-      NULLIFY(lpdx)
-
       IF (have_particles) THEN
          lhbx => tree_lhbx
          lpdx => tree_lpdx
+      ELSE
+         NULLIFY(lhbx,lpdx)
       ENDIF
 #endif
 
