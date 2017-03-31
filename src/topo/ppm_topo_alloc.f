@@ -331,7 +331,7 @@
              fail("nsubs must be >0",exit_point=8888)
           ENDIF
           IF (nsublist.LE.0) THEN
-             fail("nsublist must be >0",exit_point=8888)
+             fail("nsublist is not >0",exit_point=8888,ppm_error=ppm_error_notice)
           ENDIF
           IF (nsubs.LT.nsublist) THEN
              fail("total number of subs is smaller than local",exit_point=8888)
