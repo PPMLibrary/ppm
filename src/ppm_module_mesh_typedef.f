@@ -994,11 +994,11 @@ minclude ppm_get_field_template(4,l)
                     fail("cannot specify both Nm and h. Choose only one.",exit_point=8888)
                  ENDIF
                  !TODO: check that the domain is finite
-                 IF (SIZE(Nm,1) .NE. ppm_dim) THEN
+                 IF (SIZE(Nm,1).LT.ppm_dim) THEN
                     fail("invalid size for Nm. Should be ppm_dim",exit_point=8888)
                  ENDIF
                  DO i=1,ppm_dim
-                    IF (Nm(i) .LT. 2) THEN
+                    IF (Nm(i).LT.2) THEN
                        fail("Nm must be >1 in all space dimensions",exit_point=8888)
                     ENDIF
                  ENDDO
