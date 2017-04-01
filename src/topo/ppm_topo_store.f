@@ -134,7 +134,7 @@
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL check
          IF (info .NE. 0) GOTO 9999
       ENDIF
@@ -368,16 +368,16 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF ((topoid .LT. 0) .OR. (topoid .GT. SIZE(ppm_topo))) THEN
+          IF ((topoid.LT.0).OR.(topoid.GT.SIZE(ppm_topo))) THEN
              fail("topoid must be >= 0 and <= SIZE(ppm_topo)",exit_point=8888)
           ENDIF
-          IF (nsubs .LE. 0) THEN
+          IF (nsubs.LE.0) THEN
              fail("nsubs must be >0",exit_point=8888)
           ENDIF
-          IF (nsublist .LT. 0) THEN
-             fail("nsublist must be >0",exit_point=8888)
+          IF (nsublist.LT.0) THEN
+             fail("nsublist must be >=0",exit_point=8888)
           ENDIF
-          IF (nsubs .LT. nsublist) THEN
+          IF (nsubs.LT.nsublist) THEN
              fail("total number of subs is smaller than local one",exit_point=8888)
           ENDIF
           DO i=1,nsubs
