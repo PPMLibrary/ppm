@@ -226,7 +226,7 @@
 #ifdef __MPI
             DO k=1,ppm_buffer_set
                bdim = ppm_buffer_dim(k)
-               DO i=2,ppm_nsendlist
+               DO i=2,ppm_nrecvlist
                   !----------------------------------------------------------------------
                   ! The following IF is needed in order to skip "dummy"
                   ! communication rounds where the current processor has to wait
@@ -245,7 +245,7 @@
                      &    ppm_irecvlist(i),tag,ppm_comm,ppm_request(ppm_nrequest),info)
                      or_fail_MPI("MPI_Irecv")
                   ENDIF
-               ENDDO !i=2,ppm_nsendlist
+               ENDDO !i=2,ppm_nrecvlist
             ENDDO !k=1,ppm_buffer_set
 #else
             ppm_recvbufferd=ppm_sendbufferd
@@ -254,7 +254,7 @@
 #ifdef __MPI
             DO k=1,ppm_buffer_set
                bdim = ppm_buffer_dim(k)
-               DO i=2,ppm_nsendlist
+               DO i=2,ppm_nrecvlist
                   !----------------------------------------------------------------------
                   ! The following IF is needed in order to skip "dummy"
                   ! communication rounds where the current processor has to wait
