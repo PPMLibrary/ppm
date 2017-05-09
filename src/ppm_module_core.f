@@ -79,7 +79,7 @@
          &   ppm_ppt_ghosts,ppm_ppt_partial,ppm_ppt_reqput,ppm_ppt_map_parts, &
          &   ppm_ppt_map_ghosts,ppm_param_length_pptflags,ppm_ops_inc_ghosts, &
          &   ppm_ops_interp,ppm_ops_iscomputed,ppm_ops_vector,ppm_param_length_opsflags
-         USE ppm_module_timestats, ONLY : ppm_t_tstats
+         USE ppm_module_timestats !, ONLY : ppm_t_tstats,
       !   USE ppm_module_rmsh
          USE ppm_module_ctrl, ONLY : arg, arg_group, parse_args,      &
          &   disable_help, disable_ctrl,set_ctrl_name,                &
