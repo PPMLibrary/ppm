@@ -4,9 +4,7 @@ test_suite ppm_module_interp_p2m
 
     INTEGER, PARAMETER              :: debug = 0
     INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
-#ifdef __MPI
-    INTEGER, PARAMETER              :: comm = MPI_COMM_WORLD
-#endif
+    INTEGER                         :: comm
     INTEGER                         :: ndim
     INTEGER                         :: nspec
     INTEGER                         :: rank
@@ -63,6 +61,7 @@ test_suite ppm_module_interp_p2m
 
 
 #ifdef __MPI
+        comm = MPI_COMM_WORLD
         CALL MPI_Comm_rank(comm,rank,info)
         CALL MPI_Comm_size(comm,nproc,info)
 #else
@@ -149,7 +148,7 @@ test_suite ppm_module_interp_p2m
             ghostsize(i) = 2
         ENDDO
 
-        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,comm,debug,info,99)
 
         ALLOCATE(xp(ndim,np),wp(nspec,np),STAT=info)
         CALL RANDOM_NUMBER(xp)
@@ -280,7 +279,7 @@ test_suite ppm_module_interp_p2m
             ghostsize(i) = 2
         ENDDO
 
-        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,comm,debug,info,99)
 
         ALLOCATE(xp(ndim,np),wp(nspec,np),STAT=info)
         CALL RANDOM_NUMBER(xp)

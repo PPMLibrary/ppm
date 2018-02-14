@@ -74,7 +74,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
         rank = 0
         nproc = 1
 #endif
-        CALL ppm_init(ndim,MK,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,MK,tolexp,comm,debug,info,99)
 
         CALL RANDOM_SEED(SIZE=seedsize)
         ALLOCATE(seed(seedsize))

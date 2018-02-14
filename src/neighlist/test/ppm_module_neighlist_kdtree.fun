@@ -61,7 +61,7 @@ test_suite ppm_module_neighlist_kdtree
     rank = 0
     nproc = 1
 #endif
-    CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    CALL ppm_init(ndim,mk,tolexp,comm,debug,info,99)
 
   end init
 

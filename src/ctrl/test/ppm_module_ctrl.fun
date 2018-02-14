@@ -28,13 +28,16 @@ test_suite ppm_module_ctrl
   INTEGER, PARAMETER :: MK = KIND(1.0D0) !KIND(1.0E0)
   INTEGER, PARAMETER :: ndim=2
   INTEGER            :: tolexp
-  INTEGER            :: info
+  INTEGER            :: info,comm
 
   init
     USE ppm_module_init
-
+#ifdef __MPI
+    comm = MPI_COMM_WORLD
+#endif
+    
     tolexp = INT(LOG10(EPSILON(1.0_MK)))
-    CALL ppm_init(ndim,MK,tolexp,0,debug,info,99)
+    CALL ppm_init(ndim,MK,tolexp,comm,debug,info,99)
   end init
 
   finalize

@@ -70,7 +70,7 @@ CLASS(ppm_t_discr_data),POINTER :: prop => NULL()
         nproc = 1
 #endif
         tolexp = INT(LOG10(EPSILON(1.0_MK)))+10
-        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,comm,debug,info,99)
 
         CALL RANDOM_SEED(SIZE=seedsize)
         ALLOCATE(seed(seedsize))
@@ -429,7 +429,7 @@ function inf_error(Part1,Field1,Field2,Op)
     ENDDO
 
 #ifdef __MPI
-    CALL MPI_Allreduce(linf,linf,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
+    CALL MPI_Allreduce(MPI_IN_PLACE,linf,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
     CALL MPI_Allreduce(MAXVAL(err),inf_error,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
 #else
     inf_error = MAXVAL(err)

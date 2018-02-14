@@ -13,7 +13,7 @@ test_suite ppm_module_field_typedef
   INTEGER, PARAMETER              :: debug = 0
   INTEGER, PARAMETER              :: MK = KIND(1.0d0) !KIND(1.0e0)
 #ifdef __MPI
-  INTEGER, PARAMETER              :: comm = MPI_COMM_WORLD
+  INTEGER                         :: comm
 #endif
   INTEGER                         :: ndim
   INTEGER                         :: nspec
@@ -68,6 +68,7 @@ test_suite ppm_module_field_typedef
 
 
 #ifdef __MPI
+    comm = MPI_COMM_WORLD
     CALL MPI_Comm_rank(comm,rank,info)
     CALL MPI_Comm_size(comm,nproc,info)
 #else
@@ -75,7 +76,7 @@ test_suite ppm_module_field_typedef
     rank = 0
 #endif
 
-    CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    CALL ppm_init(ndim,mk,tolexp,comm,debug,info,99)
 
   end init
   !------------------------------------------------------------------------------

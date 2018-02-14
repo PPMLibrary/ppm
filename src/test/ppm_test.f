@@ -46,7 +46,7 @@ program ppm_test_CASE
     INTEGER                         :: assig
     INTEGER                         :: tolexp
     REAL(MK)                        :: tol
-    INTEGER                         :: info
+    INTEGER                         :: info, comm
     INTEGER                         :: topoid,meshid
     INTEGER,  parameter             :: ngrid = 513
     INTEGER,  parameter             :: npgrid = 1025
@@ -94,9 +94,10 @@ program ppm_test_CASE
 
 #ifdef __MPI
     CALL MPI_Init(info)
+    comm = MPI_COMM_WORLD
 #endif
 
-    CALL ppm_init(ndim,MK,tolexp,0,debug,info,99)
+    CALL ppm_init(ndim,MK,tolexp,comm,debug,info,99)
 
     !----------------
     ! create particles

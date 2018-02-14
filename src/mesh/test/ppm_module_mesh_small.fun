@@ -77,7 +77,7 @@ LOGICAL, DIMENSION(:),   POINTER               :: wp_1l => NULL()
         rank = 0
         nproc = 1
 #endif
-        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,comm,debug,info,99)
 
         CALL RANDOM_SEED(SIZE=seedsize)
         ALLOCATE(seed(seedsize))

@@ -33,7 +33,7 @@ test_suite ppm_module_util_color
         nproc = 1
 #endif
         tolexp = INT(LOG10(EPSILON(1.0_MK)))
-        CALL ppm_init(ndim,MK,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,MK,tolexp,comm,debug,info,99)
 
         ALLOCATE(min_phys(ndim),max_phys(ndim),STAT=info)
 

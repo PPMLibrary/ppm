@@ -405,7 +405,7 @@ CALL MPI_Comm_rank(comm,rank,info)
 #else
 rank = 0
 #endif
-call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+call ppm_init(ndim,mk,tolexp,comm,debug,info,99)
 
 CALL RANDOM_SEED(SIZE=seedsize)
 ALLOCATE(seed(seedsize))

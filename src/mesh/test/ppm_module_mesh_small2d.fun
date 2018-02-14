@@ -69,7 +69,7 @@ REAL(MK),DIMENSION(:,:,:,:),POINTER:: field4d_1,field4d_2
         rank = 0
         nproc = 1
 #endif
-        CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
+        CALL ppm_init(ndim,mk,tolexp,comm,debug,info,99)
 
     end init
 

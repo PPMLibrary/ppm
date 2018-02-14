@@ -68,7 +68,7 @@ test_suite ppm_module_particles_big
     nproc = 1
 #endif
     tolexp = INT(LOG10(EPSILON(1.0_MK)))+10
-    CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    CALL ppm_init(ndim,mk,tolexp,comm,debug,info,99)
 
     CALL RANDOM_SEED(SIZE=seedsize)
     ALLOCATE(seed(seedsize))
